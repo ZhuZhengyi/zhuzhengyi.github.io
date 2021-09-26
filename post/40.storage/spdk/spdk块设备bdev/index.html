@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Justice的小站</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="Justice" />
+  <meta name="description" content="SPDK bdev简介 简介 SPDK块设备层（简称bdev）是一个C库，等同于操作系统块存储层，该层通常位于传统内核存储堆栈中设备驱动程序的正上方。具" />
+
+  <meta name="keywords" content="Hugo, theme, jane" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.85.0" />
+
+
+<link rel="canonical" href="http://justice.bj.cn/post/40.storage/spdk/spdk%E5%9D%97%E8%AE%BE%E5%A4%87bdev/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="SPDK bdev简介 简介 SPDK块设备层（简称bdev）是一个C库，等同于操作系统块存储层，该层通常位于传统内核存储堆栈中设备驱动程序的正上方。具" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://justice.bj.cn/post/40.storage/spdk/spdk%E5%9D%97%E8%AE%BE%E5%A4%87bdev/" /><meta property="article:section" content="post" />
+
+<meta property="og:site_name" content="Justice的小站" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="SPDK bdev简介 简介 SPDK块设备层（简称bdev）是一个C库，等同于操作系统块存储层，该层通常位于传统内核存储堆栈中设备驱动程序的正上方。具">
+
+<meta itemprop="wordCount" content="5596">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="SPDK bdev简介 简介 SPDK块设备层（简称bdev）是一个C库，等同于操作系统块存储层，该层通常位于传统内核存储堆栈中设备驱动程序的正上方。具"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Justice's Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/">主页</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/post/">点滴</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/tags/">标签</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/categories/">分类</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+      <li class="mobile-menu-item">
+        <a id="openSearchMobile" class="mobile-menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+    
+<div class="modal-dialog">
+    
+    <div class="modal-content">
+      <div id="closeSearch" title="Close" class="close">X</div>
+      <div class="modal-header">
+        <div class="modal-title">Search</div>
+      </div>
+      <div class="modal-body">
+          <script>
+            (function() {
+              var cx = '';
+              var gcse = document.createElement('script');
+              gcse.type = 'text/javascript';
+              gcse.async = true;
+              gcse.src = (document.location.protocol == 'https:' ? 'https:' :
+                  'http:') +
+                '//cse.google.com/cse.js?cx=' + cx;
+              var s = document.getElementsByTagName('script')[0];
+              s.parentNode.insertBefore(gcse, s);
+            })();
+          </script>
+          <gcse:search></gcse:search>
+      </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Justice's Blog
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/">主页</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/post/">点滴</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/tags/">标签</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/categories/">分类</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+      <li class="menu-item">
+        <a id="openSearch" class="menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title"></h1>
+      
+      <div class="post-meta">
+        <time datetime="0001-01-01" class="post-time">
+          0001-01-01
+        </time>
+        
+        
+
+        
+        
+          <span id="busuanzi_container_page_pv">
+            | 阅读 <span id="busuanzi_value_page_pv"></span>
+          </span>
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#先决条件">先决条件</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#get_bdevs">get_bdevs</a></li>
+    <li><a href="#set_bdev_qos_limit">set_bdev_qos_limit</a></li>
+    <li><a href="#delete_bdev">delete_bdev</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#spdk-gpt分区表">SPDK GPT分区表</a></li>
+    <li><a href="#使用nbd创建gpt分区表">使用NBD创建GPT分区表</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#逻辑卷存储">逻辑卷存储</a></li>
+    <li><a href="#lvols">Lvols</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#virtio-block">Virtio Block</a></li>
+    <li><a href="#virtio-scsi">Virtio SCSI</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <h1 id="spdk-bdev简介">SPDK bdev简介</h1>
+<h2 id="简介">简介</h2>
+<p>SPDK块设备层（简称<em>bdev</em>）是一个C库，等同于操作系统块存储层，该层通常位于传统内核存储堆栈中设备驱动程序的正上方。具体来说，此库提供以下功能：</p>
+<ul>
+<li>一种可插拔模块API，用于实现与不同类型的块存储设备连接的块设备。</li>
+<li>NVMe，malloc（ramdisk），Linux AIO，virtio-scsi，Ceph RBD，Pmem和Vhost-SCSI Initiator等驱动程序模块。</li>
+<li>用于枚举和声明SPDK块设备，然后在这些设备上执行操作（读取，写入，取消映射等）的应用程序API。</li>
+<li>堆栈块设备以创建复杂I / O管道的工具，包括逻辑卷管理（lvol）和分区支持（GPT）。</li>
+<li>通过JSON-RPC配置块设备。</li>
+<li>请求排队，超时和重置处理。</li>
+<li>多个无锁队列，用于将I / O发送到块设备。</li>
+</ul>
+<p>Bdev模块创建抽象层，为所有设备提供通用API。用户可以使用可用的bdev模块或使用下面任何类型的设备创建自己的模块（有关详细信息，请参阅<a href="https://spdk.io/doc/bdev_module.html">编写自定义块设备模块</a>）。</p>
+<p>SPDK还提供了vbdev模块，可在现有的bdev上创建块设备。例如<a href="https://spdk.io/doc/bdev.html#bdev_ug_logical_volumes">逻辑卷</a>或[SPDK GPT分区表](<a href="https://spdk.io/doc/bdev.html#bdev_ug_gp">https://spdk.io/doc/bdev.html#bdev_ug_gp</a></p>
+<h2 id="先决条件">先决条件</h2>
+<p>假设已经在平台上构建标准SPDK分发版。块设备层是一个C库，其中包含一个名为<a href="https://spdk.io/doc/bdev_8h.html" title="块设备抽象层。">bdev.h的</a>公共头文件。以下章节中描述的所有SPDK配置都是使用JSON-RPC命令完成的。</p>
+<p>SPDK提供了一个基于python的命令行工具，用于发送位于的RPC命令<code>scripts/rpc.py</code>。</p>
+<p>用户可以通过使用<code>-h</code>或<code>--help</code>标记运行此脚本来列出可用命令。</p>
+<p>此外，用户可以通过运行直接从SPDK应用程序检索当前支持的RPC命令集<code>scripts/rpc.py get_rpc_methods</code>。</p>
+<p>通过添加<code>-h</code>flag作为命令参数，可以显示每个命令的详细帮助。</p>
+<h1 id="通用rpc">通用RPC</h1>
+<h2 id="get_bdevs">get_bdevs</h2>
+<p>可以使用<code>get_bdevs</code>RPC命令获取当前可用的块设备列表，包括有关它们的详细信息。用户可以添加可选参数<code>name</code>以获取该名称bdev指定的详细信息。</p>
+<p>response示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;num_blocks&#34;</span><span class="p">:</span> <span class="mi">32768</span><span class="p">,</span>
+    <span class="nt">&#34;assigned_rate_limits&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;rw_ios_per_sec&#34;</span><span class="p">:</span> <span class="mi">10000</span><span class="p">,</span>
+        <span class="nt">&#34;rw_mbytes_per_sec&#34;</span><span class="p">:</span> <span class="mi">20</span>
+    <span class="p">},</span>
+    <span class="nt">&#34;supported_io_types&#34;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&#34;reset&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&#34;nvme_admin&#34;</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+        <span class="nt">&#34;unmap&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&#34;read&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&#34;write_zeroes&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&#34;write&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&#34;flush&#34;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&#34;nvme_io&#34;</span><span class="p">:</span> <span class="kc">false</span>
+    <span class="p">},</span>
+    <span class="nt">&#34;driver_specific&#34;</span><span class="p">:</span> <span class="p">{},</span>
+    <span class="nt">&#34;claimed&#34;</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
+    <span class="nt">&#34;block_size&#34;</span><span class="p">:</span> <span class="mi">4096</span><span class="p">,</span>
+    <span class="nt">&#34;product_name&#34;</span><span class="p">:</span> <span class="s2">&#34;Malloc disk&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;Malloc0&#34;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="set_bdev_qos_limit">set_bdev_qos_limit</h2>
+<p>用户可以使用<code>set_bdev_qos_limit</code>RPC命令在现有bdev上启用，调整和禁用速率限制。支持两种类型的速率限制：IOPS和带宽。可以随时为指定的bdev启用，调整和禁用速率限制。bdev名称是此RPC命令的必需参数，<code>rw_ios_per_sec</code>并且<code>rw_mbytes_per_sec</code>必须至少指定其中一个。启用两个速率限制后，第一个满足限制将生效。可以指定值0以禁用相应的速率限制。用户可以使用<code>-h</code>或运行此命令以<code>--help</code>获取更多信息。</p>
+<h2 id="delete_bdev">delete_bdev</h2>
+<p>要删除以前创建的bdev用户，可以使用<code>delete_bdev</code>RPC命令。可以随时删除Bdev，这将由任何上层完全处理。作为参数，用户应提供bdev名称。此RPC命令应仅用于调试目的。要删除特定的bdev，请使用特定于其bdev模块的delete命令。</p>
+<h1 id="ceph-rbd">Ceph RBD</h1>
+<p>SPDK RBD bdev驱动程序提供对Ceph RADOS块设备（RBD）的SPDK块层访问。通过librbd和librados库访问Ceph RBD设备，以访问Ceph导出的RADOS块设备。</p>
+<p>要创建Ceph，<code>construct_rbd_bdev</code>应该使用bdev RPC命令。</p>
+<p>示例命令:</p>
+<p><code>rpc.py construct_rbd_bdev rbd foo 512</code></p>
+<p>此命令将创建一个bdev，表示来自名为&rsquo;rbd&rsquo;的池中的&rsquo;foo&rsquo;图像。</p>
+<p>要删除块设备表示，请使用delete_rbd_bdev命令。</p>
+<p><code>rpc.py delete_rbd_bdev Rbd0</code></p>
+<h1 id="crypto-virtualbdev模块">Crypto Virtual Bdev模块</h1>
+<p>加密虚拟bdev模块可以配置为为任何底层bdev提供静态数据加密。该模块依赖DPDK CryptoDev框架来提供所有加密功能。该框架仅支持许多不同的软件加密模块以及英特尔QAT板的硬件辅助支持。该框架还提供对密码，散列，身份验证和AEAD功能的支持。此时SPDK虚拟bdev模块仅支持密码，如下所示：</p>
+<ul>
+<li>AESN-NI多缓冲加密轮询模式驱动程序：RTE_CRYPTO_CIPHER_AES128_CBC</li>
+<li>英特尔（R）QuickAssist（QAT）加密轮询模式驱动程序：RTE_CRYPTO_CIPHER_AES128_CBC（注意：QAT功能正常，但在硬件与SPDK CI系统完全集成之前，标记为实验性。）</li>
+</ul>
+<p>为了支持使用bdev块偏移量（LBA）作为初始化向量（IV），加密模块将所有I / O分解为大小等于底层bdev的块大小的加密操作。例如，具有512B块大小的bdev的4K I / O将导致8次加密操作。</p>
+<p>对于读取，提供给加密模块的缓冲区将用作未加密数据的目标缓冲区。但是，对于写入，临时暂存缓冲区用作加密的目标缓冲区，然后作为写缓冲区传递给底层bdev。这样做是为了避免加密原始源缓冲区中的数据，这可能在某些用例中引起问题。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_crypto_bdev -b NVMe1n1 -c CryNvmeA -d crypto_aesni_mb -k 0123456789123456</code></p>
+<p>此命令将在NVMe bdev“NVMe1n1”之上创建一个名为“CryNvmeA”的加密vbdev，并将使用DPDK软件驱动程序“crypto_aesni_mb”和密钥“0123456789123456”。</p>
+<p>要删除vbdev，请使用delete_crypto_bdev命令。</p>
+<p><code>rpc.py delete_crypto_bdev CryNvmeA</code></p>
+<h1 id="gptguid分区表">GPT（GUID分区表）</h1>
+<p>GPT虚拟bdev驱动程序默认启用，不需要任何配置。它将自动检测任何连接的bdev上的<a href="https://spdk.io/doc/bdev.html#bdev_ug_gpt">SPDK GPT分区表</a>，并可能创建多个虚拟bdev。</p>
+<h2 id="spdk-gpt分区表">SPDK GPT分区表</h2>
+<p>SPDK分区类型GUID是<code>7c5222bd-8f5d-4087-9c00-bf9843c7b58c</code>。现有的SPDK bdev可以通过NBD公开为Linux块设备，然后使用标准分区工具进行分区。分区后，需要删除bdev并再次附加，以便GPT bdev模块查看任何更改。必须先加载NBD内核模块。要创建NBD，bdev用户应该使用<code>start_nbd_disk</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py start_nbd_disk Malloc0 /dev/nbd0</code></p>
+<p>这将<code>Malloc0</code>在<code>/dev/nbd0</code>块设备下公开SPDK bdev 。</p>
+<p>要删除NBD设备，用户应使用<code>stop_nbd_disk</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py stop_nbd_disk /dev/nbd0</code></p>
+<p>要显示完整或指定的nbd设备列表，用户应使用<code>get_nbd_disks</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py stop_nbd_disk -n /dev/nbd0</code></p>
+<h2 id="使用nbd创建gpt分区表">使用NBD创建GPT分区表</h2>
+<p>＃通过JSON-RPC将bdev Nvme0n1公开为内核块设备/ dev / nbd0</p>
+<p>rpc.py start_nbd_disk Nvme0n1 / dev / nbd0</p>
+<p>＃创建GPT分区表。</p>
+<p>parted -s / dev / nbd0 mklabel gpt</p>
+<p>＃添加占用50％可用空间的分区。</p>
+<p>parted -s / dev / nbd0 mkpart MyPartition'0％&lsquo;&lsquo;50％&rsquo;</p>
+<p>＃将分区类型更改为SPDK GUID。</p>
+<p>#sgdisk是gdisk包的一部分。</p>
+<p>sgdisk -t 1：7c5222bd-8f5d-4087-9c00-bf9843c7b58c / dev / nbd0</p>
+<p>＃停止NBD设备（停止导出/ dev / nbd0）。</p>
+<p>rpc.py stop_nbd_disk / dev / nbd0</p>
+<p>#Now现在Nvme0n1配置了GPT分区表，并且第一个分区将自动公开为SPDK应用程序中的＃Nvme0n1p1。</p>
+<h1 id="iscsi-bdev">iSCSI bdev</h1>
+<p>SPDK iSCSI bdev驱动程序依赖于libiscsi，因此默认情况下不启用。要使用它，请使用额外的<code>--with-iscsi-initiator</code>配置选项构建SPDK 。</p>
+<p>以下命令<code>iSCSI0</code>从<code>iqn.2016-06.io.spdk:init</code>作为报告的启动器IQN的给定iSCSI URL公开的单个LUN 创建bdev 。</p>
+<p><code>rpc.py construct_iscsi_bdev -b iSCSI0 -i iqn.2016-06.io.spdk:init --url iscsi://127.0.0.1/iqn.2016-06.io.spdk:disk1/0</code></p>
+<p>URL的格式如下： <code>iscsi://[&lt;username&gt;[%&lt;password&gt;]@]&lt;host&gt;[:&lt;port&gt;]/&lt;target-iqn&gt;/&lt;lun&gt;</code></p>
+<h1 id="linux-aio-bdev">Linux AIO bdev</h1>
+<p>Linux 异步 I/O 是 Linux 内核中提供的一个相当新的增强。它是 2.6 版本内核的一个标准特性，但是我们在 2.4 版本内核的补丁中也可以找到它。</p>
+<p>AIO 背后的基本思想是允许进程发起很多 I/O 操作，而不用阻塞或等待任何操作完成。稍后或在接收到 I/O 操作完成的通知时，进程就可以检索 I/O 操作的结果。</p>
+<p>SPDK AIO bdev驱动程序通过Linux AIO提供对Linux内核块设备的SPDK块层访问或Linux文件系统上的文件。</p>
+<p>请注意，使用了O_DIRECT，因此绕过了Linux页面缓存。</p>
+<p>此模式可能与基于内核的典型目标接近，因为用户空间目标可以在不使用用户空间驱动程序的情况下获得。</p>
+<p>要创建AIO，<code>construct_aio_bdev</code>应使用bdev RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_aio_bdev /dev/sda aio0</code></p>
+<p>此命令<code>aio0</code>将从<code>/dev/sda</code> 创建设备。</p>
+<p><code>rpc.py construct_aio_bdev /tmp/file file 8192</code></p>
+<p>此命令<code>file</code>将从<code>/tmp/file</code> 创建块大小为8192的设备。</p>
+<p>要删除aio bdev，请使用delete_aio_bdev命令。</p>
+<p><code>rpc.py delete_aio_bdev aio0</code></p>
+<h1 id="malloc-bdev">Malloc bdev</h1>
+<p>malloc bdevs是ramdisks。由于它的性质，它们是不稳定的。它们是从为SPDK应用程序提供的巨大页面内存创建的。</p>
+<h1 id="null">NULL</h1>
+<p>SPDK null bdev驱动程序是一个虚拟块I / O目标，它会丢弃所有写入并返回未定义的读取数据。它可以用最小的块设备开销对bdev I / O堆栈的其余部分进行基准测试，并用于测试使用Malloc bdev无法轻松创建的配置。</p>
+<p>要创建Null bdev，应该使用construct_null_bdevRPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_null_bdev Null0 8589934592 4096</code></p>
+<p>此命令将创建一个<code>Null0</code>块大小为4096 的8 PB的设备。</p>
+<p>要删除null bdev，请使用delete_null_bdev命令。</p>
+<p><code>rpc.py delete_null_bdev Null0</code></p>
+<h1 id="nvme-bdev">NVMe bdev</h1>
+<p>有两种方法可以在SPDK中基于NVMe设备创建块设备。</p>
+<ul>
+<li>
+<p>第一种方式是连接本地PCIe驱动器，</p>
+</li>
+<li>
+<p>第二种方法是连接NVMe-oF设备。</p>
+<p>在这两种情况下，用户都应使用<code>construct_nvme_bdev</code>RPC命令来实现这一点。</p>
+</li>
+</ul>
+<p>示例命令</p>
+<p><code>rpc.py construct_nvme_bdev -b NVMe1 -t PCIe -a 0000:01:00.0</code></p>
+<p>此命令将在系统中创建物理设备的NVMe bdev。</p>
+<p><code>rpc.py construct_nvme_bdev -b Nvme0 -t RDMA -a 192.168.100.1 -f IPv4 -s 4420 -n nqn.2016-06.io.spdk:cnode1</code></p>
+<p>此命令将创建NVMe-oF资源的NVMe bdev。</p>
+<p>要删除NVMe控制器，请使用delete_nvme_controller命令。</p>
+<p><code>rpc.py delete_nvme_controller Nvme0</code></p>
+<p>此命令将删除名为Nvme0的NVMe控制器。</p>
+<h1 id="逻辑卷">逻辑卷</h1>
+<p>Logical Volumes库是一个灵活的存储空间管理系统。它允许在其他bdev之上创建和管理具有可变大小的虚拟块设备。SPDK逻辑卷库建立在<a href="https://spdk.io/doc/blob.html">Blobstore程序员指南</a>之上。有关详细说明，请参阅<a href="https://spdk.io/doc/logical_volumes.html#lvol">逻辑卷</a>。</p>
+<h2 id="逻辑卷存储">逻辑卷存储</h2>
+<p>在创建任何逻辑卷（lvols）之前，必须首先在选定的块设备上创建lvol存储。Lvol商店是lvols容器，负责管理lvol bdevs的底层bdev空间分配和存储元数据。要创建lvol存储，用户应该使用<code>construct_lvol_store</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_lvol_store Malloc2 lvs -c 4096</code></p>
+<p>这将创建<code>lvs</code>以簇大小4096 命名的<code>Malloc2</code>lvol 存储，构建在bdev之上。作为响应，将向用户提供uuid，这是唯一的lvol商店标识符。</p>
+<p>用户可以使用<code>get_lvol_stores</code>RPC命令获取可用的lvol存储列表（没有可用的参数）。</p>
+<p>response示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;uuid&#34;</span><span class="p">:</span> <span class="s2">&#34;330a6ab2-f468-11e7-983e-001e67edf35d&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;base_bdev&#34;</span><span class="p">:</span> <span class="s2">&#34;Malloc2&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;free_clusters&#34;</span><span class="p">:</span> <span class="mi">8190</span><span class="p">,</span>
+  <span class="nt">&#34;cluster_size&#34;</span><span class="p">:</span> <span class="mi">8192</span><span class="p">,</span>
+  <span class="nt">&#34;total_data_clusters&#34;</span><span class="p">:</span> <span class="mi">8190</span><span class="p">,</span>
+  <span class="nt">&#34;block_size&#34;</span><span class="p">:</span> <span class="mi">4096</span><span class="p">,</span>
+  <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;lvs&#34;</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>要删除lvol store，用户应该使用<code>destroy_lvol_store</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py destroy_lvol_store -u 330a6ab2-f468-11e7-983e-001e67edf35d</code></p>
+<p><code>rpc.py destroy_lvol_store -l lvs</code></p>
+<h2 id="lvols">Lvols</h2>
+<p>要在现有lvol存储上创建lvol，用户应使用<code>construct_lvol_bdev</code>RPC命令。每个创建的lvol都将由新的bdev表示。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_lvol_bdev lvol1 25 -l lvs</code></p>
+<p><code>rpc.py construct_lvol_bdev lvol2 25 -u 330a6ab2-f468-11e7-983e-001e67edf35d</code></p>
+<h1 id="passthru">Passthru</h1>
+<p>SPDK Passthru虚拟块设备模块用作如何编写虚拟块设备模块的示例。它实现了vbdev模块所需的功能，并演示了一些其他基本功能，例如每个I / O上下文的使用。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_passthru_bdev -b aio -p pt</code></p>
+<p><code>rpc.py delete_passthru_bdev pt</code></p>
+<h1 id="pmem">Pmem</h1>
+<p>SPDK pmem bdev驱动程序使用pmemblk池作为块I / O操作的目标。有关Pmem内存的详细信息，请参阅<a href="http://pmem.io/">http://pmem.io</a>网站上的PMDK文档。首先，用户需要配置SPDK以包含PMDK支持：</p>
+<p><code>configure --with-pmdk</code></p>
+<p>要创建用于SPDK用户的pmemblk池，应使用<code>create_pmem_pool</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py create_pmem_pool /path/to/pmem_pool 25 4096</code></p>
+<p>要获取有关已创建的pmem池文件的信息，用户可以使用<code>pmem_pool_info</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py pmem_pool_info /path/to/pmem_pool</code></p>
+<p>要删除pmem池文件，用户可以使用<code>delete_pmem_pool</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py delete_pmem_pool /path/to/pmem_pool</code></p>
+<p>要基于pmemblk池文件创建bdev，用户应使用<code>construct_pmem_bdev</code>RPC命令。</p>
+<p>示例命令</p>
+<p><code>rpc.py construct_pmem_bdev /path/to/pmem_pool -n pmem</code></p>
+<p>要删除块设备表示，请使用delete_pmem_bdev命令。</p>
+<p><code>rpc.py delete_pmem_bdev pmem</code></p>
+<h2 id="virtio-block">Virtio Block</h2>
+<p>Virtio-Block驱动程序允许从Virtio-Block设备创建SPDK bdev。</p>
+<p>以下命令创建一个Virtio-Block设备<code>VirtioBlk0</code>，该设备以<code>/tmp/vhost.0</code>SPDK <a href="https://spdk.io/doc/vhost.html">vhost Target</a>直接公开的vhost-user套接字命名。optional <code>vq-count</code>和<code>vq-size</code>params指定要使用的请求队列数和队列深度。</p>
+<p><code>rpc.py construct_virtio_dev --dev-type blk --trtype user --traddr /tmp/vhost.0 --vq-count 2 --vq-size 512 VirtioBlk0</code></p>
+<p>该驱动程序也可以在基于QEMU的VM中使用。以下命令创建一个名为<code>VirtioBlk0</code>Virtio PCI设备的Virtio Block设备<code>0000:00:01.0</code>。将从PCI配置空间自动读取整个配置。它将反映传递给QEMU的vhost-user-scsi-pci设备的所有参数。</p>
+<p><code>rpc.py construct_virtio_dev --dev-type blk --trtype pci --traddr 0000:01:00.0 VirtioBlk1</code></p>
+<p>可以使用以下命令删除Virtio-Block设备</p>
+<p><code>rpc.py remove_virtio_bdev VirtioBlk0</code></p>
+<h2 id="virtio-scsi">Virtio SCSI</h2>
+<p>Virtio-SCSI驱动程序允许从Virtio-SCSI LUN创建SPDK块设备。</p>
+<p>Virtio-SCSI bdev的构造方式与Virtio-Block的构造方式相同。</p>
+<p><code>rpc.py construct_virtio_dev --dev-type scsi --trtype user --traddr /tmp/vhost.0 --vq-count 2 --vq-size 512 VirtioScsi0</code></p>
+<p><code>rpc.py construct_virtio_dev --dev-type scsi --trtype pci --traddr 0000:01:00.0 VirtioScsi0</code></p>
+<p>每个Virtio-SCSI设备最多可以导出64个名为VirtioScsi0t0~VirtioScsi0t63的块设备，每个SCSI设备一个LUN（LUN0）。以上2个命令将输出所有暴露的bdev的名称。</p>
+<p>可以使用以下命令删除Virtio-SCSI设备</p>
+<p><code>rpc.py remove_virtio_bdev VirtioScsi0</code></p>
+<p>删除Virtio-SCSI设备将破坏其所有bdev。</p>
+<h2 id="参考">参考</h2>
+<ol>
+<li>
+<p><a href="https://www.codenong.com/cs106732499/">spdk探秘—–基本框架及bdev范例分析 | 码农家园</a></p>
+</li>
+<li></li>
+</ol>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">Justice</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+      0001-01-01
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    
+    
+  </div>
+</div>
+
+    <footer class="post-footer">
+      
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/40.storage/spdk/blobstore/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default"></span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        
+          <a class="next" href="/post/40.storage/spdk/spdk%E7%AE%80%E4%BB%8B/">
+            <span class="next-text nav-default"></span>
+            <span class="prev-text nav-mobile">下一篇</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+
+  
+
+  <div class="post bg-white">
+      <div id="comments-gitment"></div>
+      <link rel="stylesheet" href="/lib/gitment/gitment-0.0.3.min.css">
+        <script src="/lib/gitment/gitment-0.0.3.min.js"></script>
+      <script type="text/javascript">
+      const gitment = new Gitment({
+        id: 'SPDK块设备bdev.md',
+        title: '',
+        link: decodeURI(location.href),
+        desc: 'SPDK bdev简介 简介 SPDK块设备层（简称bdev）是一个C库，等同于操作系统块存储层，该层通常位于传统内核存储堆栈中设备驱动程序的正上方。具',
+        owner: 'zhengyi.zhu.hust@gmail.com',
+        repo: '',
+        oauth: {
+          client_id: '',
+          client_secret: ''
+        }
+      })
+      gitment.render('comments-gitment')
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="https://github.com/imsun/gitment">comments powered by gitment.</a></noscript>
+    </div>
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+
+
+<a href="http://justice.bj.cn/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2000 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        Justice
+        
+      </span></span>
+
+  
+  
+    <span id="busuanzi_container">
+      访客数/访问量：<span id="busuanzi_value_site_uv"></span>/<span id="busuanzi_value_site_pv"></span>
+    </span>
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css"
+    integrity="sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG"
+    crossorigin="anonymous">
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js"
+    integrity="sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1"
+    crossorigin="anonymous"></script>
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous" onload="renderMathInElement(document.body);">
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        
+      });
+    });
+  </script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+
+
+
+  <script>
+    $("#openSearch, #openSearchMobile").click(function(){
+      $(".modal-dialog").addClass("visible");
+    });
+
+    $("#closeSearch").click(function(){
+      $(".modal-dialog").removeClass("visible");
+    });
+
+    $(document).click(function(event) {
+    
+      if (!$(event.target).closest(".modal-content, #openSearch, #openSearchMobile").length) {
+        $("body").find(".modal-dialog").removeClass("visible");
+      }
+    });
+  </script>
+
+
+
+
+
+</body>
+</html>
