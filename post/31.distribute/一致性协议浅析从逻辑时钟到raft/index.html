@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Justice的小站</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="Justice" />
+  <meta name="description" content="一致性协议浅析：从逻辑时钟到Raft 逻辑时钟 逻辑时钟其实算不上是一个一致性协议，它是Lamport大神在1987年就提出来的一个想法，用来解" />
+
+  <meta name="keywords" content="Hugo, theme, jane" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.85.0" />
+
+
+<link rel="canonical" href="https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E5%8D%8F%E8%AE%AE%E6%B5%85%E6%9E%90%E4%BB%8E%E9%80%BB%E8%BE%91%E6%97%B6%E9%92%9F%E5%88%B0raft/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.fa4b2b9f31b5c6d0b683db81157a9226e17b06e61911791ab547242a4a0556f2.css" integrity="sha256-&#43;ksrnzG1xtC2g9uBFXqSJuF7BuYZEXkatUckKkoFVvI=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="一致性协议浅析：从逻辑时钟到Raft 逻辑时钟 逻辑时钟其实算不上是一个一致性协议，它是Lamport大神在1987年就提出来的一个想法，用来解" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E5%8D%8F%E8%AE%AE%E6%B5%85%E6%9E%90%E4%BB%8E%E9%80%BB%E8%BE%91%E6%97%B6%E9%92%9F%E5%88%B0raft/" /><meta property="article:section" content="post" />
+
+<meta property="og:site_name" content="Justice的小站" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="一致性协议浅析：从逻辑时钟到Raft 逻辑时钟 逻辑时钟其实算不上是一个一致性协议，它是Lamport大神在1987年就提出来的一个想法，用来解">
+
+<meta itemprop="wordCount" content="10288">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="一致性协议浅析：从逻辑时钟到Raft 逻辑时钟 逻辑时钟其实算不上是一个一致性协议，它是Lamport大神在1987年就提出来的一个想法，用来解"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Justice's Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/">主页</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/post/">点滴</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/tags/">标签</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/categories/">分类</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+      <li class="mobile-menu-item">
+        <a id="openSearchMobile" class="mobile-menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+    
+<div class="modal-dialog">
+    
+    <div class="modal-content">
+      <div id="closeSearch" title="Close" class="close">X</div>
+      <div class="modal-header">
+        <div class="modal-title">Search</div>
+      </div>
+      <div class="modal-body">
+          <script>
+            (function() {
+              var cx = '002186711602136249422:q1gkomof_em';
+              var gcse = document.createElement('script');
+              gcse.type = 'text/javascript';
+              gcse.async = true;
+              gcse.src = (document.location.protocol == 'https:' ? 'https:' :
+                  'http:') +
+                '//cse.google.com/cse.js?cx=' + cx;
+              var s = document.getElementsByTagName('script')[0];
+              s.parentNode.insertBefore(gcse, s);
+            })();
+          </script>
+          <gcse:search></gcse:search>
+      </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Justice's Blog
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/">主页</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/post/">点滴</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/tags/">标签</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://justice.bj.cn/categories/">分类</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+      <li class="menu-item">
+        <a id="openSearch" class="menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title"></h1>
+      
+      <div class="post-meta">
+        <time datetime="0001-01-01" class="post-time">
+          0001-01-01 10:00
+        </time>
+        
+        
+
+        
+        
+          <span id="busuanzi_container_page_pv">
+            | 阅读 <span id="busuanzi_value_page_pv"></span>
+          </span>
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#逻辑时钟">逻辑时钟</a></li>
+    <li><a href="#replicated-state-machine">Replicated State Machine</a></li>
+    <li><a href="#paxos">Paxos</a>
+      <ul>
+        <li><a href="#basic-paxos">Basic-Paxos</a></li>
+        <li><a href="#multi-paxos">Multi-Paxos</a></li>
+      </ul>
+    </li>
+    <li><a href="#zab">ZAB</a></li>
+    <li><a href="#raft">Raft</a></li>
+    <li><a href="#后话">后话</a></li>
+    <li><a href="#参考文献">参考文献</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <h1 id="一致性协议浅析从逻辑时钟到raft">一致性协议浅析：从逻辑时钟到Raft</h1>
+<h2 id="逻辑时钟">逻辑时钟</h2>
+<p>逻辑时钟其实算不上是一个一致性协议，它是Lamport大神在1987年就提出来的一个想法，用来解决分布式系统中，不同的机器时钟不一致可能带来的问题。在单机系统中，我们用机器的时间来标识事件，就可以非常清晰地知道两个不同事件的发生次序。但是在分布式系统中，由于每台机器的时间可能存在误差，无法通过物理时钟来准确分辨两个事件发生的先后顺序。但实际上，在分布式系统中，只有两个发生关联的事件，我们才会去关心两者的先来后到关系。比如说两个事务，一个修改了rowa，一个修改了rowb，他们两个谁先发生，谁后发生，其实我们并不关心。那所谓逻辑时钟，就是用来定义两个关联事件的发生次序，即‘happens before’。而对于不关联的事件，逻辑时钟并不能决定其先后，所以说这种‘happens before’的关系，是一种偏序关系。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d3e996a19c7cd9a3870c9f8e14b510a1.png" alt="image.png" title="image.png"></p>
+<p>图和例子来自于这篇<a href="https://yq.aliyun.com/go/articleRenderRedirect?url=https%3A%2F%2Fwww.cnblogs.com%2Fbangerlee%2Fp%2F5448766.html">博客</a><br>
+此图中，箭头表示进程间通讯，ABC分别代表分布式系统中的三个进程。<br>
+逻辑时钟的算法其实很简单：每个事件对应一个Lamport时间戳，初始值为0<br>
+如果事件在节点内发生，时间戳加1<br>
+如果事件属于发送事件，时间戳加1并在消息中带上该时间戳<br>
+如果事件属于接收事件，时间戳 = Max(本地时间戳，消息中的时间戳) + 1<br>
+这样，所有关联的发送接收事件，我们都能保证发送事件的时间戳小于接收事件。如果两个事件之间没有关联，比如说A3和B5，他们的逻辑时间一样。正是由于他们没有关系，我们可以随意约定他们之间的发生顺序。比如说我们规定，当Lamport时间戳一样时，A进程的事件发生早于B进程早于C进程，这样我们可以得出A3 ‘happens before’ B5。而实际在物理世界中，明显B5是要早于A3发生的，但这都没有关系。</p>
+<p>逻辑时钟貌似目前并没有被广泛的应用，除了DynamoDB使用了vector clock来解决多版本的先后问题（如果有其他实际应用的话请指出，可能是我孤陋寡闻了），Google的Spanner 也是采用物理的原子时钟来解决时钟问题。但是从Larmport大师的逻辑时钟算法上，已经可以看到一些一致性协议的影子。</p>
+<h2 id="replicated-state-machine">Replicated State Machine</h2>
+<p>说到一致性协议，我们通常就会讲到复制状态机。因为通常我们会用复制状态机加上一致性协议算法来解决分布式系统中的高可用和容错。许多分布式系统，都是采用复制状态机来进行副本之间的数据同步，比如HDFS，Chubby和Zookeeper。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8e571d16292bb63f45ce076ff7694d.png" alt="image.png" title="image.png"><br>
+所谓复制状态机，就是在分布式系统的每一个实例副本中，都维持一个持久化的日志，然后用一定的一致性协议算法，保证每个实例的这个log都完全保持一致，这样，实例内部的状态机按照日志的顺序回放日志中的每一条命令，这样客户端来读时，在每个副本上都能读到一样的数据。复制状态机的核心就是图中 的Consensus模块，即今天我们要讨论的Paxos，ZAB，Raft等一致性协议算法。</p>
+<h2 id="paxos">Paxos</h2>
+<p>Paxos是Lamport大神在90年代提出的一致性协议算法，大家一直都觉得难懂，所以Lamport在2001又发表了一篇新的论文《Paxos made simple》，在文中他自己说Paxos是世界上最简单的一致性算法，非常容易懂……但是业界还是一致认为Paxos比较难以理解。在我看过Lamport大神的论文后，我觉得，除去复杂的正确性论证过程，Paxos协议本身还是比较好理解的。但是，Paxos协议还是过于理论，离具体的工程实践还有太远的距离。我一开始看Paxos协议的时候也是一头雾水，看来看去发现Paxos协议只是为了单次事件答成一致，而且答成一致后的值无法再被修改，怎么用Paxos去实现复制状态机呢？另外，Paxos协议答成一致的值只有Propose和部分follower知道，这协议到底怎么用……但是，如果你只是把Paxos协议当做一个理论去看，而不是考虑实际工程上会遇到什么问题的话，会容易理解的多。Lamport的论文中对StateMachine的应用只有一个大概的想法，并没有具体的实现逻辑，想要直接把Paxos放到复制状态机里使用是不可能的，得在Paxos上补充很多的东西。这些是为什么Paxos有这么多的变种。</p>
+<h3 id="basic-paxos">Basic-Paxos</h3>
+<p>Basic-Paxos即Lamport最初提出的Paxos算法，其实很简单，用三言两语就可以讲完，下面我尝试着用我自己的语言描述下Paxos协议，然后会举出一个例子。要理解Paxos，只要记住一点就好了，Paxos只能为一个值形成共识，一旦Propose被确定，之后值永远不会变，也就是说整个Paxos Group只会接受一个提案（或者说接受多个提案，但这些提案的值都一样）。至于怎么才能接受多个值来形成复制状态机，大家可以看下一节Multi-Paxos.</p>
+<p>Paxos协议中是没有Leader这个概念的，除去Learner（只是学习Propose的结果，我们可以不去讨论这个角色），只有Proposer和Acceptor。Paxos并且允许多个Proposer同时提案。Proposer要提出一个值让所有Acceptor答成一个共识。首先是Prepare阶段，Proposer会给出一个ProposeID n（注意，此阶段Proposer不会把值传给Acceptor）给每个Acceptor，如果某个Acceptor发现自己从来没有接收过大于等于n的Proposer，则会回复Proposer，同时承诺不再接收ProposeID小于等于n的提议的Prepare。如果这个Acceptor已经承诺过比n更大的propose，则不会回复Proposer。如果Acceptor之前已经Accept了（完成了第二个阶段）一个小于n的Propose，则会把这个Propose的值返回给Propose，否则会返回一个null值。当Proposer收到大于半数的Acceptor的回复后，就可以开始第二阶段accept阶段。但是这个阶段Propose能够提出的值是受限的，只有它收到的回复中不含有之前Propose的值，他才能自由提出一个新的value，否则只能是用回复中Propose最大的值做为提议的值。Proposer用这个值和ProposeID n对每个Acceptor发起Accept请求。也就是说就算Proposer之前已经得到过acceptor的承诺，但是在accept发起之前，Acceptor可能给了proposeID更高的Propose承诺，导致accept失败。也就是说由于有多个Proposer的存在，虽然第一阶段成功，第二阶段仍然可能会被拒绝掉。<br>
+下面我举一个例子，这个例子来源于这篇<a href="https://yq.aliyun.com/go/articleRenderRedirect?url=https%3A%2F%2Fwww.cnblogs.com%2Fstudy-everyday%2Fp%2F7279829.html">博客</a></p>
+<p>假设有Server1，Server2， Server3三个服务器，他们都想通过Paxos协议，让所有人答成一致他们是leader，这些Server都是Proposer角色，他们的提案的值就是他们自己server的名字。他们要获取Acceptor1~3这三个成员同意。首先Server2发起一个提案【1】,也就是说ProposeID为1，接下来Server1发起来一个提案【2】,Server3发起一个提案【3】.</p>
+<p>首先是Prepare阶段：<br>
+假设这时Server1发送的消息先到达acceptor1和acceptor2，它们都没有接收过请求，所以接收该请求并返回【2，null】给Server1，同时承诺不再接受编号小于2的请求；<br>
+  紧接着，Server2的消息到达acceptor2和acceptor3，acceptor3没有接受过请求，所以返回proposer2 【1，null】，并承诺不再接受编号小于1的消息。而acceptor2已经接受Server1的请求并承诺不再接收编号小于2的请求，所以acceptor2拒绝Server2的请求；<br>
+  最后，Server3的消息到达acceptor2和acceptor3，它们都接受过提议，但编号3的消息大于acceptor2已接受的2和acceptor3已接受的1，所以他们都接受该提议，并返回Server3 【3，null】；<br>
+  此时，Server2没有收到过半的回复，所以重新取得编号4，并发送给acceptor2和acceptor3，此时编号4大于它们已接受的提案编号3，所以接受该提案，并返回Server2 【4，null】。</p>
+<p>接下来进入Accept阶段，<br>
+Server3收到半数以上（2个）的回复，并且返回的value为null，所以，Server3提交了【3，server3】的提案。<br>
+Server1在Prepare阶段也收到过半回复，返回的value为null，所以Server1提交了【2，server1】的提案。<br>
+Server2也收到过半回复，返回的value为null，所以Server2提交了【4，server2】的提案。<br>
+Acceptor1和acceptor2接收到Server1的提案【2，server1】，acceptor1通过该请求，acceptor2承诺不再接受编号小于4的提案，所以拒绝；<br>
+Acceptor2和acceptor3接收到Server2的提案【4，server2】，都通过该提案；<br>
+Acceptor2和acceptor3接收到Server3的提案【3，server3】，它们都承诺不再接受编号小于4的提案，所以都拒绝。<br>
+此时，过半的acceptor（acceptor2和acceptor3）都接受了提案【4，server2】，learner感知到提案的通过，learner开始学习提案，所以server2成为最终的leader。</p>
+<h3 id="multi-paxos">Multi-Paxos</h3>
+<p>刚才我讲了，Paxos还过于理论，无法直接用到复制状态机中，总的来说，有以下几个原因</p>
+<ul>
+<li>Paxos只能确定一个值，无法用做Log的连续复制</li>
+<li>由于有多个Proposer，可能会出现活锁，如我在上面举的例子中，Server2的一共提了两次Propose才最终让提案通过，极端情况下，次数可能会更多</li>
+<li>提案的最终结果可能只有部分Acceptor知晓，没法达到复制状态机每个instance都必须有完全一致log的需求。</li>
+</ul>
+<p>那么其实Multi-Paxos，其实就是为了解决上述三个问题，使Paxos协议能够实际使用在状态机中。解决第一个问题其实很简单。为Log Entry每个index的值都是用一个独立的Paxos instance。解决第二个问题也很简答，让一个Paxos group中不要有多个Proposer，在写入时先用Paxos协议选出一个leader（如我上面的例子），然后之后只由这个leader做写入，就可以避免活锁问题。并且，有了单一的leader之后，我们还可以省略掉大部分的prepare过程。只需要在leader当选后做一次prepare，所有Acceptor都没有接受过其他Leader的prepare请求，那每次写入，都可以直接进行Accept，除非有Acceptor拒绝，这说明有新的leader在写入。为了解决第三个问题，Multi-Paxos给每个Server引入了一个firstUnchosenIndex，让leader能够向向每个Acceptor同步被选中的值。解决这些问题之后Paxos就可以用于实际工程了。<br>
+Paxos到目前已经有了很多的补充和变种，实际上，之后我要讨论的ZAB也好，Raft也好，都可以看做是对Paxos的修改和变种，另外还有一句流传甚广的话，“世上只有一种一致性算法，那就是Paxos”。</p>
+<h2 id="zab">ZAB</h2>
+<p>ZAB即Zookeeper Atomic BoardCast，是Zookeeper中使用的一致性协议。ZAB是Zookeeper的专用协议，与Zookeeper强绑定，并没有抽离成独立的库，因此它的应用也不是很广泛，仅限于Zookeeper。但ZAB协议的论文中对ZAB协议进行了详细的证明，证明ZAB协议是能够严格满足一致性要求的。</p>
+<p>ZAB随着Zookeeper诞生于2007年，此时Raft协议还没有发明，根据ZAB的论文，之所以Zookeeper没有直接使用Paxos而是自己造轮子，是因为他们认为Paxos并不能满足他们的要求。比如Paxos允许多个proposer，可能会造成客户端提交的多个命令没法按照FIFO次序执行。同时在恢复过程中，有一些follower的数据不全。这些断论都是基于最原始的Paxos协议的，实际上后来一些Paxos的变种，比如Multi-Paxos已经解决了这些问题。当然我们只能站在历史的角度去看待这个问题，由于当时的Paxos并不能很好的解决这些问题，因此Zookeeper的开发者创造了一个新的一致性协议ZAB。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/81f5d7874e4a1af1935258d582f094f9.png" alt="image.png" title="image.png"></p>
+<p>ZAB其实和后来的Raft非常像，有选主过程，有恢复过程，写入也是两阶段提交，先从leader发起一轮投票，获得超过半数同意后，再发起一次commit。ZAB中每个主的epoch number其实就相当于我接下来要讲的Raft中的term。只不过ZAB中把这个epoch number和transition number组成了一个zxid存在了每个entry中。</p>
+<p>ZAB在做log复制时，两阶段提交时，一个阶段是投票阶段，只要收到过半数的同意票就可以，这个阶段并不会真正把数据传输给follower，实际作用是保证当时有超过半数的机器是没有挂掉，或者在同一个网络分区里的。第二个阶段commit，才会把数据传输给每个follower，每个follower（包括leader）再把数据追加到log里，这次写操作就算完成。如果第一个阶段投票成功，第二个阶段有follower挂掉，也没有关系，重启后leader也会保证follower数据和leader对其。如果commit阶段leader挂掉，如果这次写操作已经在至少一个follower上commit了，那这个follower一定会被选为leader，因为他的zxid是最大的，那么他选为leader后，会让所有follower都commit这条消息。如果leader挂时没有follower commit这条消息，那么这个写入就当做没写完。</p>
+<p>由于只有在commit的时候才需要追加写日志，因此ZAB的log，只需要append-only的能力，就可以了。</p>
+<p>另外，ZAB支持在从replica里做stale read，如果要做强一致的读，可以用sync read，原理也是先发起一次虚拟的写操作，到不做任何写入，等这个操作完成后，本地也commit了这次sync操作，再在本地replica上读，能够保证读到sync这个时间点前所有的正确数据，而Raft所有的读和写都是经过主节点的</p>
+<h2 id="raft">Raft</h2>
+<p>Raft是斯坦福大学在2014年提出的一种新的一致性协议。作者表示之所以要设计一种全新的一致性协议，是因为Paxos实在太难理解，而且Paxos只是一个理论，离实际的工程实现还有很远的路。因此作者狠狠地吐槽了Paxos一把：</p>
+<ol>
+<li>Paxos协议中，是不需要Leader的，每个Proposer都可以提出一个propose。相比Raft这种一开始设计时就把选主和协议达成一致分开相比，Paxos等于是把选主和propose阶段杂糅在了一起，造成Paxos比较难以理解。</li>
+<li>最原始的Paxos协议只是对单一的一次事件答成一致，一旦这个值被确定，就无法被更改，而在我们的现实生活中，包括我们数据库的一致性，都需要连续地对log entry的值答成一致，所以单单理解Paxos协议本身是不够的，我们还需要对Paxos协议进行改进和补充，才能真正把Paxos协议应用到工程中。而对Paxos协议的补充本身又非常复杂，而且虽然Paxos协议被Lamport证明过，而添加了这些补充后，这些基于Paxos的改进算法，如Multi-Paxos，又是未经证明的。</li>
+<li>第三个槽点是Paxos协议只提供了一个非常粗略的描述，导致后续每一个对Paxos的改进，以及使用Paxos的工程，如Google的Chubby，都是自己实现了一套工程来解决Paxos中的一些具体问题。而像Chubby的实现细节其实并没有公开。也就是说要想在自己的工程中使用Paxos，基本上每个人都需要自己定制和实现一套适合自己的Paxos协议。</li>
+</ol>
+<p>因此，Raft的作者在设计Raft的时候，有一个非常明确的目标，就是让这个协议能够更好的理解，在设计Raft的过程中，如果遇到有多种方案可以选择的，就选择更加容易理解的那个。作者举了一个例子。在Raft的选主阶段，本来可以给每个server附上一个id,大家都去投id最大的那个server做leader，会更快地达成一致（类似ZAB协议），但这个方案又增加了一个serverid的概念，同时在高id的server挂掉时，低id的server要想成为主必须有一个等待时间，影响可用性。因此Raft的选主使用了一个非常简单的方案：每个server都随机sleep一段时间，最早醒过来的server来发起一次投票，获取了大多数投票即可为主。在通常的网络环境下，最早发起投票的server也会最早收到其他server的赞成票，因此基本上只需要一轮投票就可以决出leader。整个选主过程非常简单明了。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/cc62c8e44051bf4d348cc9784cdc2ba6.png" alt="image.png" title="image.png"></p>
+<p>除了选主，整个Raft协议的设计都非常简单。leader和follower之间的交互（如果不考虑snapshot和改变成员数量）一共只有2个RPC call。其中一个还是选主时才需要的RequestVote。也就是说所有的数据交互，都只由AppendEntries 这一个RPC完成。<br>
+理解Raft算法，首先要理解Term这个概念。每个leader都有自己的Term，而且这个term会带到log的每个entry中去，来代表这个entry是哪个leader term时期写入的。另外Term相当于一个lease。如果在规定的时间内leader没有发送心跳（心跳也是AppendEntries这个RPC call）,Follower就会认为leader已经挂掉，会把自己收到过的最高的Term加上1做为新的term去发起一轮选举。如果参选人的term还没自己的高的话，follower会投反对票，保证选出来的新leader的term是最高的。如果在time out周期内没人获得足够的选票（这是有可能的），则follower会在term上再加上1去做新的投票请求，直到选出leader为止。最初的raft是用c语言实现的，这个timeout时间可以设置的非常短，通常在几十ms，因此在raft协议中，leader挂掉之后基本在几十ms就能够被检测发现，故障恢复时间可以做到非常短。而像用Java实现的Raft库，如Ratis，考虑到GC时间，我估计这个超时时间没法设置这么短。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d2cc2b3e7fe8965dc467e120666f2866.png" alt="image.png" title="image.png"><br>
+在Leader做写入时也是一个两阶段提交的过程。首先leader会把在自己的log中找到第一个空位index写入，并通过AppendEntries这个RPC把这个entry的值发给每个follower，如果收到半数以上的follower（包括自己）回复true，则再下一个AppendEntries中，leader会把committedIndex加1，代表写入的这个entry已经被提交。如在下图中，leader将x=4写入index=8的这个entry中，并把他发送给了所有follower，在收到第一台（自己），第三台，第五台（图中没有画index=8的entry，但因为这台服务器之前所有的entry都和leader保持了一致，因此它一定会投同意），那么leader就获得了多数票，再下一个rpc中，会将Committed index往前挪一位，代表index&lt;=8的所有entry都已经提交。至于第二台和第四台服务器，log内容已经明显落后，这要么是因为前几次rpc没有成功。leader会无限重试直到这些follower和leader的日志追平。另外一个可能是这两台服务器重启过，处于恢复状态。那么这两台服务器在收到写入index=8的RPC时，follower也会把上一个entry的term和index发给他们。也就是说prevLogIndex=7，prevLogTerm=3这个信息会发给第二台服务器，那么对于第二台服务器，index=7的entry是空的，也就是log和leader不一致，他会返回一个false给leader，leader会不停地从后往前遍历，直到找到一个entry与第二台服务器一致的，从这个点开始重新把leader的log内容发送给该follower，即可完成恢复。raft协议保证了所有成员的replicated log中每个index位置，如果他们的term一致，内容也一定一致。如果不一致，leader一定会把这个index的内容改写成和leader一致。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3db0704d4b67a57973a61b609ef0dff2.png" alt="image.png" title="image.png"></p>
+<p>其实经过刚才我的一些描述，基本上就已经把Raft的选主，写入流程和恢复基本上都讲完了。从这里，我们可以看出Raft一些非常有意思的地方。</p>
+<p>第一个有意思的地方是Raft的log的entry是可能被修改的，比如一个follower接收了一个leader的prepare请求，把值写入了一个index，而这个leader挂掉，新选出的leader可能会重新使用这个index，那么这个follower的相应index的内容，会被改写成新的内容。这样就造成了两个问题，首先第一个，raft的log无法在append-only的文件或者文件系统上去实现，而像ZAB，Paxos协议，log只会追加，只要求文件系统有append的能力即可，不需要随机访问修改能力。<br>
+第二个有意思的地方是，为了简单，Raft中只维护了一个Committed index，也就是任何小于等于这个committedIndex的entry，都是被认为是commit过的。这样就会造成在写入过程中，在leader获得大多数选票之前挂掉（或者leader在写完自己的log之后还没来得及通知到任何follower就挂掉），重启后如果这个server继续被选为leader，这个值仍然会被commit永久生效。因为leader的log中有这个值，leader一定会保证所有的follower的log都和自己保持一致。而后续的写入在增长committedIndex后，这个值也默认被commit了。</p>
+<p>举例来说，现在有5台服务器，其中S1为leader，但是当他在为index=1的entry执行写入时，先写到了自己的log中，还没来得及通知其他server append entry就宕机了。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d013273b4f34b20c34e911cf9a73f20d.png" alt="image.png" title="image.png"><br>
+当S1重启后，任然有可能被重新当选leader，当S1重新当选leader后，仍然会把index=1的这个entry复制给每台服务器（但是不会往前移动Committed index）<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/57fb2d1f746579e082d3f1b4b0f65122.png" alt="image.png" title="image.png"><br>
+此时S1又发生一次写入，这次写入完成后，会把Committed index移动到2的位置，因此index=1的entry也被认为已经commit了。<br>
+<img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/529fd591eca61227f7abbf930ad74546.png" alt="image.png" title="image.png"><br>
+这个行为有点奇怪，因为这样等于raft会让一个没有获得大多数人同意的值最终commit。这个行为取决于leader，如果上面的例子中S1重启后没有被选为leader，index=1的entry内容会被新leader的内容覆盖，从而不会提交未经过表决的内容。</p>
+<p>虽然说这个行为是有点奇怪，但是不会造成任何问题，因为leader和follower还是会保持一致，而且在写入过程中leader挂掉，对客户端来说是本来就是一个未决语义，raft论文中也指出，如果用户想要exactly once的语义，可以在写入的时候加入一个类似uuid的东西，在写入之前leader查下这个uuid是否已经写入。那么在一定程度上，可以保证exactly once的语义。</p>
+<p>Raft的论文中也比较了ZAB的算法，文中说ZAB协议的一个缺点是在恢复阶段需要leader和follower来回交换数据，这里我没太明白，据我理解，ZAB在重新选主的过程中，会选择Zxid最大的那个从成为主，而其他follower会从leader这里补全数据，并不会出现leader从follower节点补数据这一说。</p>
+<h2 id="后话">后话</h2>
+<p>目前，经过改进的Paxos协议已经用在了许多分布式产品中，比如说Chubby，PaxosStore，阿里云的X-DB，以及蚂蚁的OceanBase，都选用了Paxos协议，但他们都多多少少做了一些补充和改进。而像Raft协议，普遍认为Raft协议只能顺序commit entry，性能没有Paxos好，但是TiKV中使用了Raft，其公开的文章宣传对Raft做了非常多的优化，使Raft的性能变的非常可观。阿里的另外一个数据库PolarDB，也是使用了改进版的Parallel-Raft，使Raft实现了并行提交的能力。相信未来会有更多的基于Paxos/Raft的产品会面世，同时也对Raft/Paxos也会有更多的改进。</p>
+<h2 id="参考文献">参考文献</h2>
+<ol>
+<li>《Time, clocks, and the ordering of events in a distributed system》</li>
+<li>《Implementing fault-tolerant services using the state machine approach- A tutorial》</li>
+<li>《Paxos Made Simple》</li>
+<li>《Paxos made live- An engineering perspective》</li>
+<li>《Multi-Paxos》（Standford大学的一个ppt）</li>
+<li>《Zab- High-performance broadcast for primary-backup systems》</li>
+<li>《In search of an understandable consensus algorithm》（raft）</li>
+</ol>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">Justice</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+      0001-01-01 10:00
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    
+    
+  </div>
+</div>
+
+    <footer class="post-footer">
+      
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7hash%E7%AE%97%E6%B3%95/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default"></span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        
+          <a class="next" href="/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95%E4%B9%8Bhermes/">
+            <span class="next-text nav-default"></span>
+            <span class="prev-text nav-mobile">下一篇</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "ZhuZhengyi/gh_comment"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+  
+
+  
+
+  
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+  
+    <a href="mailto:justice_103@126.com" rel="me noopener" class="iconfont"
+      title="email" >
+      <svg class="icon" viewBox="0 0 1451 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="36" height="36">
+  <path d="M664.781909 681.472759 0 97.881301C0 3.997201 71.046997 0 71.046997 0L474.477909 0 961.649408 0 1361.641813 0C1361.641813 0 1432.688811 3.997201 1432.688811 97.881301L771.345323 681.472759C771.345323 681.472759 764.482731 685.154773 753.594283 688.65053L753.594283 688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858L682.561621 688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759L664.781909 681.472759ZM718.063616 811.603883C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633 0 212.052267 0 212.052267L0 942.809523C0 942.809523 0 1024 83.726336 1024L682.532949 1024 753.579947 1024 1348.948139 1024C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523L1432.688811 212.052267C1432.688811 212.052267 893.138176 701.759633 817.019477 767.734955 777.248 802.205449 742.347691 811.03081 718.063616 811.603883L718.063616 811.603883Z"></path>
+</svg>
+
+    </a>
+
+
+<a href="https://justice.bj.cn/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2000 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        Justice
+        
+      </span></span>
+
+  
+  
+    <span id="busuanzi_container">
+      访客数/访问量：<span id="busuanzi_value_site_uv"></span>/<span id="busuanzi_value_site_pv"></span>
+    </span>
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css"
+    integrity="sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG"
+    crossorigin="anonymous">
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js"
+    integrity="sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1"
+    crossorigin="anonymous"></script>
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous" onload="renderMathInElement(document.body);">
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        
+      });
+    });
+  </script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+
+
+
+  <script>
+    $("#openSearch, #openSearchMobile").click(function(){
+      $(".modal-dialog").addClass("visible");
+    });
+
+    $("#closeSearch").click(function(){
+      $(".modal-dialog").removeClass("visible");
+    });
+
+    $(document).click(function(event) {
+    
+      if (!$(event.target).closest(".modal-content, #openSearch, #openSearchMobile").length) {
+        $("body").find(".modal-dialog").removeClass("visible");
+      }
+    });
+  </script>
+
+
+
+
+
+</body>
+</html>
