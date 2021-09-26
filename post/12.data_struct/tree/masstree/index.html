@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>MassTree - Justice的小站</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="Justice" />
+  <meta name="description" content="MassTree 简介 masstree 来源于 2012 年发表的论文(Cache craftiness for fast multicore key-value storage)，可以理解为 B&#43; Tree 和 Radix Tree 的混合体，即将键切分成多个部分，每个部分为一个节点；" />
+
+  <meta name="keywords" content="Hugo, theme, jane" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.83.1" />
+
+
+<link rel="canonical" href="http://justice.bj.cn/post/12.data_struct/tree/masstree/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.b3a8813c06e6d785beba22bf8264e174fa2cb3a396b22f9ba24e2c00c18aaf7f.css" integrity="sha256-s6iBPAbm14W&#43;uiK/gmThdPoss6OWsi&#43;bok4sAMGKr38=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="MassTree" />
+<meta property="og:description" content="MassTree 简介 masstree 来源于 2012 年发表的论文(Cache craftiness for fast multicore key-value storage)，可以理解为 B&#43; Tree 和 Radix Tree 的混合体，即将键切分成多个部分，每个部分为一个节点；" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://justice.bj.cn/post/12.data_struct/tree/masstree/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2020-07-08T00:02:06&#43;08:00" />
+<meta property="article:modified_time" content="2020-07-08T00:02:06&#43;08:00" /><meta property="og:site_name" content="Justice的小站" />
+
+<meta itemprop="name" content="MassTree">
+<meta itemprop="description" content="MassTree 简介 masstree 来源于 2012 年发表的论文(Cache craftiness for fast multicore key-value storage)，可以理解为 B&#43; Tree 和 Radix Tree 的混合体，即将键切分成多个部分，每个部分为一个节点；"><meta itemprop="datePublished" content="2020-07-08T00:02:06&#43;08:00" />
+<meta itemprop="dateModified" content="2020-07-08T00:02:06&#43;08:00" />
+<meta itemprop="wordCount" content="2151">
+<meta itemprop="keywords" content="数据结构,tree,hash," /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MassTree"/>
+<meta name="twitter:description" content="MassTree 简介 masstree 来源于 2012 年发表的论文(Cache craftiness for fast multicore key-value storage)，可以理解为 B&#43; Tree 和 Radix Tree 的混合体，即将键切分成多个部分，每个部分为一个节点；"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Justice's Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/">主页</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/post/">点滴</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/tags/">标签</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/categories/">分类</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+      <li class="mobile-menu-item">
+        <a id="openSearchMobile" class="mobile-menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+    
+<div class="modal-dialog">
+    
+    <div class="modal-content">
+      <div id="closeSearch" title="Close" class="close">X</div>
+      <div class="modal-header">
+        <div class="modal-title">Search</div>
+      </div>
+      <div class="modal-body">
+          <script>
+            (function() {
+              var cx = '';
+              var gcse = document.createElement('script');
+              gcse.type = 'text/javascript';
+              gcse.async = true;
+              gcse.src = (document.location.protocol == 'https:' ? 'https:' :
+                  'http:') +
+                '//cse.google.com/cse.js?cx=' + cx;
+              var s = document.getElementsByTagName('script')[0];
+              s.parentNode.insertBefore(gcse, s);
+            })();
+          </script>
+          <gcse:search></gcse:search>
+      </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Justice's Blog
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/">主页</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/post/">点滴</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/tags/">标签</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/categories/">分类</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+      <li class="menu-item">
+        <a id="openSearch" class="menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title">MassTree</h1>
+      
+      <div class="post-meta">
+        <time datetime="2020-07-08" class="post-time">
+          2020-07-08
+        </time>
+        
+        
+
+        
+        
+          <span id="busuanzi_container_page_pv">
+            | 阅读 <span id="busuanzi_value_page_pv"></span>
+          </span>
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#特点">特点</a></li>
+    <li><a href="#结构">结构</a></li>
+    <li><a href="#mass-tree-算法"><strong>Mass Tree 算法</strong></a></li>
+    <li><a href="#并发策略"><strong>并发策略</strong></a></li>
+    <li><a href="#下降流程"><strong>下降流程</strong></a></li>
+    <li><a href="#插入流程"><strong>插入流程</strong></a></li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#总结"><strong>总结</strong></a></li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <h1 id="masstree">MassTree</h1>
+<h2 id="简介">简介</h2>
+<p>masstree 来源于 2012 年发表的论文(<a href="https://pdos.csail.mit.edu/papers/masstree:eurosys12.pdf">Cache craftiness for fast multicore key-value storage</a>)，<strong>可以理解为 B+ Tree 和 Radix Tree 的混合体</strong>，即将键切分成多个部分，每个部分为一个节点；每个节点内部又是一个 B+ Tree，兼顾空间和性能。</p>
+<h2 id="特点">特点</h2>
+<ul>
+<li>Masstree 将变长键划分成多个固长部分，每个固长部分可以通过 int 类型表示，而不是 char 类型。由于处理器处理 int 类型比较操作的速度远远快于 char 数组的比较，因此 Masstree 通过 int 类型的比较进一步加速了查找过程。固定长度可以设置为 CPU 缓存行长度，以增加 CPU 缓存效率。</li>
+<li>每个节点是一个 B+ Tree，因此 CPU 在查询的时候可以将节点所代表的 B+ Tree 加载到 CPU 缓存中，以增加 CPU 缓存命中率。</li>
+<li>其并发控制用到了 Read-Copy-Update(RCU)。读不因任何数据更新而阻塞，但更新数据的时候，需要先复制一份副本，在副本上完成修改，再一次性地替换旧数据。因此读不会造成 CPU 缓存无效。</li>
+</ul>
+<h2 id="结构">结构</h2>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/14-10-57-34-image-20190528102500578-9312132.png" alt="image-20190528102500578"></p>
+<h2 id="mass-tree-算法"><strong>Mass Tree 算法</strong></h2>
+<h2 id="并发策略"><strong>并发策略</strong></h2>
+<p>Mass Tree 的并发策略和 OLFIT Tree 是相似的：</p>
+<ol>
+<li>fine-grained locking，即节点锁，解决 write-write 竞争，同一时刻只有一个线程可以对当前节点进行写操作</li>
+<li>optimistic concurrency control，即节点  <code>version</code> (uint32_t)，解决 read-write 竞争，读开始前和读结束后都需要获取当前节点的最新 version，来判断在读过程中当前节点是否发生了写操作（插入或分裂），同时对节点的写操作都需要先修改 version，在插入 key 之前需要设置  <code>inserting</code>  标记，插入完成之后将 insert 的 vinsert + 1；在分裂之前需要设置  <code>splitting</code>  标记，分裂完成之后将 split 的 vsplit + 1。</li>
+</ol>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/14-11-00-01-2020-11-14-10-59-56-image.png" alt=""></p>
+<p>和  <code>permutation</code>  一样，<code>version</code>  也被划分成了多个域，除了带有 insert 和 split 信息之外，还包含一个 lock bit，用于加锁；一个 root bit，用于指示否是根节点；一个 border bit，用于指示是否是 border node；一位 deleted 位，用于指示这个节点是否被标记为删除。</p>
+<h2 id="下降流程"><strong>下降流程</strong></h2>
+<p>对于每次插入，获取，删除操作，都需要从 root（可能是整棵树的根节点，也可能是某棵子树的根节点） 下降到对应的叶节点（border node）。</p>
+<p>首先，在开始读取节点之前，必须获得节点的 stable version（图中橙色方块），即  <code>version</code>  中的  <code>inserting</code>  和  <code>splitting</code>  位都为 0。</p>
+<p>其次，在下降之前，需要获取最新的 root，因为在开始下降前，根节点可能分裂了，导致其发生了改变（图中蓝色方块）。</p>
+<p>最后，如果当前节点已经是叶节点，那么可以返回，否则需要进行下降，读取内部结点根据  <code>key[x, x+8)</code>(8 字节) 获得下降节点之后，分为 3 种情况处理：</p>
+<ol>
+<li>case 1 那行伪代码可以这样用 C 语言表示：</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c" data-lang="c"><span class="n">uint32_t</span> <span class="n">before</span> <span class="o">=</span> <span class="n">node_get_stable_version</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+<span class="c1">// read node here
+</span><span class="c1"></span><span class="n">uint32_t</span> <span class="n">after</span> <span class="o">=</span> <span class="n">node_get_version</span><span class="p">(</span><span class="n">n</span><span class="p">);</span> <span class="c1">// no need to be stable, just latest version
+</span><span class="c1"></span><span class="k">if</span> <span class="p">((</span><span class="n">before</span> <span class="o">^</span> <span class="n">after</span> <span class="o">==</span> <span class="n">LOCK_BIT</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="n">before</span> <span class="o">^</span> <span class="n">after</span> <span class="o">==</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="c1">// neither insert nor split happened
+</span></code></pre></td></tr></table>
+</div>
+</div><p>节点在我们读取期间没有发生任何变化，我们可以安全地进行下降；</p>
+<ol start="2">
+<li>
+<p>节点发生了变化，而且是分裂，那么我们需要从根节点重新进行下降（内部节点没有相互连接起来，所以不能像 Blink Tree 那样获取右节点）；</p>
+</li>
+<li>
+<p>节点发生了变化，但只是插入，只需要重新对当前节点进行下降</p>
+</li>
+</ol>
+<blockquote>
+<p>注意第二个黄色方块，这一行非常关键，如果你细看下的话，它似乎可以挪到 case 1 的 if 语句里面，但实际上不能这样做。因为如果当前节点的孩子节点发生了分裂，但是还没来得及将新节点插入到当前节点，对调这两行代码，可能会导致下降到错误的节点。</p>
+</blockquote>
+<h2 id="插入流程"><strong>插入流程</strong></h2>
+<p>作者只给出了读取伪代码，这里给出插入伪代码。</p>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/14-11-02-06-2020-11-14-11-01-59-image.png" alt=""></p>
+<p>当我们通过  <code>findborder</code>  下降到叶节点后，需要对其加锁（图中蓝色方块），但是此时并不能直接将 key 进行插入，当两个写线程同时下降到同一个叶节点时，只有一个线程可以进行写入，所以加锁后需要查看在加锁前是否有其他线程对这个节点进行了写入，如果有的话需要查看是否需要右移，这里的逻辑和 Blink Tree 是一样的。</p>
+<p>当我们成功加锁并且定位到正确的叶节点之后，可以进行写入，结果有 4 种：</p>
+<ol>
+<li>插入 key 成功或 key 已经存在；</li>
+<li>需要下降到下一层，同时需要增加索引的偏移；</li>
+<li>存在索引冲突，比如 &ldquo;12345678AA&rdquo; 和 &ldquo;12345678BB&rdquo;，此时需要创建一棵子树，存放 &ldquo;AA&rdquo; 和 &ldquo;BB&rdquo;，同时需要把原来存放 &ldquo;AA&rdquo; 的地方替换成这棵子树的根节点</li>
+<li>节点已满，需要分裂之后再次插入（见下一小节）</li>
+</ol>
+<blockquote>
+<p>橙色方块在下面删除流程中介绍</p>
+</blockquote>
+<h2 id="实现">实现</h2>
+<ul>
+<li>
+<p><a href="https://link.zhihu.com/?target=https%3A//github.com/UncP/aili">UncP/aili</a>，没有实现删除操作；</p>
+</li>
+<li>
+<p><a href="https://link.zhihu.com/?target=https%3A//github.com/rmind/masstree">https://github.com/rmind/masstree</a>，采用了激进生成子树的策略，缺点就是 cache locality 在有些情况下不好。</p>
+</li>
+<li>
+<p>论文作者的实现：<a href="https://link.zhihu.com/?target=https%3A//github.com/kohler/masstree-beta">https://github.com/kohler/masstree-beta</a>。</p>
+</li>
+</ul>
+<h2 id="总结"><strong>总结</strong></h2>
+<ol>
+<li>Trie 和 B+ 两种索引树的结合，使得在下降过程中的重试不需要从整棵树的根节点开始，同时加快拥有相同前缀的 key 的处理速度</li>
+<li>具体的内部结点与外部节点的结构</li>
+<li>fine-grained locking 写以及 lock-free 读</li>
+<li>比较具体的节点删除机制</li>
+<li>较小的节点减少了线程的竞争</li>
+</ol>
+<blockquote>
+<p>需要指出的是这个算法不支持性能线性扩展，不过这并不是问题。</p>
+</blockquote>
+<p>这个算法实现起来很有<strong>挑战性</strong>，个人认为主要有两个方面，第一个是对于<strong>树结构的把握</strong>，Mass Tree 是 Trie 和 B+ 树的结合。第二个是对于<strong>并发下可见性的理解</strong>，”先改哪个域后改哪个域“，”谁先可见谁后可见“，”谁何时可见“，“在哪加以及加不加 memory barrier”等等这样的问题需要花很多时间考虑，而且出现 bug 非常难调试。</p>
+<p>Mass Tree 性能比我预想中要好很多，对于均匀分布的 10 字节 key 随机插入，数据量 1000 万，在我的机器上 4 个线程可以到 500 万以上的 tps；对于分布集中的测试数据，可以到 1000 万以上。其实<strong>对于内存索引来说，cache miss 对性能造成的影响有时候是远远大于线程竞争的</strong>，所以尽管数据分布非常集中（线程竞争更多），仍然可以获得更高的性能。</p>
+<h2 id="参考">参考</h2>
+<ol>
+<li><a href="https://pdos.csail.mit.edu/papers/masstree:eurosys12.pdf">https://pdos.csail.mit.edu/papers/masstree:eurosys12.pdf</a></li>
+<li><a href="https://github.com/kohler/masstree-beta">https://github.com/kohler/masstree-beta</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/52624601">https://zhuanlan.zhihu.com/p/52624601</a></li>
+<li></li>
+</ol>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">Justice</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+      2020-07-08
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    
+    
+  </div>
+</div>
+
+    <footer class="post-footer">
+      <div class="post-tags">
+          <a href="http://justice.bj.cn/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">数据结构</a>
+          <a href="http://justice.bj.cn/tags/tree/">tree</a>
+          <a href="http://justice.bj.cn/tags/hash/">hash</a>
+          
+        </div>
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/12.data_struct/%E6%97%B6%E9%97%B4%E8%BD%AE/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default">kafka时间轮算法</span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        
+          <a class="next" href="/post/12.data_struct/tree/merkle-tree/">
+            <span class="next-text nav-default">MerkleTree</span>
+            <span class="prev-text nav-mobile">下一篇</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+
+  
+
+  <div class="post bg-white">
+      <div id="comments-gitment"></div>
+      <link rel="stylesheet" href="/lib/gitment/gitment-0.0.3.min.css">
+        <script src="/lib/gitment/gitment-0.0.3.min.js"></script>
+      <script type="text/javascript">
+      const gitment = new Gitment({
+        id: 'MassTree.md',
+        title: 'MassTree',
+        link: decodeURI(location.href),
+        desc: 'MassTree 简介 masstree 来源于 2012 年发表的论文(Cache craftiness for fast multicore key-value storage)，可以理解为 B\u002b Tree 和 Radix Tree 的混合体，即将键切分成多个部分，每个部分为一个节点；',
+        owner: 'zhengyi.zhu.hust@gmail.com',
+        repo: '',
+        oauth: {
+          client_id: '',
+          client_secret: ''
+        }
+      })
+      gitment.render('comments-gitment')
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="https://github.com/imsun/gitment">comments powered by gitment.</a></noscript>
+    </div>
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+
+
+<a href="http://justice.bj.cn/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2000 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        Justice
+        
+      </span></span>
+
+  
+  
+    <span id="busuanzi_container">
+      访客数/访问量：<span id="busuanzi_value_site_uv"></span>/<span id="busuanzi_value_site_pv"></span>
+    </span>
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css"
+    integrity="sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG"
+    crossorigin="anonymous">
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js"
+    integrity="sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1"
+    crossorigin="anonymous"></script>
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous" onload="renderMathInElement(document.body);">
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        
+      });
+    });
+  </script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+
+
+
+  <script>
+    $("#openSearch, #openSearchMobile").click(function(){
+      $(".modal-dialog").addClass("visible");
+    });
+
+    $("#closeSearch").click(function(){
+      $(".modal-dialog").removeClass("visible");
+    });
+
+    $(document).click(function(event) {
+    
+      if (!$(event.target).closest(".modal-content, #openSearch, #openSearchMobile").length) {
+        $("body").find(".modal-dialog").removeClass("visible");
+      }
+    });
+  </script>
+
+
+
+
+
+</body>
+</html>

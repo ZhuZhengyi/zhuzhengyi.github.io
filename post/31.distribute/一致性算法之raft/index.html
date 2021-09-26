@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="zh-cn" itemscope itemtype="http://schema.org/WebPage">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title> - Justice的小站</title>
+  
+
+<meta name="renderer" content="webkit" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+
+<meta name="MobileOptimized" content="width"/>
+<meta name="HandheldFriendly" content="true"/>
+
+
+<meta name="applicable-device" content="pc,mobile">
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="author" content="Justice" />
+  <meta name="description" content="Raft一致性算法 简介 Raft是斯坦福大学的Diego Ongaro、John Ousterhout两人以易理解为目标设计的一致性算法，在201" />
+
+  <meta name="keywords" content="Hugo, theme, jane" />
+
+
+
+
+
+
+<meta name="generator" content="Hugo 0.83.1" />
+
+
+<link rel="canonical" href="http://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95%E4%B9%8Braft/" />
+
+
+
+
+
+<link rel="icon" href="/favicon.ico" />
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/sass/jane.min.b3a8813c06e6d785beba22bf8264e174fa2cb3a396b22f9ba24e2c00c18aaf7f.css" integrity="sha256-s6iBPAbm14W&#43;uiK/gmThdPoss6OWsi&#43;bok4sAMGKr38=" media="screen" crossorigin="anonymous">
+
+
+
+
+
+<meta property="og:title" content="" />
+<meta property="og:description" content="Raft一致性算法 简介 Raft是斯坦福大学的Diego Ongaro、John Ousterhout两人以易理解为目标设计的一致性算法，在201" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95%E4%B9%8Braft/" /><meta property="article:section" content="post" />
+
+<meta property="og:site_name" content="Justice的小站" />
+
+<meta itemprop="name" content="">
+<meta itemprop="description" content="Raft一致性算法 简介 Raft是斯坦福大学的Diego Ongaro、John Ousterhout两人以易理解为目标设计的一致性算法，在201">
+
+<meta itemprop="wordCount" content="4397">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="Raft一致性算法 简介 Raft是斯坦福大学的Diego Ongaro、John Ousterhout两人以易理解为目标设计的一致性算法，在201"/>
+
+<!--[if lte IE 9]>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+<![endif]-->
+
+<!--[if lt IE 9]>
+  <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+
+
+
+
+</head>
+<body>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/" class="logo">Justice's Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    <li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/">主页</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/post/">点滴</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/tags/">标签</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/categories/">分类</a>
+          
+        
+      </li><li class="mobile-menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+        
+      </li>
+    
+
+    
+      <li class="mobile-menu-item">
+        <a id="openSearchMobile" class="mobile-menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+
+  
+    
+
+
+
+
+
+
+  <link rel="stylesheet" href="/lib/photoswipe/photoswipe.min.css" />
+  <link rel="stylesheet" href="/lib/photoswipe/default-skin/default-skin.min.css" />
+
+
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+  
+
+  
+    
+<div class="modal-dialog">
+    
+    <div class="modal-content">
+      <div id="closeSearch" title="Close" class="close">X</div>
+      <div class="modal-header">
+        <div class="modal-title">Search</div>
+      </div>
+      <div class="modal-body">
+          <script>
+            (function() {
+              var cx = '';
+              var gcse = document.createElement('script');
+              gcse.type = 'text/javascript';
+              gcse.async = true;
+              gcse.src = (document.location.protocol == 'https:' ? 'https:' :
+                  'http:') +
+                '//cse.google.com/cse.js?cx=' + cx;
+              var s = document.getElementsByTagName('script')[0];
+              s.parentNode.insertBefore(gcse, s);
+            })();
+          </script>
+          <gcse:search></gcse:search>
+      </div>
+    </div>
+</div>
+
+  
+
+  
+
+  <header id="header" class="header container">
+    <div class="logo-wrapper">
+  <a href="/" class="logo">
+    
+      Justice's Blog
+    
+  </a>
+</div>
+
+<nav class="site-navbar">
+  <ul id="menu" class="menu">
+    
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/">主页</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/post/">点滴</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/tags/">标签</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="http://justice.bj.cn/categories/">分类</a>
+          
+
+        
+
+      </li>
+    
+        <li class="menu-item">
+        
+          
+          
+            <a class="menu-item-link" href="https://gohugo.io" rel="noopener" target="_blank">
+              更多
+              
+              <i class="iconfont">
+                <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6C496.064 467.648 528.64 500.224 528.64 500.224 534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92 0 0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"></path>
+  <path d="M841.152 457.152c-30.528 0-54.784 24.512-54.784 54.656l0 274.752L237.696 786.56 237.696 237.696l206.016 0c6.656 0 10.752 0 13.248 0C487.68 237.696 512 213.184 512 182.848 512 152.32 487.36 128 456.96 128L183.04 128C153.216 128 128 152.576 128 182.848c0 3.136 0.256 6.272 0.768 9.28C128.256 195.136 128 198.272 128 201.408l0 639.488c0 0.064 0 0.192 0 0.256 0 0.128 0 0.192 0 0.32 0 30.528 24.512 54.784 54.784 54.784l646.976 0c6.592 0 9.728 0 11.712 0 28.736 0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344l0-20.352L896 561.408 896 512.128C896 481.792 871.424 457.152 841.152 457.152z"></path>
+</svg>
+
+              </i>
+            </a>
+          
+
+        
+
+      </li>
+    
+
+    
+    
+
+    
+      <li class="menu-item">
+        <a id="openSearch" class="menu-item-link menu-item-search" href="#">
+          <i class="iconfont">
+            <svg version="1.1" viewBox="0 0 1024 1024"
+  xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <path d="M973.81454219 973.81454219a91.78207815 91.78207815 0 0 1-129.80999631 0l-161.97482118-161.97482118a425.48527711 425.48527711 0 0 1-230.35931791 68.16531768 428.3346319 428.3346319 0 1 1 428.3346319-428.3346319 425.48527711 425.48527711 0 0 1-68.16531768 230.35931791l162.02961656 161.97482118a91.83687354 91.83687354 0 0 1-0.05479538 129.80999631zM451.67040679 145.69361559a305.97679241 305.97679241 0 1 0 0 611.95358361 305.97679241 305.97679241 0 0 0 0-611.95358361z">
+  </path>
+</svg>
+
+          </i>
+        </a>
+      </li>
+    
+  </ul>
+</nav>
+
+  </header>
+
+  <div id="mobile-panel">
+    <main id="main" class="main bg-llight">
+      <div class="content-wrapper">
+        <div id="content" class="content container">
+          <article class="post bg-white">
+    
+    <header class="post-header">
+      <h1 class="post-title"></h1>
+      
+      <div class="post-meta">
+        <time datetime="0001-01-01" class="post-time">
+          0001-01-01
+        </time>
+        
+        
+
+        
+        
+          <span id="busuanzi_container_page_pv">
+            | 阅读 <span id="busuanzi_value_page_pv"></span>
+          </span>
+        
+
+        
+        
+      </div>
+    </header>
+
+    
+    
+<div class="post-toc" id="post-toc">
+  <h2 class="post-toc-title">文章目录</h2>
+  <div class="post-toc-content">
+    <nav id="TableOfContents">
+  <ul>
+    <li><a href="#简介">简介</a></li>
+    <li><a href="#关键概念">关键概念</a>
+      <ul>
+        <li><a href="#角色">角色</a></li>
+        <li><a href="#状态机">状态机</a></li>
+        <li><a href="#任期">任期</a></li>
+        <li><a href="#计时器">计时器</a></li>
+        <li><a href="#关键数据结构">关键数据结构</a></li>
+      </ul>
+    </li>
+    <li><a href="#快照">快照</a></li>
+    <li><a href="#算法流程">算法流程</a>
+      <ul>
+        <li><a href="#启动">启动</a></li>
+        <li><a href="#选举">选举</a></li>
+        <li><a href="#日志复制">日志复制</a></li>
+        <li><a href="#配置改变">配置改变</a></li>
+      </ul>
+    </li>
+    <li><a href="#安全性">安全性</a>
+      <ul>
+        <li><a href="#日志压缩">日志压缩</a></li>
+        <li><a href="#成员变更">成员变更</a></li>
+      </ul>
+    </li>
+    <li><a href="#实现要点">实现要点</a>
+      <ul>
+        <li><a href="#预投票prevote">预投票（PreVote）</a></li>
+        <li><a href="#read">Read</a></li>
+        <li><a href="#follower-read">Follower Read</a></li>
+        <li><a href="#幽灵复现">幽灵复现</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考">参考</a></li>
+  </ul>
+</nav>
+  </div>
+</div>
+
+    
+    <div class="post-content">
+      <h1 id="raft一致性算法">Raft一致性算法</h1>
+<h2 id="简介">简介</h2>
+<ul>
+<li>
+<p><code>Raft</code>是斯坦福大学的Diego Ongaro、John Ousterhout两人以易理解为目标设计的一致性算法，在2013年发布了论文：《In Search of an Understandable Consensus Algorithm》；</p>
+</li>
+<li>
+<p>与<code>Paxos</code>相比，Raft强调的是易理解、易实现，Raft和Paxos一样只要保证超过半数的节点正常就能够提供服务；</p>
+</li>
+</ul>
+<h2 id="关键概念">关键概念</h2>
+<ul>
+<li><strong>Election</strong>(选举)：Raft的选举由定时器来触发，每个节点的选举定时器时间都是不一样的，开始时状态都为Follower某个节点定时器触发选举后Term递增，状态由Follower转为Candidate，向其他节点发起RequestVote RPC请求</li>
+<li><strong>Term</strong>(任期)：在Raft中使用了一个可以理解为周期（第几届、任期）的概念，用Term作为一个周期，每个Term都是一个连续递增的编号，每一轮选举都是一个Term周期，在一个Term中只能产生一个Leader</li>
+<li><strong>Index</strong>(日志序号)：</li>
+</ul>
+<h3 id="角色">角色</h3>
+<p>Raft集群中的节点分为以下几种角色：</p>
+<ul>
+<li><strong>Candidate</strong>(候选者)：负责选举投票，Raft刚启动时由一个节点从Follower转为Candidate发起选举，选举出Leader后从Candidate转为Leader状态；</li>
+<li><strong>Leader</strong>(领导者)：负责日志的同步管理，处理来自客户端的请求，与Follower保持这heartBeat的联系；</li>
+<li><strong>Follower</strong>(跟随者)：负责响应来自Leader或者Candidate的请求；</li>
+<li><strong>Learner</strong>(学习者)：只读节点，不参与选举投票及日志复制过程，只被动复制follower日志；</li>
+</ul>
+<h3 id="状态机">状态机</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">graph LR
+    Follower(Follower)
+    Candidate(Candidae)
+    Leader(Leader)
+    PreCandidate(PreCandidate)
+
+  S((START)) --&gt; Follower
+    Follower -- timeout preVote --&gt; PreCandidate
+    Follower -- timeout --&gt; Candidate
+    PreCandidate --quorum--&gt; Candidate
+    Candidate --elect timeout--&gt; Candidate
+    Candidate --quorum --&gt; Leader
+    Candidate --new term--&gt; Follower
+    Leader --higher term--&gt; Follower
+</code></pre></td></tr></table>
+</div>
+</div><p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-55-36-fb8549c8d081a00433750711486cd9844ecf6559.png" alt="image-20190523141929145"></p>
+<ul>
+<li>所有节点初始状态都是Follower角色；</li>
+<li>选举计时器超时，转换为Candidate进行选举</li>
+<li>Candidate收到大多数节点的选票则转换为Leader；发现Leader或者收到更高任期的请求则转换为Follower</li>
+<li>Leader在收到更高任期的请求后转换为Follower</li>
+</ul>
+<h3 id="任期">任期</h3>
+<p>Raft把时间切割为任意长度的任期，每个任期都有一个任期号，采用连续的整数。每个任期都由一次选举开始，若选举失败则这个任期内没有Leader；如果选举出了Leader则这个任期内有Leader负责集群状态管理。</p>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-57-24-image-20190523192955386.png" alt="image-20190523192955386"></p>
+<h3 id="计时器">计时器</h3>
+<p>raft定义了两种计时器：</p>
+<ul>
+<li>
+<p>选举计时器：Candidate节点在进行选举时，如果在一个选举计时器周期内，任然没有获取多数投票，将重新发起选举。 默认值是1000ms，最大值50000ms。</p>
+</li>
+<li>
+<p>心跳计时器：Follower节点在一个心跳计时器周期内没有收到Leader的心跳消息，该Follower将会转为Candidate状态，发起选举。默认值100ms，</p>
+<p>选举定时必须要大于5倍心跳定时，建议是10倍关系。</p>
+</li>
+</ul>
+<h3 id="关键数据结构">关键数据结构</h3>
+<ul>
+<li>Entry</li>
+<li>Message</li>
+<li>Peer</li>
+<li>Snapshot：</li>
+<li>HardState：持久化状态；</li>
+<li>SoftState: 内存状态；</li>
+<li>需要持久化的状态：
+<ul>
+<li>currentTerm: 当前任期；</li>
+<li>votedFor：投给票的节点ID；</li>
+<li>log[]：日志序列</li>
+</ul>
+</li>
+<li>内存中的状态：
+<ul>
+<li>commitIndex：</li>
+<li>lastApplied：</li>
+</ul>
+</li>
+<li>leader内存状态：
+<ul>
+<li>nextIndex[]：</li>
+<li>matchIndex[]：</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-57-38-image-20190523190540129.png" alt="image-20190523190540129"></p>
+<ul>
+<li>
+<p>firstLogIndex：标识当前日志序列的起始位置，如果日志不做压缩处理，也就是没有快照模块的话，那么firstLogIndex就是零值。</p>
+</li>
+<li>
+<p>lastLogIndex：</p>
+</li>
+<li>
+<p>commitIndex：表示当前已经提交的日志，也就是成功同步到majority的日志位置的最大值</p>
+</li>
+<li>
+<p>applyIndex：是已经apply到状态机的日志索引，它的值必须小于等于commitIndex，因为只有已经提交的日志才可以apply到状态机</p>
+</li>
+</ul>
+<h2 id="快照">快照</h2>
+<h2 id="算法流程">算法流程</h2>
+<p>Raft算法流程分为以下几个步骤：</p>
+<ol>
+<li>
+<p>启动阶段：系统启动时处理流程；</p>
+</li>
+<li>
+<p>选举：；</p>
+</li>
+<li>
+<p>日志复制：当选举成功产生Leader后，系统进入日志复制阶段，Leader持续将收到的客户端日志按顺序复制到Follower：</p>
+</li>
+<li>
+<p>变更：</p>
+</li>
+</ol>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/09/04-10-58-18-raft-alg.gif" alt=""></p>
+<h3 id="启动">启动</h3>
+<ol>
+<li>
+<p>启动时，所有节点(Node)均为<code>Follower</code>状态，任期<code>term</code>置为1；</p>
+</li>
+<li>
+<p>如果<code>Follower</code>节点在<code>选举超时时间</code>内未收到其他节点的append/hearbeat/snapshot消息，则状态变为<code>Candidate</code>，进入选举状态；</p>
+</li>
+</ol>
+<h3 id="选举">选举</h3>
+<ol>
+<li><code>Candidate</code>节点先给自己投一票，然后给其他节点发送<code>拉票请求</code>；</li>
+<li><code>Leader</code>,<code>Candidate</code>节点将忽略其他节点的<code>拉票请求</code>;</li>
+<li><code>Follower</code>节点收到<code>拉票请求</code>后，按如下规则处理：
+<ol>
+<li>已为其他节点投过票，忽略拉票节点当前<code>拉票请求</code>；</li>
+<li><code>拉票请求</code>中的<code>term</code>或<code>index</code>小于自身，忽略请求；</li>
+<li>否则, 该节点发送<code>投票消息</code>给<code>拉票节点</code>；</li>
+<li>同一任期内(term), 按收到请求顺序投票给至多一个候选人，</li>
+<li>该候选人的log至少要和自己一样新；</li>
+</ol>
+</li>
+<li><code>Candidate</code>节点收到<code>投票消息</code>后：
+<ol>
+<li>计算获得票数，如果票数达到多数赞成票（&gt;一半投票者），则自身当选为<code>Leader</code>，转为领导人状态, 同时向其他节点发送<code>心跳消息</code>, 并将缓存的<code>客户端请求</code>立即执行；</li>
+<li>如果收到其他节点的Leader 心跳包，且该心跳包的任期要&gt;=自身节点，则表明该其他节点已成功当选为leader，自身节点将转为<code>Follower</code>状态；</li>
+<li>否则，选举计数器超时，表明该选举周期内没有任何节点当选，接下来将<code>term</code>加1后，重新进行选举；</li>
+</ol>
+</li>
+</ol>
+<h3 id="日志复制">日志复制</h3>
+<ol>
+<li>client发送msg给Leader；</li>
+<li>leader 写 wal日志，并commit append entries rpc到所有Follower；</li>
+<li>如果leader收到follower committed ack 数 &gt; (N/2)，则apply log 到本地状态机，并返回给client；</li>
+<li>follower收到leader</li>
+</ol>
+<p><img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/09/07-18-13-28-2021-09-07-18-13-23-image.png" alt=""></p>
+<h3 id="配置改变">配置改变</h3>
+<h2 id="安全性">安全性</h2>
+<p>Raft增加了如下两条限制以保证安全性：</p>
+<ul>
+<li>
+<p>拥有最新的已提交的log entry的Follower才有资格成为Leader。</p>
+</li>
+<li>
+<p>Leader只能推进commit index来提交当前term的已经复制到大多数服务器上的日志，旧term日志的提交要等到提交当前term的日志来间接提交（log index 小于 commit index的日志被间接提交）。</p>
+</li>
+</ul>
+<h3 id="日志压缩">日志压缩</h3>
+<p>在实际的系统中，不能让日志无限增长，否则系统重启时需要花很长的时间进行回放，从而影响可用性。Raft采用对整个系统进行snapshot来解决，snapshot之前的日志都可以丢弃。</p>
+<p>每个副本独立的对自己的系统状态进行snapshot，并且只能对已经提交的日志记录进行snapshot。</p>
+<p>当Leader要发给某个日志落后太多的Follower的log entry被丢弃，Leader会将snapshot发给Follower。或者当新加进一台机器时，也会发送snapshot给它。发送snapshot使用InstalledSnapshot RPC（RPC细节参见八、Raft算法总结）。</p>
+<h3 id="成员变更">成员变更</h3>
+<p>成员变更是在集群运行过程中副本发生变化，如增加/减少副本数、节点替换等。</p>
+<p>因为各个服务器提交成员变更日志的时刻可能不同，造成各个服务器从旧成员配置（Cold）切换到新成员配置（Cnew）的时刻不同。成员变更不能影响服务的可用性，但是成员变更过程的某一时刻，可能出现在Cold和Cnew中同时存在两个不相交的多数派，进而可能选出两个Leader，形成不同的决议，破坏安全性。</p>
+<p>为了解决这一问题，Raft提出了两阶段的成员变更方法。</p>
+<p>集群先从旧成员配置Cold切换到一个过渡成员配置，称为共同一致（joint consensus），共同一致是旧成员配置Cold和新成员配置Cnew的组合Cold U Cnew，一旦共同一致Cold U Cnew被提交，系统再切换到新成员配置Cnew。</p>
+<h2 id="实现要点">实现要点</h2>
+<ul>
+<li>
+<p>Batch and Pipeline</p>
+</li>
+<li>
+<p>并行Append Log</p>
+</li>
+<li>
+<p>异步Apply log</p>
+</li>
+<li>
+<p>Snapshot</p>
+</li>
+<li>
+<p>异步 Lease Read</p>
+</li>
+<li>
+<p>ReadIndex</p>
+</li>
+</ul>
+<h3 id="预投票prevote">预投票（PreVote）</h3>
+<ul>
+<li>
+<p>问题：当一个Follower节点（A）与其他节点网络隔离时，由于心跳超时，将会变成候选人并发起选举，这时会递增Term。由于网络隔离，其选举将无法成功，于是会持续选举，导致Term不断增大。当网络恢复后，该A节点会把其Term发送给其他节点，由于该Term很大概率大于其他节点Term，从而引发其他节点进入选举流程。但此时，由于A节点的被隔离很久，日志不可能为最新的，所以其不会成为Leader，导致集群一直在选举。Raft论文中提出了<strong>PreVote</strong>算法来解决该问题。</p>
+</li>
+<li>
+<p>主要思想：在发起正式投票前，先进行预投票(pre-vote)，预投票时自身term不变，但投票tern+1。确认自己能获得集群大多数节点的投票时，才将自己的term+1，然后正式进行投票。。由此就可以避免在网络分区的时孤立节点的term持续增大，导致后续选举的反复。</p>
+</li>
+<li>
+<p>预投票是一个典型的2PC事务，</p>
+</li>
+</ul>
+<p>为此，需要增加一个新的PreCandidate状态。</p>
+<h3 id="read">Read</h3>
+<p>为保证Read操作的一致性，最简单的方法是将Read也走一遍raft log，这样性能将很差。</p>
+<p>因为leader节点能保证已经committed的log 是最新的log，所以可以直接从leader读取，为此需保证leader的有效性，有两种方式：</p>
+<h4 id="readindex-read"><strong>ReadIndex</strong> Read</h4>
+<ol>
+<li>Leader将当前自己的 commit index 记录到一个 local 变量 ReadIndex 里面。</li>
+<li>向其他节点发起一次 heartbeat，如果大多数节点返回了对应的 heartbeat response，那么 leader 就能够确定现在自己仍然是 leader。</li>
+<li>Leader 等待自己的状态机执行，直到 apply index 超过了 ReadIndex，这样就能够安全的提供 linearizable read 了。</li>
+<li>Leader 执行 read 请求，将结果返回给 client。</li>
+</ol>
+<p>注意：</p>
+<p>leader 刚通过选举成为 leader 的时候， commit index 并不能够保证是当前整个系统最新的 commit index，此时首先提交一个 no-op 的 entry，保证 leader 的 commit index 成为最新的。</p>
+<p><a href="https://jin-yang.github.io/post/golang-raft-etcd-sourcode-consistent-reading.html">https://jin-yang.github.io/post/golang-raft-etcd-sourcode-consistent-reading.html</a></p>
+<h4 id="lease-read">Lease Read</h4>
+<p>虽然 ReadIndex 比原来的 Raft log read 快了很多，但毕竟还是有 Heartbeat 的开销，在 Raft 论文里面，提到了一种通过 clock + heartbeat 的 lease read 优化方法。</p>
+<p>也就是 leader 发送 heartbeat 的时候，会首先记录一个时间点 start，当系统大部分节点都回复了 heartbeat response，那么我们就可以认为 leader 的 lease 有效期可以到 <code>start + election timeout / clock drift bound </code>这个时间点。</p>
+<p>为什么能够这么认为呢？主要是在于 Raft 的选举机制，因为 follower 会在至少 election timeout 的时间之后，才会重新发生选举，所以下一个 leader 选出来的时间一定可以保证大于 <code>start + election timeout / clock drift bound</code>。</p>
+<p>虽然采用 lease 的做法很高效，但仍然会面临风险问题，也就是我们有了一个预设的前提，各个服务器的 CPU clock 的时间是准的，即使有误差，也会在一个非常小的 bound 范围里面，如果各个服务器之间 clock 走的频率不一样，有些太快，有些太慢，这套 lease 机制就可能出问题。</p>
+<h3 id="follower-read">Follower Read</h3>
+<ol>
+<li>
+<p>先去 Leader 查询最新的 committed index；</p>
+</li>
+<li>
+<p>然后拿着 committed Index 去 Follower read，从而保证能从 Follower 中读到最新的数据；</p>
+<p>当前 etcd 就实现了 Follower read</p>
+</li>
+</ol>
+<h3 id="幽灵复现">幽灵复现</h3>
+<ol>
+<li><a href="https://zhuanlan.zhihu.com/p/47025699">https://zhuanlan.zhihu.com/p/47025699</a></li>
+</ol>
+<h2 id="参考">参考</h2>
+<ol>
+<li><a href="https://zhuanlan.zhihu.com/p/47117804">线性一致性和 Raft</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/35697913">Raft的PreVote实现机制</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/50455478">Etcd 之 Lease read</a></li>
+<li><a href="https://juejin.im/post/5af066f1f265da0b715634b9">Raft协议精解</a></li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzI3NDIxNTQyOQ==&amp;mid=2247484499&amp;idx=1&amp;sn=79acb9b4b2f8baa3296f2288c4a0a45b&amp;scene=0#wechat_redirect">TiKV 源码解析系列 - Lease Read</a></li>
+<li><a href="https://blog.csdn.net/solotzg/article/details/80669924">Raft TLA+形式化验证</a></li>
+<li><a href="https://blog.wangjunfeng.com/post/raft/">分布式系统一致性协议Raft理解 - Jefferywang的烂笔头</a></li>
+<li><a href="https://zinglix.xyz/2020/06/25/raft/">「图解Raft」让一致性算法变得更简单 - ZingLix Blog</a></li>
+<li><a href="https://github.com/maemual/raft-zh_cn/blob/master/raft-zh_cn.md">raft-zh_cn/raft-zh_cn.md at master · maemual/raft-zh_cn · GitHub</a></li>
+<li><a href="https://mp.weixin.qq.com/s/lUbVBVzvNVxhgbcHQBbkkQ">条分缕析 Raft 算法</a></li>
+</ol>
+
+    </div>
+
+    
+    
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span class="item-title">文章作者</span>
+    <span class="item-content">Justice</span>
+  </p>
+  <p class="copyright-item">
+    <span class="item-title">上次更新</span>
+    <span class="item-content">
+      0001-01-01
+      
+    </span>
+  </p>
+  
+  <p class="copyright-item">
+    <span class="item-title">许可协议</span>
+    <span class="item-content"><a rel="license noopener" href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank">CC BY-NC-ND 4.0</a></span>
+  </p>
+</div>
+
+
+    
+    
+<div class="post-reward">
+  <input type="checkbox" name="reward" id="reward" hidden />
+  <label class="reward-button" for="reward">赞赏支持</label>
+  <div class="qr-code">
+    
+    
+    
+  </div>
+</div>
+
+    <footer class="post-footer">
+      
+
+      
+      <nav class="post-nav">
+        
+          <a class="prev" href="/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95%E4%B9%8Bquorum%E6%9C%BA%E5%88%B6/">
+            
+            <i class="iconfont">
+              <svg  class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417 757.434875 204.940602c11.338233-12.190647 11.035334-32.285311-0.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-0.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891 0.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"></path>
+</svg>
+
+            </i>
+            <span class="prev-text nav-default"></span>
+            <span class="prev-text nav-mobile">上一篇</span>
+          </a>
+        
+          <a class="next" href="/post/31.distribute/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/">
+            <span class="next-text nav-default"></span>
+            <span class="prev-text nav-mobile">下一篇</span>
+            
+            <i class="iconfont">
+              <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="18" height="18">
+  <path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311 0.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889 0.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-0.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697C361.493148 60.273758 343.054193 61.470003 332.091514 74.487481z"></path>
+</svg>
+
+            </i>
+          </a>
+      </nav>
+    </footer>
+  </article>
+
+  
+  
+
+  
+  
+
+  
+
+  
+  
+
+  
+
+  <div class="post bg-white">
+      <div id="comments-gitment"></div>
+      <link rel="stylesheet" href="/lib/gitment/gitment-0.0.3.min.css">
+        <script src="/lib/gitment/gitment-0.0.3.min.js"></script>
+      <script type="text/javascript">
+      const gitment = new Gitment({
+        id: '一致性算法之raft.md',
+        title: '',
+        link: decodeURI(location.href),
+        desc: 'Raft一致性算法 简介 Raft是斯坦福大学的Diego Ongaro、John Ousterhout两人以易理解为目标设计的一致性算法，在201',
+        owner: 'zhengyi.zhu.hust@gmail.com',
+        repo: '',
+        oauth: {
+          client_id: '',
+          client_secret: ''
+        }
+      })
+      gitment.render('comments-gitment')
+      </script>
+      <noscript>Please enable JavaScript to view the <a href="https://github.com/imsun/gitment">comments powered by gitment.</a></noscript>
+    </div>
+
+  
+
+    
+
+  
+
+        </div>
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="icon-links">
+  
+
+
+<a href="http://justice.bj.cn/index.xml" rel="noopener alternate" type="application/rss&#43;xml"
+    class="iconfont" title="rss" target="_blank">
+    <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="30" height="30">
+  <path d="M819.157333 1024C819.157333 574.592 449.408 204.8 0 204.8V0c561.706667 0 1024 462.293333 1024 1024h-204.842667zM140.416 743.04a140.8 140.8 0 0 1 140.501333 140.586667A140.928 140.928 0 0 1 140.074667 1024C62.72 1024 0 961.109333 0 883.626667s62.933333-140.544 140.416-140.586667zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667V345.173333c372.352 0 678.784 306.517333 678.784 678.826667z"></path>
+</svg>
+
+  </a>
+   
+</div>
+
+<div class="copyright">
+  <span class="power-by">
+    Powered by <a class="hexo-link" href="https://gohugo.io">Hugo</a>
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    Theme - <a class="theme-link" href="https://github.com/xianmin/hugo-theme-jane">Jane</a>
+  </span>
+
+  <span class="copyright-year">
+    &copy;
+    
+      2000 -
+    2021
+    <span class="heart">
+      
+      <i class="iconfont">
+        <svg class="icon" viewBox="0 0 1025 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="14" height="14">
+  <path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7 0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1 0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2 0.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2 0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3 0.1-42.5-8-83.6-24-122.2z"
+   fill="#8a8a8a"></path>
+</svg>
+
+      </i>
+    </span><span class="author">
+        Justice
+        
+      </span></span>
+
+  
+  
+    <span id="busuanzi_container">
+      访客数/访问量：<span id="busuanzi_value_site_uv"></span>/<span id="busuanzi_value_site_pv"></span>
+    </span>
+  
+
+  
+</div>
+
+    </footer>
+
+    <div class="back-to-top" id="back-to-top">
+      <i class="iconfont">
+        
+        <svg class="icon" viewBox="0 0 1024 1024" version="1.1"
+  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  width="35" height="35">
+  <path d="M510.866688 227.694839 95.449397 629.218702l235.761562 0-2.057869 328.796468 362.40389 0L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777l894.052392 0 0 131.813095L63.840492 195.775872 63.840492 63.962777 63.840492 63.962777zM63.840492 63.962777"></path>
+</svg>
+
+      </i>
+    </div>
+  </div>
+  
+<script type="text/javascript" src="/lib/jquery/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="/lib/slideout/slideout-1.0.1.min.js"></script>
+
+
+
+
+<script type="text/javascript" src="/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js" integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin="anonymous"></script>
+
+
+
+  <script type="text/javascript">
+    window.MathJax = {
+      showProcessingMessages: false,
+      messageStyle: 'none'
+    };
+  </script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css"
+    integrity="sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG"
+    crossorigin="anonymous">
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js"
+    integrity="sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1"
+    crossorigin="anonymous"></script>
+
+  
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous" onload="renderMathInElement(document.body);">
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        
+      });
+    });
+  </script>
+
+
+
+
+
+
+  
+    <script type="text/javascript" src="/js/load-photoswipe.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe.min.js"></script>
+    <script type="text/javascript" src="/lib/photoswipe/photoswipe-ui-default.min.js"></script>
+  
+
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+
+
+
+  <script>
+    $("#openSearch, #openSearchMobile").click(function(){
+      $(".modal-dialog").addClass("visible");
+    });
+
+    $("#closeSearch").click(function(){
+      $(".modal-dialog").removeClass("visible");
+    });
+
+    $(document).click(function(event) {
+    
+      if (!$(event.target).closest(".modal-content, #openSearch, #openSearchMobile").length) {
+        $("body").find(".modal-dialog").removeClass("visible");
+      }
+    });
+  </script>
+
+
+
+
+
+</body>
+</html>
