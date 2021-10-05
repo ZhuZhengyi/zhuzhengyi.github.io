@@ -1,0 +1,357 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>分布式系统Quorum机制 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="分布式系统Quorum机制 简介 分布式系统由于不同节点的存在，分区(Part)不可避免。为了保证数据的可用性(A)，一般可采用多副本，因此存在">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/quorum%E6%9C%BA%E5%88%B6/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.2f6e4d7e6e51da09470910b5f0d41a7d2c517dbe97416dd268a18bb7334c4ff8.css integrity="sha256-L25Nfm5R2glHCRC18NQafSxRfb6XQW3SaKGLtzNMT/g=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="分布式系统Quorum机制">
+<meta property="og:description" content="分布式系统Quorum机制 简介 分布式系统由于不同节点的存在，分区(Part)不可避免。为了保证数据的可用性(A)，一般可采用多副本，因此存在">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/quorum%E6%9C%BA%E5%88%B6/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2021-10-05T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-10-05T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="分布式系统Quorum机制">
+<meta itemprop=description content="分布式系统Quorum机制 简介 分布式系统由于不同节点的存在，分区(Part)不可避免。为了保证数据的可用性(A)，一般可采用多副本，因此存在"><meta itemprop=datePublished content="2021-10-05T00:00:00+00:00">
+<meta itemprop=dateModified content="2021-10-05T00:00:00+00:00">
+<meta itemprop=wordCount content="3124">
+<meta itemprop=keywords content="distribute,一致性算法,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="分布式系统Quorum机制">
+<meta name=twitter:description content="分布式系统Quorum机制 简介 分布式系统由于不同节点的存在，分区(Part)不可避免。为了保证数据的可用性(A)，一般可采用多副本，因此存在"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='002186711602136249422:q1gkomof_em',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>分布式系统Quorum机制</h1>
+<div class=post-meta>
+<time datetime=2021-10-05 class=post-time>
+2021-10-05
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/distribute/> distribute </a>
+<a href=https://justice.bj.cn/categories/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/> 一致性算法 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=分布式系统quorum机制>分布式系统Quorum机制</h1>
+<h2 id=简介>简介</h2>
+<p>分布式系统由于不同节点的存在，分区(Part)不可避免。为了保证数据的可用性(A)，一般可采用多副本，因此存在副本一致性(Consistency)的问题。</p>
+<p>最简单保证副本一致性的方式就是<strong>WARO</strong>(Write All Read One)。WARO存在极大的写放大问题，Quorum机制是</p>
+<p>WARO牺牲了更新服务的可用性，最大程度地增强了读服务的可用性。而Quorum就是更新服务和读服务之间进行一个折衷。</p>
+<p>Quorum机制是“抽屉原理”的一个应用。</p>
+<p>定义如下：假设有N个副本，更新操作wi 在W个副本中更新成功之后，才认为此次更新操作wi 成功。称成功提交的更新操作对应的数据为：“成功提交的数据”。对于读操作而言，至少需要读R个副本才能读到此次更新的数据。**其中，W+R>N ，即W和R有重叠。</p>
+<p>一般，W+R=N+1</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAL8AAABTCAIAAABBDkGoAAAQA0lEQVR4nO2d+1MaWdrH9z+k6q3KWGWVE9eKldRmnMm+2ck4a2lNJhuL7CouQYdJIpplFPAWR41jIoKAICi0IDcRuYgKCiIi96Yv7A/HYXu4CU03lyq+9fwSQfzmnA/9PE+f091/yrTUEln9qd4GWmpitehpibxa9LREXi16WiKvFj0tkVeLnpbIq0VPS+TVoqcl8mrR0xJ5tehpibyajJ5gJOUPJ6yn1yZPSGb2SYxeECZPyHp67Q8ngpFUvT2WEtF/1nwT+c9Rg9KThFHr6fWy1jO8Yv7Lu+0HPynvDUkYTPF9jvzBT8pn/N3vp7T/+tXEWr6N76e0z37ZffCTspMjZzDF94Yk3Vzl43fbzMX9xZ1j6+l1Ekbr4p+1Yn78brube+u/kyPv5ip7p7R9Ah1rxcxetbBXLawVc59A1zul7ebm+n9VJ/9lqlHogRHs6PzmI3Qyumb9hqe5NyT566Rm7Dfryq7n4OTafRG5CidjiXQsgYCIJwtEInUb4VjaE4jaz27EhrOfP9u++0XbxpJ+xVOzVszLWs/R+Q2MYPT5fzKhuTckefp+5+26bd1w5glE/eFERdMPI5g/nPAEojKzb3zjsHdK28aS9tDpn5zqTA+MYBp74OW8oY0lBbgs73pMntB1FI7G09F4OppIx26jLG4SKRREEgT8v7CdhX/TnXDXDv5/cqeNJX0xp1dYL6qcBuB/cMHQxpJmcXH5IyiGUzVEWbn8kXXD2dt129P3lPmvUnWjx+YNcz8f3OfI+wS6Nej08joZiaezAbiJ/pGbgujkc5PI4yYJo6lspNFUGo0k0hLT+fPZvfaRzdE1q/X0mpz/To58QATJzL4aZxYYwRTWixdzetL+KVGt6fGHEzMq18OfVV+Pq2dVLk8gRoQmj5tShxwCN0j53PweGJzG4DR2eZNa2vV8+5/dbq5yWuHwheLl+H/0RvVkQrOs9YRicG3GrZhuEumP0Mkzfrn+qVXt6PGF4v/61fjnUcW4+NDiub6JpQtwQ2mqKoIOlkUHTmMwchsnl9FfZEfdXOXgguE0GCvof2jJ2DWm4MuOPIFozcatTPlC8WmFo4R/OlQLem4S6fGNw/uv5fNqdygCl+AmWg9u0oRIptF1w1nXmGJ0zZo9rgD/nRz5R+iEjoKGQqEYLjF6c/zTJ3rpgRFsRuW6z5GPi23nocRNLF0YHTpLnJxUReTmD+igt4GgWDyFTCucHWzZlNwxrXB0cuR82VEshdA6VhQKRjDhlrODLRNuOWktyOiiB3wJ/jymGFoyHV/EyuCG0hIHLsJNwUMOgRsExRAUR1A8lcZ+3fV8MSz5Ylg6v+1u8ENOQYVi8OiatWtMsbZ3SpN/Wui5SaT7hdC3/F3TcagoN/UrcfK5SRO4QVD8Kgb3C6HvprRH5zfui8gPM3vP+Lt1L5DJyROIPp+lyz/19HgC0YdvVJMSOyhxctBpnBKnIDcIirsuIg/fqH6RO2AEQzEchFDp7OYqj85vKB+u2mhG5aLDP8X0aOyB+6/lG/s+6lIVvSXOH9DBcNWhv5Mj3zq4yHKDYjiK4yiO6xyXnRy5xOildsRqJsgZpNw/lfQIt5wPf1ZV2Y0XLXFSdJU4gBsEw6cVzkdvVO6LSA432G1kzq7ij99tT0rtzVgGZTIZX4hi/9TQk4TRH2f1fQLdWTDeXCUOQCeaRH6c1fcLoVAMJqKT5SYb8RT6Yk4/IIIac9nyTiVhKv1TQA+K4b1T2tHfrKEIXE6JU2aqoq3EyT3kpBDsuyntm8+2/xU6hbjB8AyeuQ2wctmkAGWo818tPSiGv1rcfzmvr++CA7lUhWA4jGDMD/vMD/t5qaowN9ngfj4YEEFNmsIyFPmvlp7RNWufQHcdhelLVcVKnDJTVTFuEAxHMZzzm7VfCMEIllPilOAGBILhrxb3WSvmKgewXkKp8F8VPSqb/8FPyuzyeON340RuUAzfOrjo5ipjSeTOVFUwUgj2ZEKzbjirZgzrKLhq/+TpCUZSHWzZvvuqhgsOhbmp6JCTLYr94WQHW3boC5eZqgrGcSDawZbVeGWbQnmq80+enn4hNK1wNPiCQ0FuQPSLoNltF2lusrECnTzj75IexrrrYxX+SdJjcF89/FkZBjsAG7Ybx4qgg+N7ruCjN6o0ilWJDognExqVzU9uJBtBpP2TpOcbnkZmOm+iEifnLM6TCY36MFA9NyCMntCjN6rm7b9MZP2ToUdjD3w/pW2oPRXlpKpsV6U+DPxdoKOEm2y8mNPLzD4Sg9kgIuefDD0/zOyJDd4aLDhoj4IMppjBFG8YffncLO16wKsSky+fm+NAtG1YymCKpWZfTjf+w+ye3HJBFTcgdM5gmdXDl6/lwHY2vnwtH1ww6N1XJOaCKkFl+yeqYnr84UT7yGYoAtcmVQEChpaM+SXOy3k9GP3hJVN+iTMhsTOY4rZhaU43fn6daB/ZTKYxCtHBMxkEw7vGFOXsWM1BJxttw1KZ5bzS6aBKaNn+iaqYHuGW898fzTVbcOgX6hhMcc+4Oj9VPeAqwbg/4CrzU1W/EGIwxf0iKKerEmw5R9es1KIDgi87mpTa7xxA4Pmj7gT88zQYm5TawZfky9fySqeDQpXpn6iK6flhZk9mPq9ZicPbOATD7fZHiCXOsT8Kvq/g1eNANKfEAQliQmrPKY2fz+6p7QE66DF6Qk/f79w5gDn0AH3UnRT8eS1lKs8/URXT0z6yeRlO1mzBwe2PgGEVbjmJpTFPYmcwxf1CCFAiVDqJpfGe67Zg8lzGckrj9pHNaAqhg54UgrWPbN55eV4xSupOD1yef6Iqo+c0GPuGp67xWZyecTWDKX45byB2VSAxTUjstxlKCBHXxkc/WRlMcTdXmYPOSTD2ZEJDBzogeqe0d+7fa1h6MuX5J6oyekye0POZvRovOHDWLKAmIHZV4JADuYJCpRO8Slxw+Ja/y2CKh5dN+cnlxZyePnrYq5Y7T7sVpGRSagc/r2/nxV61aOyB8t9fGT0So5e1bKrxngqJyQdGVucKgtIYcgVvicHw48soeHXTfJ6tb0A9tGk5z5ndDaOXvWqhj57xjcO1vdPSY1iiah5cMFQ0HZSLvWqpaOtqZfQs7hxPSA5rv+AAjjQ8iZ3YjfeLIHC86eYqGUzx6CcrQGfTfA4K6vzZ/bBzzJcd0UePcMsp3HKWHsNiHTtr2VTRXNAh4ZZzXu0u//2V0TOvdv9n0177BQdQ3PyNv0vsxiekdpCqhpdNDKb4W/4uKHFYyyYGUzwggvJnd07tnlY4GpCeARFU0UTQJOGWc0blKv/9lWeuFXPtFxxAcdM2LCV243uuK+LBhsEUgyn8mqdmMMUilSt/dunOXJNS+0fojrKXmLlOg7GxT9YGSVuZTGZ0zUpj5jJ5Qv+Y09d+T8Vx4La4kZp9oBvP9lPgeAMmABAD3nkSjOXPrtETGlww0EcPe9WisF6UHsP8qnlG5WqEhitDd9XsCUS/4WnqsKcCw//2exsFuvGXCwZiNz4ggsDXd0V3wmCKv+apC87ucSBKa8feJ9CR69hB6Vb3/FWOf6LInC0MRlK131MBoPmapwbduEj5h8QEOl6w3Mhgisc+FV2LoPVsYRtLSu5sYSN07HB5/omqmJ5+EbRlvajxngoMz+y5rrKrifmJ6SQYy65XF+zVszEgguhbqXgyoblzAIslqbpXP6by/BNVMT3TCgd37YDubaMFr3DI7m3o5irzJ6/790XTL1/LS8zxtMLxdt1GBz3TCsf4xuGdA1iMHtAqtg1La3bvphyV6Z+oiuk5DcY62LJ4CqHkIs4SqSp/xzEYX3BqJH/ySr9KPEp1sGUIhlNOT9eYopyiARxj8jdj6N1X4KV61c5l+ieKzO6wvwt0WwcX1V/EWT431E5zn0BHefLSu68qXaBuKBlI+SdDj8J68f20lr4Shz5uQMitF30CHbWfObhguHONopFFzj8ZelAM7+Gpdw4vq7mIs3SJQxM3IBAM7+Gpdc4gVR944A13c5UVdSsNJRtZ/ySvqdDYA1+NqxMwSlOJQx86INT2QA9PTVX10zulbd77+mSq8E/+asA+gW5x57gpUlXB6BPolrSe6j9nw+ht6opHUoV/8vT4w4kOtszuCzcdNyAuwokOtszpj1TzId5QvIMtc/kjpIexvvJV57+quyDIzL6veOpYCin/Is56paqCsWn29fDUKYTk9RUIhj99v7Os9VQzhnUUWrX/au/AwloxMz8YUulG6cYrDdaK+dXiPrkCiLVifj67V+UA1lHV+6fg7k8DImjs00Hjp6pix48BEcT9fFDpL05K7U19+zBK/FNw57kkjPZOaXkSe3Nxk40EjPZOaSel9vJ/5cPO8eN3282LziJF/im76+WACGJ+2I8lkQZPVcUAGhBBrxb3EzBa+p0pBGOvWpr35t8wpf4pu+MuiuFv1209PPVpMNZE3GQD+d2/NxQv9p7LSOrp+x32qqVJb5cRpNo/xXf7lhi9nRy53hVsIm6IsQH8u6/yX7KcXneNKe7ceNqwstLgn/onDdi84a4xxQfNcXNxk40D4H/nmPjDz4azTo7cUNeLrarROj3+aXnKSSgGP+Pv/jinL5EFGjmuYvAz/u6LOb03FL8IJ4aWjE8mNP5wgo6xolt+Ov3T9YQlGMGWtZ4Otuztui2cSNcdiEojhWBzavcXQ5K2ISlf7mjGFdBYCuHLjjo58hmViyb/9D7dLfsfmFO7SZ/SrX0gGL6k9XSwZdzPB+82Djs58nm1u4kAQjEcfHXHNw5vEmn6/lAtniwZjKTYq5ZurnLT7Ks7GXeG0uZ/9EY1tGTM3oc2678p7i2nyvNPn2r3VFuXPzIggnp46jm1+zKSqjslOXEVg5e0nh6euk+gs3nDJfzPq93BSKpm41amQjF4uaR/OlTrJ2q7/JFJqb2TI+8T6D4bzu48O0d3JGB00+wbEEGdHPn4xuGdG3uJ/tcNZ3U/3ZyEUVkl/qlVrekBQjEccgZZK+b2kc2hJeOu45KObeolAsFwvfuKtWLuYMteLe5r7IGKTqDl+Nc6Lmt8/hDFcEMV/qlSfejJKgmj64azPoGufWRzQARNSu1Km5+mPv8yklLbA9MKx4s5ffvIZu+Udm3vtMonHef7V9n8NBUcwUhKQ7X/KlVnerKKpRCD+2pe7R5cMHSNKTrYshdz+mmFQ20PeENxEv1aCsG8oXgWlw62rGtMMbhgmFG5tI5LyjuRYv419oAvFCfRr8EI5gvFNbXyT06NQk+ObhJpreMSDFw3V3lvSAIuAnz8brtPoBtcMLBXLXzZEbjjCV92xF61DC4Y+gS6x++2wWWB//fPjW6uMjuFNa5zm91/mWpQegrKH06cBmMmT0hjD0iM3nm1G4z+jMolMXpVNr/JE/IEov5wojFXMYv5n1e7JUavxh5ocP/5aiZ6Wmo0tehpibxa9LREXi16WiKvFj0tkVeLnpbI67+XdF+4PjVtMwAAAABJRU5ErkJggg==" alt></p>
+<p>假设系统中有5个副本，W=3，R=3。初始时数据为(V1，V1，V1，V1，V1）&ndash;成功提交的版本号为1</p>
+<p>当某次更新操作在3个副本上成功后，就认为此次更新操作成功。数据变成：(V2，V2，V2，V1，V1）&ndash;成功提交后，版本号变成2</p>
+<p>因此，最多只需要读3个副本，一定能够读到V2(此次更新成功的数据)。而在后台，可对剩余的V1 同步到V2，而不需要让Client知道。</p>
+<p><strong>二，Quorum机制分析</strong></p>
+<p>①Quorum机制无法保证强一致性</p>
+<p>所谓强一致性就是：任何时刻任何用户或节点都可以读到<strong>最近一次成功提交的副本数据</strong>。强一致性是程度最高的一致性要求，也是实践中最难以实现的一致性。</p>
+<p> 因为，仅仅通过Quorum机制无法确定最新已经成功提交的版本号。</p>
+<p>比如，上面的V2 成功提交后（已经写入W=3份），尽管读取3个副本时一定能读到V2，如果刚好读到的是(V2，V2，V2），则此次读取的数据是最新成功提交的数据，因为W=3，而此时刚好读到了3份V2。如果读到的是（V2，V1，V1），则无法确定是一个成功提交的版本，还需要继续再读，直到读到V2的达到3份为止，这时才能确定V2 就是已经成功提交的最新的数据。</p>
+<p>1）如何读取最新的数据？&mdash;在已经知道最近成功提交的数据版本号的前提下，最多读R个副本就可以读到最新的数据了。</p>
+<p>2）如何确定 最高版本号 的数据是一个成功提交的数据？&mdash;继续读其他的副本，直到读到的 最高版本号副本 出现了W次。</p>
+<p>②基于Quorum机制选择 primary</p>
+<p>中心节点(服务器)读取R个副本，<strong>选择R个副本中版本号最高的副本作为新的primary</strong>。</p>
+<p>新选出的primary<strong>不能</strong>立即提供服务，还需要与至少与W个副本<em>完成同步</em>后，才能提供服务&mdash;为了保证Quorum机制的规则：W+R>N</p>
+<p>至于如何处理同步过程中冲突的数据，则需要视情况而定。</p>
+<p> 比如，(V2，V2，V1，V1，V1），R=3，如果读取的3个副本是：(V1，V1，V1)则高版本的 V2需要丢弃。</p>
+<p>如果读取的3个副本是（V2，V1，V1），则低版本的V1需要同步到V2</p>
+<p><strong>三，Quorum机制应用实例</strong></p>
+<p><strong>HDFS高可用性实现</strong></p>
+<p> HDFS的运行依赖于NameNode，如果NameNode挂了，那么整个HDFS就用不了了，因此就存在单点故障(single point of failure)；其次，如果需要升级或者维护停止NameNode，整个HDFS也用不了。为了解决这个问题，采用了QJM机制(Quorum Journal Manager)实现HDFS的HA（High Availability）。注意，一开始采用的“共享存储”机制，关于共享存储机制的不足，<a href=http://blog.cloudera.com/blog/2012/10/quorum-based-journaling-in-cdh4-1/>可参考：（还提到了QJM的优点）</a></p>
+<p>In a typical HA cluster, two separate machines are configured as NameNodes.
+At any point in time, exactly one of the NameNodes is in an Active state, and the other is in a Standby state.
+The Active NameNode is responsible for all client operations in the cluster, while the Standby is simply acting as a slave,<br>
+maintaining enough state to provide a fast failover if necessary.</p>
+<p>为了实现HA，需要两台NameNode机器，一台是Active NameNode，负责Client请求。另一台是StandBy NameNode，负责与Active NameNode<strong>同步数据</strong>，从而快速 failover。</p>
+<p>那么，这里就有个问题，StandBy NameNode是如何同步Active NameNode上的数据的呢？主要同步是哪些数据呢？</p>
+<p>数据同步就用到了Quorum机制。同步的数据 主要是<a href=http://blog.cloudera.com/blog/2014/03/a-guide-to-checkpointing-in-hadoop/>EditLog</a>。</p>
+<p>In order for the Standby node to keep its state synchronized with the Active node,
+both nodes communicate with a group of separate daemons called “JournalNodes” (JNs).</p>
+<p>数据同步用到了一个第三方”集群“：Journal Nodes。Active NameNode 和 StandBy NameNode 都与JournalNodes通信，从而实现同步。</p>
+<p>''''''''''''''''''''''''''''''''''</p>
+<p>每次 NameNode 写 EditLog 的时候，除了向本地磁盘写入 EditLog 之外，也会并行地向 JournalNode 集群之中的每一个 JournalNode 发送写请求，只要大多数 (majority) 的 JournalNode 节点返回成功就认为向 JournalNode 集群写入 EditLog 成功。如果有 2N+1 台 JournalNode，那么根据大多数的原则，最多可以容忍有 N 台 JournalNode 节点挂掉。</p>
+<p><strong>这就是：Quorum机制。每次写入JournalNode的机器数目达到大多数(W)时，就认为本次写操作成功了。</strong></p>
+<p>'''''''''''''''''''''''''''''''''</p>
+<p>这样，每次对Active NameNode中的元数据进行修改时，都会将该修改写入JournalNode集群的大多数机器中，才认为此次修改成功。</p>
+<p>当Active NameNode宕机时，StandBy NameNode 向JournalNode同步EditLog，从而保证了HA。</p>
+<p>Active NameNode 向 JournalNode 集群提交 EditLog 是同步的
+但 Standby NameNode 采用的是定时从 JournalNode 集群上同步 EditLog 的方式，那么 Standby NameNode 内存中文件系统镜像有很大的可能是落后于 Active NameNode 的，
+所以 Standby NameNode 在转换为 Active NameNode 的时候需要把落后的 EditLog 补上来。</p>
+<p>具体的同步过程可参考： <a href=https://www.ibm.com/developerworks/cn/opensource/os-cn-hadoop-name-node/>Hadoop NameNode 高可用 (High Availability) 实现解析</a></p>
+<p>In order to provide a fast failover, it is also necessary that the Standby node have up-to-date information
+regarding the location of blocks in the cluster. In order to achieve this, the DataNodes are configured with the location of both NameNodes,
+and send block location information and heartbeats to both.</p>
+<p>此外，为了<strong>实现快速failover</strong>，StandBy NameNode 需要实时地与各个DataNode通信以获得每个<strong>数据块的地址</strong>信息。为咐要这样？</p>
+<p>因为：每个数据块的地址信息不属于“元信息”，并没有保存在 FsImage、CheckPoint&mldr;，这是因为地址信息变化比较大。比如说，一台DataNode下线了，其上面的数据块地址信息就全无效了，而且为了达到指定的数据块“复制因子”，还需要在其他机器上复制该数据块。</p>
+<p>而快速failover，是指Active NameNode宕机后，StandBy NameNode立即就能提供服务。因此，DataNode也需要实时向 StandBy NameNode 发送 block report</p>
+<p>另外，还有手动failover 和 自动 failover，自动failover需要Zookeeper的支持，具体可参考官网：<a href=https://hadoop.apache.org/docs/r2.7.1/hadoop-project-dist/hadoop-hdfs/HDFSHighAvailabilityWithQJM.html>HDFS High Availability Using the Quorum Journal Manager</a></p>
+<p><strong>如何避免“Split Brain”(脑裂)问题？</strong></p>
+<p>Split Brain 是指在同一时刻有两个认为自己处于 Active 状态的 NameNode。</p>
+<p>when a NameNode sends any message (or remote procedure call) to a JournalNode, it includes its epoch number as part of the request.
+Whenever the JournalNode receives such a message, it compares the epoch number against a locally stored value called the promised epoch.
+If the request is coming from a newer epoch, then it records that new epoch as its promised epoch.
+If instead the request is coming from an older epoch, then it rejects the request. This simple policy avoids split-brain</p>
+<p>简单地理解如下：每个NameNode 与 JournalNodes通信时，需要带一个 epoch numbers(epoch numbers 是唯一的且只增不减)。而每个JournalNode 都有一个本地的promised epoch。拥有值大的epoch numbers 的NameNode会使得JournalNode提升自己的 promised epoch，从而占大多数，而epoch numbers较小的那个NameNode就成了少数派(Paxos协议思想)。</p>
+<p>从而<strong>epoch number值大的NameNode才是真正的Active NameNode</strong>，拥有写JournalNode的权限。注意：（任何时刻只允许一个NameNode拥有写JournalNode权限）</p>
+<p>when using the Quorum Journal Manager, only one NameNode will ever be allowed to write to the JournalNodes,
+so there is no potential for corrupting the file system metadata from a split-brain scenario.</p>
+<p>具体实现<a href=http://blog.cloudera.com/blog/2012/10/quorum-based-journaling-in-cdh4-1/>可参考：（还提到了QJM的优点）</a></p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2021-10-05
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/distribute/>distribute</a>
+<a href=https://justice.bj.cn/tags/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/>一致性算法</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/12.data_struct/40.%E5%88%86%E5%B8%83%E5%BC%8F%E5%93%88%E5%B8%8C%E8%A1%A8dht/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">分布式哈希表(DHT)</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/31.distribute/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E4%B8%80%E8%87%B4%E6%80%A7/>
+<span class="next-text nav-default">分布式系统一致性</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2021
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

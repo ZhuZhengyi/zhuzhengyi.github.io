@@ -24,12 +24,12 @@
 <meta property="og:description" content="Rust错误处理 简介 Rust 将错误两个主要类别： 可恢复错误（recoverable） ： 由 Result<T, E> 表示，代表向用户报告错误和重试操作是合理的情况，比如未">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/rust/40.rust%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2021-10-01T00:00:00+00:00">
-<meta property="article:modified_time" content="2021-10-01T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2021-10-05T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-10-05T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Rust错误处理">
-<meta itemprop=description content="Rust错误处理 简介 Rust 将错误两个主要类别： 可恢复错误（recoverable） ： 由 Result<T, E> 表示，代表向用户报告错误和重试操作是合理的情况，比如未"><meta itemprop=datePublished content="2021-10-01T00:00:00+00:00">
-<meta itemprop=dateModified content="2021-10-01T00:00:00+00:00">
-<meta itemprop=wordCount content="618">
+<meta itemprop=description content="Rust错误处理 简介 Rust 将错误两个主要类别： 可恢复错误（recoverable） ： 由 Result<T, E> 表示，代表向用户报告错误和重试操作是合理的情况，比如未"><meta itemprop=datePublished content="2021-10-05T00:00:00+00:00">
+<meta itemprop=dateModified content="2021-10-05T00:00:00+00:00">
+<meta itemprop=wordCount content="614">
 <meta itemprop=keywords content="language,rust,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Rust错误处理">
 <meta name=twitter:description content="Rust错误处理 简介 Rust 将错误两个主要类别： 可恢复错误（recoverable） ： 由 Result<T, E> 表示，代表向用户报告错误和重试操作是合理的情况，比如未"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Rust错误处理</h1>
 <div class=post-meta>
-<time datetime=2021-10-01 class=post-time>
-2021-10-01
+<time datetime=2021-10-05 class=post-time>
+2021-10-05
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/language/> language </a>
@@ -185,11 +185,8 @@ Justice's Blog
 <li><a href=#简介>简介</a></li>
 <li><a href=#optiont>Option<t></a></li>
 <li><a href=#resultt-e>Result&lt;T, E></a></li>
-<li><a href=#panic><strong>panic!</strong></a>
-<ul>
-<li><a href=#错误传播>错误传播</a></li>
-</ul>
-</li>
+<li><a href=#panic>panic!</a></li>
+<li><a href=#heading>?</a></li>
 <li><a href=#参考>参考</a></li>
 </ul>
 </nav>
@@ -204,12 +201,12 @@ Justice's Blog
 <p><strong>可恢复错误（recoverable）</strong> ： 由 <code>Result&lt;T, E></code> 表示，代表向用户报告错误和重试操作是合理的情况，比如未找到文件。</p>
 </li>
 <li>
-<p><strong>不可恢复错误（unrecoverable）</strong>： 由<code>panic！</code>处理通常是 bug 的同义词，比如尝试访问超过数组结尾的位置。</p>
+<p><strong>不可恢复错误（unrecoverable）</strong>： 由<code>panic！</code>处理，通常是 bug 的同义词，比如尝试访问超过数组结尾的位置。</p>
 </li>
 </ul>
 <p>Rust 并没有异常。</p>
 <h2 id=optiont>Option<t></h2>
-<p><code>Option</code>是 Rust 的系统类型，用来表示值不存在的可能</p>
+<p><code>Option&lt;T></code>是 Rust 的系统类型，用来表示值不存在的可能</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt> 1
@@ -325,10 +322,23 @@ Justice's Blog
 </span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>f</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>File</span>::<span class=n>open</span><span class=p>(</span><span class=s>&#34;hello.txt&#34;</span><span class=p>).</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;Failed to open hello.txt&#34;</span><span class=p>);</span><span class=w>
 </span></code></pre></td></tr></table>
 </div>
-</div><h2 id=panic><strong>panic!</strong></h2>
-<h3 id=错误传播>错误传播</h3>
-<p>当编写一个其实现会调用一些可能会失败的操作的函数时，除了在这个函数中处理错误外，还可以选择让调用者知道这个错误并决定该如何处理，这被称为 <strong>传播（propagating）错误</strong>。</p>
-<p>简便的专用语法：<code>?</code>，可以在 <code>?</code> 之后直接使用链式方法调用来进一步缩短代码:</p>
+</div><h2 id=panic>panic!</h2>
+<ul>
+<li><code>panic!</code> 宏可用于产生一个 panic （恐慌），并开始回退（unwind）它的栈;</li>
+</ul>
+<h2 id=heading>?</h2>
+<p><code>?</code> 运算符用在返回值为 <code>Result</code> 的表达式后面，它等同于这样一个匹配 表达式：</p>
+<ul>
+<li>
+<p><code>Err(err)</code> 分支展开成提前返回的 <code>return Err(err)</code>;</p>
+</li>
+<li>
+<p><code>Ok(ok)</code> 分支展开成 <code>ok</code> 表达式;</p>
+</li>
+<li>
+<p><code>?</code> 之后直接使用链式方法调用来进一步缩短代码:</p>
+</li>
+</ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt> 1
@@ -370,7 +380,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2021-10-01
+2021-10-05
 </span>
 </p>
 <p class=copyright-item>
