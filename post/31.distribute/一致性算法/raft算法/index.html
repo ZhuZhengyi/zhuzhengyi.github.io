@@ -24,12 +24,12 @@
 <meta property="og:description" content="Raft算法 简介 Raft算法是2013年斯坦福大学的Diego Ongaro、John Ousterhout 两人发布的一致性算法，论文：《In Search of an Understandable Consensus Algor">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/raft%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2021-10-05T00:00:00+00:00">
-<meta property="article:modified_time" content="2021-10-05T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2021-10-09T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-10-09T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Raft算法">
-<meta itemprop=description content="Raft算法 简介 Raft算法是2013年斯坦福大学的Diego Ongaro、John Ousterhout 两人发布的一致性算法，论文：《In Search of an Understandable Consensus Algor"><meta itemprop=datePublished content="2021-10-05T00:00:00+00:00">
-<meta itemprop=dateModified content="2021-10-05T00:00:00+00:00">
-<meta itemprop=wordCount content="3863">
+<meta itemprop=description content="Raft算法 简介 Raft算法是2013年斯坦福大学的Diego Ongaro、John Ousterhout 两人发布的一致性算法，论文：《In Search of an Understandable Consensus Algor"><meta itemprop=datePublished content="2021-10-09T00:00:00+00:00">
+<meta itemprop=dateModified content="2021-10-09T00:00:00+00:00">
+<meta itemprop=wordCount content="4273">
 <meta itemprop=keywords content="distribute,一致性算法,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Raft算法">
 <meta name=twitter:description content="Raft算法 简介 Raft算法是2013年斯坦福大学的Diego Ongaro、John Ousterhout 两人发布的一致性算法，论文：《In Search of an Understandable Consensus Algor"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Raft算法</h1>
 <div class=post-meta>
-<time datetime=2021-10-05 class=post-time>
-2021-10-05
+<time datetime=2021-10-09 class=post-time>
+2021-10-09
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/distribute/> distribute </a>
@@ -231,7 +231,7 @@ Justice's Blog
 <p>与<code>Paxos</code>相比，Raft 易理解、易实现；</p>
 </li>
 <li>
-<p>Raft 和 Paxos 一样只要保证超过半数的节点正常就能够提供服务；</p>
+<p>Raft 和 Paxos 一样, 只要保证超过半数的节点正常就能够提供服务；</p>
 </li>
 </ul>
 <h2 id=关键概念>关键概念</h2>
@@ -305,16 +305,23 @@ Justice's Blog
 <li>Leader 在收到更高任期的请求后转换为 Follower</li>
 </ul>
 <h3 id=任期>任期</h3>
-<p>Raft 把时间切割为任意长度的任期，每个任期都有一个任期号，采用连续的整数。每个任期都由一次选举开始，若选举失败则这个任期内没有 Leader；如果选举出了 Leader 则这个任期内有 Leader 负责集群状态管理。</p>
+<ul>
+<li>
+<p>Raft 把时间切割为任意长度的任期，每个任期都有一个任期号，采用连续的整数。</p>
+</li>
+<li>
+<p>每个任期都由一次选举开始，若选举失败则这个任期内没有 Leader；如果选举出了 Leader 则这个任期内有 Leader 负责集群状态管理。</p>
+</li>
+</ul>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-57-24-image-20190523192955386.png alt=image-20190523192955386></p>
 <h3 id=计时器>计时器</h3>
 <p>raft 定义了两种计时器：</p>
 <ul>
 <li>
-<p>选举计时器：Candidate 节点在进行选举时，如果在一个选举计时器周期内，任然没有获取多数投票，将重新发起选举。 默认值是 1000ms，最大值 50000ms。</p>
+<p><strong>选举计时器</strong>：Candidate 节点在进行选举时，如果在一个选举计时器周期内，任然没有获取多数投票，将重新发起选举。 默认值是 1000ms，最大值 50000ms。</p>
 </li>
 <li>
-<p>心跳计时器：Follower 节点在一个心跳计时器周期内没有收到 Leader 的心跳消息，该 Follower 将会转为 Candidate 状态，发起选举。默认值 100ms，</p>
+<p><strong>心跳计时器</strong>：Follower 节点在一个心跳计时器周期内没有收到 Leader 的心跳消息，该 Follower 将会转为 Candidate 状态，发起选举。默认值 100ms，</p>
 <p>选举定时必须要大于 5 倍心跳定时，建议是 10 倍关系。</p>
 </li>
 </ul>
@@ -366,16 +373,16 @@ Justice's Blog
 <p>Raft 算法流程分为以下几个步骤：</p>
 <ol>
 <li>
-<p>启动阶段：系统启动时处理流程；</p>
+<p><strong>启动</strong>：系统启动时处理流程；</p>
 </li>
 <li>
-<p>选举：；</p>
+<p><strong>选举</strong>：；</p>
 </li>
 <li>
-<p>日志复制：当选举成功产生 Leader 后，系统进入日志复制阶段，Leader 持续将收到的客户端日志按顺序复制到 Follower：</p>
+<p><strong>日志复制</strong>：当选举成功产生 Leader 后，系统进入日志复制阶段，Leader 持续将收到的客户端日志按顺序复制到 Follower：</p>
 </li>
 <li>
-<p>变更：</p>
+<p><strong>变更</strong>：</p>
 </li>
 </ol>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2021/09/04-10-58-18-raft-alg.gif alt></p>
@@ -389,6 +396,7 @@ Justice's Blog
 </li>
 </ol>
 <h3 id=选举>选举</h3>
+<p>Raft算法被分为一个个任期(term)，每个term分为两个阶段：选举阶段和当选后日志复制阶段。</p>
 <ol>
 <li><code>Candidate</code>节点先给自己投一票，然后给其他节点发送<code>拉票请求</code>；</li>
 <li><code>Leader</code>,<code>Candidate</code>节点将忽略其他节点的<code>拉票请求</code>;</li>
@@ -410,14 +418,30 @@ Justice's Blog
 </li>
 </ol>
 <h3 id=日志复制>日志复制</h3>
+<p>每个<strong>term</strong>在选举成功后，进入日志复制阶段。日志复制阶段中<code>Leader</code>接收外部<code>Client</code>的请求，将请求日志复制到各<code>Follower</code>的过程。日志复制的流程如下：</p>
 <ol>
-<li>client 发送 msg 给 Leader；</li>
-<li>leader 写 wal 日志，并 commit append entries rpc 到所有 Follower；</li>
-<li>如果 leader 收到 follower committed ack 数 > (N/2)，则 apply log 到本地状态机，并返回给 client；</li>
-<li>follower 收到 leader</li>
+<li><code>Leader</code>接收<code>Client</code>消息；</li>
+<li><code>Leader</code>将消息增加上(index, term)作为<code>Log</code>，将<code>Log</code>追加到日志存储中;</li>
+<li><code>Leader</code>通过<code>AppendEntries</code> RPC调用将<code>Log</code>复制到所有<code>Follower</code>；</li>
+<li><code>Follower</code>收到<code>AppendEntries</code> RPC，记录Log并返回ACK给<code>Leader</code>;</li>
+<li><code>Leader</code> 收到大多数 <code>Follower</code> 节点的Ack，则通过<code>状态机</code>执行消息，并结果返回给 client；</li>
 </ol>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2021/09/07-18-13-28-2021-09-07-18-13-23-image.png alt></p>
 <h3 id=配置改变>配置改变</h3>
+<ul>
+<li>
+<p>配置变更包括节点数量的改变，配置参数的变更等。</p>
+</li>
+<li>
+<p>最简单的方式是：停止集群、改变成员、启动集群。这种方式在执行时会导致集群整体不可用；</p>
+</li>
+<li>
+<p>Raft集群成员配置作为一个特殊日志从 leader 节点同步到其它节点去；</p>
+</li>
+<li>
+<p>Raft 使用一种两阶段方法平滑切换集群成员配置来避免遇到前一节描述的问题，具体流程如下：</p>
+</li>
+</ul>
 <h2 id=安全性>安全性</h2>
 <p>Raft 增加了如下两条限制以保证安全性：</p>
 <ul>
@@ -432,6 +456,7 @@ Justice's Blog
 <p>在实际的系统中，不能让日志无限增长，否则系统重启时需要花很长的时间进行回放，从而影响可用性。Raft 采用对整个系统进行 snapshot 来解决，snapshot 之前的日志都可以丢弃。</p>
 <p>每个副本独立的对自己的系统状态进行 snapshot，并且只能对已经提交的日志记录进行 snapshot。</p>
 <p>当 Leader 要发给某个日志落后太多的 Follower 的 log entry 被丢弃，Leader 会将 snapshot 发给 Follower。或者当新加进一台机器时，也会发送 snapshot 给它。发送 snapshot 使用 InstalledSnapshot RPC（RPC 细节参见八、Raft 算法总结）。</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/07-09-28-51-2021-10-07-09-28-04-image.png alt></p>
 <h3 id=成员变更>成员变更</h3>
 <p>成员变更是在集群运行过程中副本发生变化，如增加/减少副本数、节点替换等。</p>
 <p>因为各个服务器提交成员变更日志的时刻可能不同，造成各个服务器从旧成员配置（Cold）切换到新成员配置（Cnew）的时刻不同。成员变更不能影响服务的可用性，但是成员变更过程的某一时刻，可能出现在 Cold 和 Cnew 中同时存在两个不相交的多数派，进而可能选出两个 Leader，形成不同的决议，破坏安全性。</p>
@@ -516,6 +541,8 @@ Justice's Blog
 <li><a href=https://github.com/maemual/raft-zh_cn/blob/master/raft-zh_cn.md>raft-zh_cn/raft-zh_cn.md at master · maemual/raft-zh_cn · GitHub</a></li>
 <li><a href=https://mp.weixin.qq.com/s/lUbVBVzvNVxhgbcHQBbkkQ>条分缕析 Raft 算法</a></li>
 <li><a href=https://www.cnblogs.com/mindwind/p/5231986.html>Raft 为什么是更易理解的分布式一致性算法 - mindwind - 博客园</a></li>
+<li><a href=https://zhuanlan.zhihu.com/p/125573685>全面理解Raft协议</a></li>
+<li><a href=https://juejin.cn/post/6902274909959880711>Raft 协议实战系列（五）—— 集群成员变更与日志压缩</a></li>
 </ol>
 </div>
 <div class=post-copyright>
@@ -526,7 +553,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2021-10-05
+2021-10-09
 </span>
 </p>
 <p class=copyright-item>
