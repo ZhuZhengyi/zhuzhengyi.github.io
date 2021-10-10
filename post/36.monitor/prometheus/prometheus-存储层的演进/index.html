@@ -1,0 +1,561 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>Prometheus 存储层的演进 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/36.monitor/prometheus/prometheus-%E5%AD%98%E5%82%A8%E5%B1%82%E7%9A%84%E6%BC%94%E8%BF%9B/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.2f6e4d7e6e51da09470910b5f0d41a7d2c517dbe97416dd268a18bb7334c4ff8.css integrity="sha256-L25Nfm5R2glHCRC18NQafSxRfb6XQW3SaKGLtzNMT/g=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="Prometheus 存储层的演进">
+<meta property="og:description" content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/36.monitor/prometheus/prometheus-%E5%AD%98%E5%82%A8%E5%B1%82%E7%9A%84%E6%BC%94%E8%BF%9B/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2021-04-27T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-04-27T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="Prometheus 存储层的演进">
+<meta itemprop=description content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询"><meta itemprop=datePublished content="2021-04-27T00:00:00+00:00">
+<meta itemprop=dateModified content="2021-04-27T00:00:00+00:00">
+<meta itemprop=wordCount content="5203">
+<meta itemprop=keywords content="monitor,prometheus,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="Prometheus 存储层的演进">
+<meta name=twitter:description content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='002186711602136249422:q1gkomof_em',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>Prometheus 存储层的演进</h1>
+<div class=post-meta>
+<time datetime=2021-04-27 class=post-time>
+2021-04-27
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/monitor/> monitor </a>
+<a href=https://justice.bj.cn/categories/prometheus/> prometheus </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#tsdb>TSDB</a></li>
+<li><a href=#tsdb基本问题>TSDB基本问题</a></li>
+</ul>
+<ul>
+<li><a href=#数据模型>数据模型</a></li>
+<li><a href=#第1代原型阶段>第1代：原型阶段</a></li>
+<li><a href=#2nd-generation-prometheus-v1>2nd Generation: Prometheus V1</a>
+<ul>
+<li><a href=#compression>Compression</a></li>
+<li><a href=#chunk-encoding>Chunk Encoding</a></li>
+<li><a href=#prometheus-v1-vs-gorilla>Prometheus V1 vs. Gorilla</a></li>
+</ul>
+</li>
+<li><a href=#prometheus-v2>Prometheus V2</a>
+<ul>
+<li><a href=#the-main-problem-with-2nd-generation>The Main Problem With 2nd Generation</a></li>
+<li><a href=#macro-design>Macro Design</a></li>
+<li><a href=#many-little-databases>Many Little Databases</a></li>
+<li><a href=#mmap>mmap</a></li>
+<li><a href=#compaction>Compaction</a></li>
+<li><a href=#retention>Retention</a></li>
+<li><a href=#compression-1>Compression</a></li>
+</ul>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=prometheus-存储层的演进>Prometheus 存储层的演进</h1>
+<p>Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询接口。</p>
+<p>时序数据库是 Promtheus 监控平台的一部分，在了解其存储层的演化过程之前，我们需要先了解时序数据库及其要解决的根本问题。</p>
+<h2 id=tsdb>TSDB</h2>
+<p><strong>时序数据库 (Time Series Database, TSDB)</strong> 是数据库大家庭中的一员，专门存储随时间变化的数据，如股票价格、传感器数据、机器状态监控等等。<strong>时序 (Time Series)</strong> 指的是某个变量随时间变化的所有历史，而<strong>样本 (Sample)</strong> 指的是历史中该变量的瞬时值：</p>
+<p><img src=https://static001.geekbang.org/infoq/20/201272f18e27f0072f47aad8a3e41299.jpeg alt></p>
+<p>每个样本由<strong>时序标识</strong>、<strong>时间戳</strong>和<strong>数值</strong> 3 部分构成，其所属的时序就由一系列样本构成。由于时间是连续的，我们不可能、也没有必要记录时序在每个时刻的数值，因此<strong>采样间隔</strong> (Interval) 也是时序的重要组成部分。采样间隔越小、样本总量越大、捕获细节越多；采样间隔越大、样本总量越小、遗漏细节越多。以服务器机器监控为例，通常采样间隔为 15 秒。</p>
+<p>数据的高效查询离不开索引，对于时序数据而言，唯一的、天然的索引就是时间 (戳)。因此通常时序数据库的存储层相比于关系型数据库要简单得多。仔细思考，你可能会发现时序数据在某种程度上就是键值数据的一个子集，因此键值数据库天然地可以作为时序数据的载体。通常一个时序数据库能容纳百万量级以上的时序数据，要从其中搜索到其中少量的几个时序也非易事，因此对时序本身建立高效的索引也很重要。</p>
+<h2 id=tsdb基本问题>TSDB基本问题</h2>
+<p>TSDB 要解决的基本问题，可以概括为下图：</p>
+<p><img src=https://static001.geekbang.org/infoq/61/61e987cbb05f960a3ac43fb93c3a4ded.jpeg alt></p>
+<p>研究过存储引擎结构和性能优化的工程师都会知道：</p>
+<blockquote>
+<p>许多数据库的奇技淫巧都是在解决内存与磁盘的读写模式、性能的不匹配问题</p>
+</blockquote>
+<p>时序数据库也是数据库的一种，只要它想持久化，自然不能例外。但与键值数据库相比，时序数据库存储的数据有更特殊的读写特征，Björn Rabenstein 将称其为：</p>
+<blockquote>
+<p>Vertical writes, horizontal(-ish) reads</p>
+<p>垂直写，水平读</p>
+</blockquote>
+<p>图中每条横线就是一个时序，每个时序由按照 (准) 固定间隔采集的样本数据构成，通常在时序数据库中会有很多活跃时序，因此数据写入可以用一个垂直的窄方框表示，即每个时序都要写入新的样本数据；用户在查询时，通常会观察某个、某几个时序在某个时间段内的变化趋势，或对其进行聚合计算，因此数据读取可以用一个水平的方框表示。是谓 “垂直写、水平读”。</p>
+<h1 id=prometheus存储层>Prometheus存储层</h1>
+<p>Prometheus 是为云原生环境中的数据监控而生，在其设计过程中至少需要考虑以下两个方面：</p>
+<p>1、在云原生环境中，实例可能随时出现、消失，因此时序也可能随时出现或消失，即系统中存在大量时序，其中部分处于活跃状态，这会在多方面带来挑战：</p>
+<ul>
+<li>
+<p>如何存储大量时序避免资源浪费</p>
+</li>
+<li>
+<p>如何定位被查询的少数几个时序</p>
+</li>
+</ul>
+<p>2、监控系统本身应该尽量少地依赖外部服务，否则外部服务失效将引发监控系统失效</p>
+<p>对于第 2 点，Prometheus 团队选择放弃集群，使用单机架构，并且在单机系统中使用本地 TSDB 做数据持久化，完全不依赖外部服务；第 1 点是需要存储、索引、查询引擎层合作解决的问题，在下文中我们将进一步分析存储层在其中的作用。Prometheus 存储层的演进可以分成 3 个阶段：</p>
+<ul>
+<li>
+<p>第1代: Prototype</p>
+</li>
+<li>
+<p>第2代: Prometheus V1</p>
+</li>
+<li>
+<p>第3代: Prometheus V2</p>
+</li>
+</ul>
+<p><em>注意：本节只关注 Prometheus 时序数据的存储，不涉及索引、WAL 等其它数据的存储。</em></p>
+<h2 id=数据模型>数据模型</h2>
+<p>在 Prometheus 中，每个时序实际上由多个<strong>标签</strong> (labels) 标识，如：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=err>api_http_requests_total</span><span class=p>{</span><span class=err>path=</span><span class=nt>&#34;/users&#34;</span><span class=p>,</span><span class=err>status=200,method=</span><span class=nt>&#34;GET&#34;</span><span class=p>,</span><span class=err>instance=</span><span class=nt>&#34;10.111.201.26&#34;</span><span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>该时序的名字为 api_http_requests_total，标签为 path、status、method 和 instance，只有时序名字和标签键值完全相同的时序才是同一个时序。事实上，时序名字就是一个隐藏标签：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span><span class=err>__name__=</span><span class=nt>&#34;api_http_requests_total&#34;</span><span class=p>,</span><span class=err>path=</span><span class=nt>&#34;/users&#34;</span><span class=p>,</span><span class=err>status=200,method=</span><span class=nt>&#34;GET&#34;</span><span class=p>,</span><span class=err>instance=</span><span class=nt>&#34;10.111.201.26&#34;</span><span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>对于用户来说，标签之间不存在先后顺序，用户可能关注：</p>
+<ul>
+<li>
+<p>所有 api 调用的 status</p>
+</li>
+<li>
+<p>某个 path 调用的成功率、QPS</p>
+</li>
+<li>
+<p>某个实例、某个 path 调用的成功率</p>
+</li>
+<li>
+<p>…</p>
+</li>
+</ul>
+<h2 id=第1代原型阶段>第1代：原型阶段</h2>
+<p>在 Prototype 阶段，Prometheus 直接利用开源的键值数据库 (LevelDB) 作为本地持久化存储，并采用与 <a href="https://cloud.google.com/bigtable/docs/schema-design-time-series?hl=en#server_metrics">BigTable 推荐的时序数据方案</a> 类似的 schema 设计：</p>
+<p><img src=https://static001.geekbang.org/infoq/c1/c1ee35cd6c56a0abdba02facd0eb8e23.jpeg alt></p>
+<p>将<strong>时序名称、标签 (固定顺序)、时间戳</strong>拼接成每个样本的键，于是同一个时序的数据就能够连续存储在键值数据库中，提高范围查询的效率。</p>
+<p>但从图中可以看出，这种方式存储的键很长，尽管键值数据库内部会对数据进行压缩，但是在内存中这样存储数据很浪费空间，这无法满足项目的设计要求。</p>
+<p>Prometheus 希望在内存中压缩数据，使得内存中可以容纳更多活跃的时序数据，同时在磁盘中也能按类似的方式压缩编码，提高效率。时序数据比通用键值数据有更显著的特征。即使键值数据库能够压缩数据，但针对时序数据的特征，使用特殊的压缩算法能够取得更好的压缩率。因此在 Prototype 阶段，使用三方键值数据库的方案最终流产。</p>
+<h2 id=2nd-generation-prometheus-v1>2nd Generation: Prometheus V1</h2>
+<h3 id=compression>Compression</h3>
+<h5 id=why-compression>Why Compression</h5>
+<p>假设监控系统的需求如下：</p>
+<ul>
+<li>
+<p>500 万活跃时序</p>
+</li>
+<li>
+<p>30 秒采样间隔</p>
+</li>
+<li>
+<p>1 个月数据留存</p>
+</li>
+</ul>
+<p>那么经过计算可以得到具体的存储要求：</p>
+<ul>
+<li>
+<p>平均每秒采集 166000 个样本</p>
+</li>
+<li>
+<p>存储样本总量为 4320 亿个样本</p>
+</li>
+</ul>
+<p>假设没有任何压缩，不算时序标识，每个样本需要 16 个字节存储空间 (时间戳 8 个字节、数值 8 个字节)，整个系统的<strong>存储总量为 7TB</strong>，假设数据需要留存 6 个月，则<strong>总量为 42 TB</strong>，那么如果能找到一种有效的方式压缩数据，就能在单机的内存和磁盘中存放更多、更长的时序数据。</p>
+<h5 id=chunked-storage-abstraction>Chunked Storage Abstraction</h5>
+<p>上文提到 TSDB 的根本问题是 “垂直写，水平读”，每次采样都会需要为每个活跃时序写入一条样本数据，但如果每次为每个时序写入 16 个字节到 HDD/SSD 中，显然这对块存储设备十分不友好，效率低下。因此 Prometheus V2 将数据按固定长度切割相同大小的分段 (Chunks)，方便压缩、批量读写。</p>
+<p>访问时序数据时，Prometheus 使用 3 层抽象，如下图所示：</p>
+<p><img src=https://static001.geekbang.org/infoq/b3/b3c625910f6056532e3786a15df352c4.jpeg alt></p>
+<p>应用层使用 Series Iterator 顺序访问时序中的样本，而 Series Iterator 底下由一个个 Chunk Iterator 拼接而成，每个 Chunk Iterator 负责将压缩编码的时序数据解码返回。这样做的好处是，<strong>每个 Chunk 甚至可以使用完全不同的方式编码</strong>，方便开发团队尝试不同的编码方案。</p>
+<h5 id=timestamp-compression-double-delta>Timestamp Compression: Double Delta</h5>
+<p>由于通常数据采样间隔是固定值，因此前后时间戳的差值几乎固定，如 15s，30s。但如果我们更近一步，只存储差值的差值，那么几乎不用再为新的时间戳花费额外的空间，这便是所谓的 “<strong>Double Delta</strong>“。本质上，如果未来所有的采集时间戳都可以精准预测，那么每个新时间戳的信息熵为 0 bit。但现实并不完美，网络可能延迟、中断，实例可能遇到 GC、重启，采样间隔随时有可能波动：</p>
+<p><img src=https://static001.geekbang.org/infoq/01/01b5489a1d90b48f3e0e91bea69a2d57.jpeg alt></p>
+<p>但这种波动的幅度有限，Prometheus 采用了和 FB 的内存时序数据库 Gorilla 类似的方式编码时间戳，详情可以参考 <strong>Gorilla</strong>) 以及 Björn Rabenstein 在 PromConn 2016 的演讲 <a href="https://docs.google.com/presentation/d/1TMvzwdaS8Vw9MtscI9ehDyiMngII8iB_Z5D4QW4U4ho/edit#slide=id.g15afea0287_0_16">ppt</a> ，细节比较琐碎，这里不赘述。</p>
+<h5 id=value-compression>Value Compression</h5>
+<p>Prometheus 和 Gorilla 中的每个样本值都是 float64 类型。Gorilla 利用 float64 的二进制表示 (IEEE754) 将前后两个样本值 XOR 来寻找压缩的空间，能获得 1.37 bytes/sample 的压缩能力。Prometheus V2 采用的方式比较简单：</p>
+<ul>
+<li>
+<p>如果可能的话，使用整型 (8/16/32 位) 存储，否则用 float32，最后实在不行就直接存储 float64</p>
+</li>
+<li>
+<p>如果数值增长得很规律，则不使用额外的空间存储</p>
+</li>
+</ul>
+<p>以上做法给 Prometheus V1 带来了 3.3 bytes/sample 的压缩能力。相比于为完全存储于内存中的 Gorilla 相比，这样的压缩能力对于 Prometheus 已经够用，但在 V2 中，Prometheus 也融合了 Gorilla 采用的压缩技术。</p>
+<h3 id=chunk-encoding>Chunk Encoding</h3>
+<p>Prometheus V1 将每个时序分割成大小为 1KB 的 chunks，如下图所示：</p>
+<p><img src=https://static001.geekbang.org/infoq/2c/2c9dd3faa9bdb888b25078c4cf9ddf1d.jpeg alt></p>
+<p>在内存中保留着最近写入的 chunk，其中 head chunk 正在接收新的样本。每当一个 head chunk 写满 1KB 时，会立即被冻结，我们称之为完整的 chunk，从此刻开始该 chunk 中的数据就是不可变的 (immutable) ，同时生成一个新的 head chunk 负责消化新的请求。每个完整的 chunk 会被尽快地持久化到磁盘中。内存中保存着每个时序最近被写入或被访问的 chunks，当 chunks 数量过多时，存储引擎会将超过的 chunks 通过 LRU 策略清出。</p>
+<p>在 Prometheus V1 中，每个时序都会被存储到在一个独占的文件中，这也意味着大量的时序将产生大量的文件。存储引擎会定期地去检查磁盘中的时序文件，是否已经有 chunk 数据超过保留时间，如果有则将其删除 (复制后删除)。</p>
+<p>Prometheus 的查询引擎的查询过程必须完全在内存中进行。因此在执行之前，存储引擎需要将不在内存中的 chunks 预加载到内存中：</p>
+<p><img src=https://static001.geekbang.org/infoq/09/0949cf5ea604441385fc5b2640886787.jpeg alt></p>
+<p>如果在内存中的 chunks 持久化之前系统发生崩溃，则会产生数据丢失。为了减少数据丢失，Prometheus V1 还使用了额外的 checkpoint 文件，用于存储各个时序中尚未写入磁盘的 chunks：</p>
+<p><img src=https://static001.geekbang.org/infoq/30/30f4bd7c297d3d74cfed5289d0fbbf11.jpeg alt></p>
+<h3 id=prometheus-v1-vs-gorilla>Prometheus V1 vs. Gorilla</h3>
+<p>正因为 Prometheus V1 与 Gorilla 的设计理念、需求有所不同，我们可以通过对比二者来理解其设计过程中使用不同决策的原因。</p>
+<p><img src=https://static001.geekbang.org/infoq/8c/8ce5cdc24e75e89dcffb0122bdd1d018.png alt></p>
+<h2 id=prometheus-v2>Prometheus V2</h2>
+<h3 id=the-main-problem-with-2nd-generation>The Main Problem With 2nd Generation</h3>
+<p>Prometheus V1 中，每个时序数据对应一个磁盘文件的方式给系统带来了比较大的麻烦：</p>
+<ul>
+<li>
+<p>由于在云原生环境下，会不断产生新的时序、废弃旧的时序 (Series Churn)，因此实际上存储层需要的文件数量远远高于活跃的时序数量。任其发展迟早会将文件系统的 inodes 消耗殆尽。而且一旦发生，恢复系统将异常麻烦。不仅如此，在新旧时序大量更迭时，由于旧时序数据尚未从内存中清出，系统的内存消耗量也会飙升，造成 OOM。</p>
+</li>
+<li>
+<p>即便使用 chunks 来批量读写数据，从整体上看，系统每秒钟仍要向磁盘写入数千个 chunks，造成 I/O 压力；如果通过增大每批写入的量来减少 I/O 次数，又将造成内存的压力。</p>
+</li>
+<li>
+<p>同时将所有时序文件保持打开状态很不合理，需要消耗大量的资源。如果在查询前后打开、关闭文件，又会增加查询的时延。</p>
+</li>
+<li>
+<p>当数据超过留存时间时需要删除相关的 chunks，这意味着每隔一段时间就要对数百万的文件执行一次删除数据操作，这个过程可能需要持续数小时。</p>
+</li>
+<li>
+<p>通过周期性地将未持久化的 chunks 写入 checkpoint 文件理论上确实可以减少数据丢失，但是如果执行数据恢复需要很长时间，那么实际上又错过了新的数据，还不如不恢复。</p>
+</li>
+</ul>
+<p>因此 Prometheus 的第三代存储引擎，主要改变就是放弃 “一个时序对应一个文件” 的设计理念。</p>
+<h3 id=macro-design>Macro Design</h3>
+<p>第三代存储引擎在磁盘中的文件结构如下图所示：</p>
+<p><img src=https://static001.geekbang.org/infoq/6b/6b3e116902771cf008d83da02001f6fd.png alt></p>
+<p>根目录下，顺序排列着编了号的 blocks，每个 block 中包含 index 和 chunk 文件夹，后者里面包含编了号的 chunks，每个 chunk 包含<strong>许多不同时序的样本数据</strong>。其中 index 文件中的信息可以帮我我们快速锁定时序的标签及其可能的取值，进而找到相关的时序和持有该时序样本数据的 chunks。值得注意的是，最新的 block 文件夹中还包含一个 wal 文件夹，后者将承担故障恢复的职责。</p>
+<h3 id=many-little-databases>Many Little Databases</h3>
+<p>第三代存储引擎将所有时序数据按时间分片，即在时间维度上将数据划分成互不重叠的 blocks，如下图所示：</p>
+<p><img src=https://static001.geekbang.org/infoq/5f/5f0c8ffaf88cc7fb5950f134ab6fd221.jpeg alt></p>
+<p>每个 block 实际上就是一个小型数据库，内部存储着该时间窗口内的所有时序数据，因此它需要拥有自己的 index 和 chunks。除了最新的、正在接收新鲜数据的 block 之外，其它 blocks 都是不可变的。由于新数据的写入都在内存中，数据的写效率较高：</p>
+<p><img src=https://static001.geekbang.org/infoq/ee/eed5d98a2f2c9d85a0b53e1373ac9069.jpeg alt></p>
+<p>为了防止数据丢失，所有新采集的数据都会被写入到 WAL 日志中，在系统恢复时能快速地将其中的数据恢复到内存中。在查询时，我们需要将查询发送到不同的 block 中，再将结果聚合。</p>
+<p>按时间将数据分片赋予了存储引擎新的能力：</p>
+<ul>
+<li>
+<p>当查询某个时间范围内的数据，我们可以直接忽略在时间范围外的 blocks</p>
+</li>
+<li>
+<p>写完一个 block 后，我们可以将轻易地其持久化到磁盘中，因为只涉及到少量几个文件的写入</p>
+</li>
+<li>
+<p>新的数据，也是最常被查询的数据会处在内存中，提高查询效率 (第二代同样支持)</p>
+</li>
+<li>
+<p>每个 chunk 不再是固定的 1KB 大小，我们可以选择任意合适的大小，选择合适的压缩方式</p>
+</li>
+<li>
+<p>删除超过留存时间的数据变得异常简单，直接删除整个文件夹即可</p>
+</li>
+</ul>
+<h3 id=mmap>mmap</h3>
+<p>第三代引擎将数百万的小文件合并成少量大文件，也让 mmap 成为可能。利用 mmap 将文件 I/O 、缓存管理交给操作系统，降低 OOM 发生的频率。</p>
+<h3 id=compaction>Compaction</h3>
+<p>在 Macro Design 中，我们将所有时序数据按时间切割成许多 blocks，当新写满的 block 持久化到磁盘后，相应的 WAL 文件也会被清除。写入数据时，我们希望每个 block 不要太大，比如 2 小时左右，来避免在内存中积累过多的数据。读取数据时，若查询涉及到多个时间段，就需要对许多个 block 分别执行查询，然后再合并结果。假如需要查询一周的数据，那么这个查询将涉及到 80 多个 blocks，降低数据读取的效率。</p>
+<p>为了既能写得快，又能读得快，我们就得引入 compaction，后者将一个或多个 blocks 中的数据合并成一个更大的 block，在合并的过程中会自动丢弃被删除的数据、合并多个版本的数据、重新结构化 chunks 来优化查询效率，如下图所示：</p>
+<p><img src=https://static001.geekbang.org/infoq/39/39790ee1365a2c32c142d68b4f8eea8b.jpeg alt></p>
+<h3 id=retention>Retention</h3>
+<p>当数据超过留存时间时，删除旧数据非常容易：</p>
+<p><img src=https://static001.geekbang.org/infoq/89/89aad68806cb19fba69f39c52954d09b.jpeg alt></p>
+<p>直接删除在边界之外的 block 文件夹即可。如果边界在某个 block 之内，则暂时将它留存，知道边界超出为止。当然，在 Compaction 中，我们会将旧的 blocks 合并成更大的 block；在 Retention 时，我们又希望能够粒度更小。所以 Compaction 与 Retention 的策略之间存在着一定的互斥关系。Prometheus 的系统参数可以对单个 block 的大小作出限制，来寻找二者之间的平衡。</p>
+<p>看到这里，相信你已经发现了，这不就是 <strong>LSM Tree</strong> 吗？每个 block 就是按时间排序的 SSTable，内存中的 block 就是 MemTable。</p>
+<h3 id=compression-1>Compression</h3>
+<p>第三代存储引擎融合了 Gorilla 的<strong>XOR float encoding</strong>方案，将压缩能力提升到 1-2 bytes/sample。具体方案可以概括为：按顺序采用以下第一条适用的策略</p>
+<ol>
+<li>
+<p>Zero encoding：如果完全可预测，则无需额外空间</p>
+</li>
+<li>
+<p>Integer double-delta encoding：如果是整型，可以利用 double-delta 原理，将不等的前后间隔分成 6/13/20/33 bits 几种，来优化空间使用</p>
+</li>
+<li>
+<p>XOR float encoding：参考 Gorilla</p>
+</li>
+<li>
+<p>Direct encoding：直接存 float64</p>
+</li>
+</ol>
+<p>平均下来能取得 1.28 bytes/sample 的压缩能力。</p>
+<h1 id=references>References</h1>
+<ul>
+<li>
+<p><a href="https://www.youtube.com/watch?v=b_pEevMAC3I&feature=youtu.be">PromCon 2017: Storing 16 Bytes at Scale - Fabian Reinartz</a>, <a href=https://promcon.io/2017-munich/slides/storing-16-bytes-at-scale.pdf>slides</a></p>
+</li>
+<li>
+<p><a href=https://fabxc.org/tsdb/>Writing a Time Series Database from Scratch</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=HbnGSNEjhUc">PromCon 2016: The Prometheus Time Series Database - Björn Rabenstein</a>, <a href="https://docs.google.com/presentation/d/1TMvzwdaS8Vw9MtscI9ehDyiMngII8iB_Z5D4QW4U4ho/edit#slide=id.g59e2f6081_1_0">slides</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=evPYwNzoltU&t=782s">Percona Live Open Source Database Conference 2017: Life of a PromQL query</a></p>
+</li>
+<li>
+<p><a href=https://prometheus.io/docs/prometheus/1.8/storage/>Prometheus 1.8 doc: storage</a></p>
+</li>
+<li>
+<p><a href=https://prometheus.io/docs/prometheus/latest/storage/>Prometheus 2.16 doc: storage</a></p>
+</li>
+<li>
+<p><a href="https://cloud.google.com/bigtable/docs/schema-design-time-series?hl=en#server_metrics">Google Cloud: Schema Design for Time Series Data</a></p>
+</li>
+<li>
+<p><a href=https://segmentfault.com/a/1190000018479963>容器监控实践—Prometheus存储机制</a></p>
+</li>
+</ul>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2021-04-27
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/monitor/>monitor</a>
+<a href=https://justice.bj.cn/tags/prometheus/>prometheus</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/40.storage/chubaofs/chubaofs-%E8%AF%BB%E5%86%99%E5%88%86%E6%9E%90/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">ChubaoFS 读写分析</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/30.architech/cockroachdb/>
+<span class="next-text nav-default">CockroachDB</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2021
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>
