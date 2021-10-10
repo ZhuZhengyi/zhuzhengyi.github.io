@@ -1,0 +1,569 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>列式存储格式Parquet - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/parquet/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.2f6e4d7e6e51da09470910b5f0d41a7d2c517dbe97416dd268a18bb7334c4ff8.css integrity="sha256-L25Nfm5R2glHCRC18NQafSxRfb6XQW3SaKGLtzNMT/g=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="列式存储格式Parquet">
+<meta property="og:description" content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/parquet/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2020-12-25T00:00:00+00:00">
+<meta property="article:modified_time" content="2020-12-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="列式存储格式Parquet">
+<meta itemprop=description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><meta itemprop=datePublished content="2020-12-25T00:00:00+00:00">
+<meta itemprop=dateModified content="2020-12-25T00:00:00+00:00">
+<meta itemprop=wordCount content="6015">
+<meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="列式存储格式Parquet">
+<meta name=twitter:description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='002186711602136249422:q1gkomof_em',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>列式存储格式Parquet</h1>
+<div class=post-meta>
+<time datetime=2020-12-25 class=post-time>
+2020-12-25
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/architech/> architech </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#架构>架构</a></li>
+<li><a href=#行式存储列式存储>行式存储/列式存储</a>
+<ul>
+<li><a href=#数据模型>数据模型</a></li>
+<li><a href=#列存储格式>列存储格式</a></li>
+<li><a href=#definition-levels>Definition levels</a></li>
+<li><a href=#repetition-levels>Repetition levels</a></li>
+<li><a href=#striping-and-assembly>Striping and assembly</a></li>
+<li><a href=#文件格式>文件格式</a></li>
+<li><a href=#映射下推project-pushdown>映射下推(Project PushDown)</a></li>
+<li><a href=#谓词下推predicate-pushdown>谓词下推(Predicate PushDown)</a></li>
+</ul>
+</li>
+<li><a href=#性能>性能</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=列式存储格式parquet>列式存储格式Parquet</h1>
+<h1 id=简介>简介</h1>
+<p>Apache Parquet是Hadoop生态圈中一种<strong>新型列式存储格式</strong>, 来自于2010年Google发表的<a href=http://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/36632.pdf>Dremel论文</a>，可以兼容Hadoop生态圈中大多数计算框架(Hadoop、Spark等)，被多种查询引擎支持(Hive、Impala、Drill等)，并且它是语言和平台无关的。</p>
+<p>Parquet最初是由Twitter和Cloudera(由于Impala的缘故)合作开发完成并开源，2015年5月从Apache的孵化器里毕业成为Apache顶级项目，最新的版本是1.8.1。</p>
+<p>Parquet是语言无关的，而且不与任何一种数据处理框架绑定在一起，适配多种语言和组件，能够与Parquet配合的组件有：</p>
+<ul>
+<li>
+<p>查询引擎: Hive, Impala, Pig, Presto, Drill, Tajo, HAWQ, IBM Big SQL</p>
+</li>
+<li>
+<p>计算框架: MapReduce, Spark, Cascading, Crunch, Scalding, Kite</p>
+</li>
+<li>
+<p>数据模型: Avro, Thrift, Protocol Buffers, POJOs</p>
+</li>
+</ul>
+<h2 id=架构>架构</h2>
+<ol>
+<li>存储格式(storage format)</li>
+</ol>
+<p>parquet-format项目定义了Parquet内部的数据类型、存储格式等。</p>
+<ol start=2>
+<li>对象模型转换器(object model converters)</li>
+</ol>
+<p>这部分功能由parquet-mr项目来实现，主要完成外部对象模型与Parquet内部数据类型的映射。</p>
+<ol start=3>
+<li>对象模型(object models)</li>
+</ol>
+<p>对象模型可以简单理解为内存中的数据表示，Avro, Thrift, Protocol Buffers, Hive SerDe, Pig Tuple, Spark SQL InternalRow等这些都是对象模型。Parquet也提供了一个example object model 帮助大家理解。</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-14-37-42-2019-12-13-16-20-15-image.png alt></p>
+<h2 id=行式存储列式存储>行式存储/列式存储</h2>
+<ul>
+<li>
+<p><strong>行式存储</strong>：更适合OLTP</p>
+</li>
+<li>
+<p><strong>列式存储</strong>: 是按照列进行存储数据，把某一列的数据连续的存储，每一行中的不同列的值离散分布。更适合OLAP</p>
+</li>
+</ul>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-14-37-55-2019-12-13-16-27-54-image.png alt></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>行式存储</th>
+<th>列式存储</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>优点</td>
+<td>* 数据被保存在一起<br>* INSERT/UPDATE容易</td>
+<td>Ø  查询时只有涉及到的列会被读取<br><br>Ø  投影(projection)很高效<br><br>Ø  任何列都能作为索引</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>Ø  选择(Selection)时即使只涉及某几列，所有数据也都会被读取</td>
+<td>* 选择完成时，被选择的列要重新组装<br><br>* INSERT/UPDATE比较麻烦</td>
+</tr>
+</tbody>
+</table>
+<h3 id=数据模型>数据模型</h3>
+<p>理解Parquet首先要理解这个列存储格式的数据模型。我们以一个下面这样的schema和数据为例来说明这个问题。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=kd>message</span> <span class=nc>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=k>required</span> <span class=kt>string</span> <span class=n>owner</span><span class=p>;</span><span class=err>
+</span><span class=err></span> <span class=k>repeated</span> <span class=kt>string</span> <span class=n>ownerPhoneNumbers</span><span class=p>;</span><span class=err>
+</span><span class=err></span> <span class=k>repeated</span> <span class=kd>group</span> <span class=n>contacts</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=k>required</span> <span class=kt>string</span> <span class=n>name</span><span class=p>;</span><span class=err>
+</span><span class=err></span>   <span class=k>optional</span> <span class=kt>string</span> <span class=n>phoneNumber</span><span class=p>;</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Parquet格式的数据类型不需要复杂的Map, List, Set等，而是使用repeated fields 和 groups来表示。例如List和Set可以被表示成一个repeated field，Map可以表示成一个包含有key-value 对的repeated group ，而且key是required的。</p>
+<h3 id=列存储格式>列存储格式</h3>
+<p>列存储通过将相同基本类型（primitive type）的值存储在一起来提供高效的编码和解码。为了用列存储来存储如上嵌套的数据结构，我们需要将该schema用某种方式映射到一系列的列使我们能够将记录写到列中并且能读取成原来的嵌套的数据结构。</p>
+<p>在Parquet格式的存储中，一个schema的树结构有几个叶子节点（叶子节点都是primitive type），实际的存储中就会有多少column。</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-14-03-2020-11-11-15-13-58-image.png alt></p>
+<p>上面这个schema的数据存储实际上有四个column. 只有字段值不能表达清楚记录的结构。给出一个repeated field的两个值，我们不知道此值是按什么‘深度’被重复的（比如，这些值是来自两个不同的记录，还是相同的记录中两个重复的值）。同样的，给出一个缺失的可选字段，我们不知道整个路径有多少字段被显示定义了。因此我们将介绍repetition level 和 definition level的概念。</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-29-02-2020-11-11-15-28-56-image.png alt></p>
+<h3 id=definition-levels>Definition levels</h3>
+<p>Definition level指明该列的路径上多少个可选field被定义了。</p>
+<p>嵌套数据类型的特点是有些field（optional field 和 repeated field）可以是空的，也就是没有定义。如果一个field是定义的，那么它的所有的父节点都是被定义的。从根节点开始遍历，当某一个field的路径上的节点开始是空的时候我们记录下当前的深度作为这个field的Definition Level。如果一个field的definition Level等于这个field的最大definition Level就说明这个field是有数据的。对于required类型的field必须是有定义的，所以这个Definition Level是不需要的。在关系型数据中，optional类型的field被编码成0表示空和1表示非空（或者反之）。</p>
+<p>注：definition Level是该路径上有定义的repeated field 和 optional field的个数，不包括required field，因为required field是必须有定义的。</p>
+<p>再举个简单的例子：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=kd>message</span> <span class=nc>ExampleDefinitionLevel</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>  <span class=k>optional</span> <span class=kd>group</span> <span class=n>a</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>    <span class=k>required</span> <span class=kd>group</span> <span class=n>b</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>      <span class=k>optional</span> <span class=kt>string</span> <span class=n>c</span><span class=p>;</span><span class=err>
+</span><span class=err></span>    <span class=p>}</span><span class=err>
+</span><span class=err></span>  <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-19-04-2020-11-11-15-18-59-image.png alt></p>
+<p>因为b是required field，所以第3行c的definition level为1而不是2（因为b是required field，所有不需计算在内）；第4行c的definition level为2而不是3（理由同上）.</p>
+<h3 id=repetition-levels>Repetition levels</h3>
+<p>Repetition level指明该值在路径中哪个repeated field重复。</p>
+<p>Repetition level是针对repeted field的。注意在图2中的Code字段。可以看到它在r1出现了3次。‘en-us’、‘en’在第一个Name中，而‘en-gb’在第三个Name中。结合了图2你肯定能理解我上一句话并知道‘en-us’、‘en’、‘en-gb’出现在r1中的具体位置，但是不看图的话呢？怎么用文字，或者说是一种定义、一种属性、一个数值，诠释清楚它们出现的位置？这就是重复深度这个概念的作用，它能用一个数字告诉我们在路径中的什么重复字段，此值重复了，以此来确定此值的位置（注意，这里的重复，特指在某个repeated类型的字段下“重复”出现的“重复”）。我们用深度0表示一个纪录的开头（虚拟的根节点），深度的计算忽略非重复字段（标签不是repeated的字段都不算在深度里）。所以在Name.Language.Code这个路径中，包含两个重复字段，Name和Language，如果在Name处重复，重复深度为1（虚拟的根节点是0，下一级就是1），在Language处重复就是2，不可能在Code处重复，它是required类型，表示有且仅有一个；同样的，在路径Links.Forward中，Links是optional的，不参与深度计算（不可能重复），Forward是repeated的，因此只有在Forward处重复时重复深度为1。现在我们从上至下扫描纪录r1。当我们遇到’en-us’，我们没看到任何重复字段，也就是说，重复深度是0。当我们遇到‘en’，字段Language重复了（在‘en-us’的路径里已经出现过一个Language），所以重复深度是2.最终，当我们遇到’en-gb‘，Name重复了（Name在前面‘en-us’和‘en’的路径里已经出现过一次，而此Name后Language只出现过一次，没有重复），所以重复深度是1。因此，r1中Code的值的重复深度是0、2、1.</p>
+<p>要注意第二个Name在r1中没有包含任何Code值。为了确定‘en-gb’出现在第三个Name而不是第二个，我们添加一个NULL值在‘en’和‘en-gb’之间（如图3所示）。</p>
+<h3 id=striping-and-assembly>Striping and assembly</h3>
+<p>下面用AddressBook的例子来说明Striping和assembly的过程。</p>
+<p>对于每个column的最大的Repetion Level和 Definition Level下图所示。</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-20-29-2020-11-11-15-20-23-image.png alt></p>
+<p>下面这样两条record：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=n>owner</span><span class=o>:</span> <span class=s>&#34;Julien Le Dem&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=n>ownerPhoneNumbers</span><span class=o>:</span> <span class=s>&#34;555 123 4567&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=n>ownerPhoneNumbers</span><span class=o>:</span> <span class=s>&#34;555 666 1337&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=n>name</span><span class=o>:</span> <span class=s>&#34;Dmitriy Ryaboy&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span>   <span class=n>phoneNumber</span><span class=o>:</span> <span class=s>&#34;555 987 6543&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=p>},</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=n>name</span><span class=o>:</span> <span class=s>&#34;Chris Aniszczyk&#34;</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span><span class=err>
+</span><span class=err></span><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=n>owner</span><span class=o>:</span> <span class=s>&#34;A. Nonymous&#34;</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>以contacts.phoneNumber这一列为例，&ldquo;555 987 6543"这个contacts.phoneNumber的Definition Level是最大Definition Level=2。而如果一个contact没有phoneNumber，那么它的Definition Level就是1。如果连contact都没有，那么它的Definition Level就是0。</p>
+<p>下面我们拿掉其他三个column只看contacts.phoneNumber这个column，把上面的两条record简化成下面的样子：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=n>phoneNumber</span><span class=o>:</span> <span class=s>&#34;555 987 6543&#34;</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span><span class=err></span><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这两条记录的序列化过程如下图所示：</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-22-00-2020-11-11-15-21-55-image.png alt></p>
+<p>如果我们要把这个column写到磁盘上，磁盘上会写入这样的数据：</p>
+<p><img src=/Users/zhuzhengyi/code/github/gitnote/img/2020-11-11-15-22-20-image.png alt></p>
+<p>注意：NULL实际上不会被存储，如果一个column value的Definition Level小于该column最大Definition Level的话，那么就表示这是一个空值。</p>
+<p>下面是从磁盘上读取数据并反序列化成AddressBook对象的过程：</p>
+<ol>
+<li>
+<p>读取第一个三元组R=0, D=2, Value=”555 987 6543”</p>
+<p>R=0 表示是一个新的record，要根据schema创建一个新的nested record直到Definition Level=2。</p>
+<p>D=2 说明Definition Level=Max Definition Level，那么这个Value就是contacts.phoneNumber这一列的值，赋值操作contacts.phoneNumber=”555 987 6543”。</p>
+</li>
+</ol>
+<hr>
+<ol start=2>
+<li>
+<p>读取第二个三元组 R=1, D=1</p>
+<p>R=1 表示不是一个新的record，是上一个record中一个新的contacts。</p>
+<p>D=1 表示contacts定义了，但是contacts的下一个级别也就是phoneNumber没有被定义，所以创建一个空的contacts。</p>
+</li>
+</ol>
+<hr>
+<ol start=3>
+<li>
+<p>读取第三个三元组 R=0, D=0</p>
+<p>R=0 表示一个新的record，根据schema创建一个新的nested record直到Definition Level=0，也就是创建一个AddressBook根节点。</p>
+</li>
+</ol>
+<p>可以看出在Parquet列式存储中，对于一个schema的所有叶子节点会被当成column存储，而且叶子节点一定是primitive类型的数据。对于这样一个primitive类型的数据会衍生出三个sub columns (R, D, Value)，也就是从逻辑上看除了数据本身以外会存储大量的Definition Level和Repetition Level。那么这些Definition Level和Repetition Level是否会带来额外的存储开销呢？实际上这部分额外的存储开销是可以忽略的。因为对于一个schema来说level都是有上限的，而且非repeated类型的field不需要Repetition Level，required类型的field不需要Definition Level，也可以缩短这个上限。例如对于Twitter的7层嵌套的schema来说，只需要3个bits就可以表示这两个Level了。</p>
+<p>对于存储关系型的record，record中的元素都是非空的（NOT NULL in SQL）。Repetion Level和Definition Level都是0，所以这两个sub column就完全不需要存储了。所以在存储非嵌套类型的时候，Parquet格式也是一样高效的。</p>
+<h3 id=文件格式>文件格式</h3>
+<ul>
+<li>
+<p>行组(Row Group)：按照行将数据物理上划分为多个单元，每一个行组包含一定的行数。一个行组包含这个行组对应的区间内的所有列的列块。</p>
+<p>官方建议：</p>
+<blockquote>
+<p>更大的行组意味着更大的列块，使得能够做更大的序列IO。我们建议设置更大的行组（512MB-1GB）。因为一次可能需要读取整个行组，所以我们想让一个行组刚好在一个HDFS块中。因此，HDFS块的大小也需要被设得更大。一个最优的读设置是：1GB的行组，1GB的HDFS块，1个HDFS块放一个HDFS文件。</p>
+</blockquote>
+</li>
+<li>
+<p>列块(Column Chunk)：在一个行组中每一列保存在一个列块中，行组中的所有列连续的存储在这个行组文件中。不同的列块可能使用不同的算法进行压缩。一个列块由多个页组成。</p>
+</li>
+<li>
+<p>页(Page)：每一个列块划分为多个页，页是压缩和编码的单元，对数据模型来说页是透明的。在同一个列块的不同页可能使用不同的编码方式。官方建议一个页为8KB。</p>
+</li>
+</ul>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-23-49-2020-11-11-15-23-44-image.png alt></p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-24-14-2020-11-11-15-24-08-image.png alt></p>
+<p>上图展示了一个Parquet文件的结构，一个文件中可以存储多个行组，文件的首位都是该文件的Magic Code，用于校验它是否是一个Parquet文件，Footer length存储了文件元数据的大小，通过该值和文件长度可以计算出元数据的偏移量，文件的元数据中包括每一个行组的元数据信息和当前文件的Schema信息。除了文件中每一个行组的元数据，每一页的开始都会存储该页的元数据，在Parquet中，有三种类型的页：数据页、字典页和索引页。数据页用于存储当前行组中该列的值，字典页存储该列值的编码字典，每一个列块中最多包含一个字典页，索引页用来存储当前行组下该列的索引，目前Parquet中还不支持索引页，但是在后面的版本中增加。</p>
+<h3 id=映射下推project-pushdown>映射下推(Project PushDown)</h3>
+<p>说到列式存储的优势，映射下推是最突出的，它意味着在获取表中原始数据时只需要扫描查询中需要的列，由于每一列的所有值都是连续存储的，所以分区取出每一列的所有值就可以实现TableScan算子，而避免扫描整个表文件内容。</p>
+<p>在Parquet中原生就支持映射下推，执行查询的时候可以通过Configuration传递需要读取的列的信息，这些列必须是Schema的子集，映射每次会扫描一个Row Group的数据，然后一次性得将该Row Group里所有需要的列的Cloumn Chunk都读取到内存中，每次读取一个Row Group的数据能够大大降低随机读的次数，除此之外，Parquet在读取的时候会考虑列是否连续，如果某些需要的列是存储位置是连续的，那么一次读操作就可以把多个列的数据读取到内存。</p>
+<h3 id=谓词下推predicate-pushdown>谓词下推(Predicate PushDown)</h3>
+<p>在数据库之类的查询系统中最常用的优化手段就是谓词下推了，通过将一些过滤条件尽可能的在最底层执行可以减少每一层交互的数据量，从而提升性能，例如”select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b &lt; 100″SQL查询中，在处理Join操作之前需要首先对A和B执行TableScan操作，然后再进行Join，再执行过滤，最后计算聚合函数返回，但是如果把过滤条件A.a > 10和B.b &lt; 100分别移到A表的TableScan和B表的TableScan的时候执行，可以大大降低Join操作的输入数据。</p>
+<p>无论是行式存储还是列式存储，都可以在将过滤条件在读取一条记录之后执行以判断该记录是否需要返回给调用者，在Parquet做了更进一步的优化，优化的方法时对每一个Row Group的每一个Column Chunk在存储的时候都计算对应的统计信息，包括该Column Chunk的最大值、最小值和空值个数。通过这些统计值和该列的过滤条件可以判断该Row Group是否需要扫描。另外Parquet未来还会增加诸如Bloom Filter和Index等优化数据，更加有效的完成谓词下推。</p>
+<h2 id=性能>性能</h2>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.jianshu.com/p/47b39ae336d5>https://www.jianshu.com/p/47b39ae336d5</a></p>
+</li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/35622907>https://zhuanlan.zhihu.com/p/35622907</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/dc_726/article/details/41143175>https://blog.csdn.net/dc_726/article/details/41143175</a></p>
+</li>
+<li>
+<p><a href=https://www.jianshu.com/p/47b39ae336d5>列存储格式Parquet浅析 - 简书</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/yu616568/article/details/51868447>Parquet与ORC：高性能列式存储格式_Hello World-CSDN博客_orc parquet</a></p>
+</li>
+</ol>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2020-12-25
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/architech/>architech</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/%E5%88%86%E5%B8%83%E5%BC%8F%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%A6%82%E8%BF%B0/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">分布式文件系统概述</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/14.language/c++/%E8%87%AA%E5%8A%A8%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/>
+<span class="next-text nav-default">动态内存管理</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2021
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

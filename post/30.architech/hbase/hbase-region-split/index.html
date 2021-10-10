@@ -1,0 +1,364 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>HBase Region Split - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/hbase/hbase-region-split/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.2f6e4d7e6e51da09470910b5f0d41a7d2c517dbe97416dd268a18bb7334c4ff8.css integrity="sha256-L25Nfm5R2glHCRC18NQafSxRfb6XQW3SaKGLtzNMT/g=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="HBase Region Split">
+<meta property="og:description" content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/hbase/hbase-region-split/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2020-12-25T00:00:00+00:00">
+<meta property="article:modified_time" content="2020-12-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="HBase Region Split">
+<meta itemprop=description content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst"><meta itemprop=datePublished content="2020-12-25T00:00:00+00:00">
+<meta itemprop=dateModified content="2020-12-25T00:00:00+00:00">
+<meta itemprop=wordCount content="2230">
+<meta itemprop=keywords content="architech,hbase,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="HBase Region Split">
+<meta name=twitter:description content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='002186711602136249422:q1gkomof_em',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>HBase Region Split</h1>
+<div class=post-meta>
+<time datetime=2020-12-25 class=post-time>
+2020-12-25
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/architech/> architech </a>
+<a href=https://justice.bj.cn/categories/hbase/> hbase </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#为什么需要-split><strong>为什么需要 Split</strong></a></li>
+<li><a href=#split时机>Split时机</a></li>
+<li><a href=#split策略>Split策略</a></li>
+<li><a href=#split-流程>Split 流程</a>
+<ul>
+<li><a href=#prepare阶段>prepare阶段</a></li>
+<li><a href=#execute阶段>execute阶段</a></li>
+<li><a href=#rollback阶段>rollback阶段：</a></li>
+<li><a href=#region-事务性保证>Region 事务性保证</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=hbase-region-split>HBase Region Split</h1>
+<h2 id=为什么需要-split><strong>为什么需要 Split</strong></h2>
+<p>HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memstore为storefile，storefile会在compaction时合并成大文件，随着写入数据的增加，storefile会越来越大，影响读写性能，为此需要将region 拆分。</p>
+<h2 id=split时机>Split时机</h2>
+<p>HBase 中共有3种情况会触发 HBase Split：</p>
+<ol>
+<li>当 Memstore flush 时，有可能产生较大的 HFile，会判断是否需要执行 Split。</li>
+<li>HStore 执行完成 Compact 操作后，可能产生较大的 HFile，会判断是否需要执行 Split。</li>
+<li>HBaseAdmin 手动执行 split 命令时，会触发 Split。</li>
+</ol>
+<h2 id=split策略>Split策略</h2>
+<p>目前已经的支持触发策略多达6种：</p>
+<ul>
+<li>
+<p><strong>ConstantSizeRegionSplitPolicy</strong>：0.94版本前默认切分策略。 一个 Region 中最大 Store 的大小大于设置阈值之后才会触发切分，Store 大小为压缩后的文件大小（启用压缩的场景） 切分策略对于大表和小表没有明显的区分</p>
+</li>
+<li>
+<p><strong>IncreasingToUpperBoundRegionSplitPolicy</strong>：0.94版本~2.0版本默认切分策略。<br>
+和 ConstantSizeRegionSplitPolicy 思路相同，一个 Region 中最大 Store 大小大于设置阈值就会触发切分，区别是这个阈值并不像 ConstantSizeRegionSplitPolicy 是一个固定的值，而是会在不断调整。<br>
+调整规则和 Region 所属表在当前 RegionServer 上的 Region 个数有关系 ：(#regions) * (#regions) * (#regions) * flush_size * 2，最大值为用户设置的 MaxRegionFileSize<br>
+能够自适应大表和小表，这种策略下很多小表会在大集群中产生大量小 Region，分散在整个集群中</p>
+</li>
+<li>
+<p><strong>SteppingSplitPolicy</strong>：2.0版本默认切分策略。<br>
+相比 IncreasingToUpperBoundRegionSplitPolicy 简单了一些，依然和待分裂 Region 所属表在当前 RegionServer 上的 Region 个数有关系：如果 Region 个数等于1，切分阈值为 flush_size * 2，否则为 MaxRegionFileSize</p>
+</li>
+<li>
+<p><strong>DisableSplitPolicy</strong>：禁止 Region split</p>
+</li>
+<li>
+<p><strong>KeyPrefixRegionSplitPolicy</strong>：切分策略依然依据默认切分策略，根据 Rowkey 指定长度的前缀来切分 Region，保证相同的前缀的行保存在同一个 Region 中。由 KeyPrefixRegionSplitPolicy.prefix_length 属性指定 Rowkey 前缀长度。按此长度对splitPoint进行截取。<br>
+此种策略比较适合有固定前缀的 Rowkey。当没有设置前缀长度，切分效果等同与 IncreasingToUpperBoundRegionSplitPolicy。</p>
+</li>
+<li>
+<p><strong>DelimitedKeyPrefixRegionSplitPolicy</strong>：切分策略依然依据默认切分策略，同样是保证相同 RowKey 前缀的数据在一个Region中，但是是以指定分隔符前面的前缀为来切分 Region。</p>
+</li>
+</ul>
+<h2 id=split-流程>Split 流程</h2>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2019-12-19-14-45-18-image.png alt></p>
+<h3 id=prepare阶段>prepare阶段</h3>
+<p>在内存中初始化两个子 Region，具体是生成两个 HRegionInfo 对象，包含 TableName、RegionName、Startkey、Endkey等。同时会生成一个 transaction journal，这个对象用来记录切分的进展</p>
+<h3 id=execute阶段>execute阶段</h3>
+<p>（1）在ZK节点 /hbase/region-in-transition/region-name 下创建一个 znode，并设置状态为SPLITTING<br>
+（2）Master 通过监听ZK节点，检测到 Region 状态的变化<br>
+（3）RegionServer 在父 Region 的数据目录（HDFS）下创建一个名称为 .splits 的子目录<br>
+（4）RegionServer 关闭父 Region，强制将数据 flush 到磁盘，并这个 Region 标记为 offline 的状态。此时，落到这个 Region 的请求都会返回 NotServingRegionException 这个错误，客户端需要进行一些重试，直到新的 Region 上线。<br>
+（5）RegionServer 在 .splits 目录（HDFS）下创建 daughterA 和 daughterB 子目录，并在文件夹中创建对应的 reference 文件，分别指向父 Region 的数据文件中的一部分。<br>
+（6）RegionServer 创建子 Region 的目录（HDFS），并将 daughterA 和 daughterB 目录下的文件拷贝到 Region 目录。<br>
+（7）在 .META. 表中设置父 Region 为 offline 状态，不再提供服务。并将子 Region 的信息添加到 .META. 表中父 Region 的信息中（splitA 和 splitB 两列）。这个时候如果扫描 hbase:meta 表，会发现父 Region 正在执行 split，并不能看到子 Region 的信息。如果 RegionServer 执行这个过程失败，Master 和下一个分配了这个 Region 的 Regionserver 会清除 split 相关的状态数据。<br>
+（8）RegionServer 并行启用两个子 Region，并正式提供对外服务<br>
+（9）RegionSever 将 daughterA 和 daughterB 添加到 .META. 表中，并设置为 online 状态，这样就可以从 .META. 找到子 Region，并可以对子 Region 进行访问了。<br>
+（10）RegionServr 修改ZK节点 /hbase/region-in-transition/region-name 的状态为SPLIT，Master 就可以监听到 Region 状态的更新。Split 事务就此结束。</p>
+<h3 id=rollback阶段>rollback阶段：</h3>
+<p>如果 execute 阶段出现异常，则执行 rollback 操作。为了实现回滚，整个切分过程被分为很多子阶段，回滚程序会根据当前进展到哪个子阶段清理对应的垃圾数据。JournalEntryType 类定义了各个子阶段。</p>
+<h3 id=region-事务性保证>Region 事务性保证</h3>
+<p>整个region切分是一个比较复杂的过程，涉及子步骤，因此必须保证整个 Split 过程的事务性，即要么完全成功，要么完全未开始，在任何情况下也不能出现 Split 只完成一半的情况。为了实现事务性，Hbase 设计了使用状态机（见 SplitTransaction 类）的方式保存切分过程中的每个子步骤状态，这样一旦出现异常，系统可以根据当前所处的状态决定是否回滚，以及如何回滚。</p>
+<p>目前实现中这些中间状态都只存储在内存中，因此一旦在切分过程中出现 RegionServer 宕机的情况，有可能会出现切分处于中间状态的情况，也就是RIT状态。这种情况下可使用 hbck 工具，根据实际情况查看并分析解决方案。</p>
+<p>在2.0版本 HBase 实现了新的分布式事务框架 Procedure V2（HBASE-12439），使用 HLog 存储这种单机事务（DDL、Split、Move 等操作）的中间状态。保证即使在事务执行过程中参与者发生了宕机，依然可以使用 HLog 作为协调者对事务进行回滚操作或重新提交。</p>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://www.jianshu.com/p/53459997c814>https://www.jianshu.com/p/53459997c814</a></li>
+</ol>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2020-12-25
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/architech/>architech</a>
+<a href=https://justice.bj.cn/tags/hbase/>hbase</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/hbase/hbase-python-client%E6%93%8D%E4%BD%9C/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">hbase python client 操作</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/30.architech/hbase/hbase-%E5%86%99%E5%85%A5%E5%8F%8Aflush/>
+<span class="next-text nav-default">Hbase Region Split compaction 过程分析以及调优</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2021
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

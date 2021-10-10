@@ -1,0 +1,1922 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>Redis详解 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="Redis详解 简介 Redis是一个使用ANSI C编写的开源、支持网络、基于内存、可选持久化的高性能键值对数据库。Redis的之父是来自意大利">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/redis/redis%E8%AF%A6%E8%A7%A3/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.2f6e4d7e6e51da09470910b5f0d41a7d2c517dbe97416dd268a18bb7334c4ff8.css integrity="sha256-L25Nfm5R2glHCRC18NQafSxRfb6XQW3SaKGLtzNMT/g=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="Redis详解">
+<meta property="og:description" content="Redis详解 简介 Redis是一个使用ANSI C编写的开源、支持网络、基于内存、可选持久化的高性能键值对数据库。Redis的之父是来自意大利">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/redis/redis%E8%AF%A6%E8%A7%A3/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2020-12-25T00:00:00+00:00">
+<meta property="article:modified_time" content="2020-12-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="Redis详解">
+<meta itemprop=description content="Redis详解 简介 Redis是一个使用ANSI C编写的开源、支持网络、基于内存、可选持久化的高性能键值对数据库。Redis的之父是来自意大利"><meta itemprop=datePublished content="2020-12-25T00:00:00+00:00">
+<meta itemprop=dateModified content="2020-12-25T00:00:00+00:00">
+<meta itemprop=wordCount content="31816">
+<meta itemprop=keywords content="architech,redis,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="Redis详解">
+<meta name=twitter:description content="Redis详解 简介 Redis是一个使用ANSI C编写的开源、支持网络、基于内存、可选持久化的高性能键值对数据库。Redis的之父是来自意大利"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='002186711602136249422:q1gkomof_em',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>Redis详解</h1>
+<div class=post-meta>
+<time datetime=2020-12-25 class=post-time>
+2020-12-25
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/architech/> architech </a>
+<a href=https://justice.bj.cn/categories/redis/> redis </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#常用数据结构及其实现>常用数据结构及其实现</a></li>
+<li><a href=#sds>SDS</a>
+<ul>
+<li><a href=#sds的优势>sds的优势</a></li>
+</ul>
+</li>
+<li><a href=#字典>字典</a></li>
+<li><a href=#单线程运行模式>单线程运行模式</a>
+<ul>
+<li><a href=#单线程模式的考量>单线程模式的考量</a></li>
+<li><a href=#文件事件和时间事件>文件事件和时间事件</a></li>
+<li><a href=#单线程模式中事件调度和执行>单线程模式中事件调度和执行</a></li>
+</ul>
+</li>
+<li><a href=#reactor模式>Reactor模式</a>
+<ul>
+<li><a href=#reactor模式在redis中的实现>Reactor模式在Redis中的实现</a></li>
+</ul>
+</li>
+<li><a href=#持久化>持久化</a>
+<ul>
+<li><a href=#rdb的save和bgsave>RDB的SAVE和BGSAVE</a></li>
+<li><a href=#aof详解>AOF详解</a></li>
+<li><a href=#73redis的数据恢复>7.3 Redis的数据恢复</a></li>
+</ul>
+</li>
+<li><a href=#ziplist>ZIPLIST</a>
+<ul>
+<li></li>
+</ul>
+</li>
+<li><a href=#zset和跳跃链表>Zset和跳跃链表</a>
+<ul>
+<li><a href=#跳跃链表的实现细节>跳跃链表的实现细节</a></li>
+</ul>
+</li>
+<li><a href=#集群和gossip协议>集群和Gossip协议</a>
+<ul>
+<li><a href=#a1关于集群的一些基础>A.1 关于集群的一些基础</a></li>
+<li><a href=#a2redis-cluster的基本运行原理>A.2 Redis Cluster的基本运行原理</a></li>
+</ul>
+</li>
+<li><a href=#内存回收机制>内存回收机制</a>
+<ul>
+<li><a href=#b1回收的内存从哪里来>B.1 回收的内存从哪里来</a></li>
+<li><a href=#b2如何实施过期键值对的删除>B.2 如何实施过期键值对的删除</a></li>
+<li><a href=#b2内存淘汰机制>B.2 内存淘汰机制</a></li>
+</ul>
+</li>
+<li><a href=#0x0c谈谈对redis数据同步机制和原理的理解>0x0C.谈谈对Redis数据同步机制和原理的理解</a>
+<ul>
+<li><a href=#c1单点宕机故障>C.1 单点宕机故障</a></li>
+<li><a href=#c2redis系统中的cap理论>C.2 Redis系统中的CAP理论</a></li>
+<li><a href=#c3redis的最终一致性和复制>C.3 Redis的最终一致性和复制</a></li>
+</ul>
+</li>
+<li><a href=#0x0d谈谈基于redis的分布式锁和redlock算法>0x0D.谈谈基于Redis的分布式锁和Redlock算法</a>
+<ul>
+<li><a href=#d1基于redis的分布式锁简介>D.1 基于Redis的分布式锁简介</a></li>
+<li><a href=#d2redlock算法基本过程>D.2 Redlock算法基本过程</a></li>
+<li><a href=#d3redlock算法是否安全的争论>D.3 Redlock算法是否安全的争论</a></li>
+</ul>
+</li>
+<li><a href=#5antirez的反击><strong>5.Antirez的反击</strong></a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=redis详解>Redis详解</h1>
+<h2 id=简介>简介</h2>
+<p>Redis是一个使用ANSI C编写的开源、支持网络、基于内存、可选持久化的高性能键值对数据库。Redis的之父是来自意大利的西西里岛的Salvatore Sanfilippo,从2009年第一个版本起Redis已经走过了10个年头，目前Redis仍然是最流行的key-value型内存数据库的之一。</p>
+<h2 id=常用数据结构及其实现>常用数据结构及其实现</h2>
+<p>Redis支持的常用5种数据类型指的是value类型，分别为：</p>
+<ul>
+<li>
+<p>字符串String</p>
+</li>
+<li>
+<p>列表List</p>
+</li>
+<li>
+<p>哈希Hash</p>
+</li>
+<li>
+<p>集合Set</p>
+</li>
+<li>
+<p>有序集合Zset</p>
+</li>
+</ul>
+<p>后续增加的类型：</p>
+<ul>
+<li>
+<p>Bitmaps</p>
+</li>
+<li>
+<p>HyperLogLogs</p>
+</li>
+<li>
+<p>GEO</p>
+</li>
+</ul>
+<p>由于Redis是基于标准C写的，只有最基础的数据类型，因此Redis为了满足对外使用的5种数据类型，开发了属于自己<strong>独有的一套基础数据结构</strong>，使用这些数据结构来实现5种数据类型。</p>
+<p>Redis底层的数据结构包括：</p>
+<ul>
+<li>
+<p>简单动态数组SDS</p>
+</li>
+<li>
+<p>链表</p>
+</li>
+<li>
+<p>字典</p>
+</li>
+<li>
+<p>跳跃链表</p>
+</li>
+<li>
+<p>整数集合</p>
+</li>
+<li>
+<p>压缩列表</p>
+</li>
+<li>
+<p>对象</p>
+</li>
+</ul>
+<p>Redis为了平衡空间和时间效率，针对value的具体类型在底层会采用不同的数据结构来实现，其中哈希表和压缩列表是复用比较多的数据结构，如下图展示了对外数据类型和底层数据结构之间的映射关系：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qasdXmojIeu5L2qr9FvdYFAUPrtL5ztfz90zmKHkaA8bbZ7ZXTKNOeF56Q4bcgPEP3gfkK83ppOhw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>从图中可以看到<strong>ziplist压缩列表</strong>可以作为Zset、Hash、List三种数据类型的底层实现，看来很强大，压缩列表是一种为了节约内存而开发的且经过特殊编码之后的连续内存块顺序型数据结构。</p>
+<h2 id=sds>SDS</h2>
+<p>在C语言中使用N+1长度的字符数组来表示字符串，尾部使用'\0&rsquo;作为结尾标志，对于此种实现无法满足Redis对于安全性、效率、丰富的功能的要求，因此Redis单独封装了SDS简单动态字符串结构。</p>
+<p>在理解SDS的优势之前需要先看下SDS的实现细节，找了github<strong>最新的src/sds.h</strong>的定义看下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>typedef</span> <span class=kt>char</span> <span class=o>*</span><span class=n>sds</span><span class=p>;</span>
+<span class=cm>/*这个用不到 忽略即可*/</span>  
+<span class=k>struct</span> <span class=nf>__attribute__</span> <span class=p>((</span><span class=n>__packed__</span><span class=p>))</span> <span class=n>sdshdr5</span> <span class=p>{</span>  
+    <span class=kt>unsigned</span> <span class=kt>char</span> <span class=n>flags</span><span class=p>;</span> <span class=cm>/* 3 lsb of type, and 5 msb of string length */</span>  
+    <span class=kt>char</span> <span class=n>buf</span><span class=p>[];</span>  
+<span class=p>};</span>
+<span class=cm>/*不同长度的header 8 16 32 4共4种 都给出了四个成员  
+</span><span class=cm>len：当前使用的空间大小；alloc去掉header和结尾空字符的最大空间大小  
+</span><span class=cm>flags:8位的标记 下面关于SDS_TYPE_x的宏定义只有5种 3bit足够了 5bit没有用  
+</span><span class=cm>buf:这个跟C语言中的字符数组是一样的，从typedef char* sds可以知道就是这样的。  
+</span><span class=cm>buf的最大长度是2^n 其中n为sdshdr的类型，如当选择sdshdr16，buf_max=2^16。  
+</span><span class=cm>*/</span>  
+<span class=k>struct</span> <span class=nf>__attribute__</span> <span class=p>((</span><span class=n>__packed__</span><span class=p>))</span> <span class=n>sdshdr8</span> <span class=p>{</span>  
+    <span class=kt>uint8_t</span> <span class=n>len</span><span class=p>;</span> <span class=cm>/* used */</span>  
+    <span class=kt>uint8_t</span> <span class=n>alloc</span><span class=p>;</span> <span class=cm>/* excluding the header and null terminator */</span>  
+    <span class=kt>unsigned</span> <span class=kt>char</span> <span class=n>flags</span><span class=p>;</span> <span class=cm>/* 3 lsb of type, 5 unused bits */</span>  
+    <span class=kt>char</span> <span class=n>buf</span><span class=p>[];</span>  
+<span class=p>};</span>  
+<span class=k>struct</span> <span class=nf>__attribute__</span> <span class=p>((</span><span class=n>__packed__</span><span class=p>))</span> <span class=n>sdshdr16</span> <span class=p>{</span>  
+    <span class=kt>uint16_t</span> <span class=n>len</span><span class=p>;</span> <span class=cm>/* used */</span>  
+    <span class=kt>uint16_t</span> <span class=n>alloc</span><span class=p>;</span> <span class=cm>/* excluding the header and null terminator */</span>  
+    <span class=kt>unsigned</span> <span class=kt>char</span> <span class=n>flags</span><span class=p>;</span> <span class=cm>/* 3 lsb of type, 5 unused bits */</span>  
+    <span class=kt>char</span> <span class=n>buf</span><span class=p>[];</span>  
+<span class=p>};</span>  
+<span class=k>struct</span> <span class=nf>__attribute__</span> <span class=p>((</span><span class=n>__packed__</span><span class=p>))</span> <span class=n>sdshdr32</span> <span class=p>{</span>  
+    <span class=kt>uint32_t</span> <span class=n>len</span><span class=p>;</span> <span class=cm>/* used */</span>  
+    <span class=kt>uint32_t</span> <span class=n>alloc</span><span class=p>;</span> <span class=cm>/* excluding the header and null terminator */</span>  
+    <span class=kt>unsigned</span> <span class=kt>char</span> <span class=n>flags</span><span class=p>;</span> <span class=cm>/* 3 lsb of type, 5 unused bits */</span>  
+    <span class=kt>char</span> <span class=n>buf</span><span class=p>[];</span>  
+<span class=p>};</span>  
+<span class=k>struct</span> <span class=nf>__attribute__</span> <span class=p>((</span><span class=n>__packed__</span><span class=p>))</span> <span class=n>sdshdr64</span> <span class=p>{</span>  
+    <span class=kt>uint64_t</span> <span class=n>len</span><span class=p>;</span> <span class=cm>/* used */</span>  
+    <span class=kt>uint64_t</span> <span class=n>alloc</span><span class=p>;</span> <span class=cm>/* excluding the header and null terminator */</span>  
+    <span class=kt>unsigned</span> <span class=kt>char</span> <span class=n>flags</span><span class=p>;</span> <span class=cm>/* 3 lsb of type, 5 unused bits */</span>  
+    <span class=kt>char</span> <span class=n>buf</span><span class=p>[];</span>  
+<span class=p>};</span>  
+
+<span class=cp>#define SDS_TYPE_5  0  
+</span><span class=cp>#define SDS_TYPE_8  1  
+</span><span class=cp>#define SDS_TYPE_16 2  
+</span><span class=cp>#define SDS_TYPE_32 3  
+</span><span class=cp>#define SDS_TYPE_64 4  
+</span><span class=cp>#define SDS_TYPE_MASK 7  
+</span><span class=cp>#define SDS_TYPE_BITS 3  
+</span></code></pre></td></tr></table>
+</div>
+</div><p>看了前面的定义，笔者画了个图：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311204408113.png?token=AARMIEX5XRZCW3K5TL5JPL26NDOVM" alt></p>
+<p>从图中可以知道sds本质分为三部分：<strong>header、buf、null结尾符</strong>，其中header可以认为是整个sds的指引部分，给定了使用的空间大小、最大分配大小等信息，再用一张网上的图来清晰看下sdshdr8的实例：</p>
+<hr>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311211703720.png?token=AARMIEW7PJ2B2XSGSHUVYPS6NDSQ4" alt></p>
+<h3 id=sds的优势>sds的优势</h3>
+<ul>
+<li>
+<p><strong>O(1)获取长度</strong>: C字符串需要遍历而sds中有len可以直接获得；</p>
+</li>
+<li>
+<p><strong>防止缓冲区溢出bufferoverflow</strong>: 当sds需要对字符串进行修改时，首先借助于len和alloc检查空间是否满足修改所需的要求，如果空间不够的话，SDS会自动扩展空间，避免了像C字符串操作中的覆盖情况；</p>
+</li>
+<li>
+<p><strong>有效降低内存分配次数</strong>：C字符串在涉及增加或者清除操作时会改变底层数组的大小造成重新分配、sds使用了空间预分配和惰性空间释放机制，说白了就是每次在扩展时是成倍的多分配的，在缩容是也是先留着并不正式归还给OS，这两个机制也是比较好理解的；</p>
+</li>
+<li>
+<p><strong>二进制安全</strong>：C语言字符串只能保存ascii码，对于图片、音频等信息无法保存，sds是二进制安全的，写入什么读取就是什么，不做任何过滤和限制；</p>
+</li>
+</ul>
+<p>老规矩上一张黄健宏大神总结好的图：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311204429251.png?token=AARMIEQS6JUT4VOX5DMYOMC6NDOWW" alt></p>
+<h2 id=字典>字典</h2>
+<p>字典算是Redis中常用数据类型，字典可以基于ziplist和hashtable来实现，我们只讨论基于hashtable实现的原理。</p>
+<p>字典是个层次非常明显的数据类型，如图：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311204434363.png?token=AARMIEQTXE2YNYIBNZCKRBS6NDOXE" alt></p>
+<p>src/dict.h源码定义：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>//哈希节点结构
+</span><span class=c1></span><span class=k>typedef</span> <span class=k>struct</span> <span class=n>dictEntry</span> <span class=p>{</span>    
+    <span class=kt>void</span> <span class=o>*</span><span class=n>key</span><span class=p>;</span>    
+    <span class=k>union</span> <span class=p>{</span>        
+      <span class=kt>void</span> <span class=o>*</span><span class=n>val</span><span class=p>;</span>        
+      <span class=kt>uint64_t</span> <span class=n>u64</span><span class=p>;</span>        
+      <span class=kt>int64_t</span> <span class=n>s64</span><span class=p>;</span>        
+      <span class=kt>double</span> <span class=n>d</span><span class=p>;</span>    
+    <span class=p>}</span> <span class=n>v</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>dictEntry</span> <span class=o>*</span><span class=n>next</span><span class=p>;</span>
+<span class=p>}</span> <span class=n>dictEntry</span><span class=p>;</span>
+<span class=c1>//封装的是字典的操作函数指针
+</span><span class=c1></span><span class=k>typedef</span> <span class=k>struct</span> <span class=n>dictType</span> <span class=p>{</span>    
+  <span class=kt>uint64_t</span> <span class=p>(</span><span class=o>*</span><span class=n>hashFunction</span><span class=p>)(</span><span class=k>const</span> <span class=kt>void</span> <span class=o>*</span><span class=n>key</span><span class=p>);</span>    
+  <span class=kt>void</span> <span class=o>*</span><span class=p>(</span><span class=o>*</span><span class=n>keyDup</span><span class=p>)(</span><span class=kt>void</span> <span class=o>*</span><span class=n>privdata</span><span class=p>,</span> <span class=k>const</span> <span class=kt>void</span> <span class=o>*</span><span class=n>key</span><span class=p>);</span>    
+  <span class=kt>void</span> <span class=o>*</span><span class=p>(</span><span class=o>*</span><span class=n>valDup</span><span class=p>)(</span><span class=kt>void</span> <span class=o>*</span><span class=n>privdata</span><span class=p>,</span> <span class=k>const</span> <span class=kt>void</span> <span class=o>*</span><span class=n>obj</span><span class=p>);</span>    
+  <span class=kt>int</span> <span class=p>(</span><span class=o>*</span><span class=n>keyCompare</span><span class=p>)(</span><span class=kt>void</span> <span class=o>*</span><span class=n>privdata</span><span class=p>,</span> <span class=k>const</span> <span class=kt>void</span> <span class=o>*</span><span class=n>key1</span><span class=p>,</span> <span class=k>const</span> <span class=kt>void</span> <span class=o>*</span><span class=n>key2</span><span class=p>);</span>    
+  <span class=kt>void</span> <span class=p>(</span><span class=o>*</span><span class=n>keyDestructor</span><span class=p>)(</span><span class=kt>void</span> <span class=o>*</span><span class=n>privdata</span><span class=p>,</span> <span class=kt>void</span> <span class=o>*</span><span class=n>key</span><span class=p>);</span>    
+  <span class=kt>void</span> <span class=p>(</span><span class=o>*</span><span class=n>valDestructor</span><span class=p>)(</span><span class=kt>void</span> <span class=o>*</span><span class=n>privdata</span><span class=p>,</span> <span class=kt>void</span> <span class=o>*</span><span class=n>obj</span><span class=p>);</span>
+<span class=p>}</span> <span class=n>dictType</span><span class=p>;</span>
+<span class=cm>/* This is our hash table structure. Every dictionary has two of this as we 
+</span><span class=cm>* implement incremental rehashing, for the old to the new table. 
+</span><span class=cm>*/</span>
+<span class=c1>//哈希表结构 该部分是理解字典的关键
+</span><span class=c1></span><span class=k>typedef</span> <span class=k>struct</span> <span class=n>dictht</span> <span class=p>{</span>    
+    <span class=n>dictEntry</span> <span class=o>**</span><span class=n>table</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>size</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>sizemask</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>used</span><span class=p>;</span>
+<span class=p>}</span> <span class=n>dictht</span><span class=p>;</span>
+<span class=c1>//字典结构
+</span><span class=c1></span><span class=k>typedef</span> <span class=k>struct</span> <span class=n>dict</span> <span class=p>{</span>    
+    <span class=n>dictType</span> <span class=o>*</span><span class=n>type</span><span class=p>;</span>    
+    <span class=kt>void</span> <span class=o>*</span><span class=n>privdata</span><span class=p>;</span>    
+    <span class=n>dictht</span> <span class=n>ht</span><span class=p>[</span><span class=mi>2</span><span class=p>];</span>    
+    <span class=kt>long</span> <span class=n>rehashidx</span><span class=p>;</span> <span class=cm>/* rehashing not in progress if rehashidx == -1 */</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>iterators</span><span class=p>;</span> <span class=cm>/* number of iterators currently running */</span>
+<span class=p>}</span> <span class=n>dict</span><span class=p>;</span>
+</code></pre></td></tr></table>
+</div>
+</div><hr>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaA2ZaXlTAia5iaX3a8qiavzP7Q5T9BCpwQQBaLxLFg7Eg5icFTdvHNd683YYDIczHV7VmQo5V9fwdVDw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<ul>
+<li><strong>关于dictEntry</strong></li>
+</ul>
+<p>dictEntry是哈希表节点，也就是我们存储数据地方，其保护的成员有：key,v,next指针。key保存着键值对中的键，v保存着键值对中的值，值可以是一个指针或者是uint64_t或者是int64_t。next是指向另一个哈希表节点的指针，这个指针可以将多个哈希值相同的键值对连接在一次，以此来解决哈希冲突的问题。</p>
+<p>如图为两个冲突的哈希节点的连接关系：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311204552798.png?token=AARMIESX6HRVN2EYT62P67S6NDO34" alt></p>
+<ul>
+<li><strong>关于dictht</strong></li>
+</ul>
+<p>从源码看哈希表包括的成员有table、size、used、sizemask。table是一个数组，数组中的每个元素都是一个指向dictEntry结构的指针， 每个dictEntry结构保存着一个键值对；size 属性记录了哈希表table的大小，而used属性则记录了哈希表目前已有节点的数量。sizemask等于size-1和哈希值计算一个键在table数组的索引，也就是计算index时用到的。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaA2ZaXlTAia5iaX3a8qiavzP7a7GuTF4fQriajhFPs55ny6dKD0vco1kWK0CX4wl4Q9SNfByscYyhfOA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>如上图展示了一个大小为4的table中的哈希节点情况，其中k1和k0在index=2发生了哈希冲突，进行开链表存在，本质上是先存储的k0，k1放置是发生冲突为了保证效率直接放在冲突链表的最前面，因为该链表没有尾指针。</p>
+<ul>
+<li><strong>关于dict</strong></li>
+</ul>
+<p>从源码中看到dict结构体就是字典的定义，包含的成员有type，privdata、ht、rehashidx。其中dictType指针类型的type指向了操作字典的api，理解为函数指针即可，ht是包含2个dictht的数组，也就是字典包含了2个哈希表，rehashidx进行rehash时使用的变量，privdata配合dictType指向的函数作为参数使用，这样就对字典的几个成员有了初步的认识。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaA2ZaXlTAia5iaX3a8qiavzP7QyklB2xIb6WpkCvBhB3ZicZqVuIjDwJoZuib4uo0aI17fw2ZxG5JgGjw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<ul>
+<li><strong>字典的哈希算法</strong></li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>//伪码：使用哈希函数，计算键key的哈希值
+</span><span class=c1></span><span class=n>hash</span> <span class=o>=</span> <span class=n>dict</span><span class=o>-&gt;</span><span class=n>type</span><span class=o>-&gt;</span><span class=n>hashFunction</span><span class=p>(</span><span class=n>key</span><span class=p>);</span>
+<span class=c1>//伪码：使用哈希表的sizemask和哈希值，计算出在ht[0]或许ht[1]的索引值
+</span><span class=c1></span><span class=n>index</span> <span class=o>=</span> <span class=n>hash</span> <span class=o>&amp;</span> <span class=n>dict</span><span class=o>-&gt;</span><span class=n>ht</span><span class=p>[</span><span class=n>x</span><span class=p>].</span><span class=n>sizemask</span><span class=p>;</span>
+<span class=c1>//源码定义
+</span><span class=c1></span><span class=cp>#define dictHashKey(d, key) (d)-&gt;type-&gt;hashFunction(key)
+</span></code></pre></td></tr></table>
+</div>
+</div><p>redis使用MurmurHash算法计算哈希值，该算法最初由Austin Appleby在2008年发明，MurmurHash算法的无论数据输入情况如何都可以给出随机分布性较好的哈希值并且计算速度非常快，目前有MurmurHash2和MurmurHash3等版本。</p>
+<ul>
+<li><strong>普通Rehash重新散列</strong></li>
+</ul>
+<p>哈希表保存的键值对数量是<strong>动态变化</strong>的，为了让哈希表的负载因子维持在一个合理的范围之内，就需要对哈希表进行扩缩容。</p>
+<p>扩缩容是通过执行rehash重新散列来完成，对字典的哈希表执行普通rehash的基本步骤为<strong>分配空间->逐个迁移->交换哈希表</strong>，详细过程如下：</p>
+<ol>
+<li>
+<p>为字典的ht[1]哈希表分配空间，分配的空间大小取决于要执行的操作以及ht[0]当前包含的键值对数量：<br>
+扩展操作时ht[1]的大小为第一个大于等于ht[0].used*2的2^n；<br>
+收缩操作时ht[1]的大小为第一个大于等于ht[0].used的2^n ；</p>
+<p><strong>扩展时比如h[0].used=200，那么需要选择大于400的第一个2的幂，也就是2^9=512。</strong></p>
+</li>
+<li>
+<p>将保存在ht[0]中的所有键值对重新计算键的哈希值和索引值rehash到ht[1]上；</p>
+</li>
+<li>
+<p>重复rehash直到ht[0]包含的所有键值对全部迁移到了ht[1]之后释放 ht[0]， 将ht[1]设置为 ht[0]，并在ht[1]新创建一个空白哈希表， 为下一次rehash做准备。</p>
+</li>
+</ol>
+<ul>
+<li><strong>渐进Rehash过程</strong></li>
+</ul>
+<p>Redis的rehash动作并不是一次性完成的，而是分多次、渐进式地完成的，原因在于当哈希表里保存的键值对数量很大时， 一次性将这些键值对全部rehash到ht[1]可能会导致服务器在一段时间内停止服务，这个是无法接受的。</p>
+<p>针对这种情况Redis采用了渐进式rehash，过程的详细步骤：</p>
+<ol>
+<li>
+<p>为ht[1]分配空间，这个过程和普通Rehash没有区别；</p>
+</li>
+<li>
+<p>将rehashidx设置为0，表示rehash工作正式开始，同时这个rehashidx是递增的，从0开始表示从数组第一个元素开始rehash。</p>
+</li>
+<li>
+<p>在rehash进行期间，每次对<strong>字典执行增删改查操作</strong>时，<strong>顺带</strong>将ht[0]哈希表在rehashidx索引上的键值对rehash到 ht[1]，完成后将rehashidx加1，指向下一个需要rehash的键值对。</p>
+</li>
+<li>
+<p>随着字典操作的不断执行，最终ht[0]的所有键值对都会被rehash至ht[1]，再将rehashidx属性的值设为-1来表示 rehash操作已完成。</p>
+</li>
+</ol>
+<p>渐进式 rehash的思想在于<strong>将rehash键值对所需的计算工作分散到对字典的每个添加、删除、查找和更新操作上，从而避免了集中式rehash而带来的阻塞问题</strong>。</p>
+<p>看到这里不禁去想这种<strong>捎带脚式</strong>的rehash<strong>会不会导致整个过程非常漫长</strong>？如果某个value一直没有操作那么需要扩容时由于一直不用所以影响不大，需要缩容时如果一直不处理可能造成内存浪费，具体的还没来得及研究，<strong>先埋个问题吧</strong>！</p>
+<h2 id=单线程运行模式>单线程运行模式</h2>
+<p>本质上Redis并不是单纯的单线程服务模型，一些辅助工作比如持久化刷盘、惰性删除等任务是由BIO线程来完成的，这里说的单线程主要是说与客户端交互完成命令请求和回复的工作线程。</p>
+<p>至于Antirez大佬当时是怎么想的设计为单线程不得而知，只能从几个角度来分析，来确定单线程模型的选择原因。</p>
+<h3 id=单线程模式的考量>单线程模式的考量</h3>
+<ul>
+<li>
+<p><strong>CPU并非瓶颈</strong>：多线程模型主要是为了充分利用多核CPU，让线程在IO阻塞时被挂起让出CPU使用权交给其他线程，充分提高CPU的使用率，但是这个场景在Redis并不明显，因为CPU并不是Redis的瓶颈，Redis的所有操作都是基于内存的，处理事件极快，因此使用多线程来切换线程提高CPU利用率的需求并不强烈；</p>
+</li>
+<li>
+<p><strong>内存才是瓶颈</strong>：单个Redis实例对单核的利用已经很好了，但是Redis的瓶颈在于内存，设想64核的机器假如内存只有16GB，那么多线程Redis有什么用武之地？</p>
+</li>
+<li>
+<p><strong>复杂的Value类型</strong>：Redis有丰富的数据结构，并不是简单的Key-Value型的NoSQL，这也是Redis备受欢迎的原因，其中常用的Hash、Zset、List等结构在value很大时，CURD的操作会很复杂，如果采用多线程模式在进行相同key操作时就需要加锁来进行同步，这样就可能造成死锁问题。</p>
+</li>
+</ul>
+<p>这时候你会问：将key做hash分配给相同的线程来处理就可以解决呀，确实是这样的，这样的话就需要在Redis中增加key的hash处理以及多线程负载均衡的处理，从而Redis的实现就成为多线程模式了，好像确实也没有什么问题，但是Antirez并没有这么做，大神这么做肯定是有原因的，果不其然，我们见到了集群化的Redis；</p>
+<ul>
+<li>
+<p><strong>集群化扩展</strong>： 目前的机器都是多核的，但是内存一般128GB/64GB算是比较普遍了，但是Redis在使用内存60%以上稳定性就不如50%的性能了(至少笔者在使用集群化Redis时超过70%时，集群failover的频率会更高)，因此在数据较大时，当Redis作为主存，就必须使用多台机器构建集群化的Redis数据库系统，这样以来Redis的单线程模式又被集群化的处理所扩展了；</p>
+</li>
+<li>
+<p><strong>软件工程角度</strong> ：单线程无论从开发和维护都比多线程要容易非常多，并且也能提高服务的稳定性，无锁化处理让单线程的Redis在开发和维护上都具备相当大的优势；</p>
+</li>
+<li>
+<p><strong>类Redis系统</strong>： Redis的设计秉承实用第一和工程化，虽然有很多理论上优秀的设计模式，但是并不一定适用自己，软件设计过程就是权衡的过程。业内也有许多类Redis的NoSQL，比如360基础架构组开发的Pika系统，基于SSD和Rocks存储引擎，上层封装一层协议转换，来实现Redis所有功能的模拟，感兴趣的可以研究和使用。</p>
+</li>
+</ul>
+<h3 id=文件事件和时间事件>文件事件和时间事件</h3>
+<p>Redis作为单线程服务要处理的工作一点也不少，Redis是事件驱动的服务器，主要的事件类型就是：文件事件类型和时间事件类型，其中时间事件是理解单线程逻辑模型的关键。</p>
+<ul>
+<li><strong>时间事件</strong></li>
+</ul>
+<p>Redis的时间事件分为两类：</p>
+<ol>
+<li>
+<p>定时事件：任务在等待指定大小的等待时间之后就执行，执行完成就不再执行，只触发一次；</p>
+</li>
+<li>
+<p>周期事件：任务每隔一定时间就执行，执行完成之后等待下一次执行，会周期性的触发；</p>
+</li>
+</ol>
+<ul>
+<li><strong>周期性时间事件</strong></li>
+</ul>
+<p>Redis中大部分是周期事件，周期事件主要是服务器定期对自身运行情况进行检测和调整，从而保证稳定性，这项工作主要是ServerCron函数来完成的，周期事件的内容主要包括：</p>
+<ol>
+<li>
+<p>删除数据库的key</p>
+</li>
+<li>
+<p>触发RDB和AOF持久化</p>
+</li>
+<li>
+<p>主从同步</p>
+</li>
+<li>
+<p>集群化保活</p>
+</li>
+<li>
+<p>关闭清理死客户端链接</p>
+</li>
+<li>
+<p>统计更新服务器的内存、key数量等信息</p>
+</li>
+</ol>
+<p>可见 Redis的周期性事件虽然主要处理辅助任务，但是对整个服务的稳定运行，起到至关重要的作用。</p>
+<ul>
+<li><strong>时间事件的无序链表</strong></li>
+</ul>
+<p>Redis的每个时间事件分为三个部分：</p>
+<ol>
+<li>
+<p>事件ID 全局唯一 依次递增</p>
+</li>
+<li>
+<p>触发时间戳 ms级精度</p>
+</li>
+<li>
+<p>事件处理函数 事件回调函数</p>
+</li>
+</ol>
+<p>时间事件Time_Event结构：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311211713448.png?token=AARMIEQ5YIIXFO4VIRJOHFK6NDSRQ" alt></p>
+<p>Redis的时间事件是存储在链表中的，并且是按照ID存储的，新事件在头部旧事件在尾部，但是并不是按照即将被执行的顺序存储的。</p>
+<p>也就是第一个元素50ms后执行，但是第三个可能30ms后执行，这样的话Redis每次从链表中获取最近要执行的事件时，都需要进行O(N)遍历，显然性能不是最好的，最好的情况肯定是类似于最小栈MinStack的思路，然而Antirez大佬却选择了无序链表的方式。</p>
+<p>选择无序链表也是适合Redis场景的，因为Redis中的时间事件数量并不多，即使进行O(N)遍历性能损失也微乎其微，也就不必每次插入新事件时进行链表重排。</p>
+<p>Redis存储时间事件的无序链表如图：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311211721650.png?token=AARMIET6ANZCA3CVSIR2R2C6NDSSA" alt></p>
+<h3 id=单线程模式中事件调度和执行>单线程模式中事件调度和执行</h3>
+<p>Redis服务中因为包含了时间事件和文件事件，事情也就变得复杂了，服务器要决定何时处理文件事件、何时处理时间事件、并且还要明确知道处理时间的时间长度，因此事件的执行和调度就成为重点。</p>
+<p>Redis服务器会轮流处理文件事件和时间事件，这两种事件的处理都是同步、有序、原子地执行的，服务器也不会终止正在执行的事件，也不会对事件进行抢占。</p>
+<ul>
+<li><strong>事件执行调度规则</strong></li>
+</ul>
+<p>文件事件是随机出现的，如果处理完成一次文件事件后，仍然没有其他文件事件到来，服务器将继续等待，在文件事件的不断执行中，时间会逐渐向最早的时间事件所设置的到达时间逼近并最终来到到达时间，这时服务器就可以开始处理到达的时间事件了。</p>
+<p>由于时间事件在文件事件之后执行，并且事件之间不会出现抢占，所以时间事件的实际处理时间一般会比设定的时间稍晚一些。</p>
+<ul>
+<li><strong>事件执行调度的代码实现</strong></li>
+</ul>
+<p>Redis源码ae.c中对事件调度和执行的详细过程在aeProcessEvents中实现的，具体的代码如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=n>aeProcessEvents</span><span class=p>(</span><span class=n>aeEventLoop</span> <span class=o>*</span><span class=n>eventLoop</span><span class=p>,</span> <span class=kt>int</span> <span class=n>flags</span><span class=p>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li><strong>事件执行和调度的伪码</strong></li>
+</ul>
+<p>上面的源码可能读起来并不直观，在《Redis设计与实现》书中给出了伪代码实现：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=k>def</span> <span class=nf>aeProcessEvents</span><span class=p>()</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>可以看到Redis服务器是边阻塞边执行的，具体的阻塞事件由最近待执行时间事件的等待时间决定的，在阻塞该最小等待时间返回之后，开始处理事件任务，并且先执行文件事件、再执行时间事件，所有即使时间事件要即刻执行，也需要等待文件事件完成之后再执行时间事件，所以比预期的稍晚。</p>
+<ul>
+<li><strong>事件调度和执行流程</strong></li>
+</ul>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311211114885.png?token=AARMIERXO7V6SXAZI2UXEOS6NDR3I" alt></p>
+<h2 id=reactor模式>Reactor模式</h2>
+<p>Redis基于Reactor模式(反应堆模式)开发了自己的网络模型，形成了一个完备的基于IO复用的事件驱动服务器，但是不由得浮现几个问题:  </p>
+<ol>
+<li>
+<p> 为什么要使用Reactor模式呢？</p>
+</li>
+<li>
+<p> Redis如何实现自己的Reactor模式？</p>
+</li>
+</ol>
+<p>单纯的epoll/kqueue可以单机支持数万并发，单纯从性能的角度而言毫无问题，但是技术实现和软件设计仍然存在一些差异。</p>
+<p>设想这样一种场景:</p>
+<ul>
+<li>
+<p>epoll/kqueue将收集到的可读写事件全部放入队列中等待业务线程的处理，此时线程池的工作线程拿到任务进行处理，实际场景中可能有很多种请求类型，工作线程每拿到一种任务就进行相应的处理，处理完成之后继续处理其他类型的任务</p>
+</li>
+<li>
+<p>工作线程需要关注各种不同类型的请求，对于不同的请求选择不同的处理方法，因此请求类型的增加会让工作线程复杂度增加，维护起来也变得越来越困难</p>
+</li>
+</ul>
+<p>上面的场景其实和高并发网络模型很相似，如果我们在epoll/kqueue的基础上进行业务区分，并且对每一种业务设置相应的处理函数，每次来任务之后对任务进行识别和分发，每种处理函数只处理一种业务，这种模型更加符合OO的设计理念，这也是Reactor反应堆模式的设计思路。</p>
+<p>    反应堆模式是一种对象行为的设计模式，主要同于同步IO，异步IO有Proactor模式，这里不详细讲述Proactor模式，二者的主要区别就是Reactor是同步IO,Proactor是异步IO，理论上Proactor效率更高，但是Proactor模式需要操作系统在内核层面对异步IO进行支持，Linux的Boost.asio就是Proactor模式的代表，Windows有IOCP。</p>
+<p>网上比较经典的一张Reactor模式的类图:</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qZ1h6309fxOlsvttS6mm2sk47XMnPpRd9wzhnOxF0OIwN6Vo1tOYk7SzD9ZPJT3rehdw4uYUNKuZw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>图中给出了5个部件分别为：</p>
+<ol>
+<li>
+<p>handle 可以理解为读写事件 可以注册到Reactor进行监控</p>
+</li>
+<li>
+<p>Sync event demultiplexer 可以理解为epoll/kqueue/select等作为IO事件的采集器</p>
+</li>
+<li>
+<p>Dispatcher 提供注册/删除事件并进行分发，作为事件分发器</p>
+</li>
+<li>
+<p>Event Handler 事件处理器 完成具体事件的回调 供Dispatcher调用</p>
+</li>
+<li>
+<p>Concrete Event Handler 具体请求处理函数</p>
+</li>
+</ol>
+<p>更简洁的流程如下：<img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311204944295.png?token=AARMIEW6DQCMQ37NONTZF5K6NDPKQ" alt></p>
+<p>循环前先将待监控的事件进行注册，当监控中的Socket读写事件到来时，事件采集器epoll等IO复用工具检测到并且将事件返回给事件分发器Dispatcher，分发器根据读、写、异常等情况进行分发给事件处理器，事件处理器进而根据事件具体类型来调度相应的实现函数来完成任务。</p>
+<h3 id=reactor模式在redis中的实现>Reactor模式在Redis中的实现</h3>
+<p>Redis处理客户端业务(文件事件)的基本流程：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311210349698.png?token=AARMIEWUTCGXBK4QYOXZQMK6NDQ7Q" alt></p>
+<ul>
+<li><strong>Redis的IO复用的选择</strong></li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>#ifdef HAVE_EVPORT
+</code></pre></td></tr></table>
+</div>
+</div><p>Redis中支持多种IO复用，源码中使用相应的宏定义进行选择，编译时就可以获取当前系统支持的最优的IO复用函数来使用，从而实现了Redis的优秀的可移植特性。</p>
+<ul>
+<li><strong>Redis的任务事件队列</strong></li>
+</ul>
+<p>由于Redis的是单线程处理业务的，因此IO复用程序将读写事件同步的逐一放入队列中，如果当前队列已经满了，那么只能出一个入一个，但是由于Redis正常情况下处理得很快，不太会出现队列满迟迟无法放任务的情况，但是当执行某些阻塞操作时将导致长时间的阻塞，无法处理新任务。</p>
+<ul>
+<li><strong>Redis事件分派器</strong></li>
+</ul>
+<p>事件的可读写是从服务器角度看的，分派看到的事件类型包括：</p>
+<ol>
+<li>
+<p>AE_READABLE 客户端写数据、关闭连接、新连接到达</p>
+</li>
+<li>
+<p>AE_WRITEABLE 客户端读数据</p>
+</li>
+</ol>
+<p>特别地，当一个套接字连接同时可读可写时，服务器会优先处理读事件再处理写事件，也就是读优先。</p>
+<ul>
+<li><strong>Redis事件处理器</strong></li>
+</ul>
+<p>Redis将文件事件进行归类，编写了多个事件处理器函数，其中包括：</p>
+<ol>
+<li>
+<p>连接应答处理器：实现新连接的建立</p>
+</li>
+<li>
+<p>命令请求处理器：处理客户端的新命令</p>
+</li>
+<li>
+<p>命令回复处理器：返回客户端的请求结果</p>
+</li>
+<li>
+<p>复制处理器：实现主从服务器的数据复制</p>
+</li>
+</ol>
+<ul>
+<li><strong>Redis C/S一次完整的交互</strong></li>
+</ul>
+<p>Redis服务器的主线程处于循环中，此时Client向Redis服务器发起连接请求，假如是6379端口，监听端口在IO复用工具下检测到AE_READABLE事件，并将该事件放入TaskQueue中，等待被处理，事件分派器获取这个读事件，进一步确定是新连接请求，就将该事件交给连接应答处理器建立连接；</p>
+<p>建立连接后Client向服务器发送了一个get命令，仍然被IO复用检测处理放入队列，被事件分派器处理指派给命令请求处理器，调用相应程序进行执行；</p>
+<p>服务器将套接字的AE_WRITEABLE事件与命令回复处理器相关联，当客户端尝试读取结果时产生可写事件，此时服务器端触发命令回复响应，并将数据结果写入套接字，完成之后服务端接触该套接字与命令回复处理器之间的关联；</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311210440404.png?token=AARMIEWRKFCKESAPQQEBOXS6NDRCO" alt></p>
+<h2 id=持久化>持久化</h2>
+<p>通俗讲持久化就是将内存中的数据写入非易失介质中，比如机械磁盘和SSD。</p>
+<p>在服务器发生宕机时，作为内存数据库Redis里的所有数据将会丢失，因此Redis提供了持久化两大利器：<strong>RDB和AOF</strong></p>
+<ol>
+<li>
+<p>RDB 将数据库快照以二进制的方式保存到磁盘中。</p>
+</li>
+<li>
+<p>AOF 以协议文本方式，将所有对数据库进行过写入的命令和参数记录到 AOF 文件，从而记录数据库状态。</p>
+</li>
+</ol>
+<ul>
+<li><strong>查看RDB配置</strong></li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>[redis@abc]$ cat /abc/redis/conf/redis.conf   
+</code></pre></td></tr></table>
+</div>
+</div><p>前三行都是对触发RDB的一个条件， 如第一行表示每900秒钟有一条数据被修改则触发RDB，依次类推；只要一条满足就会进行RDB持久化；</p>
+<p>第四行dbfilename指定了把内存里的数据库写入本地文件的名称，该文件是进行压缩后的二进制文件；</p>
+<p>第五行dir指定了RDB二进制文件存放目录 ；</p>
+<ul>
+<li><strong>修改RDB配置</strong></li>
+</ul>
+<p>在命令行里进行配置,服务器重启才会生效:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>[redis@abc]$ bin/redis-cli
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=rdb的save和bgsave>RDB的SAVE和BGSAVE</h3>
+<p>RDB文件适合数据的容灾备份与恢复，通过RDB文件恢复数据库耗时较短，可以快速恢复数据。</p>
+<p>RDB持久化只会周期性的保存数据，在未触发下一次存储时服务宕机，就会丢失增量数据。当数据量较大的情况下，fork子进程这个操作很消耗cpu，可能会发生长达秒级别的阻塞情况。</p>
+<ul>
+<li>
+<p>SAVE是阻塞式持久化，执行命令时Redis主进程把内存数据写入到RDB文件中直到创建完毕，期间Redis不能处理任何命令。</p>
+</li>
+<li>
+<p>BGSAVE属于非阻塞式持久化，创建一个子进程把内存中数据写入RDB文件里同时主进程处理命令请求。</p>
+</li>
+</ul>
+<p>如图展示了bgsave的简单流程：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qbQwUypouw6PS6HrmAib1eBotuIRpHvZFqYdzNKojzevsrvpfqgLTuAM7pA7E6ib4hlAKKgYzCLIDUg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<ul>
+<li><strong>BGSAVE实现细节</strong></li>
+</ul>
+<p>RDB方式的持久化是通过快照实现的，符合条件时Redis会自动将内存数据进行快照并存储在硬盘上，以BGSAVE为例，一次完整数据快照的过程：</p>
+<ol>
+<li>
+<p>Redis使用fork函数创建子进程；</p>
+</li>
+<li>
+<p>父进程继续接收并处理命令请求，子进程将内存数据写入临时文件；</p>
+</li>
+<li>
+<p>子进程写入所有数据后会用临时文件替换旧RDB文件；</p>
+</li>
+</ol>
+<p>执行fork的时OS会使用写时拷贝策略，对子进程进行快照过程优化。</p>
+<p>Redis在进行快照过程中不会修改RDB文件，只有快照结束后才会将旧的文件替换成新的，也就是任何时候RDB文件都是完整的。</p>
+<p>我们可以通过定时备份RDB文件来实现Redis数据库备份，RDB文件是经过压缩的，占用的空间会小于内存中的数据大小。</p>
+<p>除了自动快照还可以手动发送SAVE或BGSAVE命令让Redis执行快照。通过RDB方式实现持久化，由于RDB保存频率的限制，如果数据很重要则考虑使用AOF方式进行持久化。</p>
+<h3 id=aof详解>AOF详解</h3>
+<p>在使用AOF持久化方式时，Redis会将每一个收到的写命令都通过Write函数追加到文件中类似于MySQL的binlog。换言之AOF是通过保存对redis服务端的写命令来记录数据库状态的。</p>
+<p>AOF文件有自己的存储协议格式：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>[redis@abc]$ more appendonly.aof 
+</code></pre></td></tr></table>
+</div>
+</div><p>AOF配置：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>[redis@abc]$ more ~/redis/conf/redis.conf
+</code></pre></td></tr></table>
+</div>
+</div><p>　　当开启AOF后，服务端每执行一次写操作就会把该条命令追加到一个单独的AOF缓冲区的末尾，然后把AOF缓冲区的内容写入AOF文件里，由于磁盘缓冲区的存在写入AOF文件之后，并不代表数据已经落盘了，而何时进行文件同步则是根据配置的<code>appendfsync</code>来进行配置：</p>
+<p><code>appendfsync</code>选项：always、everysec和no：</p>
+<ul>
+<li>
+<p>always：服务器在每执行一个事件就把AOF缓冲区的内容强制性的写入硬盘上的AOF文件里，保证了数据持久化的完整性，效率是最慢的但最安全的；</p>
+</li>
+<li>
+<p>everysec：服务端每隔一秒才会进行一次文件同步把内存缓冲区里的AOF缓存数据真正写入AOF文件里，兼顾了效率和完整性，极端情况服务器宕机只会丢失一秒内对Redis数据库的写操作；</p>
+</li>
+<li>
+<p>no：表示默认系统的缓存区写入磁盘的机制，不做程序强制，数据安全性和完整性差一些。</p>
+</li>
+</ul>
+<p>AOF比RDB文件更大，并且在存储命令的过程中增长更快，为了压缩AOF的持久化文件，Redis提供了重写机制以此来实现控制AOF文件的增长。</p>
+<p>AOF重写实现的理论基础是这样的：</p>
+<ol>
+<li>
+<p>执行set hello world 50次 </p>
+</li>
+<li>
+<p>最后执行一次 set hello china</p>
+</li>
+<li>
+<p>最终对于AOF文件而言前面50次都是无意义的，AOF重写就是将key只保存最后的状态。</p>
+</li>
+<li>
+<p>重写期间的数据一致性问题</p>
+</li>
+</ol>
+<p>子进程在进行 AOF 重写期间， 主进程还需要继续处理命令， 而新的命令可能对现有的数据进行修改， 会出现数据库的数据和重写后的 AOF 文件中的数据不一致。</p>
+<p>因此Redis 增加了一个 AOF 重写缓存， 这个缓存在 fork 出子进程之后开始启用， Redis 主进程在接到新的写命令之后， 除了会将这个写命令的协议内容追加到现有的 AOF 文件之外， 还会追加到这个缓存中。</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311210449739.png?token=AARMIEXJXFKOIDVJ7BLAL5S6NDRDS" alt></p>
+<p>当子进程完成 AOF 重写之后向父进程发送一个完成信号， 父进程在接到完成信号之后会调用信号处理函数，完成以下工作：</p>
+<ol>
+<li>
+<p>将 AOF 重写缓存中的内容全部写入到新 AOF 文件中</p>
+</li>
+<li>
+<p>对新的 AOF 文件进行改名，覆盖原有的 AOF 文件</p>
+</li>
+<li>
+<p>AOF重写的阻塞性</p>
+</li>
+</ol>
+<p>整个 AOF 后台重写过程中只有最后写入缓存和改名操作会造成主进程阻塞， 在其他时候AOF 后台重写都不会对主进程造成阻塞， 将 AOF 重写对性能造成的影响降到了最低。</p>
+<p>AOF 重写可以由用户通过调用 BGREWRITEAOF 手动触发。</p>
+<p>服务器在 AOF 功能开启的情况下，会维持以下三个变量：</p>
+<ol>
+<li>
+<p>当前 AOF 文件大小 </p>
+</li>
+<li>
+<p>最后一次 重写之后， AOF 文件大小的变量 </p>
+</li>
+<li>
+<p>AOF文件大小增长百分比</p>
+</li>
+</ol>
+<p>每次当 serverCron 函数执行时， 它都会检查以下条件是否全部满足， 如果是的话， 就会触发自动的 AOF 重写：</p>
+<ol>
+<li>
+<p>没有 BGSAVE 命令在进行 防止于RDB的冲突</p>
+</li>
+<li>
+<p>没有 BGREWRITEAOF 在进行 防止和手动AOF冲突</p>
+</li>
+<li>
+<p>当前 AOF 文件大小至少大于设定值 基本要求 太小没意义</p>
+</li>
+<li>
+<p>当前 AOF 文件大小和最后一次 AOF 重写后的大小之间的比率大于等于指定的增长百分比</p>
+</li>
+</ol>
+<h3 id=73redis的数据恢复>7.3 Redis的数据恢复</h3>
+<p><strong>Redis的数据恢复优先级</strong></p>
+<ol>
+<li>
+<p>如果只配置 AOF ，重启时加载 AOF 文件恢复数据；</p>
+</li>
+<li>
+<p>如果同时配置了 RDB 和 AOF ，启动只加载 AOF 文件恢复数据；</p>
+</li>
+<li>
+<p>如果只配置 RDB，启动将加载 dump 文件恢复数据。</p>
+</li>
+</ol>
+<p>拷贝 AOF 文件到 Redis 的数据目录，启动 redis-server AOF 的数据恢复过程:Redis 虚拟一个客户端，读取AOF文件恢复 Redis 命令和参数，然后执行命令从而恢复数据，这些过程主要在loadAppendOnlyFile() 中实现。</p>
+<p>拷贝 RDB 文件到 Redis 的数据目录，启动 redis-server即可，因为RDB文件和重启前保存的是真实数据而不是命令状态和参数。</p>
+<p><strong>新型的混合型持久化</strong></p>
+<p>RDB和AOF都有各自的缺点：</p>
+<ol>
+<li>
+<p>RDB是每隔一段时间持久化一次, 故障时就会丢失宕机时刻与上一次持久化之间的数据，无法保证数据完整性</p>
+</li>
+<li>
+<p>AOF存储的是指令序列, 恢复重放时要花费很长时间并且文件更大</p>
+</li>
+</ol>
+<p>Redis 4.0 提供了更好的混合持久化选项： 创建出一个同时包含 RDB 数据和 AOF 数据的 AOF 文件， 其中 RDB 数据位于 AOF 文件的开头， 它们储存了服务器开始执行重写操作时的数据库状态，至于那些在重写操作执行之后执行的 Redis 命令， 则会继续以 AOF 格式追加到 AOF 文件的末尾， 也即是 RDB 数据之后。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qbQwUypouw6PS6HrmAib1eBogXC1PVw6Ml8C51A7Twbawz7VMjHzElMt14Yn5rhYmXM9BTX6S1RfhQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p><strong>持久化实战</strong></p>
+<p>在实际使用中需要根据Redis作为主存还是缓存、数据完整性和缺失性的要求、CPU和内存情况等诸多因素来确定适合自己的持久化方案，一般来说稳妥的做法包括：</p>
+<ol>
+<li>
+<p>最安全的做法是RDB与AOF同时使用，即使AOF损坏无法修复，还可以用RDB来恢复数据，当然在持久化时对性能也会有影响。</p>
+</li>
+<li>
+<p>Redis当简单缓存，没有缓存也不会造成缓存雪崩只使用RDB即可。</p>
+</li>
+<li>
+<p>不推荐单独使用AOF，因为AOF对于数据的恢复载入比RDB慢，所以使用AOF的时候，最好还是有RDB作为备份。</p>
+</li>
+<li>
+<p>采用新版本Redis 4.0的持久化新方案。</p>
+</li>
+</ol>
+<h2 id=ziplist>ZIPLIST</h2>
+<p>先不看Redis的对ziplist的具体实现，我们先来想一下如果我们来设计这个数据结构需要做哪些方面的考虑呢？思考式地学习收获更大呦！</p>
+<ul>
+<li><strong>考虑点1：连续内存的双面性</strong></li>
+</ul>
+<p>连续型内存减少了内存碎片，但是连续大内存又不容易满足。这个非常好理解，你和好基友三人去做地铁，你们三个挨着坐肯定不浪费空间，但是地铁里很多人都是单独出行的，大家都不愿意紧挨着，就这样有2个的位置有1个的位置，可是3个连续的确实不好找呀，来张图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_jpg/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdaYadtJctBTr9vgSwYac9j9evrTVKaImk1gX8FicOKP6A9wOEmyoanpDA/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<ul>
+<li><strong>考虑点2: 压缩列表承载元素的多样性</strong></li>
+</ul>
+<p>待设计结构和数组不一样，数组是已经强制约定了类型，所以我们可以根据元素类型和个数来确定索引的偏移量，但是压缩列表对元素的类型没有约束，也就是说不知道是什么数据类型和长度，这个有点像TCP粘包拆包的做法了，需要我们指定结尾符或者指定单个存储的元素的长度，要不然数据都粘在一起了。</p>
+<ul>
+<li><strong>考虑点3：属性的常数级耗时获取</strong></li>
+</ul>
+<p>就是说我们解决了前面两点考虑，但是作为一个整体，压缩列表需要常数级消耗提供一些总体信息，比如总长度、已存储元素数量、尾节点位置(实现尾部的快速插入和删除)等，这样对于操作压缩列表意义很大。</p>
+<ul>
+<li><strong>考虑点4：数据结构对增删的支持</strong></li>
+</ul>
+<p>理论上我们设计的数据结构要很好地支持增删操作，当然凡事必有权衡，没有什么数据结构是完美的，我们边设计边调整吧。</p>
+<ul>
+<li><strong>考虑点5：如何节约内存</strong></li>
+</ul>
+<p>我们要节约内存就需要特殊情况特殊处理，所谓变长设计，也就是不像双向链表一样固定使用两个pre和next指针来实现，这样空间消耗更大，因此可能需要使用变长编码。</p>
+<h5 id=ziplist总体结构>ziplist总体结构</h5>
+<p>大概想了这么多，我们来看看Redis是如何考虑的，笔者又画了一张总览简图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdauYrajuTcS6hKCAfBKP8R21IyW94ULQFGcta8F7dLibmicQPaDOS4QBlg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>从图中我们基本上可以看到几个主要部分：zlbytes、zltail、zllen、zlentry、zlend。</p>
+<p>来解释一下各个属性的含义，借鉴网上一张非常好的图，其中红线验证了我们的考虑点2、绿线验证了我们的考虑点3：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdaRzpVxfbENcG2NPlmZH1Q3GSZBfdwW4R18a8EicIx8E5B9pV6HpW8DsA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>来看下ziplist.c中对ziplist的申请和扩容操作，加深对上面几个属性的理解：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cm>/* Create a new empty ziplist. */</span>
+<span class=kt>unsigned</span> <span class=kt>char</span> <span class=o>*</span><span class=nf>ziplistNew</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+  <span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>bytes</span> <span class=o>=</span> <span class=n>ZIPLIST_HEADER_SIZE</span><span class=o>+</span><span class=n>ZIPLIST_END_SIZE</span><span class=p>;</span>    
+  <span class=kt>unsigned</span> <span class=kt>char</span> <span class=o>*</span><span class=n>zl</span> <span class=o>=</span> <span class=n>zmalloc</span><span class=p>(</span><span class=n>bytes</span><span class=p>);</span>    
+  <span class=n>ZIPLIST_BYTES</span><span class=p>(</span><span class=n>zl</span><span class=p>)</span> <span class=o>=</span> <span class=n>intrev32ifbe</span><span class=p>(</span><span class=n>bytes</span><span class=p>);</span>    
+  <span class=n>ZIPLIST_TAIL_OFFSET</span><span class=p>(</span><span class=n>zl</span><span class=p>)</span> <span class=o>=</span> <span class=n>intrev32ifbe</span><span class=p>(</span><span class=n>ZIPLIST_HEADER_SIZE</span><span class=p>);</span>    
+  <span class=n>ZIPLIST_LENGTH</span><span class=p>(</span><span class=n>zl</span><span class=p>)</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>    
+  <span class=n>zl</span><span class=p>[</span><span class=n>bytes</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span> <span class=o>=</span> <span class=n>ZIP_END</span><span class=p>;</span>    
+  <span class=k>return</span> <span class=n>zl</span><span class=p>;</span>
+<span class=p>}</span>
+<span class=cm>/* Resize the ziplist. */</span>
+<span class=kt>unsigned</span> <span class=kt>char</span> <span class=o>*</span><span class=nf>ziplistResize</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>char</span> <span class=o>*</span><span class=n>zl</span><span class=p>,</span> <span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>len</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=n>zl</span> <span class=o>=</span> <span class=n>zrealloc</span><span class=p>(</span><span class=n>zl</span><span class=p>,</span><span class=n>len</span><span class=p>);</span>    
+    <span class=n>ZIPLIST_BYTES</span><span class=p>(</span><span class=n>zl</span><span class=p>)</span> <span class=o>=</span> <span class=n>intrev32ifbe</span><span class=p>(</span><span class=n>len</span><span class=p>);</span>    
+    <span class=n>zl</span><span class=p>[</span><span class=n>len</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span> <span class=o>=</span> <span class=n>ZIP_END</span><span class=p>;</span>    
+    <span class=k>return</span> <span class=n>zl</span><span class=p>;</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h5 id=zlentry的实现>zlentry的实现</h5>
+<ul>
+<li><strong>encoding编码和content存储</strong></li>
+</ul>
+<p>我们再来看看zlentry的实现，encoding的具体内容取决于content的类型和长度，其中当content是字符串时encoding的首字节的高2bit表示字符串类型，当content是整数时，encoding的首字节高2bit固定为11，从Redis源码的注释中可以看的比较清楚，笔者对再做一层汉语版的注释：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c> <span class=cm>/* ###########字符串存储详解############### 
+</span><span class=cm> #### encoding部分分为三种类型：1字节、2字节、5字节 #### 
+</span><span class=cm> #### 最高2bit表示是哪种长度的字符串 分别是00 01 10 各自对应1字节 2字节 5字节 #### 
+</span><span class=cm> #### 当最高2bit=00时 表示encoding=1字节 剩余6bit 2^6=64 可表示范围0~63#### 
+</span><span class=cm> #### 当最高2bit=01时 表示encoding=2字节 剩余14bit 2^14=16384 可表示范围0~16383#### 
+</span><span class=cm> #### 当最高2bit=11时 表示encoding=5字节 比较特殊 用后4字节 剩余32bit 2^32=42亿多#### 
+</span><span class=cm> * |00pppppp| - 1 byte 
+</span><span class=cm> *      String value with length less than or equal to 63 bytes (6 bits). 
+</span><span class=cm> *      &#34;pppppp&#34; represents the unsigned 6 bit length. * |01pppppp|qqqqqqqq| - 2 bytes 
+</span><span class=cm> *      String value with length less than or equal to 16383 bytes (14 bits). 
+</span><span class=cm> *      IMPORTANT: The 14 bit number is stored in big endian. 
+</span><span class=cm> * |10000000|qqqqqqqq|rrrrrrrr|ssssssss|tttttttt| - 5 bytes 
+</span><span class=cm> *      String value with length greater than or equal to 16384 bytes. 
+</span><span class=cm> *      Only the 4 bytes following the first byte represents the length 
+</span><span class=cm> *      up to 32^2-1. The 6 lower bits of the first byte are not used and 
+</span><span class=cm> *      are set to zero. 
+</span><span class=cm> *      IMPORTANT: The 32 bit number is stored in big endian. 
+</span><span class=cm> *########################字符串存储和整数存储的分界线####################
+</span><span class=cm> * 
+</span><span class=cm> *#### 高2bit固定为11 其后2bit 分别为00 01 10 11 表示存储的整数类型 
+</span><span class=cm> * |11000000| - 3 bytes 
+</span><span class=cm> *      Integer encoded as int16_t (2 bytes). 
+</span><span class=cm> * |11010000| - 5 bytes 
+</span><span class=cm> *      Integer encoded as int32_t (4 bytes). 
+</span><span class=cm> * |11100000| - 9 bytes 
+</span><span class=cm> *      Integer encoded as int64_t (8 bytes). 
+</span><span class=cm> * |11110000| - 4 bytes 
+</span><span class=cm> *      Integer encoded as 24 bit signed (3 bytes). 
+</span><span class=cm> * |11111110| - 2 bytes 
+</span><span class=cm> *      Integer encoded as 8 bit signed (1 byte). 
+</span><span class=cm> * |1111xxxx| - (with xxxx between 0000 and 1101) immediate 4 bit integer. 
+</span><span class=cm> *      Unsigned integer from 0 to 12. The encoded value is actually from 
+</span><span class=cm> *      1 to 13 because 0000 and 1111 can not be used, so 1 should be 
+</span><span class=cm> *      subtracted from the encoded 4 bit value to obtain the right value. 
+</span><span class=cm> * |11111111| - End of ziplist special entry.
+</span><span class=cm> */</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>content保存节点内容，其内容可以是字节数组和各种类型的整数，它的类型和长度决定了encoding的编码，对照上面的注释来看两个例子吧：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdaaWSWicibGVdfDhAm4YoDRY78CE0iariaPeCvARqPUic4CGibLmYNqicvYhBGA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>保存字节数组：编码的最高两位00表示节点保存的是一个字节数组，编码的后六位001011记录了字节数组的长度11，content 属性保存着节点的值 &ldquo;hello world&rdquo;。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdazgJZGFMLrWsAJIj0x3tvEuibticBUV1ibvmy8ETVyEM1HBj7sncpJaNpg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>保存整数：编码为11000000表示节点保存的是一个int16_t类型的整数值，content属性保存着节点的值10086。</p>
+<ul>
+<li><strong>prevlen属性</strong></li>
+</ul>
+<p>最后来说一下prevlen这个属性，该属性也比较关键，前面一直在说压缩列表是为了节约内存设计的，然而prevlen属性就恰好起到了这个作用，回想一下链表要想获取前面的节点需要使用指针实现，压缩列表由于元素的多样性也无法像数组一样来实现，所以使用prevlen属性记录前一个节点的大小来进行指向。</p>
+<p>prevlen属性以字节为单位，记录了压缩列表中前一个节点的长度，其长度可以是 1 字节或者 5 字节：</p>
+<ol>
+<li>
+<p>如果前一节点的长度小于254字节，那么prevlen属性的长度为1字节， 前一节点的长度就保存在这一个字节里面。</p>
+</li>
+<li>
+<p>如果前一节点的长度大于等于254字节，那么prevlen属性的长度为5字节,第一字节会被设置为<strong>0xFE</strong>，之后的四个字节则用于保存前一节点的长度。</p>
+</li>
+</ol>
+<p>思考：注意一下这里的第一字节设置的是0xFE而不是0xFF，想下这是为什么呢？</p>
+<p>没错！前面提到了zlend是个特殊值设置为0xFF表示压缩列表的结束，因此这里不可以设置为0xFF，关于这个问题在redis有个issue，有人提出来antirez的ziplist中的注释写的不对，最终antirez发现注释写错了，然后愉快地修改了，哈哈！</p>
+<p>再思考一个问题，为什么prevlen的长度要么是1字节要么是5字节呢？为啥没有2字节、3字节、4字节这些中间态的长度呢？要解答这个问题就引出了今天的一个关键问题：连锁更新问题。</p>
+<h5 id=连锁更新问题>连锁更新问题</h5>
+<p>试想这样一种增加节点的场景：</p>
+<p>如果在压缩列表的头部增加一个新节点，并且长度大于254字节，所以其后面节点的prevlen必须是5字节，然而在增加新节点之前其prevlen是1字节，必须进行扩展，极端情况下如果一直都需要扩展那么将产生连锁反应：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143Picda5lgMaiaFLCS6IV1Q9j9rrRFwytibZSwHVicseCS8v9jZdIHLEZhKWicOfQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdaWJorvyzk0uSiaCjG7ruSZMcYC5fRYkKFRb1KWBoWV6nlY2Yl3VBDf7g/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>试想另外一种删除节点的场景：</p>
+<p>如果需要删除的节点时小节点，该节点前面的节点是大节点，这样当把小节点删除时，其后面的节点就要保持其前面大节点的长度，面临着扩展的问题：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb9BaiaGvjGUWgicjl143PicdaFsiatzIjs0qiaSC7h53JXT7lraGKQsAe7MgT2PiciauarX3CuWtJSZ9Wrg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>理解了连锁更新问题，再来看看为什么要么1字节要么5字节的问题吧，如果是2-4字节那么可能产生连锁反应的概率就更大了，相反直接给到最大5字节会大大降低连锁更新的概率，所以笔者也认为这种内存的小小浪费也是值得的。</p>
+<p>从ziplist的设计来看，压缩列表并不擅长修改操作，这样会导致内存拷贝问题，并且当压缩列表存储的数据量超过某个阈值之后查找指定元素带来的遍历损耗也会增加。</p>
+<h2 id=zset和跳跃链表>Zset和跳跃链表</h2>
+<p>ZSet结构同时包含一个字典和一个跳跃表，跳跃表按score从小到大保存所有集合元素。字典保存着从member到score的映射。两种结构通过指针共享相同元素的member和score，不浪费额外内存。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>typedef</span> <span class=k>struct</span> <span class=n>zset</span> <span class=p>{</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>ZSet中的字典和跳表布局：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311210521105.png?token=AARMIEWFQRTH4MXXRO6XB4C6NDRFG" alt></p>
+<p>注:图片源自网络</p>
+<h3 id=跳跃链表的实现细节>跳跃链表的实现细节</h3>
+<ul>
+<li><strong>随机层数的实现原理</strong></li>
+</ul>
+<p>跳表是一个概率型的数据结构，元素的插入层数是随机指定的。Willam Pugh在论文中描述了它的计算过程如下：</p>
+<ol>
+<li>
+<p>指定节点最大层数 MaxLevel，指定概率 p， 默认层数 lvl 为1 </p>
+</li>
+<li>
+<p>生成一个0~1的随机数r，若r&lt;p，且lvl&lt;MaxLevel ，则lvl ++</p>
+</li>
+<li>
+<p>重复第 2 步，直至生成的r >p 为止，此时的 lvl 就是要插入的层数。</p>
+</li>
+</ol>
+<p>论文中生成随机层数的伪码：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVuLlHpcCI2n0VyaAYiapcEPOZabutuZgh8iaR8LzSy7b59bfFrlybLvtYA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>在Redis中对跳表的实现基本上也是遵循这个思想的，只不过有微小差异，看下Redis关于跳表层数的随机源码src/z_set.c：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>/* Returns a random level for the new skiplist node we are going to create.
+</code></pre></td></tr></table>
+</div>
+</div><p>其中两个宏的定义在redis.h中：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cp>#define ZSKIPLIST_MAXLEVEL 32 </span><span class=cm>/* Should be enough for 2^32 elements */</span><span class=cp>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>可以看到while中的：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=p>(</span><span class=n>random</span><span class=p>()</span><span class=o>&amp;</span><span class=mh>0xFFFF</span><span class=p>)</span> <span class=o>&lt;</span> <span class=p>(</span><span class=n>ZSKIPLIST_P</span><span class=o>*</span><span class=mh>0xFFFF</span><span class=p>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>第一眼看到这个公式，因为涉及位运算有些诧异，需要研究一下Antirez为什么使用位运算来这么写？</p>
+<p>最开始的猜测是random()返回的是浮点数[0-1]，于是乎在线找了个浮点数转二进制的工具，输入0.25看了下结果：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVu9oejQfMU30cUQXSYlnia8paaUQwpRcns4ZKVezPyibMgMESl4y3knRUg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>可以看到0.25的32bit转换16进制结果为0x3e800000，如果与0xFFFF做与运算结果是0，好像也符合预期，再试一个0.5:</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVuPYibI8nRHa4DnickoRc8sTWmGb5LHmdNXKpIlyuZawaIHM27GTj7y4Jw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>可以看到0.5的32bit转换16进制结果为0x3f000000，如果与0xFFFF做与运算结果还是0，不符合预期。</p>
+<p>我印象中C语言的math库好像并没有直接random函数，所以就去Redis源码中找找看，于是下载了3.2版本代码，也并没有找到random()的实现，不过找到了其他几个地方的应用：</p>
+<p><strong>random()在dict.c中的使用</strong></p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVuUL9Ew8icZzS3IibicMoQDJO8KGQeia5X8Bq3UURA29mlbToziaUHOZ0w3Xw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p><strong>random()在cluster.c中的使用</strong></p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVuo7MiaUGMlWPtjYat7xpvyYvTT7QZSIqbEbngQhUnzfSMTDbrYwicQjJw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>看到这里的取模运算，后知后觉地发现原以为random()是个[0-1]的浮点数，但是现在看来是uint32才对，这样Antirez的式子就好理解了。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>ZSKIPLIST_P*0xFFFF
+</code></pre></td></tr></table>
+</div>
+</div><p>由于ZSKIPLIST_P=0.25，所以相当于0xFFFF右移2位变为0x3FFF，假设random()比较均匀，在进行0xFFFF高16位清零之后，低16位取值就落在0x0000-0xFFFF之间，这样while为真的概率只有1/4。更一般地说为真的概率为1/ZSKIPLIST_P。</p>
+<p>对于随机层数的实现并不统一，重要的是随机数生成，LevelDB中对跳表层数的生成代码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>template &lt;typename Key, typename Value&gt;
+</code></pre></td></tr></table>
+</div>
+</div><p>可以看到leveldb使用随机数与kBranching取模，如果值为0就增加一层，这样虽然没有使用浮点数，但是也实现了概率平衡。</p>
+<ul>
+<li><strong>跳表结点的平均层数</strong></li>
+</ul>
+<p>我们很容易看出，产生越高的节点层数出现概率越低，无论如何层数总是满足幂次定律越大的数出现的概率越小。</p>
+<blockquote>
+<p>如果某件事的发生频率和它的某个属性成幂关系，那么这个频率就可以称之为符合幂次定律。幂次定律的表现是少数几个事件的发生频率占了整个发生频率的大部分， 而其余的大多数事件只占整个发生频率的一个小部分。</p>
+</blockquote>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVuTsuQXwH7bPHETamoGeDPcd4gEaTxBibribBVeKxP2eQf7MOXOe7qKS2Q/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>幂次定律应用到跳表的随机层数来说就是大部分的节点层数都是黄色部分，只有少数是绿色部分，并且概率很低。</p>
+<p>定量的分析如下：</p>
+<ol>
+<li>
+<p>节点层数至少为1，大于1的节点层数满足一个概率分布。</p>
+</li>
+<li>
+<p>节点层数恰好等于1的概率为p^0(1-p)。</p>
+</li>
+<li>
+<p>节点层数恰好等于2的概率为p^1(1-p)。</p>
+</li>
+<li>
+<p>节点层数恰好等于3的概率为p^2(1-p)。</p>
+</li>
+<li>
+<p>节点层数恰好等于4的概率为p^3(1-p)。</p>
+</li>
+<li>
+<p>依次递推节点层数恰好等于K的概率为p^(k-1)(1-p)</p>
+</li>
+</ol>
+<p>如果要求节点的平均层数，那么也就转换成了求概率分布的期望问题了，灵魂画手大白再次上线：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qaS8FxVXL1em0ozmuyF9fVuEUVQtQ1PU8k4MQHTrSwMIjef02OXNhDUFFLDKeRsoUA1rBBtjwoTKg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>表中P为概率，V为对应取值，给出了所有取值和概率的可能，因此就可以求这个概率分布的期望了。</p>
+<p>方括号里面的式子其实就是高一年级学的等比数列，常用技巧错位相减求和，从中可以看到结点层数的期望值与1-p成反比。对于Redis而言，当p=0.25时结点层数的期望是1.33。</p>
+<p>在Redis源码中有详尽的关于插入和删除调整跳表的过程，本文就不展开了，代码并不算难懂，都是纯C写的没有那么多炫技特效，大胆读起来。</p>
+<h2 id=集群和gossip协议>集群和Gossip协议</h2>
+<p>集群版的Redis听起来很高大上，确实相比单实例一主一从或者一主多从模式来说复杂了许多，互联网的架构总是随着业务的发展不断演进的。</p>
+<h3 id=a1关于集群的一些基础>A.1 关于集群的一些基础</h3>
+<ul>
+<li><strong>单实例Redis架构</strong></li>
+</ul>
+<p>最开始的一主N从加上读写分离，Redis作为缓存单实例貌似也还不错，并且有Sentinel哨兵机制，可以实现主从故障迁移。</p>
+<p>单实例一主两从+读写分离结构:</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qa6SRBrmSbFqplISR17v7Yl67NBKxSO28qUwQJ6toe4HOoIIWnfNO3wriaUsrREotibrvqrcx6UXdjQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>注:图片来自网络</p>
+<p>单实例的由于本质上只有一台Master作为存储，就算机器为128GB的内存，一般建议使用率也不要超过70%-80%，所以最多使用100GB数据就已经很多了，实际中50%就不错了，以为数据量太大也会降低服务的稳定性，因为数据量太大意味着持久化成本高，可能严重阻塞服务，甚至最终切主。</p>
+<p>如果单实例只作为缓存使用，那么除了在服务故障或者阻塞时会出现缓存击穿问题，可能会有很多请求一起搞死MySQL。</p>
+<p>如果单实例作为主存，那么问题就比较大了，因为涉及到持久化问题，无论是bgsave还是aof都会造成刷盘阻塞，此时造成服务请求成功率下降，这个并不是单实例可以解决的，因为由于作为主存储，持久化是必须的。</p>
+<p>所以我们期待一个多主多从的Redis系统，这样无论作为主存还是作为缓存，压力和稳定性都会提升，尽管如此，笔者还是建议：Redis尽量不要做主存储！</p>
+<ul>
+<li><strong>集群与分片</strong></li>
+</ul>
+<p>要支持集群首先要克服的就是分片问题，也就是一致性哈希问题，常见的方案有三种：</p>
+<p><strong>客户端分片</strong>：这种情况主要是类似于哈希取模的做法，当客户端对服务端的数量完全掌握和控制时，可以简单使用。</p>
+<p><strong>中间层分片</strong>：这种情况是在客户端和服务器端之间增加中间层，充当管理者和调度者，客户端的请求打向中间层，由中间层实现请求的转发和回收，当然中间层最重要的作用是对多台服务器的动态管理。</p>
+<p><strong>服务端分片</strong>：不使用中间层实现去中心化的管理模式，客户端直接向服务器中任意结点请求，如果被请求的Node没有所需数据，则像客户端回复MOVED，并告诉客户端所需数据的存储位置，这个过程实际上是客户端和服务端共同配合，进行请求重定向来完成的。</p>
+<ul>
+<li><strong>中间层分片的集群版Redis</strong></li>
+</ul>
+<p>前面提到了变为N主N从可以有效提高处理能力和稳定性，但是这样就面临一致性哈希的问题，也就是动态扩缩容时的数据问题。</p>
+<p>在Redis官方发布集群版本之前，业内有一些方案迫不及待要用起自研版本的Redis集群，其中包括国内豌豆荚的Codis、国外Twiter的twemproxy。</p>
+<p>核心思想都是在多个Redis服务器和客户端Client中间增加分片层，由分片层来完成数据的一致性哈希和分片问题，每一家的做法有一定的区别，但是要解决的核心问题都是多台Redis场景下的扩缩容、故障转移、数据完整性、数据一致性、请求处理延时等问题。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qa6SRBrmSbFqplISR17v7YlhT84NAQEdFuEx6VUicpC3wue9q0HwOmia0OdVN2ZLNB9gHXQSj3TPFeQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>业内Codis配合LVS等多种做法实现Redis集群的方案有很多都应用到生成环境中，表现都还不错，主要是官方集群版本在Redis3.0才出现，对其稳定性如何，很多公司都不愿做小白鼠，不过事实上经过迭代目前已经到了Redis5.x版本，官方集群版本还是很不错的，至少笔者这么认为。</p>
+<ul>
+<li><strong>服务端分片的官方集群版本</strong></li>
+</ul>
+<p>官方版本区别于上面的Codis和Twemproxy，实现了服务器层的Sharding分片技术，换句话说官方没有中间层，而是多个服务结点本身实现了分片，当然也可以认为实现sharding的这部分功能被融合到了Redis服务本身中，并没有单独的Sharding模块。</p>
+<p>之前的文章也提到了官方集群引入slot的概念进行数据分片，之后将数据slot分配到多个Master结点，Master结点再配置N个从结点，从而组成了多实例sharding版本的官方集群架构。</p>
+<p>Redis Cluster 是一个可以在多个 Redis 节点之间进行数据共享的分布式集群，在服务端，通过节点之间的特殊协议进行通讯，这个特殊协议就充当了中间层的管理部分的通信协议，这个协议称作Gossip流言协议。</p>
+<p>分布式系统一致性协议的目的就是为了解决集群中多结点状态通知的问题，是管理集群的基础，如图展示了基于Gossip协议的官方集群架构图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qa6SRBrmSbFqplISR17v7YlOP9SQb5qcpxibCQciatbjKn57feo4Mm8xRlCoelI9Cv4DKAKxZ7UGbfA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>注:图片来自网络</p>
+<h3 id=a2redis-cluster的基本运行原理>A.2 Redis Cluster的基本运行原理</h3>
+<ul>
+<li><strong>结点状态信息结构</strong></li>
+</ul>
+<p>Cluster中的每个节点都维护一份在自己看来当前整个集群的状态，主要包括：</p>
+<ol>
+<li>
+<p>当前集群状态</p>
+</li>
+<li>
+<p>集群中各节点所负责的slots信息，及其migrate状态</p>
+</li>
+<li>
+<p>集群中各节点的master-slave状态</p>
+</li>
+<li>
+<p>集群中各节点的存活状态及不可达投票</p>
+</li>
+</ol>
+<p>也就是说上面的信息，就是集群中Node相互八卦传播流言蜚语的内容主题，而且比较全面，既有自己的更有别人的，这么一来大家都相互传，最终信息就全面而且准确了，区别于拜占庭帝国问题，信息的可信度很高。</p>
+<p>基于Gossip协议当集群状态变化时，如新节点加入、slot迁移、节点宕机、slave提升为新Master，我们希望这些变化尽快的被发现，传播到整个集群的所有节点并达成一致。节点之间相互的心跳（PING，PONG，MEET）及其携带的数据是集群状态传播最主要的途径。</p>
+<ul>
+<li><strong>Gossip协议的概念</strong></li>
+</ul>
+<blockquote>
+<p>gossip 协议（gossip protocol）又称 epidemic 协议（epidemic protocol），是基于流行病传播方式的节点或者进程之间信息交换的协议。</p>
+<p>在分布式系统中被广泛使用，比如我们可以使用 gossip 协议来确保网络中所有节点的数据一样。</p>
+<p>gossip protocol 最初是由施乐公司帕洛阿尔托研究中心（Palo Alto Research Center）的研究员艾伦·德默斯（Alan Demers）于1987年创造的。</p>
+<p><a href=https://www.iteblog.com/archives/2505.html>https://www.iteblog.com/archives/2505.html</a></p>
+</blockquote>
+<p>Gossip协议已经是P2P网络中比较成熟的协议了。Gossip协议的最大的好处是，即使集群节点的数量增加，每个节点的负载也不会增加很多，几乎是恒定的。这就允许Consul管理的集群规模能横向扩展到数千个节点。</p>
+<blockquote>
+<p>Gossip算法又被称为反熵（Anti-Entropy），熵是物理学上的一个概念，代表杂乱无章，而反熵就是在杂乱无章中寻求一致，这充分说明了Gossip的特点：在一个有界网络中，每个节点都随机地与其他节点通信，经过一番杂乱无章的通信，最终所有节点的状态都会达成一致。每个节点可能知道所有其他节点，也可能仅知道几个邻居节点，只要这些节可以通过网络连通，最终他们的状态都是一致的，当然这也是疫情传播的特点。</p>
+<p><a href=https://www.backendcloud.cn/2017/11/12/raft-gossip/>https://www.backendcloud.cn/2017/11/12/raft-gossip/</a></p>
+</blockquote>
+<p>上面的描述都比较学术，其实Gossip协议对于我们吃瓜群众来说一点也不陌生，Gossip协议也成为流言协议，说白了就是八卦协议，这种传播规模和传播速度都是非常快的，你可以体会一下。所以计算机中的很多算法都是源自生活，而又高于生活的。</p>
+<ul>
+<li><strong>Gossip协议的使用</strong></li>
+</ul>
+<p>Redis 集群是去中心化的，彼此之间状态同步靠 gossip 协议通信，集群的消息有以下几种类型：</p>
+<ol>
+<li>
+<p>Meet 通过「cluster meet ip port」命令，已有集群的节点会向新的节点发送邀请，加入现有集群。</p>
+</li>
+<li>
+<p>Ping  节点每秒会向集群中其他节点发送 ping 消息，消息中带有自己已知的两个节点的地址、槽、状态信息、最后一次通信时间等。</p>
+</li>
+<li>
+<p>Pong  节点收到 ping 消息后会回复 pong 消息，消息中同样带有自己已知的两个节点信息。</p>
+</li>
+<li>
+<p>Fail  节点 ping 不通某节点后，会向集群所有节点广播该节点挂掉的消息。其他节点收到消息后标记已下线。</p>
+</li>
+</ol>
+<p>由于去中心化和通信机制，Redis Cluster 选择了最终一致性和基本可用。例如当加入新节点时(meet)，只有邀请节点和被邀请节点知道这件事，其余节点要等待 ping 消息一层一层扩散。</p>
+<p>除了 Fail 是立即全网通知的，其他诸如新节点、节点重上线、从节点选举成为主节点、槽变化等，都需要等待被通知到，也就是Gossip协议是最终一致性的协议。</p>
+<p>由于 gossip 协议对服务器时间的要求较高，否则时间戳不准确会影响节点判断消息的有效性。另外节点数量增多后的网络开销也会对服务器产生压力，同时结点数太多，意味着达到最终一致性的时间也相对变长，因此官方推荐最大节点数为1000左右。</p>
+<p>如图展示了新加入结点服务器时的通信交互图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qa6SRBrmSbFqplISR17v7Yl8sjuoymedlZck3E5luow0Dfibh7zOe1yQHMBk88XjPxNOh6txEOH1lg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>                                            **   注:图片来自网络**</p>
+<p>总起来说Redis官方集群是一个去中心化的类P2P网络，P2P早些年非常流行，像电驴、BT什么的都是P2P网络。</p>
+<p>在Redis集群中Gossip协议充当了去中心化的通信协议的角色，依据制定的通信规则来实现整个集群的无中心管理节点的自治行为。</p>
+<ul>
+<li><strong>基于Gossip协议的故障检测</strong></li>
+</ul>
+<p>集群中的每个节点都会定期地向集群中的其他节点发送PING消息，以此交换各个节点状态信息，检测各个节点状态：在线状态、疑似下线状态PFAIL、已下线状态FAIL。</p>
+<p><strong>自己保存信息</strong>：当主节点A通过消息得知主节点B认为主节点D进入了疑似下线(PFAIL)状态时,主节点A会在自己的clusterState.nodes字典中找到主节点D所对应的clusterNode结构，并将主节点B的下线报告添加到clusterNode结构的fail_reports链表中，并后续关于结点D疑似下线的状态通过Gossip协议通知其他节点。</p>
+<p><strong>一起裁定</strong>：如果集群里面，半数以上的主节点都将主节点D报告为疑似下线，那么主节点D将被标记为已下线(FAIL)状态，将主节点D标记为已下线的节点会向集群广播主节点D的FAIL消息，所有收到FAIL消息的节点都会立即更新nodes里面主节点D状态标记为已下线。</p>
+<p><strong>最终裁定</strong>：将 node 标记为 FAIL 需要满足以下两个条件：</p>
+<ol>
+<li>
+<p>有半数以上的主节点将 node 标记为 PFAIL 状态。</p>
+</li>
+<li>
+<p>当前节点也将 node 标记为 PFAIL 状态。</p>
+</li>
+</ol>
+<p>也就是说当前节点发现其他结点疑似挂掉了，那么就写在自己的小本本上，等着通知给其他好基友，让他们自己也看看，最后又一半以上的好基友都认为那个节点挂了，并且那个节点自己也认为自己挂了，那么就是真的挂了，过程还是比较严谨的。</p>
+<h2 id=内存回收机制>内存回收机制</h2>
+<p>Redis作为内存型数据库，如果单纯的只进不出早晚就撑爆了，事实上很多把Redis当做主存储DB用的家伙们早晚会尝到这个苦果，当然除非你家厂子确实不差钱，数T级别的内存都毛毛雨，或者数据增长一定程度之后不再增长的场景，就另当别论了。</p>
+<p>为了让Redis服务安全稳定的运行，让使用内存保持在一定的阈值内是非常有必要的，因此我们就需要删除该删除的，清理该清理的，把内存留给需要的键值对，试想一条大河需要设置几个警戒水位来确保不决堤不枯竭，Redis也是一样的，只不过Redis只关心决堤即可，来一张图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qYh3MMGpol6UM5kOalblE7xcCeUSrIQyI2k14A7FZBalNFl5trPTnicfOaRvTZq4pQhByY7RwsiavNQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>图中设定机器内存为128GB，占用64GB算是比较安全的水平，如果内存接近80%也就是100GB左右，那么认为Redis目前承载能力已经比较大了，具体的比例可以根据公司和个人的业务经验来确定。</p>
+<p>笔者只是想表达出于安全和稳定的考虑，不要觉得128GB的内存就意味着存储128GB的数据，都是要打折的。</p>
+<h3 id=b1回收的内存从哪里来>B.1 回收的内存从哪里来</h3>
+<p>Redis占用的内存是分为两部分：存储键值对消耗和本身运行消耗。显然后者我们无法回收，因此只能从键值对下手了，键值对可以分为几种：带过期的、不带过期的、热点数据、冷数据。对于带过期的键值是需要删除的，如果删除了所有的过期键值对之后内存仍然不足怎么办？那只能把部分数据给踢掉了。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qYh3MMGpol6UM5kOalblE7xtnXJ58rhCLiavuO3Wb8q6kDCnnkz1lr2dHxjPL0uXqA1NVl2xNKr5vQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h3 id=b2如何实施过期键值对的删除>B.2 如何实施过期键值对的删除</h3>
+<p>要实施对键值对的删除我们需要明白如下几点：</p>
+<ul>
+<li>
+<p>带过期超时的键值对<strong>存储在哪里</strong>？</p>
+</li>
+<li>
+<p>如何判断带超时的键值对<strong>是否可以被删除</strong>了？</p>
+</li>
+<li>
+<p>删除机制<strong>有哪些</strong>以及<strong>如何选择</strong>？</p>
+</li>
+</ul>
+<h4 id=1键值对的存储><strong>1.键值对的存储</strong></h4>
+<p>老规矩来到github看下源码，src/server.h中给的redisDb结构体给出了答案：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>typedef struct redisDb {    dict *dict;                 /* The keyspace for this DB */    dict *expires;              /* Timeout of keys with a timeout set */    dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP)*/    dict *ready_keys;           /* Blocked keys that received a PUSH */    dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */    int id;                     /* Database ID */    long long avg_ttl;          /* Average TTL, just for stats */    unsigned long expires_cursor; /* Cursor of the active expire cycle. */    list *defrag_later;         /* List of key names to attempt to defrag one by one, gradually. */} redisDb;
+</code></pre></td></tr></table>
+</div>
+</div><p>Redis本质上就是一个大的key-value，key就是字符串，value有是几种对象：字符串、列表、有序列表、集合、哈希等，这些key-value都是存储在redisDb的dict中的，来看下<strong>黄健宏</strong>画的一张非常赞的图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qbSiafqPYwHyDWQpfibbrf6TWXsJibrcFOsg2Jmecjh1SVDtO9h4njrEQO89WbibI3Al3RDcTShksEsYw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>看到这里，对于删除机制又清晰了一步，我们只要把redisDb中dict中的目标key-value删掉就行，不过貌似没有这么简单，Redis对于过期键值对肯定有自己的组织规则，让我们继续研究吧！</p>
+<p>redisDb的expires成员的类型也是dict，和键值对是一样的，本质上expires是dict的子集，expires保存的是所有带过期的键值对，称之为过期字典吧，它才是我们研究的重点。</p>
+<p>对于键，我们可以设置绝对和相对过期时间、以及查看剩余时间：</p>
+<ol>
+<li>
+<p>使用EXPIRE和PEXPIRE来实现键值对的秒级和毫秒级生存时间设定，这是相对时长的过期设置</p>
+</li>
+<li>
+<p>使用EXPIREAT和EXPIREAT来实现键值对在某个秒级和毫秒级时间戳时进行过期删除，属于绝对过期设置</p>
+</li>
+<li>
+<p>通过TTL和PTTL来查看带有生存时间的键值对的剩余过期时间</p>
+</li>
+</ol>
+<p>上述三组命令在设计缓存时用处比较大，有心的读者可以留意。</p>
+<p>过期字典expires和键值对空间dict存储的内容并不完全一样，过期字典expires的key是指向Redis对应对象的指针，其value是long long型的unix时间戳，前面的EXPIRE和PEXPIRE相对时长最终也会转换为时间戳，来看下过期字典expires的结构，笔者画了个图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qbSiafqPYwHyDWQpfibbrf6TWE40v3nxLLYhnokSwicMlqTl6cy3coKoicfEwaxB1DvQC0hF6sdlN4WWw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h4 id=2-键值对的过期删除判断>2. 键值对的过期删除判断</h4>
+<p>判断键是否过期可删除，需要先查过期字典是否存在该值，如果存在则进一步判断过期时间戳和当前时间戳的相对大小，做出删除判断，简单的流程如图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qbSiafqPYwHyDWQpfibbrf6TWX7S7rphPib77liaFEgDiaJaicI2p1rhfibqsKBEuo8md84ibkUvNVQgefJpA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h4 id=3键值对的删除策略><strong>3. 键值对的删除策略</strong></h4>
+<p>经过前面的几个环节，我们知道了Redis的两种存储位置：键空间和过期字典，以及过期字典expires的结构、判断是否过期的方法，那么该如何实施删除呢？</p>
+<p>先抛开Redis来想一下可能的几种删除策略：</p>
+<ul>
+<li>
+<p>定时删除：在设置键的过期时间的同时，创建定时器，让定时器在键过期时间到来时，即刻执行键值对的删除；</p>
+</li>
+<li>
+<p>定期删除：每隔特定的时间对数据库进行一次扫描，检测并删除其中的过期键值对；</p>
+</li>
+<li>
+<p>惰性删除：键值对过期暂时不进行删除，至于删除的时机与键值对的使用有关，当获取键时先查看其是否过期，过期就删除，否则就保留；</p>
+</li>
+</ul>
+<p>在上述的三种策略中定时删除和定期删除属于不同时间粒度的主动删除，惰性删除属于被动删除。</p>
+<p>三种策略都有各自的优缺点：定时删除对内存使用率有优势，但是对CPU不友好，惰性删除对内存不友好，如果某些键值对一直不被使用，那么会造成一定量的内存浪费，定期删除是定时删除和惰性删除的折中。</p>
+<p>Reids采用的是惰性删除和定时删除的结合，一般来说可以借助最小堆来实现定时器，不过Redis的设计考虑到时间事件的有限种类和数量，使用了无序链表存储时间事件，这样如果<strong>在此基础</strong>上实现定时删除，就意味着O(N)遍历获取最近需要删除的数据。</p>
+<p>但是我觉得antirez如果非要使用定时删除，那么他肯定不会使用原来的无序链表机制，所以个人认为已存在的无序链表不能作为Redis不使用定时删除的根本理由，冒昧猜测唯一可能的是antirez觉得没有必要使用定时删除。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qYh3MMGpol6UM5kOalblE7xeokCYvHxbee5q7MBRg4msbSXh0jTez2G87JI9WAfMTYOibw6WAl6DnA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h4 id=4-定期删除的实现细节><strong>4. 定期删除的实现细节</strong></h4>
+<p>定期删除听着很简单，但是如何控制执行的频率和时长呢？</p>
+<p>试想一下如果执行频率太少就退化为惰性删除了，如果执行时间太长又和定时删除类似了，想想还确实是个难题！并且执行定期删除的时机也需要考虑，所以我们继续来看看Redis是如何实现定期删除的吧！笔者在src/expire.c文件中找到了activeExpireCycle函数，定期删除就是由此函数实现的，在代码中antirez做了比较详尽的注释，不过都是英文的，试着读了一下模模糊糊弄个大概，所以学习英文并阅读外文资料是很重要的学习途径。</p>
+<p>先贴一下代码，核心部分算上注释大约210行，具体看下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>#define ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP 20 /* Keys for each DB loop. */#define ACTIVE_EXPIRE_CYCLE_FAST_DURATION 1000 /* Microseconds. */#define ACTIVE_EXPIRE_CYCLE_SLOW_TIME_PERC 25 /* Max % of CPU to use. */#define ACTIVE_EXPIRE_CYCLE_ACCEPTABLE_STALE 10 /* % of stale keys after which                                                   we do extra efforts. */void activeExpireCycle(int type) {    /* Adjust the running parameters according to the configured expire     * effort. The default effort is 1, and the maximum configurable effort     * is 10. */    unsigned long    effort = server.active_expire_effort-1, /* Rescale from 0 to 9. */    config_keys_per_loop = ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP +                           ACTIVE_EXPIRE_CYCLE_KEYS_PER_LOOP/4*effort,    config_cycle_fast_duration = ACTIVE_EXPIRE_CYCLE_FAST_DURATION +                                 ACTIVE_EXPIRE_CYCLE_FAST_DURATION/4*effort,    config_cycle_slow_time_perc = ACTIVE_EXPIRE_CYCLE_SLOW_TIME_PERC +                                  2*effort,    config_cycle_acceptable_stale = ACTIVE_EXPIRE_CYCLE_ACCEPTABLE_STALE-                                    effort;    /* This function has some global state in order to continue the work     * incrementally across calls. */    static unsigned int current_db = 0; /* Last DB tested. */    static int timelimit_exit = 0;      /* Time limit hit in previous call? */    static long long last_fast_cycle = 0; /* When last fast cycle ran. */    int j, iteration = 0;    int dbs_per_call = CRON_DBS_PER_CALL;    long long start = ustime(), timelimit, elapsed;    /* When clients are paused the dataset should be static not just from the     * POV of clients not being able to write, but also from the POV of     * expires and evictions of keys not being performed. */    if (clientsArePaused()) return;    if (type == ACTIVE_EXPIRE_CYCLE_FAST) {        /* Don&#39;t start a fast cycle if the previous cycle did not exit         * for time limit, unless the percentage of estimated stale keys is         * too high. Also never repeat a fast cycle for the same period         * as the fast cycle total duration itself. */        if (!timelimit_exit &amp;&amp;            server.stat_expired_stale_perc &lt; config_cycle_acceptable_stale)            return;        if (start &lt; last_fast_cycle + (long long)config_cycle_fast_duration*2)            return;        last_fast_cycle = start;    }    /* We usually should test CRON_DBS_PER_CALL per iteration, with     * two exceptions:     *     * 1) Don&#39;t test more DBs than we have.     * 2) If last time we hit the time limit, we want to scan all DBs     * in this iteration, as there is work to do in some DB and we don&#39;t want     * expired keys to use memory for too much time. */    if (dbs_per_call &gt; server.dbnum || timelimit_exit)        dbs_per_call = server.dbnum;    /* We can use at max &#39;config_cycle_slow_time_perc&#39; percentage of CPU     * time per iteration. Since this function gets called with a frequency of     * server.hz times per second, the following is the max amount of     * microseconds we can spend in this function. */    timelimit = config_cycle_slow_time_perc*1000000/server.hz/100;    timelimit_exit = 0;    if (timelimit &lt;= 0) timelimit = 1;    if (type == ACTIVE_EXPIRE_CYCLE_FAST)        timelimit = config_cycle_fast_duration; /* in microseconds. */    /* Accumulate some global stats as we expire keys, to have some idea     * about the number of keys that are already logically expired, but still     * existing inside the database. */    long total_sampled = 0;    long total_expired = 0;    for (j = 0; j &lt; dbs_per_call &amp;&amp; timelimit_exit == 0; j++) {        /* Expired and checked in a single loop. */        unsigned long expired, sampled;        redisDb *db = server.db+(current_db % server.dbnum);        /* Increment the DB now so we are sure if we run out of time         * in the current DB we&#39;ll restart from the next. This allows to         * distribute the time evenly across DBs. */        current_db++;        /* Continue to expire if at the end of the cycle more than 25%         * of the keys were expired. */        do {            unsigned long num, slots;            long long now, ttl_sum;            int ttl_samples;            iteration++;            /* If there is nothing to expire try next DB ASAP. */            if ((num = dictSize(db-&gt;expires)) == 0) {                db-&gt;avg_ttl = 0;                break;            }            slots = dictSlots(db-&gt;expires);            now = mstime();            /* When there are less than 1% filled slots, sampling the key             * space is expensive, so stop here waiting for better times...             * The dictionary will be resized asap. */            if (num &amp;&amp; slots &gt; DICT_HT_INITIAL_SIZE &amp;&amp;                (num*100/slots &lt; 1)) break;            /* The main collection cycle. Sample random keys among keys             * with an expire set, checking for expired ones. */            expired = 0;            sampled = 0;            ttl_sum = 0;            ttl_samples = 0;            if (num &gt; config_keys_per_loop)                num = config_keys_per_loop;            /* Here we access the low level representation of the hash table             * for speed concerns: this makes this code coupled with dict.c,             * but it hardly changed in ten years.             *             * Note that certain places of the hash table may be empty,             * so we want also a stop condition about the number of             * buckets that we scanned. However scanning for free buckets             * is very fast: we are in the cache line scanning a sequential             * array of NULL pointers, so we can scan a lot more buckets             * than keys in the same time. */            long max_buckets = num*20;            long checked_buckets = 0;            while (sampled &lt; num &amp;&amp; checked_buckets &lt; max_buckets) {                for (int table = 0; table &lt; 2; table++) {                    if (table == 1 &amp;&amp; !dictIsRehashing(db-&gt;expires)) break;                    unsigned long idx = db-&gt;expires_cursor;                    idx &amp;= db-&gt;expires-&gt;ht[table].sizemask;                    dictEntry *de = db-&gt;expires-&gt;ht[table].table[idx];                    long long ttl;                    /* Scan the current bucket of the current table. */                    checked_buckets++;                    while(de) {                        /* Get the next entry now since this entry may get                         * deleted. */                        dictEntry *e = de;                        de = de-&gt;next;                        ttl = dictGetSignedIntegerVal(e)-now;                        if (activeExpireCycleTryExpire(db,e,now)) expired++;                        if (ttl &gt; 0) {                            /* We want the average TTL of keys yet                             * not expired. */                            ttl_sum += ttl;                            ttl_samples++;                        }                        sampled++;                    }                }                db-&gt;expires_cursor++;            }            total_expired += expired;            total_sampled += sampled;            /* Update the average TTL stats for this database. */            if (ttl_samples) {                long long avg_ttl = ttl_sum/ttl_samples;                /* Do a simple running average with a few samples.                 * We just use the current estimate with a weight of 2%                 * and the previous estimate with a weight of 98%. */                if (db-&gt;avg_ttl == 0) db-&gt;avg_ttl = avg_ttl;                db-&gt;avg_ttl = (db-&gt;avg_ttl/50)*49 + (avg_ttl/50);            }            /* We can&#39;t block forever here even if there are many keys to             * expire. So after a given amount of milliseconds return to the             * caller waiting for the other active expire cycle. */            if ((iteration &amp; 0xf) == 0) { /* check once every 16 iterations. */                elapsed = ustime()-start;                if (elapsed &gt; timelimit) {                    timelimit_exit = 1;                    server.stat_expired_time_cap_reached_count++;                    break;                }            }            /* We don&#39;t repeat the cycle for the current database if there are             * an acceptable amount of stale keys (logically expired but yet             * not reclained). */        } while ((expired*100/sampled) &gt; config_cycle_acceptable_stale);    }    elapsed = ustime()-start;    server.stat_expire_cycle_time_used += elapsed;    latencyAddSampleIfNeeded(&#34;expire-cycle&#34;,elapsed/1000);    /* Update our estimate of keys existing but yet to be expired.     * Running average with this sample accounting for 5%. */    double current_perc;    if (total_sampled) {        current_perc = (double)total_expired/total_sampled;    } else        current_perc = 0;    server.stat_expired_stale_perc = (current_perc*0.05)+                                     (server.stat_expired_stale_perc*0.95);}
+</code></pre></td></tr></table>
+</div>
+</div><p>说实话这个代码细节比较多，由于笔者对Redis源码了解不多，只能做个模糊版本的解读，所以难免有问题，还是建议有条件的读者自行前往源码区阅读，抛砖引玉看下笔者的模糊版本：</p>
+<ul>
+<li>
+<p>该算法是个<strong>自适应的过程</strong>，当过期的key比较少时那么就花费很少的cpu时间来处理，如果过期的key很多就采用激进的方式来处理，避免大量的内存消耗，可以理解为判断过期键多就多跑几次，少则少跑几次；</p>
+</li>
+<li>
+<p>由于Redis中有很多数据库db，该算法会逐个扫描，本次结束时继续向后面的db扫描，是个<strong>闭环的过程</strong>；</p>
+</li>
+<li>
+<p>定期删除有<strong>快速循环和慢速循环两种模式</strong>，主要采用慢速循环模式，其循环频率主要取决于server.hz，通常设置为10，也就是每秒执行10次慢循环定期删除，执行过程中如果耗时超过25%的CPU时间就停止；</p>
+</li>
+<li>
+<p>慢速循环的执行时间相对较长，会出现超时问题，快速循环模式的执行时间<strong>不超过1ms</strong>，也就是执行<strong>时间更短</strong>，但是执行的<strong>次数更多</strong>，在执行过程中发现某个db中<strong>抽样的key</strong>中过期key占比**低于25%**则跳过；</p>
+</li>
+</ul>
+<p><strong>主体意思</strong>：定期删除是个<strong>自适应的闭环并且概率化的抽样扫描过程</strong>，过程中都有执行时间和cpu时间的限制，如果触发阈值就停止，可以说是尽量在不影响对客户端的响应下润物细无声地进行的。</p>
+<ol start=5>
+<li>DEL删除键值对</li>
+</ol>
+<p>在Redis4.0之前执行del操作时如果key-value很大，那么可能导致阻塞，在新版本中引入了BIO线程以及一些新的命令，实现了del的延时懒删除，最后会有BIO线程来实现内存的清理回收。</p>
+<h3 id=b2内存淘汰机制>B.2 内存淘汰机制</h3>
+<p>为了保证Redis的安全稳定运行，设置了一个max-memory的阈值，那么当内存用量到达阈值，新写入的键值对无法写入，此时就需要内存淘汰机制，在Redis的配置中有几种淘汰策略可以选择，详细如下：</p>
+<ul>
+<li>
+<p><strong>noeviction</strong>: 当内存不足以容纳新写入数据时，新写入操作会报错；</p>
+</li>
+<li>
+<p><strong>allkeys-lru</strong>：当内存不足以容纳新写入数据时，在键空间中移除最近最少使用的 key；</p>
+</li>
+<li>
+<p><strong>allkeys-random</strong>：当内存不足以容纳新写入数据时，在键空间中随机移除某个 key；</p>
+</li>
+<li>
+<p><strong>volatile-lru</strong>：当内存不足以容纳新写入数据时，在设置了过期时间的键空间中，移除最近最少使用的 key；</p>
+</li>
+<li>
+<p><strong>volatile-random</strong>：当内存不足以容纳新写入数据时，在设置了过期时间的键空间中，随机移除某个 key；</p>
+</li>
+<li>
+<p><strong>volatile-ttl</strong>：当内存不足以容纳新写入数据时，在设置了过期时间的键空间中，有更早过期时间的 key 优先移除；</p>
+</li>
+</ul>
+<p>后三种策略都是针对过期字典的处理，但是在过期字典为空时会noeviction一样返回写入失败，毫无策略地随机删除也不太可取，所以一般选择第二种allkeys-lru基于LRU策略进行淘汰。</p>
+<p>个人认为antirez一向都是工程化思维，善于使用概率化设计来做近似实现，LRU算法也不例外，Redis中实现了近似LRU算法，并且经过几个版本的迭代效果已经比较接近理论LRU算法的效果了，这个也是个不错的内容，由于篇幅限制，本文计划后续单独讲LRU算法时再进行详细讨论。</p>
+<p>过期健删除策略强调的是对过期健的操作，如果有健过期而内存足够，Redis不会使用内存淘汰机制来腾退空间，这时会优先使用过期健删除策略删除过期健。</p>
+<p>内存淘汰机制强调的是对内存数据的淘汰操作，当内存不足时，即使有的健没有到达过期时间或者根本没有设置过期也要根据一定的策略来删除一部分，腾退空间保证新数据的写入。</p>
+<h2 id=0x0c谈谈对redis数据同步机制和原理的理解>0x0C.谈谈对Redis数据同步机制和原理的理解</h2>
+<p>理解持久化和数据同步的关系，需要从单点故障和高可用两个角度来分析：</p>
+<h3 id=c1单点宕机故障>C.1 单点宕机故障</h3>
+<p>假如我们现在只有一台作为缓存的Redis机器，通过持久化将热点数据写到磁盘，某时刻该Redis单点机器发生故障宕机，此期间缓存失效，主存储服务将承受所有的请求压力倍增，监控程序将宕机Redis机器拉起。</p>
+<p>重启之后，该机器可以Load磁盘RDB数据进行快速恢复，恢复的时间取决于数据量的多少，一般秒级到分钟级不等，恢复完成保证之前的热点数据还在，这样存储系统的CacheMiss就会降低，有效降低了缓存击穿的影响。</p>
+<p>在单点Redis中持久化机制非常有用，<strong>只写文字容易让大家睡着</strong>，我画了张图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTdKFLSibTJh0zBpxSqnmtlNZCAvTQcoFEIAG2puWrnAG7gxVfyJtLwOjQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>作为一个高可用的缓存系统单点宕机是不允许的，因此就出现了主从架构，对主节点的数据进行多个备份，如果主节点挂点，可以立刻切换状态最好的从节点为主节点，对外提供写服务，并且其他从节点向新主节点同步数据，确保整个Redis缓存系统的高可用。</p>
+<p>如图展示了一个一主两从读写分离的Redis系统主节点故障迁移的过程，整个过程并没有停止正常工作，大大提高了系统的高可用：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTdlP8qBaFZny9haPccQpvI7lFPB14wocibFWEctkw6SngeVGITznYb0Kw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<hr>
+<p>从上面的两点分析可以得出个小结论【<strong>划重点</strong>】：<br>
+<strong>持久化让单点故障不再可怕，数据同步为高可用插上翅膀。</strong></p>
+<p>我们理解了数据同步对Redis的重要作用，接下来继续看数据同步的实现原理和过程、重难点等细节问题吧！</p>
+<h3 id=c2redis系统中的cap理论>C.2 Redis系统中的CAP理论</h3>
+<p>对分布式存储有了解的读者一定知道CAP理论，说来惭愧笔者在2018年3月份换工作的时候，去Face++旷视科技面后端开发岗位时就遇到了CAP理论，除了CAP理论问题之外其他问题都在射程内，所以最终还是拿了Offer。</p>
+<p>在理论计算机科学中，CAP定理又被称作布鲁尔定理Brewer&rsquo;s theorem，这个定理起源于加州大学伯克利分校的计算机科学家埃里克·布鲁尔在2000年的分布式计算原理研讨会PODC上提出的一个猜想。</p>
+<p>在2002年麻省理工学院的赛斯·吉尔伯特和南希·林奇发表了布鲁尔猜想的证明，使之成为一个定理。它指出对于一个分布式计算系统来说，不可能同时满足以下三点：</p>
+<ul>
+<li>
+<p>C Consistent 一致性 连贯性</p>
+</li>
+<li>
+<p>A Availability 可用性</p>
+</li>
+<li>
+<p>P Partition Tolerance 分区容忍性</p>
+</li>
+</ul>
+<p>来看一张阮一峰大佬画的图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTdOTOiad3HZFaDxcO2tTn4S0luhMicuib0lTvvOOia4ASVuy3VLBOSOsuibyw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>举个简单的例子，说明一下CP和AP的兼容性：<br>
+理解CP和AP的关键在于分区容忍性P，网络分区在分布式存储中再平常不过了，即使机器在一个机房，也不可能全都在一个机架或一台交换机。</p>
+<p>这样在局域网就会出现网络抖动，笔者做过1年多DPI对于网络传输中最深刻的三个名词：丢包、乱序、重传。所以<strong>我们看来风平浪静的网络，在服务器来说可能是风大浪急</strong>，一不小心就不通了，所以当网络出现断开时，这时就出现了网络分区问题。</p>
+<p>对于Redis数据同步而言，假设从结点和主结点在两个机架上，某时刻发生网络断开，如果此时Redis读写分离，那么从结点的数据必然无法与主继续同步数据。在这种情况下，如果继续在从结点读取数据就造成数据不一致问题，如果强制保证数据一致从结点就无法提供服务造成不可用问题，从而看出在P的影响下C和A无法兼顾。</p>
+<p>其他几种情况就不深入了，从上面我们可以得出结论：<strong>当Redis多台机器分布在不同的网络中，如果出现网络故障，那么数据一致性和服务可用性无法兼顾，Redis系统对此必须做出选择，事实上Redis选择了可用性，或者说Redis选择了另外一种最终一致性。</strong></p>
+<h3 id=c3redis的最终一致性和复制>C.3 Redis的最终一致性和复制</h3>
+<p>Redis选择了最终一致性，也就是不保证主从数据在任何时刻都是一致的，并且Redis主从同步默认是异步的，亲爱的盆友们不要晕！不要蒙圈！</p>
+<p>我来一下解释同步复制和异步复制(注意：考虑读者的感受 我并没有写成同步同步和异步同步 哈哈)：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTdpvs0pmVLZE8fkUW79F1hlHOK3ocvMfjFLJBVXyzZLkDrFNwpVYP7zw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<hr>
+<p>一图胜千言，看红色的数字就知道同步复制和异步复制的区别了：</p>
+<ul>
+<li>
+<p><strong>异步复制</strong>：当客户端向主结点写了hello world，主节点写成功之后就向客户端回复OK，这样主节点和客户端的交互就完成了，之后主节点向从结点同步hello world，从结点完成之后向主节点回复OK，整个过程客户端不需要等待从结点同步完成，因此整个过程是异步实现的。</p>
+</li>
+<li>
+<p><strong>同步复制</strong>：当客户端向主结点写了hello world，主节点向从结点同步hello world，从结点完成之后向主节点回复OK，之后主节点向客户端回复OK，整个过程客户端需要等待从结点同步完成，因此整个过程是同步实现的。</p>
+</li>
+</ul>
+<p>Redis选择异步复制可以避免客户端的等待，更符合现实要求，不过这个复制方式可以修改，根据自己需求而定吧。</p>
+<p><strong>1.从从复制</strong><br>
+假如Redis高可用系统中有一主四从，如果四个从同时向主节点进行数据同步，主节点的压力会比较大，考虑到Redis的最终一致性，因此Redis后续推出了从从复制，从而将单层复制结构演进为多层复制结构，笔者画了个图看下：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTd2ozA1YHWxzUVV1R9q6FvibaWWyjp6GZI1APrB1ibtGkwAnc6QQz2pKGA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h4 id=2全量复制和增量复制>2.全量复制和增量复制</h4>
+<p><strong>全量复制</strong>是从结点因为故障恢复或者新添加从结点时出现的初始化阶段的数据复制，这种复制是将主节点的数据全部同步到从结点来完成的，所以成本大但又不可避免。</p>
+<p><strong>增量复制</strong>是主从结点正常工作之后的每个时刻进行的数据复制方式，涓涓细流同步数据，这种同步方式又轻又快，优点确实不少，不过如果没有全量复制打下基础增量复制也没戏，所以二者不是矛盾存在而是相互依存的。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTdzHTl5tibHGB2aRRdByf15swm6QCKS1qPvzibeJHVFFMSaIybibA1AVX4A/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h5 id=3全量复制过程分析>3.全量复制过程分析</h5>
+<p>Redis的全量复制过程主要分<strong>三个阶段</strong>：</p>
+<ul>
+<li>
+<p><strong>快照阶段</strong>：从结点向主结点发起SYNC全量复制命令，主节点执行bgsave将内存中全部数据生成快照并发送给从结点，从结点释放旧内存载入并解析新快照，主节点同时将此阶段所产生的新的写命令存储到缓冲区。</p>
+</li>
+<li>
+<p><strong>缓冲阶段</strong>：主节点向从节点同步存储在缓冲区的操作命令，这部分命令主节点是bgsave之后到从结点载入快照这个时间段内的新增命令，需要记录要不然就出现数据丢失。</p>
+</li>
+<li>
+<p><strong>增量阶段</strong>：缓冲区同步完成之后，主节点正常向从结点同步增量操作命令，至此主从保持基本一致的步调。</p>
+</li>
+</ul>
+<p>借鉴参考1的一张图表，写的很好：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qY8OUGV7CStaldkLHmcPbTdTcm86KtRywPHgNzl1BFrNfBg4e7Zwsnp5vrUAgD9mPm7JIdabqgvnQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>考虑一个<strong>多从并发全量复制问题</strong>：<br>
+<strong>如果此时有多个从结点同时向主结点发起全量同步请求会怎样？</strong></p>
+<p>Redis主结点是个<strong>聪明又诚实</strong>的家伙，比如现在有3个从结点A/B/C陆续向主节点发起SYNC全量同步请求。</p>
+<ul>
+<li>
+<p>主节点在对A进行bgsave的同时，B和C的SYNC命令到来了，那么主节点就一锅烩，把针对A的快照数据和缓冲区数据同时同步给ABC，这样提高了效率又保证了正确性。</p>
+</li>
+<li>
+<p>主节点对A的快照已经完成并且现在正在进行缓冲区同步，那么只能等A完成之后，再对B和C进行和A一样的操作过程，来实现新节点的全量同步，所以主节点并没有偷懒而是重复了这个过程，虽然繁琐但是保证了正确性。</p>
+</li>
+</ul>
+<p>再考虑一个<strong>快照复制循环问题</strong>：<br>
+主节点执行bgsave是比较耗时且耗内存的操作，期间从结点也经历装载旧数据->释放内存->装载新数据的过程，内存先升后降再升的动态过程，从而知道无论主节点执行快照还是从结点装载数据都是需要时间和资源的。</p>
+<p>抛开对性能的影响，试想如果主节点快照时间是1分钟，在期间有1w条新命令到来，这些新命令都将写到缓冲区，如果缓冲区比较小只有8k，那么在快照完成之后，主节点缓冲区也只有8k命令丢失了2k命令，那么此时从结点进行全量同步就缺失了数据，是一次错误的全量同步。</p>
+<p>无奈之下，从结点会再次发起SYNC命令，从而陷入循环，因此缓冲区大小的设置很重要，二话不说再来一张图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qauEzNic1lM5uLL4xfPvu1hHekiaUpkGS5XDia6wE7kBAeJeZXMgCmRSJLqibVNwDYA36diaktBqcMv8ibw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h5 id=4增量复制过程分析>4.增量复制过程分析</h5>
+<p>增量复制过程稍微简单一些，但是非常有用，试想复杂的网络环境下，并不是每次断开都无法恢复，如果每次断开恢复后就要进行全量复制，那岂不是要把主节点搞死，所以增量复制算是<strong>对复杂网络环境下数据复制过程的一个优化</strong>，允许一段时间的落后，最终追上就行。</p>
+<p>增量复制是个典型的生产者-消费者模型，使用定长环形数组(队列)来实现，如果buffer满了那么新数据将覆盖老数据，因此从结点在复制数据的同时向主节点反馈自己的偏移量，从而确保数据不缺失。</p>
+<p>这个过程非常好理解，kakfa这种MQ也是这样的，所以在合理设置buffer大小的前提下，理论上从的消费能力是大于主的生产能力的，大部分只有在网络断开时间过长时会出现buffer被覆盖，从结点消费滞后的情况，此时只能进行全量复制了。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qauEzNic1lM5uLL4xfPvu1hHGQ6tHTZ2P3sd9XTzC9xSH5vJjGeO5jfIdWS2Nwm8A9qMhibuz3B4BVw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h4 id=5无盘复制><strong>5.无盘复制</strong></h4>
+<h4 id=理解无盘复制之前先看下什么是有盘复制呢>理解无盘复制之前先看下什么是有盘复制呢？</h4>
+<h4 id=所谓盘是指磁盘可能是机械磁盘或者ssd但是无论哪一种相比内存都更慢我们都知道io操作在服务端的耗时是占大头的因此对于全量复制这种高io耗时的操作来说尤其当服务并发比较大且还在进行其他操作时对redis服务本身的影响是比较大大之前的模式时这样的>所谓盘是指磁盘，可能是机械磁盘或者SSD，但是无论哪一种相比内存都更慢，我们都知道IO操作在服务端的耗时是占大头的，因此对于全量复制这种高IO耗时的操作来说，尤其当服务并发比较大且还在进行其他操作时对Redis服务本身的影响是比较大大，之前的模式时这样的：</h4>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qauEzNic1lM5uLL4xfPvu1hH11Xq1RogjmmtuXibkgdnsaLVSeOp7Ng5DOXBxghWJFaNTica7urxwNuQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>在Redis2.8.18版本之后，开发了<strong>无盘复制</strong>，也就是避免了生成的RDB文件落盘再加载再网络传输的过程，而是流式的遍历发送过程，主节点一边遍历内存数据，一边将数据序列化发送给从结点，从结点没有变化，仍然将数据依次存储到本地磁盘，完成传输之后进行内存加载，可见<strong>无盘复制是对IO更友好</strong>。</p>
+<h2 id=0x0d谈谈基于redis的分布式锁和redlock算法>0x0D.谈谈基于Redis的分布式锁和Redlock算法</h2>
+<h3 id=d1基于redis的分布式锁简介>D.1 基于Redis的分布式锁简介</h3>
+<p>最初分布式锁借助于setnx和expire命令，但是这两个命令不是原子操作，如果执行setnx之后获取锁但是此时客户端挂掉，这样无法执行expire设置过期时间就导致锁一直无法被释放，因此在2.8版本中Antirez为setnx增加了参数扩展，使得setnx和expire具备原子操作性。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qb1Ip7xT2X3kY2yCP4yzAYrBdozzVFslViaQvgtiaK7Zm09Ndo2Fx23tAzYOhmibr3ZuricBMoLJ2gvzA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>在单Matster-Slave的Redis系统中，正常情况下Client向Master获取锁之后同步给Slave，如果Client获取锁成功之后Master节点挂掉，并且未将该锁同步到Slave，之后在Sentinel的帮助下Slave升级为Master但是并没有之前未同步的锁的信息，此时如果有新的Client要在新Master获取锁，那么将可能出现两个Client持有同一把锁的问题，来看个图来想下这个过程：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640-20200311210600135.png?token=AARMIEVURXTYMSDW7HW5PJS6NDRHM" alt></p>
+<p>为了保证自己的锁只能自己释放需要增加<strong>唯一性的校验</strong>，综上基于单Redis节点的获取锁和释放锁的简单过程如下:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// 获取锁 unique_value作为唯一性的校验SET resource_name unique_value NX PX 30000// 释放锁 比较unique_value是否相等 避免误释放if redis.call(&#34;get&#34;,KEYS[1]) == ARGV[1] then    return redis.call(&#34;del&#34;,KEYS[1])else    return 0end
+</code></pre></td></tr></table>
+</div>
+</div><p>这就是基于单Redis的分布式锁的几个要点。</p>
+<h3 id=d2redlock算法基本过程>D.2 Redlock算法基本过程</h3>
+<p>Redlock算法是Antirez在单Redis节点基础上引入的高可用模式。在Redis的分布式环境中，我们假设有N个完全互相独立的Redis节点，在N个Redis实例上使用与在Redis单实例下相同方法获取锁和释放锁。</p>
+<p>现在假设有5个Redis主节点(大于3的奇数个)，这样基本保证他们不会同时都宕掉，获取锁和释放锁的过程中，客户端会执行以下操作:</p>
+<ul>
+<li>
+<p>获取当前Unix时间，以毫秒为单位</p>
+</li>
+<li>
+<p>依次尝试从5个实例，使用相同的key和具有唯一性的value获取锁<br>
+当向Redis请求获取锁时，客户端应该设置一个网络连接和响应超时时间，这个超时时间应该小于锁的失效时间，这样可以避免客户端死等</p>
+</li>
+<li>
+<p>客户端使用当前时间减去开始获取锁时间就得到获取锁使用的时间。当且仅当从半数以上的Redis节点取到锁，并且使用的时间小于锁失效时间时，锁才算获取成功</p>
+</li>
+<li>
+<p>如果取到了锁，key的真正有效时间等于有效时间减去获取锁所使用的时间，这个很重要</p>
+</li>
+<li>
+<p>如果因为某些原因，获取锁失败（没有在半数以上实例取到锁或者取锁时间已经超过了有效时间），客户端应该在所有的Redis实例上进行解锁，无论Redis实例是否加锁成功，因为可能服务端响应消息丢失了但是实际成功了，毕竟多释放一次也不会有问题</p>
+</li>
+</ul>
+<p>上述的5个步骤是Redlock算法的重要过程，也是面试的热点，有心的读者还是记录一下吧！</p>
+<h3 id=d3redlock算法是否安全的争论>D.3 Redlock算法是否安全的争论</h3>
+<p><strong>1.关于马丁·克莱普曼博士</strong></p>
+<p>2016年2月8号分布式系统的专家马丁·克莱普曼博士(Martin Kleppmann)在一篇文章How to do distributed locking 指出分布式锁设计的一些原则并且对Antirez的Redlock算法提出了一些质疑:</p>
+<ul>
+<li>
+<p>Martin指出即使我们拥有一个完美实现的分布式锁，在没有共享资源参与进来提供<strong>某种fencing栅栏机制</strong>的前提下，我们仍然不可能获得足够的安全性</p>
+</li>
+<li>
+<p>Martin指出，由于Redlock本质上是建立在一个<strong>同步模型</strong>之上，对系统的时间有很强的要求，本身的安全性是不够的</p>
+</li>
+</ul>
+<p>针对fencing机制马丁给出了一个<strong>时序图</strong>：</p>
+<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/640.jpeg?token=AARMIERJPP2SYSVGTR5KW2S6NDRIE" alt></p>
+<p>获取锁的客户端在持有锁时<strong>可能会暂停一段较长的时间</strong>，尽管锁有一个超时时间，避免了崩溃的客户端可能永远持有锁并且永远不会释放它，但是如果<strong>客户端的暂停持续的时间长于锁的到期时间</strong>，并且客户没有意识到它已经到期，那么它可能会继续进行一些不安全的更改，换言之由于<strong>客户端阻塞导致的持有的锁到期而不自知</strong>。</p>
+<p>针对这种情况马丁指出要增加fencing机制，具体来说是<strong>fencing token隔离令牌机制</strong>，同样给出了一张时序图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/wAkAIFs11qareOIwbLbibziaPVUCicqov9iaLK75UYf23zc0grmibqZJANNcN9oCRSluZqoKm0MXSrO0mbt5V747Kaw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>客户端1获得锁并且获得<strong>序号为33的令牌</strong>，但随后它进入长时间暂停，直至锁超时过期，客户端2获取锁并且获得<strong>序号为34的令牌</strong>，然后将其写入发送到存储服务。随后，客户端1复活并将其写入发送到存储服务，然而存储服务器记得它<strong>已经处理了具有较高令牌号的写入34</strong>，因此它<strong>拒绝令牌33的请求</strong>。</p>
+<p>Redlock算法并没有这种<strong>唯一且递增的fencing token生成机制</strong>，这也意味着Redlock算法不能避免由于客户端阻塞带来的锁过期后的操作问题，因此是不安全的。</p>
+<p>这个观点笔者觉得<strong>并没有彻底解决问题</strong>，因为如果客户端1的写入操作是<strong>必须要执行成功的</strong>，但是由于阻塞超时无法再写入同样就产生了一个错误的结果，客户端2将<strong>可能在这个错误的结果上进行操作</strong>，那么<strong>任何操作都注定是错误的</strong>。</p>
+<p><strong>3.马丁博士对Redlock的质疑</strong></p>
+<p>马丁·克莱普曼指出Redlock是个<strong>强依赖系统时间的****算法</strong>，这样就可能带来很多不一致问题，他给出了个例子一起看下：</p>
+<p>假设多节点Redis系统有五个节点A/B/C/D/E和两个客户端C1和C2，如果其中一个Redis节点上的<strong>时钟向前跳跃</strong>会发生什么？</p>
+<ul>
+<li>
+<p>客户端C1获得了对节点A、B、c的锁定，由于网络问题，法到达节点D和节点E</p>
+</li>
+<li>
+<p>节点C上的时钟向前跳，导致锁提前过期</p>
+</li>
+<li>
+<p>客户端C2在节点C、D、E上获得锁定，由于网络问题，无法到达A和B</p>
+</li>
+<li>
+<p>客户端C1和客户端C2现在都认为他们自己持有锁</p>
+</li>
+</ul>
+<p><strong>分布式异步模型：</strong><br>
+上面这种情况之所以有可能发生，本质上是因为Redlock的安全性对Redis节点<strong>系统时钟有强依赖</strong>，一旦系统时钟变得不准确，算法的安全性也就无法保证。</p>
+<p>马丁其实是要指出分布式算法研究中的一些基础性问题，好的分布式算法应该基于<strong>异步模型</strong>，算法的安全性不应该依赖于任何<strong>记时假设</strong>。</p>
+<p>分布式异步模型中进程和消息可能会延迟任意长的时间，系统时钟也可能以任意方式出错。这些因素不应该影响它的安全性，只可能影响到它的活性，即使在非常极端的情况下，算法<strong>最多是不能在有限的时间内给出结果</strong>，而<strong>不应该给出错误的结果</strong>，这样的算法在现实中是存在的比如<strong>Paxos/Raft</strong>，按这个标准衡量<strong>Redlock的安全级别是达不到</strong>的。</p>
+<p><strong>4.马丁博士文章结论和基本观点</strong></p>
+<p>马丁表达了自己的观点，把锁的用途分为两种：</p>
+<ul>
+<li>
+<p><strong>效率第一</strong><br>
+使用分布式锁只是为了协调多个客户端的一些简单工作，锁偶尔失效也会产生其它的不良后果，<strong>就像你收发两份相同的邮件一样，无伤大雅</strong></p>
+</li>
+<li>
+<p><strong>正确第一</strong><br>
+使用分布式锁要求在任何情况下都不允许锁失效的情况发生，一旦发生失效就可能意味着数据不一致、数据丢失、文件损坏或者其它严重的问题，<strong>就像给患者服用重复剂量的药物一样，后果严重</strong></p>
+</li>
+</ul>
+<p>最后马丁出了如下的结论：</p>
+<ul>
+<li>
+<p><strong>为了效率而使用分布式锁</strong><br>
+单Redis节点的锁方案就足够了Redlock则是个过重而昂贵的设计</p>
+</li>
+<li>
+<p><strong>为了正确而使用分布式锁</strong><br>
+Redlock不是建立在异步模型上的一个足够强的算法，它对于系统模型的假设中包含很多危险的成分</p>
+</li>
+</ul>
+<p>马丁认为<strong>Redlock算法是个糟糕的选择</strong>，因为它**不伦不类：**出于效率选择来说，它过于重量级和昂贵，出于正确性选择它又不够安全。</p>
+<h2 id=5antirez的反击><strong>5.Antirez的反击</strong></h2>
+<p>马丁的那篇文章是在2016.2.8发表之后Antirez反应很快，他发表了"<strong>Is Redlock safe?</strong>&ldquo;进行逐一反驳，文章地址如下：</p>
+<p>Antirez认为马丁的文章对于Redlock的批评可以概括为两个方面：</p>
+<ul>
+<li>
+<p>带有自动过期功能的分布式锁，必须提供某种fencing栅栏机制来保证对共享资源的真正互斥保护，Redlock算法提供不了这样一种机制</p>
+</li>
+<li>
+<p>Redlock算法构建在一个不够安全的系统模型之上，它对于系统的记时假设有比较强的要求，而这些要求在现实的系统中是无法保证的</p>
+</li>
+</ul>
+<p>Antirez对这两方面分别进行了细致地反驳。</p>
+<p><strong>关于fencing机制</strong></p>
+<p>Antirez提出了质疑：既然在锁失效的情况下已经存在一种fencing机制能继续保持资源的互斥访问了，那为什么<strong>还要使用一个分布式锁并且还要求它提供那么强的安全性保证</strong>呢？</p>
+<p>退一步讲Redlock虽然提供不了递增的fencing token隔离令牌，但利用Redlock产生的<strong>随机字符串</strong>可以达到同样的效果，这个随机字符串虽然不是递增的，但却是<strong>唯一</strong>的。</p>
+<p><strong>关于记时假设</strong></p>
+<p>Antirez针对算法在记时模型假设集中反驳，马丁认为Redlock失效情况主要有三种：</p>
+<ul>
+<li>
+<p>1.时钟发生跳跃</p>
+</li>
+<li>
+<p>2.长时间的GC pause</p>
+</li>
+<li>
+<p>3.长时间的网络延迟</p>
+</li>
+</ul>
+<p>后两种情况来说，Redlock在当初之处进行了相关设计和考量，对这两种问题引起的后果有一定的抵抗力。<br>
+<strong>时钟跳跃对于Redlock影响较大</strong>，这种情况一旦发生Redlock是没法正常工作的。<br>
+Antirez指出<strong>Redlock对系统时钟的要求并不需要完全精</strong>确，只要误差不超过一定范围不会产生影响，在实际环境中是完全合理的，通过<strong>恰当的运维完全可以避免时钟发生大的跳动</strong>。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2020-12-25
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/architech/>architech</a>
+<a href=https://justice.bj.cn/tags/redis/>redis</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/redis/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">Redis</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/30.architech/rocksdb-%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91/>
+<span class="next-text nav-default">Rocksdb源码编译</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2021
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>
