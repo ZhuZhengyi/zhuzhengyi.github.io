@@ -2,7 +2,7 @@
 <head>
 <meta charset=utf-8>
 <meta http-equiv=x-ua-compatible content="IE=edge">
-<title> - Justice的小站</title>
+<title>ES冷热分离 - Justice的小站</title>
 <meta name=renderer content="webkit">
 <meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
 <meta name=MobileOptimized content="width">
@@ -14,25 +14,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="ES冷热分离 简介 elasticsearch 从6.6版本增加了冷热(hot-warm)特性。 该特性可以将同一个es集群中的不同es节点根据硬件性能分为hot/warm">
 <meta name=keywords content="Hugo,theme,jane">
 <meta name=generator content="Hugo 0.88.1">
-<link rel=canonical href=https://justice.bj.cn/post/30.architech/spark/spark-rdd/>
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%86%B7%E7%83%AD%E5%88%86%E7%A6%BB/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.2f6e4d7e6e51da09470910b5f0d41a7d2c517dbe97416dd268a18bb7334c4ff8.css integrity="sha256-L25Nfm5R2glHCRC18NQafSxRfb6XQW3SaKGLtzNMT/g=" media=screen crossorigin=anonymous>
-<meta property="og:title" content>
-<meta property="og:description" content>
+<meta property="og:title" content="ES冷热分离">
+<meta property="og:description" content="ES冷热分离 简介 elasticsearch 从6.6版本增加了冷热(hot-warm)特性。 该特性可以将同一个es集群中的不同es节点根据硬件性能分为hot/warm">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://justice.bj.cn/post/30.architech/spark/spark-rdd/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2020-12-25T00:00:00+00:00">
-<meta property="article:modified_time" content="2020-12-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content>
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T00:00:00+00:00">
-<meta itemprop=dateModified content="2020-12-25T00:00:00+00:00">
-<meta itemprop=wordCount content="0">
-<meta itemprop=keywords content="architech,spark,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content>
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%86%B7%E7%83%AD%E5%88%86%E7%A6%BB/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2021-10-10T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-10-10T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="ES冷热分离">
+<meta itemprop=description content="ES冷热分离 简介 elasticsearch 从6.6版本增加了冷热(hot-warm)特性。 该特性可以将同一个es集群中的不同es节点根据硬件性能分为hot/warm"><meta itemprop=datePublished content="2021-10-10T00:00:00+00:00">
+<meta itemprop=dateModified content="2021-10-10T00:00:00+00:00">
+<meta itemprop=wordCount content="171">
+<meta itemprop=keywords content="architech,elasticsearch,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="ES冷热分离">
+<meta name=twitter:description content="ES冷热分离 简介 elasticsearch 从6.6版本增加了冷热(hot-warm)特性。 该特性可以将同一个es集群中的不同es节点根据硬件性能分为hot/warm"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -163,14 +163,14 @@ Justice's Blog
 <div id=content class="content container">
 <article class="post bg-white">
 <header class=post-header>
-<h1 class=post-title></h1>
+<h1 class=post-title>ES冷热分离</h1>
 <div class=post-meta>
-<time datetime=2020-12-25 class=post-time>
-2020-12-25
+<time datetime=2021-10-10 class=post-time>
+2021-10-10
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
-<a href=https://justice.bj.cn/categories/spark/> spark </a>
+<a href=https://justice.bj.cn/categories/elasticsearch/> elasticsearch </a>
 </div>
 <span id=busuanzi_container_page_pv>
 | 阅读 <span id=busuanzi_value_page_pv></span>
@@ -180,10 +180,88 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#配置>配置</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=es冷热分离>ES冷热分离</h1>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p>elasticsearch 从6.6版本增加了冷热(hot-warm)特性。</p>
+</li>
+<li>
+<p>该特性可以将同一个es集群中的不同es节点根据硬件性能分为<code>hot</code>/<code>warm</code>不同的类型(node type)。</p>
+</li>
+</ul>
+<h2 id=配置>配置</h2>
+<ul>
+<li>
+<p>条件： elasticsearch version >= 6.6.0</p>
+</li>
+<li>
+<p>配置</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=c># $ES_HOME/config/elasticsearch.yml</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># $ES_HOME/start.sh</span>
+<span class=nv>OPTS</span><span class=o>=</span><span class=s2>&#34; -Enode.attr.box_type=hot -Enode.attr.resource_level=high -p </span><span class=si>${</span><span class=nv>PID_FILE</span><span class=si>}</span><span class=s2> -d &#34;</span>
+
+bin/elasticsearch <span class=nv>$OPTS</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>迁移节点到温节点</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>curl -X PUT /&lt;INDEX_NAME&gt;/_settings
+<span class=o>{</span>
+  <span class=s2>&#34;settings&#34;</span>: <span class=o>{</span>
+    <span class=s2>&#34;index.routing.allocation.require.box_type&#34;</span>: <span class=s2>&#34;warm&#34;</span>
+  <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.elastic.co/cn/blog/hot-warm-architecture-in-elasticsearch-5-x>Elasticsearch Hot Warm Architecture | Elastic Blog</a></p>
+</li>
+<li>
+<p><a href=https://www.elastic.co/cn/blog/implementing-hot-warm-cold-in-elasticsearch-with-index-lifecycle-management>使用索引生命周期管理在 Elasticsearch 中实现热温冷架构 | Elastic Blog</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>
@@ -193,7 +271,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2020-12-25
+2021-10-10
 </span>
 </p>
 <p class=copyright-item>
@@ -210,17 +288,17 @@ Justice's Blog
 <footer class=post-footer>
 <div class=post-tags>
 <a href=https://justice.bj.cn/tags/architech/>architech</a>
-<a href=https://justice.bj.cn/tags/spark/>spark</a>
+<a href=https://justice.bj.cn/tags/elasticsearch/>elasticsearch</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/30.architech/kudu/>
+<a class=prev href=/post/30.architech/elasticsearch/es%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default"></span>
+<span class="prev-text nav-default">ES倒排索引原理</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/30.architech/accumulo/>
-<span class="next-text nav-default">Accumulo</span>
+<a class=next href=/post/30.architech/elasticsearch/es%E5%AD%98%E5%82%A8%E8%AF%A6%E8%A7%A3/>
+<span class="next-text nav-default">ES存储详解</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
