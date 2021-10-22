@@ -29,7 +29,7 @@
 <meta itemprop=name content="Chubao-Raft">
 <meta itemprop=description content="Chubao-Raft 简介 Chubao Raft 是 chubaofs 项目使用的multigroup-raft 库，是在 etcd raft 库上进行了重构和优化。 向较于 etcd-raft，chubao-raft 有以"><meta itemprop=datePublished content="2021-09-29T00:00:00+00:00">
 <meta itemprop=dateModified content="2021-09-29T00:00:00+00:00">
-<meta itemprop=wordCount content="3807">
+<meta itemprop=wordCount content="3999">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Chubao-Raft">
 <meta name=twitter:description content="Chubao-Raft 简介 Chubao Raft 是 chubaofs 项目使用的multigroup-raft 库，是在 etcd raft 库上进行了重构和优化。 向较于 etcd-raft，chubao-raft 有以"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -186,6 +186,11 @@ Justice's Blog
 <ul>
 <li><a href=#简介>简介</a></li>
 <li><a href=#状态机>状态机</a></li>
+<li><a href=#重要数据结构>重要数据结构</a>
+<ul>
+<li><a href=#future>Future</a></li>
+</ul>
+</li>
 <li><a href=#关键流程>关键流程</a>
 <ul>
 <li><a href=#新建raftserver>新建RaftServer</a></li>
@@ -197,7 +202,7 @@ Justice's Blog
 <li><a href=#选举确认electionack>选举确认（ElectionAck）</a></li>
 </ul>
 </li>
-<li><a href=#消息驱动流程>消息驱动流程</a>
+<li><a href=#日志复制流程>日志复制流程</a>
 <ul>
 <li></li>
 </ul>
@@ -260,6 +265,74 @@ Justice's Blog
     E -- vote req --&gt; E
     E --electAck/append/hb--&gt; F
     E --quorum--&gt; L
+</code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id=重要数据结构>重要数据结构</h2>
+<h3 id=future>Future</h3>
+<ul>
+<li>
+<p><code>future</code>是raft中用于描述raft输出结果的一个数据结构；</p>
+</li>
+<li>
+<p><code>future</code>内部有2个长度为1的<code>chan</code>，分别代表着<code>正常输出</code>和<code>错误输出</code>；</p>
+</li>
+<li>
+<p><code>future</code>主要提供以下2个外部调用来获取输出：</p>
+<ul>
+<li>
+<p><code>Response()</code>: 获取同步输出结果；</p>
+</li>
+<li>
+<p><code>AsyncResponse</code>: 异步输出；</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>respErr</span> <span class=kd>struct</span> <span class=p>{</span>
+    <span class=nx>errCh</span> <span class=kd>chan</span> <span class=kt>error</span>
+<span class=p>}</span>
+<span class=kd>type</span> <span class=nx>Future</span> <span class=kd>struct</span> <span class=p>{</span>
+    <span class=nx>respErr</span>
+    <span class=nx>respCh</span> <span class=kd>chan</span> <span class=kd>interface</span><span class=p>{}</span>
+<span class=p>}</span>
+<span class=c1>// 
+</span><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>f</span> <span class=o>*</span><span class=nx>Future</span><span class=p>)</span> <span class=nf>Response</span><span class=p>()</span> <span class=p>(</span><span class=nx>resp</span> <span class=kd>interface</span><span class=p>{},</span> <span class=nx>err</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+    <span class=k>select</span> <span class=p>{</span>
+    <span class=k>case</span> <span class=nx>err</span> <span class=p>=</span> <span class=o>&lt;-</span><span class=nx>f</span><span class=p>.</span><span class=nb>error</span><span class=p>():</span>
+        <span class=k>return</span>
+    <span class=k>case</span> <span class=nx>resp</span> <span class=p>=</span> <span class=o>&lt;-</span><span class=nx>f</span><span class=p>.</span><span class=nx>respCh</span><span class=p>:</span>
+        <span class=k>return</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+<span class=c1>//
+</span><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>f</span> <span class=o>*</span><span class=nx>Future</span><span class=p>)</span> <span class=nf>AsyncResponse</span><span class=p>()</span> <span class=p>(</span><span class=nx>respCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>interface</span><span class=p>{},</span> <span class=nx>errCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+    <span class=k>return</span> <span class=nx>f</span><span class=p>.</span><span class=nx>respCh</span><span class=p>,</span> <span class=nx>f</span><span class=p>.</span><span class=nx>errCh</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><hr>
@@ -408,7 +481,7 @@ Justice's Blog
 <li>其他 ElectAck 节点收到 ReqMsgElectAck 消息，同样将自己转变成 Follower，回复 RespMsgElectAck 消息；</li>
 <li>ElectAck 节点收到 RespMsgElectAck 消息后，记录确认消息(ack)数。如果确认消息数大于等于法定当选票数，则当选为 Leader。并立即广播 append；</li>
 </ul>
-<h2 id=消息驱动流程>消息驱动流程</h2>
+<h2 id=日志复制流程>日志复制流程</h2>
 <h4 id=任何节点收到消息>任何节点收到消息：</h4>
 <ul>
 <li>如果是 LocalMsgHup 消息：
@@ -543,7 +616,8 @@ Justice's Blog
 <li>
 <p>Leader</p>
 <ul>
-<li>LocalMsgProp:
+<li>
+<p>LocalMsgProp:</p>
 <ul>
 <li>空消息或没有副本节点，则忽略该消息；</li>
 <li>否则，检查是否有配置变更消息；</li>
@@ -551,12 +625,14 @@ Justice's Blog
 <li>向副本节点广播 append。</li>
 </ul>
 </li>
-<li>ReqMsgVote:
+<li>
+<p>ReqMsgVote:</p>
 <ul>
 <li>向发送者回复 RespMsgVote，投反对票(Reject=true);</li>
 </ul>
 </li>
-<li>RespMsgAppend:
+<li>
+<p>RespMsgAppend:</p>
 <ul>
 <li>更新复制信道(pr)状态；</li>
 <li>如果 Reject, 则 pr 可能要回退，并转变到探测状态，在发送 append</li>
@@ -568,20 +644,19 @@ Justice's Blog
 </li>
 </ul>
 </li>
-<li>RespMsgHeartBeat:
-<ul>
 <li>
+<p>RespMsgHeartBeat:</p>
 <h2 id=更新信道状态>更新信道状态；</h2>
 </li>
-</ul>
-</li>
-<li>LeaseMsgOffline:
+<li>
+<p>LeaseMsgOffline:</p>
 <ul>
 <li>给所有副本节点发送 LeaseMsgTimeOut 消息；</li>
 <li>转变为 Follower；</li>
 </ul>
 </li>
-<li>RespMsgSnapShot:
+<li>
+<p>RespMsgSnapShot:</p>
 <ul>
 <li>如果信道状态不是 replicaStateSnapshot, 则忽略；</li>
 <li>如果消息被拒绝，则快照失败，信道转入探测状态；</li>
@@ -589,7 +664,8 @@ Justice's Blog
 <li>信道暂停；</li>
 </ul>
 </li>
-<li>RespCheckQuorum:
+<li>
+<p>RespCheckQuorum:</p>
 <ul>
 <li>接收 Ack；</li>
 <li>如果收到确认节点数+1(本节点)，则 readOnly->advance;</li>
