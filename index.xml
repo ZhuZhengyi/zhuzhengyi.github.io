@@ -17,12 +17,163 @@
 &lt;/ul></description></item><item><title>Pages</title><link>https://justice.bj.cn/homepage/pages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/pages/</guid><description/></item><item><title>Experiences</title><link>https://justice.bj.cn/homepage/experiences/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/experiences/</guid><description/></item><item><title>Vintage</title><link>https://justice.bj.cn/homepage/vintage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/vintage/</guid><description/></item><item><title>Blank</title><link>https://justice.bj.cn/homepage/blank/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/blank/</guid><description>
 &lt;div style="text-align:center">
 &lt;p>Write anything you like here!&lt;/p>
-&lt;/div></description></item><item><title>Golang 调试工具</title><link>https://justice.bj.cn/post/14.language/golang/golang%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7/</link><pubDate>Fri, 29 Oct 2021 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7/</guid><description>&lt;h1 id="golang-调试工具">Golang 调试工具&lt;/h1>
+&lt;/div></description></item><item><title>Golang 内存管理</title><link>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</link><pubDate>Fri, 29 Oct 2021 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</guid><description>&lt;h1 id="golang-内存管理">Golang 内存管理&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Golang程序的调试包括&lt;/p>
-&lt;h2 id="gdb">GDB&lt;/h2>
+&lt;p>Golang内存管理采用类似&lt;code>tcmalloc&lt;/code>的分级分配算法，主要由&lt;code>MHeap&lt;/code>、&lt;code>MCentral&lt;/code>、&lt;code>MCache&lt;/code> 3 级组成。按分配对象的大小不同，选择相应的区域进行分配。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-29-image-20190919152951111.png" alt="image-20190919152951111">&lt;/p>
+&lt;h2 id="内存布局">内存布局&lt;/h2>
+&lt;p>golang程序启动时，会根据OS类型向OS申请一大块连续虚拟内存空间如下：&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-34-2020-05-04-09-32-44-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>arena&lt;/code>：&lt;/p>
+&lt;ul>
+&lt;li>由连续的page(8KB)组成，用于具体的对象分配；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>spans&lt;/code>：&lt;/p>
+&lt;ul>
+&lt;li>存放了&lt;code>mspan&lt;/code>的指针(8Byte)，表示arena区中的某一页(page)属于哪个&lt;code>mspan&lt;/code>，用于管理arena；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>bitmap&lt;/code>：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>用于标记&lt;code>arena&lt;/code>(即heap)中的对象, 每个对象使用两个bit进行标记，分别表示gc状态和是否分配；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>高地址部分指向arena区域的低地址部分，地址是由高地址向低地址增长的；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-42-2020-05-04-09-36-04-image.png" alt="">&lt;/p>
+&lt;h2 id="基本数据结构">基本数据结构&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>MHeap&lt;/strong>:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>代表了golang的整个堆内存;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>全局唯一的;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大对象(&amp;gt;32KB)直接在MHeap中分配；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>mheap 包含free，large两个域：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>free: free包含一个256单元的数组&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>large:&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>给MCentral和MCache等下层提供空间；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-48-2020-05-04-09-39-31-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>MCentral&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>集中管理不同类型（67种）的MSpan，对应TCMalloc中的CentralCache；&lt;/li>
+&lt;/ul>
+&lt;ul>
+&lt;li>每个mcentral包含两个mspan列表:
+&lt;ul>
+&lt;li>noempty: 表示已被mcache的mspan list；&lt;/li>
+&lt;li>empty: 表示未被使用(empty)的mspan 链表。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>当某个goroutine中的mcache内存不够时，就会从mcentral的empty链表中分配对应的mspan。&lt;/li>
+&lt;li>如果mcentral内存不够，就会从MHeap中分配；&lt;/li>
+&lt;li>mcentral中有锁，以为多个goroutine分配提供互斥；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-08-2020-05-04-09-38-29-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>MCache&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>是各个goroutine自有的局部内存;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>向&lt;code>mcentral&lt;/code>申请得到的;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>小对象(&amp;lt;=32KB)的分配直接在goroutine内部进行，不用加锁，提高分配速度。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>mcache 内存不够时，会向mcentral重新申请；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-13-2020-05-04-09-38-54-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>MSpan&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>内存管理基本单元，由一片连续的8KB页组成的双向链表，进行内存对象的数据分配;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>为满足不同大小对象分配的需要，减少内存碎片，同时兼顾内存利用率，golang将span分层不同的大小类型（总共67种）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对象分配内存时，根据对象大小，选择最合适的mspan进行分配。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-49-19-2020-05-04-09-37-59-image.png" alt="">&lt;/p>
+&lt;h2 id="内存分配">内存分配&lt;/h2>
+&lt;p>Go的内存分配器在分配对象时，根据对象的大小，分成三类：&lt;/p>
+&lt;ul>
+&lt;li>Tiny对象： (0, 16B]，使用mcache的tiny分配器分配，多个tiny对象可组合在一个mspan中&lt;/li>
+&lt;li>Small对象：(16B, 32KB ]，在mcache中选择相应规格大小的mspan进行分配；&lt;/li>
+&lt;li>大对象：&amp;gt;32KB, 直接从MHeap中分配；&lt;/li>
+&lt;/ul>
+&lt;p>golang变量是在栈上分配还是在堆上分配，是由逃逸分析的结果决定的。通常情况下，编译器是倾向于将变量分配到栈上的，因为它的开销小。&lt;/p>
+&lt;p>分配顺序：&lt;/p>
+&lt;ul>
+&lt;li>首先通过计算使用的大小规格&lt;/li>
+&lt;li>然后&lt;code>mcache&lt;/code>中对应大小规格的块分配。&lt;/li>
+&lt;li>如果&lt;code>mcache&lt;/code> free 链表不够分配&lt;/li>
+&lt;li>如果&lt;code>mcentral&lt;/code>中没有可用的块，则向&lt;code>mheap&lt;/code>申请，并根据算法找到最合适的&lt;code>mspan&lt;/code>。&lt;/li>
+&lt;li>如果申请到的&lt;code>mspan&lt;/code> 超出申请大小，将会根据需求进行切分，以返回用户所需的页数。剩余的页构成一个新的 mspan 放回 mheap 的空闲列表。&lt;/li>
+&lt;li>如果 mheap 中没有可用 span，则向操作系统申请一系列新的页（最小 1MB）。&lt;/li>
+&lt;/ul>
+&lt;h2 id="gc流程">GC流程&lt;/h2>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/27807169">https://zhuanlan.zhihu.com/p/27807169&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.jianshu.com/p/2904efc7f1a8">图解Golang的内存分配&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/29216091">https://zhuanlan.zhihu.com/p/29216091&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/76802887">https://zhuanlan.zhihu.com/p/76802887&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://yq.aliyun.com/articles/652551">&lt;strong>简单易懂的 Go 内存分配原理解读&lt;/strong>&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://juejin.im/post/5c888a79e51d456ed11955a8">https://juejin.im/post/5c888a79e51d456ed11955a8&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/225190602">白话Go语言内存管理三部曲（一）内存分配原理&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://segmentfault.com/a/1190000022499402">go怎样做stw&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>Golang 调试工具</title><link>https://justice.bj.cn/post/14.language/golang/golang%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7/</link><pubDate>Fri, 29 Oct 2021 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7/</guid><description>&lt;h1 id="golang-调试工具">Golang 调试工具&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>Golang程序的调试工具包括gdb调试、go pprof性能调试工具及go gc分析工具。熟练掌握这些工具的基本用法对golang的程序开发及调试分析拥有很大的帮助。&lt;/p>
+&lt;h2 id="gdb单步调试工具">GDB：单步调试工具&lt;/h2>
 &lt;p>gdb可以用来作为golang的调试工具。&lt;/p>
-&lt;h3 id="编译">编译&lt;/h3>
+&lt;h3 id="gdb用法">Gdb用法&lt;/h3>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
@@ -39,7 +190,7 @@
 &lt;/span>&lt;span class="lnt">12
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>
 &lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">#-gcflags是给go编译器的参数，gc是go compile的意思。-N是不要优化代码，-l 是禁止内联代码。&lt;/span>
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">#编译时，打开相关编译变量， -gcflags是给go编译器的参数，gc是go compile的意思。-N是不要优化代码，-l 是禁止内联代码。&lt;/span>
 $ go build -gcflags &lt;span class="s2">&amp;#34;-N -l&amp;#34;&lt;/span> test.go
 &lt;span class="c1"># 运行gdb&lt;/span>
 $ gdb &lt;span class="nb">test&lt;/span>
@@ -54,9 +205,9 @@ $ gdb &lt;span class="nb">test&lt;/span>
 &lt;/div>
 &lt;/div>&lt;p>gdb对golang的调试功能支持不完善，delve&lt;/p>
 &lt;h2 id="pprof性能调试工具">PProf：性能调试工具&lt;/h2>
-&lt;p>pprof是golang官方自带的性能调试工具。&lt;/p>
+&lt;p>pprof是go tool自带的性能调试工具，看用于对pprof采样数据进行分析。&lt;/p>
 &lt;h3 id="获取采样数据">获取采样数据&lt;/h3>
-&lt;p>golang pprof有两种使用方式：&lt;/p>
+&lt;p>要使用pprof，需要先生成采样数据，有两种使用方式可以产生pprof数据：&lt;/p>
 &lt;ul>
 &lt;li>
 &lt;p>通过引入&lt;code>runtime/pprof&lt;/code>包，并手动调用&lt;code>rutime.StartCPUProfile, runtimeStopCPUProfile&lt;/code>等API来获取采样数据；&lt;/p>
@@ -65,7 +216,49 @@ $ gdb &lt;span class="nb">test&lt;/span>
 &lt;p>通过引入&lt;code>import _ &amp;quot;net/http/prprof&amp;quot;&lt;/code>方式在线使用;&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="操作">操作&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kn">import&lt;/span> &lt;span class="p">(&lt;/span>
+&lt;span class="c1">// 引入net/http/pprof包，该包自动注册 handler到 http server
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">_&lt;/span> &lt;span class="s">&amp;#34;net/http/pprof&amp;#34;&lt;/span> &lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="kd">func&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="nx">runtime&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">GOMAXPROCS&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">// 限制 CPU 使用数，避免过载
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">runtime&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetMutexProfileFraction&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">// 开启对锁调用的跟踪
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">runtime&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">SetBlockProfileRate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">// 开启对阻塞操作的跟踪
+&lt;/span>&lt;span class="c1">&lt;/span>
+&lt;span class="k">go&lt;/span> &lt;span class="kd">func&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="c1">// 启动一个 http server，以提供pprof http服务端口，服务默认在/debug/pprof下
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">http&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">ListenAndServe&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;:6060&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kc">nil&lt;/span>&lt;span class="p">);&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">nil&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="nx">log&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Fatal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">err&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="nx">os&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Exit&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">}()&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="pprof用法">pprof用法&lt;/h3>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
@@ -90,7 +283,7 @@ $ gdb &lt;span class="nb">test&lt;/span>
 &lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># 函数调用cpu耗时&lt;/span>
 $ go tool pprof http://localhost:6060/debug/pprof/profile
 &lt;span class="c1"># 内存&lt;/span>
-$ go tool -sample_index&lt;span class="o">=&lt;/span>alloc_space pprof &lt;span class="s2">&amp;#34;http://localhost:6060/debug/pprof/heap?gc=1&amp;amp;seconds=60&amp;#34;&lt;/span>
+$ go tool pprof -sample_index&lt;span class="o">=&lt;/span>alloc_space &lt;span class="s2">&amp;#34;http://localhost:6060/debug/pprof/heap?gc=1&amp;amp;seconds=60&amp;#34;&lt;/span>
 &lt;span class="c1"># 已分配的堆内存&lt;/span>
 $ go tool pprof http://localhost:6060/debug/pprof/allocs
 &lt;span class="c1"># goroutine&lt;/span>
@@ -105,13 +298,14 @@ $ go tool pprof http://localhost:6060/debug/pprof/mutex
 &lt;span class="o">(&lt;/span>pprof&lt;span class="o">)&lt;/span> traces &lt;span class="c1">#&lt;/span>
 &lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
-&lt;/div>&lt;h2 id="gc">GC&lt;/h2>
+&lt;/div>&lt;h2 id="godebuggc调试">GODEBUG：GC调试&lt;/h2>
 &lt;p>GODEBUG 开启 debug 模式后，可做内存 trace 和调度器的 trace&lt;/p>
 &lt;p>GODEBUG 还支持设置以下变量:&lt;/p>
 &lt;ul>
 &lt;li>GOGC： 改变堆增长方式 —— 设置初始的 GC 目标百分比。当新分配内存，与上一次采集后剩余的实时数据的比例达到这个百分比时，才会触发一次 GC。默认值是 GOGC=100。设置 &lt;code>GOGC=off&lt;/code> 则完全禁用垃圾收集器。&lt;/li>
 &lt;li>schedtrace：设置 &lt;code>schedtrace=X&lt;/code> ,每 X 毫秒打印一次调度器状态 —— 包括调度器、处理器、线程和 goroutine&lt;/li>
 &lt;/ul>
+&lt;h3 id="用法">用法&lt;/h3>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
@@ -2864,282 +3058,4 @@ cache.get(4); // 返回 4
 &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">maps&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">value&lt;/span>
 &lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
-&lt;/div></description></item><item><title>Rust代码组织</title><link>https://justice.bj.cn/post/14.language/rust/rust%E5%8C%85%E7%AE%A1%E7%90%86/</link><pubDate>Sat, 23 Oct 2021 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/rust/rust%E5%8C%85%E7%AE%A1%E7%90%86/</guid><description>&lt;h1 id="rust代码组织">Rust代码组织&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Rust程序代码组织分为两个层级：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>包(crate)&lt;/strong>：是一个独立的可编译单元；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>模块(mod)&lt;/strong>：是包内代码组织单元；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="包crate">包(Crate)&lt;/h2>
-&lt;p>包(&lt;code>crate&lt;/code>)是rust可独立编译的单元，包要点如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>包&lt;code>crate&lt;/code> 由一个或一批文件组成，可独立编译为二进制文件；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>包有两种类型：库(lib)和可执行二进制文件(bin)；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>同一个包的文件一般放在同一个目录下；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>每个包有一个入口文件：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>二进制包入口为&lt;code>main.rs&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>库的入口文件是&lt;code>lib.rs&lt;/code>;&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>包由&lt;code>Cargo.toml&lt;/code>管理组织；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>引入外部crate：&lt;code>extern crate xxx;&lt;/code>;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>引用未发布的本地crate, 在&lt;code>Cargo.toml&lt;/code> &lt;code>dependencies&lt;/code>中声明；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;span class="lnt">9
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-toml" data-lang="toml">&lt;span class="p">[&lt;/span>&lt;span class="nx">package&lt;/span>&lt;span class="p">]&lt;/span>
-&lt;span class="nx">name&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="s2">&amp;#34;crate-name&amp;#34;&lt;/span>
-&lt;span class="nx">version&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="s2">&amp;#34;0.1.0&amp;#34;&lt;/span>
-&lt;span class="nx">authors&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;xxx&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span>
-&lt;span class="nx">edition&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="s2">&amp;#34;2018&amp;#34;&lt;/span>
-&lt;span class="p">[&lt;/span>&lt;span class="nx">dependencies&lt;/span>&lt;span class="p">]&lt;/span>
-&lt;span class="c">#xxx&lt;/span>
-&lt;span class="p">[&lt;/span>&lt;span class="nx">features&lt;/span>&lt;span class="p">]&lt;/span>
-&lt;span class="c">#default = [&amp;#34;test&amp;#34;]&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="模块module">模块（module）&lt;/h2>
-&lt;p>模块(&lt;code>mod&lt;/code>)是包内部代码组织单元，模块要点如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>模块由关键字&lt;code>mod&lt;/code>定义：&lt;code>mod XXX { ... } &lt;/code>;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>模块的命名风格是 &lt;code>lower_snake_case&lt;/code>，跟其它的 Rust 的标识符一样；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>模块可以嵌套；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>模块中可以写任何合法的 Rust 代码；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>每个包默认实现了一个隐式的 &lt;code>根模块（root module）&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>独立的一个文件就是一个mod, mod名就是文件名，main.rs, lib.rs, mod.rs文件除外；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>mod.rs&lt;/code>的模块名就是其所在目录的名字；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>main.rs&lt;/code>, &lt;code>lib.rs&lt;/code> 的模块名是其目录结构，如：&lt;code>exp/src/main.rs&lt;/code>或 &lt;code>lip/src/lib.rs&lt;/code> ;两者的mod名分别是exp和lip；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>文件和文件夹内的mod及其内部定义的函数默认都是private的，除非pub声明公开；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>private元素只有本模块内的元素以及它的子模块可以访问；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>public元素上一层的模块就有权访问它；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果存在与文件同名的目录， 则在该目录下定义的模块都是该文件的子模块；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>Rust 的多层模块遵循如下两条规则：&lt;/p>
-&lt;ol>
-&lt;li>优先查找&lt;code>xxx.rs&lt;/code> 文件
-&lt;ol>
-&lt;li>&lt;code>main.rs&lt;/code>、&lt;code>lib.rs&lt;/code>、&lt;code>mod.rs&lt;/code>中的&lt;code>mod xxx;&lt;/code> 默认优先查找同级目录下的 &lt;code>xxx.rs&lt;/code> 文件；&lt;/li>
-&lt;li>其他文件&lt;code>yyy.rs&lt;/code>中的&lt;code>mod xxx;&lt;/code>默认优先查找同级目录的&lt;code>yyy&lt;/code>目录下的 &lt;code>xxx.rs&lt;/code> 文件；&lt;/li>
-&lt;/ol>
-&lt;/li>
-&lt;li>如果 &lt;code>xxx.rs&lt;/code> 不存在，则查找 &lt;code>xxx/mod.rs&lt;/code> 文件，即 &lt;code>xxx&lt;/code> 目录下的 &lt;code>mod.rs&lt;/code> 文件。&lt;/li>
-&lt;/ol>
-&lt;p>上述两种情况，加载成模块后，效果是相同的。Rust 就凭这两条规则，通过迭代使用，结合 &lt;code>pub&lt;/code> 关键字，实现了对深层目录下模块的加载；&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;span class="lnt">9
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">src
-├── a
-│ ├── b
-│ │ ├── c
-│ │ │ ├── d.rs
-│ │ │ └── mod.rs
-│ │ └── mod.rs
-│ └── mod.rs
-└── main.rs
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// a/b/c/d.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">print_ddd&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;i am ddd.&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// a/b/c/mod.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">d&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// a/b/mod.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">c&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// a/mod.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">b&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// main.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">a&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">a&lt;/span>::&lt;span class="n">b&lt;/span>::&lt;span class="n">c&lt;/span>::&lt;span class="n">d&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">d&lt;/span>::&lt;span class="n">print_ddd&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="模块系统">模块系统&lt;/h3>
-&lt;ol>
-&lt;li>
-&lt;p>单文件rust 中称为&lt;code>mod&lt;/code>，模块的名称就是文件的名称。&lt;/p>
-&lt;p>模块内部的函数，只能在模块内部使用，如果要在模块外调用，需要用&lt;code>pub&lt;/code>关键词，显式声明函数可在外部使用。&lt;/p>
-&lt;p>使用时，使用mod声明引入，mod name::&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//file: rustmod/src/functions.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">hello&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">String&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Hello, {}!&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// 嵌套子模块
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">util&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">hello2&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">String&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Hello, {}!&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//file: rust/src/main.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">functions&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="c1">//声明模块
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">functions&lt;/span>::&lt;span class="n">hello&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;World&amp;#34;&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">to_string&lt;/span>&lt;span class="p">());&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;{}&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s2&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">functions&lt;/span>::&lt;span class="n">util&lt;/span>::&lt;span class="n">hello2&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;World&amp;#34;&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">to_string&lt;/span>&lt;span class="p">());&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;{}&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s2&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;/li>
-&lt;li>
-&lt;p>使用mod.rs, mod 会去对应目录下mod.rs中导入该目录下声明的mod&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//file: rustmod/src/util/functions.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">hello&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">String&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Hello, {}!&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//file: rustmod/src/util/mod.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">functions&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//file: rustmod/src/main.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">util&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">util&lt;/span>::&lt;span class="n">functions&lt;/span>::&lt;span class="n">util&lt;/span>::&lt;span class="n">hello&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;World&amp;#34;&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">to_string&lt;/span>&lt;span class="p">());&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;{}&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;/li>
-&lt;li>
-&lt;p>在同一层级不能同时存在文件夹和文件类型的模块，否则会名字冲突。&lt;/p>
-&lt;/li>
-&lt;/ol></description></item></channel></rss>
+&lt;/div></description></item></channel></rss>
