@@ -86,6 +86,15 @@ class Solution:
     #     return res[n]
 
     def minDays(self, n: int) -> int:
+        '''
+        ## 解题思路：
+        吃n个橘子所用天数f(n)有一下几种：
+        1. 先吃1个，后面吃法有f(n-1), 总共吃法：1+f(n-1)
+        2. n为2的倍数, 先吃n/2, 后面的f(n/2) ， 总共是1+f(n/2)
+        3. n为3的倍数，先吃2n/3, 后面的(n/3)， 总共是1+f(n/3)
+        最少天数为:
+            f(n) = min(f(n-1), n%2+f(n/2), n%3+f(n/3)) + 1
+        '''
         record = {}
         def eat(n: int) -> int:
             if n < 2:

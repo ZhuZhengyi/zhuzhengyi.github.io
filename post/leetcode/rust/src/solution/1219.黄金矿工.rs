@@ -65,9 +65,42 @@
  */
 
 // @lc code=start
-impl Solution {
-    pub fn get_maximum_gold(grid: Vec<Vec<i32>>) -> i32 {
+use std::cmp;
 
+impl Solution {
+    // 解题思路:
+    // 
+    pub fn get_maximum_gold(grid: Vec<Vec<i32>>) -> i32 {
+        if grid.len() == 0 {
+            return 0;
+        }
+
+        let (m, n) = (grid.len(), grid[0].len());
+
+        fn dfs(grid: &mut Vec<Vec<i32>>, i: usize, j: usize) -> i32 {
+            let (m, n) = (grid.len(), grid[0].len());
+            if i<0 || i>m || j<0 || j>n || grid[i][j] == 0 {
+                return 0;
+            }
+
+            let tmp = grid[i][j];
+            let left = dfs(grid, i-1, j);
+            let right = dfs(grid, i+1, j);
+            let up = dfs(grid, i, j-1);
+            let down = dfs(grid, i, j+1);
+            let golds = vec![left, right, up, down].iter().max().unwrap();
+            grid[i][j] = tmp;
+            return grid[i][j] + golds;
+        }
+
+        let mut max_golds = 0;
+        for i in 0..m {
+            for j in 0..n {
+                max_golds = cmp::max(max_golds, dfs(&mut grid, i, j))
+            }
+        }
+
+        max_golds
     }
 }
 // @lc code=end
