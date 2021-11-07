@@ -78,23 +78,52 @@ use std::collections::HashMap;
 use std::cmp;
 
 impl Solution {
+    /// 解题思路：
+    /// 
+    /// 当剩下i个橘子时，可选择的吃法有如下几种：
+    /// a. 吃一个，剩下[i-1]个橘子;
+    /// b. 先吃i%2个(一个个吃)，再一次吃剩下的一半，剩下[i/2]个橘子；
+    /// c. 先吃i%3个(一个个吃)，再一次次剩下的2/3, 剩下[i/3]个橘子，
+    /// 
+    /// 最少天数(记为f(n))为上面三种吃法中最小的:
+    ///     f(n) = min(1+f(n-1), n%2+1+f(n/2), n%3+1+f(n/3))
+    /// 显然,在n>2时，f(n-1) 永远要大于(n%2+f(n/2))和(n%3+f(n/3)),可简化为：
+    ///     f(n) = min(n%2+1+f(n/2), n%3+1+f(n/3))
+    /// 
+    /// 初始条件：
+    ///     f(0) = 0;
+    ///     f(1) = 1;
+    ///     f(2) = 2;
+    /// 最后结果： f(n)
+    /// 
+    /// 实现方法：
+    ///     1. 自顶向下递归求解f(n)；为加快速度，可使用hashmap缓存中间结果
+    ///     2. 自底向上迭代求取；
+    /// 
+    /// 递归+hashmap加速
+    ///     时间复杂度：O(log(n))
+    ///     空间复杂度：O(n)
     pub fn min_days(n: i32) -> i32 {
         let mut record = HashMap::new();
-
-        Self::eat(n, &mut record)
-    }
-
-    pub fn eat(n: i32, record: &mut HashMap<i32, i32>) -> i32 {
-        match n {
-            0 | 1 => n,
-            i if record.contains_key(&i) => *record.get(&i).unwrap(),
-            _ => {
-                let res = cmp::min(Self::eat(n/2, record) + n%2, Self::eat(n/3, record) + n%3) + 1;
-                record.insert(n, res);
-                res
+        
+        fn eat(n: i32, record: &mut HashMap<i32, i32>) -> i32 {
+            match n {
+                0 | 1 => n,
+                i if record.contains_key(&i) => *record.get(&i).unwrap(),
+                _ => {
+                    let res = cmp::min(eat(n/2, record) + n%2, eat(n/3, record) + n%3) + 1;
+                    record.insert(n, res);
+                    res
+                }
             }
         }
+
+        eat(n, &mut record)
     }
+
+    /// 自底向上迭代 
+    ///     时间复杂度：O(n)
+    ///     空间复杂度：O(n)
     // pub fn min_days(n: i32) -> i32 {
     //     if n < 2 {
     //         return n;
