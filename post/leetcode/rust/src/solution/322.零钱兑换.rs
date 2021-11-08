@@ -79,23 +79,19 @@ impl Solution {
     ///   f(0) = 0
     pub fn coin_change(coins: Vec<i32>, amount: i32) -> i32 {
 
-        fn coin_count(coinss: &Vec<i32>, remain: i32) -> i32 {
-            match remain {
-                i if i < 0 => f32::NEG_INFINITY as i32,
-                0 => 0,
-                i => {
-                    coinss.iter().map(|x| cmp::max(0, coin_count(coinss, remain-x)) ).min() + 1
-                }
-            }
+        let mut res: Vec<i32> = vec!(-1, amount);
+        let min_coin = coins.iter().min();
+
+        for i in min_coin..amount {
+                res[i] = coins.iter()
+                            .filter(|c| *c <=i )
+                            .map(|c| res.get(i-c) )
+                            .min()
+                            .unwrap()
+                            + 1;
         }
 
-        let count = coin_count(&coins, amount);
-        if count < 0 {
-            return -1;
-        } else {
-            return count;
-        }
-        
+        res.get(amount as usize)
     }
 }
 // @lc code=end
