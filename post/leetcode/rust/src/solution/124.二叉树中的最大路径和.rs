@@ -71,11 +71,11 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp;
 impl Solution {
-    /// 解题思路：
+    /// ## 解题思路：
     /// 1. 树总最大路径和为经过每一个树节点的所有最大路径和中最大的: 
-    ///         max_path_sum = max(max_path_sum, f(node))；
+    ///       max_path_sum = max(max_path_sum, f(node)) 
     /// 2. 经过每个节点的路径和: 
-    ///         f(node) = g(node.left) + node.val + g(node.right)，
+    ///       f(node) = g(node.left) + node.val + g(node.right)，
     ///    其中：g(node.left): 表示以node为端点的一侧最大路径和；
     /// 3. g(node) = node.val + max(g(node.left), g(node.right))
     pub fn max_path_sum(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {

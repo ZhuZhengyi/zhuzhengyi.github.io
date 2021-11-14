@@ -65,10 +65,10 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 impl Solution {
-    /// 解题思路：
-    /// 中序递归遍历二叉树每个节点, 遍历时，记录每次遍历的路径
-    /// 到达叶子节点，则将路径加入到结果集中；
-    /// 遍历时，注意出入栈操作；
+    /// ## 解题思路：
+    /// 1. 中序递归遍历二叉树每个节点, 遍历时，记录每次遍历的路径
+    /// 2. 到达叶子节点，则将路径加入到结果集中；
+    /// 3. 遍历时，注意出入栈操作；
     pub fn binary_tree_paths(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<String> {
 
         fn binary_tree_paths_inorder(node: &Option<Rc<RefCell<TreeNode>>>, node_path: &mut Vec<i32>, res: &mut Vec<String>)  {

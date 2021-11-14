@@ -43,12 +43,10 @@
 impl Solution {
     pub fn climb_stairs(n: i32) -> i32 {
         match n {
-            1 => 1,
-            2 => 2, 
+            1|2 => n,
             _ => {
                 let (mut prev, mut current) = (1, 2);
                 for _ in 3..n+1  {
-                    //let (prev, current) = (current, prev + current);
                     let old_curr = current;
                     current = prev + current;
                     prev = old_curr;

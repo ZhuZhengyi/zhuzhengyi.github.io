@@ -24,12 +24,12 @@
 <meta property="og:description" content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-master/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2021-11-08T00:00:00+00:00">
-<meta property="article:modified_time" content="2021-11-08T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2021-11-14T00:00:00+00:00">
+<meta property="article:modified_time" content="2021-11-14T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ChubaoFS Master">
-<meta itemprop=description content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met"><meta itemprop=datePublished content="2021-11-08T00:00:00+00:00">
-<meta itemprop=dateModified content="2021-11-08T00:00:00+00:00">
-<meta itemprop=wordCount content="824">
+<meta itemprop=description content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met"><meta itemprop=datePublished content="2021-11-14T00:00:00+00:00">
+<meta itemprop=dateModified content="2021-11-14T00:00:00+00:00">
+<meta itemprop=wordCount content="955">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ChubaoFS Master">
 <meta name=twitter:description content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>ChubaoFS Master</h1>
 <div class=post-meta>
-<time datetime=2021-11-08 class=post-time>
-2021-11-08
+<time datetime=2021-11-14 class=post-time>
+2021-11-14
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/storage/> storage </a>
@@ -195,6 +195,7 @@ Justice's Blog
 <li><a href=#创建vol>创建Vol</a></li>
 <li><a href=#vol-zone信息>vol zone信息</a></li>
 <li><a href=#carry>Carry</a></li>
+<li><a href=#metapartition管理>metaPartition管理</a></li>
 </ul>
 </li>
 <li><a href=#参考>参考</a></li>
@@ -411,6 +412,18 @@ Justice's Blog
 <h3 id=vol-zone信息>vol zone信息</h3>
 <h3 id=carry>Carry</h3>
 <p>master在创建dp，mp时，通过carry来选择有效的metanode，datanode进资源分配，保证资源均匀分布在各个节点上。</p>
+<h3 id=metapartition管理>metaPartition管理</h3>
+<ul>
+<li>
+<p><code>master/meta_partition_manager.go</code></p>
+</li>
+<li>
+<p>master开启一个后台goroutine, 默认每5秒检查一遍BadMetaPartitionIDs中个mp的状态；</p>
+</li>
+<li>
+<p>metapartition 各副本<code>MaxInodeID</code>和第一个副本差距> 1000, 则将该分片IsRecover设为true，开启分片数据同步；</p>
+</li>
+</ul>
 <h2 id=参考>参考</h2>
 <ol>
 <li></li>
@@ -424,7 +437,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2021-11-08
+2021-11-14
 </span>
 </p>
 <p class=copyright-item>
@@ -444,14 +457,8 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/chubaofs/>chubaofs</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/14.language/shell/bash%E5%9F%BA%E7%A1%80/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">Bash基础</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/14.language/rust/02.rust%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/>
-<span class="next-text nav-default">Rust 数据类型</span>
+<a class=next href=/post/14.language/golang/golang%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7/>
+<span class="next-text nav-default">Golang 调试工具</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

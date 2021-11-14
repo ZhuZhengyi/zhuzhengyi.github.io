@@ -75,23 +75,27 @@ impl Solution {
     /// 对于总量为n的金额，最少所需硬币个数f(n):
     ///   f(n) = min(f(n-coins[i])) + 1
     /// 为此需要依次计算出f(i)的值
-    ///   f(i) = -1 if i < 0
+    /// 初始条件:
     ///   f(0) = 0
     pub fn coin_change(coins: Vec<i32>, amount: i32) -> i32 {
+        let amount = amount as usize;
+        let mut res = vec![None; amount+1];
+        res[0] = Some(0);
 
-        let mut res: Vec<i32> = vec!(-1, amount);
-        let min_coin = coins.iter().min();
-
-        for i in min_coin..amount {
-                res[i] = coins.iter()
-                            .filter(|c| *c <=i )
-                            .map(|c| res.get(i-c) )
-                            .min()
-                            .unwrap()
-                            + 1;
+        for i in 1..=amount {
+            res[i] = coins.iter()
+                        .filter_map(|&c| {
+                            let c = c as usize;
+                            if c <= i {
+                                res[i-c].map(|n| n + 1)
+                            } else {
+                                None
+                            }
+                        })
+                        .min();
         }
 
-        res.get(amount as usize)
+        res[amount].unwrap_or(-1)
     }
 }
 // @lc code=end

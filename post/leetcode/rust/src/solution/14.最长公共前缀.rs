@@ -47,6 +47,8 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 依次比较其他字符串各位字符和第一个字符串字符，记录相同的前缀；
     pub fn longest_common_prefix(strs: Vec<String>) -> String {
         if strs.len() == 0 {
             return "".to_string();

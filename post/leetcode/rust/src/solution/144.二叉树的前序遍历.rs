@@ -89,6 +89,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 impl Solution {
+    /// ## 解题思路
+    /// 1. 
     pub fn preorder_traversal(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<i32> {
         fn preorder_dfs(root: &Option<Rc<RefCell<TreeNode>>>, res: &mut Vec<i32>) {
             match root {

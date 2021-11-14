@@ -78,20 +78,20 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 impl Solution {
-    /// 解题思路：
+    /// ## 解题思路：
     /// 中序递归遍历整颗树的每一个节点`node`：
     /// 1. 遍历过程中，使用一个数组记录`node_path[]`遍历过的节点；
     /// 2. 节点为空，不做任何处理；
     /// 3. 叶子节点，且剩余target刚好为node.val, 则找到一条合法路径，
-    ///     3.1 将当前节点加入到`node_path[]`;
-    ///     3.2 将`node_path[]`加入到结果集`res[]`中；
-    ///     3.3 将当前节点从`node_path[]`中弹出;
+    ///     - 将当前节点加入到`node_path[]`;
+    ///     - 将`node_path[]`加入到结果集`res[]`中；
+    ///     - 将当前节点从`node_path[]`中弹出;
     /// 4. 其他情况：
-    ///     4.1 将当前节点加入到路径中；
-    ///     4.2 将 target_num -= node.val;
-    ///     4.3 递归处理左子树;
-    ///     4.4 递归处理右子树；
-    ///     4.5 将节点从路径中弹出；
+    ///     - 4.1 将当前节点加入到路径中；
+    ///     - 4.2 将 target_num -= node.val;
+    ///     - 4.3 递归处理左子树;
+    ///     - 4.4 递归处理右子树；
+    ///     - 4.5 将节点从路径中弹出；
     pub fn path_sum(root: Option<Rc<RefCell<TreeNode>>>, target_sum: i32) -> Vec<Vec<i32>> {
         fn path_sum_rec(node: &Option<Rc<RefCell<TreeNode>>>, target_sum: i32, node_path: &mut Vec<i32>, res: &mut Vec<Vec<i32>>) {
             match node {

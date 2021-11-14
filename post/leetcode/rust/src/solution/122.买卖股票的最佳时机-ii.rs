@@ -47,7 +47,7 @@
 
 // @lc code=start
 impl Solution {
-    /// 解题思路：
+    /// ## 解题思路：
     /// [0, i]天的最大利润f(i):
     ///     f(i) = f(i-1) + max(prices[i] - prices[i-1], 0)
     pub fn max_profit(prices: Vec<i32>) -> i32 {

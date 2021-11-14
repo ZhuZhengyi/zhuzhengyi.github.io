@@ -34,21 +34,25 @@
 // @lc code=start
 class Solution {
 public:
+    /*
+    * ## 解题思路
+    * 
+    */
     int longestValidParentheses(string s) {
-        int cnt = 0; // count of '('
-        vector<int> dp(s.size()+1, 0); //
+        int cnt = 0; //未配对的'('数 
+        vector<int> dp(s.size()+1, 0); //以s[i]为尾的最长有效括号长度
 
         for(size_t i=1; i<=s.size(); i++) {
-            if(s[i-1] == '(') {
+            if( s[i-1] == '(' ) { //发现'('
                 cnt++;
-            } else { // ')'
-                if(cnt>0) {
-                    cnt--;
-                    dp[i] = 2;
-                    if (s[i - 2] == ')'){
+            } else {            //发现')'
+                if(cnt>0) {     //存在未配对的'('
+                    cnt--;      //减小配对数
+                    dp[i] = 2;  //"()"
+                    if ( s[i - 2] == ')' ){ //"((***))"
                         dp[i] += dp[i - 1];
                     }
-                    dp[i] += dp[i - dp[i]];
+                    dp[i] += dp[i - dp[i]]; //"****(****)"
                 }
             }
         }

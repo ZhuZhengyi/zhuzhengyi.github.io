@@ -63,12 +63,18 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 假设nums[0:n]的最长递增子序列为lis[], 
+    /// 则nums[0:n+1]的lis有一些情况：
+    /// a. nums[n] > lis[-1] => lis.push(nums[n])
+    /// b. nums[n] > lis[i-1] => lis[i] = nums[n] (i为第一个大于nums[n]的数)
+    /// 
     pub fn length_of_lis(nums: Vec<i32>) -> i32 {
         if nums.len() < 1 {
             return 0;
         }
         let mut lis = vec![nums[0]];   //最长递增子序列
-        for n in &nums[1..] {   //顺序遍历序列
+        nums[1..].iter().for_each(|n| {   //顺序遍历序列
             if n > lis.last().unwrap() { // 如果当前元素大于lis最后元素
                 lis.push(*n);     //将当前元素追加到lis尾部
             } else { // 否则，lis中的一定存在元素大于当前元素
@@ -88,7 +94,7 @@ impl Solution {
                     }
                 }
             }
-        }
+        });
         return lis.len() as i32;
     }
 }

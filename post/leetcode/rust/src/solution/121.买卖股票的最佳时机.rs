@@ -40,7 +40,7 @@
 use std::cmp;
 
 impl Solution {
-    /// 解题思路：
+    /// ## 解题思路：
     /// [0, i]天的最大收益f(i): 
     ///     f(i) = max(f(i-1), prices(i) - min(prcices[:i]))
     pub fn max_profit(prices: Vec<i32>) -> i32 {

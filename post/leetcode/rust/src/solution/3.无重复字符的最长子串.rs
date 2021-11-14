@@ -43,6 +43,8 @@
 use std::collections::HashMap;
 
 impl Solution {
+    /// ## 解题思路
+    /// 
     pub fn length_of_longest_substring(s: String) -> i32 {
         let mut map = HashMap::new();
         let (mut l, mut m) = (0, 0);

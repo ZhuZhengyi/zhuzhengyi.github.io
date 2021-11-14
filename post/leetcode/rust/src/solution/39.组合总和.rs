@@ -59,8 +59,39 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 1. 将candidates排序；
+    /// 2. 依次从candidates中取出一个数，如果该数小于当前target，则加入临时数组中；
+    /// 3. 
     pub fn combination_sum(candidates: Vec<i32>, target: i32) -> Vec<Vec<i32>> {
 
+        /// 
+        fn combine_sum(candidates: &[i32], left: i32, sub: &[i32], res: &mut Vec<Vec<i32>>) {
+            match left {
+                n if n < 0 => return,
+                0 => {
+                    res.push(sub.to_vec());
+                    return
+                }
+                _ => {
+                    candidates.iter()
+                        .filter(|&c| *c <= left)
+                        .enumerate()
+                        .for_each(|(i, c)| {
+                            let mut s = sub.to_vec();
+                            s.push(*c);
+                            combine_sum(&candidates[i..], left-c, &s, res);
+                        });
+
+                }
+            }
+        }
+
+        let mut res: Vec<Vec<i32>> = vec![];
+        let mut c = candidates.to_vec();
+        c.sort();
+        combine_sum(&c, target, &vec![], &mut res);
+        res
     }
 }
 // @lc code=end

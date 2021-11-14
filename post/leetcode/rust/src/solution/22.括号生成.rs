@@ -30,26 +30,28 @@
 
 // @lc code=start
 impl Solution {
-    /// l, r: 剩余左右括号数
-    fn travel(p: String, l: i32, r: i32, ans: &mut Vec<String>) {
-        if l > r {  //剩余'(' 多于 ')', 剪支
-            return
-        }
-        if l==0 && r == 0 { //左右都为0， 存入结果集
-            ans.push(p);
-            return
-        }
-        if l > 0 {
-            Solution::travel(format!("{}{}", p, "("), l - 1, r, ans);
-        }
-        if r > 0 {
-            Solution::travel(format!("{}{}", p, ")"), l, r - 1, ans);
-        }
-    }
+    /// ## 解题思路
+    /// 
     pub fn generate_parenthesis(n: i32) -> Vec<String> {
         let mut ans: Vec<String> = Vec::new();
 
-        Solution::travel(String::new(), n, n, &mut ans);
+        fn travel(p: String, l: i32, r: i32, ans: &mut Vec<String>) {
+            //if l > r {       //剩余'(' 多于 ')', 剪支
+            //    return
+            //}
+            if l==0 && r==0 { //左右都放完了，存入结果集
+                ans.push(p);
+                return
+            }
+            if l > 0 {    // 左括号还有剩余
+                travel(format!( "{}{}", p, "(" ), l - 1, r, ans);
+            }
+            if r > l {    // 右括号数多于左括号数
+                travel(format!( "{}{}", p, ")" ), l, r - 1, ans);
+            }
+        }
+
+        travel(String::new(), n, n, &mut ans);
         ans
     }
 }
