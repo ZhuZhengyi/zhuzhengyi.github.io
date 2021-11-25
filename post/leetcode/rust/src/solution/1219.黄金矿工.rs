@@ -68,35 +68,38 @@
 use std::cmp;
 
 impl Solution {
-    // 解题思路:
-    // 
+    /// ## 解题思路
+    /// 深度遍历
     pub fn get_maximum_gold(grid: Vec<Vec<i32>>) -> i32 {
         if grid.len() == 0 {
             return 0;
         }
 
-        let (m, n) = (grid.len(), grid[0].len());
-
-        fn dfs(grid: &mut Vec<Vec<i32>>, i: usize, j: usize) -> i32 {
+        fn dig_golds_from(grid: &mut Vec<Vec<i32>>, i: usize, j: usize) -> i32 {
             let (m, n) = (grid.len(), grid[0].len());
-            if i<0 || i>m || j<0 || j>n || grid[i][j] == 0 {
+            // 如果到达边界或遇到无法开采的单元格，则退出
+            if i<0 || i>m-1 || j<0 || j>n-1 || grid[i][j] == 0 {
                 return 0;
             }
 
-            let tmp = grid[i][j];
-            let left = dfs(grid, i-1, j);
-            let right = dfs(grid, i+1, j);
-            let up = dfs(grid, i, j-1);
-            let down = dfs(grid, i, j+1);
-            let golds = vec![left, right, up, down].iter().max().unwrap();
-            grid[i][j] = tmp;
-            return grid[i][j] + golds;
+            let digged_gold = grid[i][j]; //
+            grid[i][j] = 0;               //当前格黄金被挖了
+            let left_golds = dig_golds_from(grid, i-1, j);  //向左挖
+            let right_golds = dig_golds_from(grid, i+1, j); //向右挖
+            let up_golds = dig_golds_from(grid, i, j-1);    //向上移动一格，接着挖
+            let down_golds = dig_golds_from(grid, i, j+1);  //向下移动一格，接着挖
+            let other_golds = vec![left_golds, right_golds, up_golds, down_golds].iter().max().unwrap().clone();
+            grid[i][j] = digged_gold;
+            digged_gold + other_golds
         }
 
+        let (m, n) = (grid.len(), grid[0].len());
         let mut max_golds = 0;
+
+        let mut grid2 = grid.to_vec();
         for i in 0..m {
             for j in 0..n {
-                max_golds = cmp::max(max_golds, dfs(&mut grid, i, j))
+                max_golds = cmp::max(max_golds, dig_golds_from(&mut grid2, i, j))
             }
         }
 

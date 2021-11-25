@@ -47,6 +47,8 @@ pub struct Solution{};
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 
     pub fn min_falling_path_sum(arr: Vec<Vec<i32>>) -> i32 {
         //初始化dp矩阵
         let mut dp: Vec<Vec<i32>> = vec![]; //

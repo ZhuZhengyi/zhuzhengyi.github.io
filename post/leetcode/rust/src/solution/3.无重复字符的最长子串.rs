@@ -39,21 +39,23 @@
  * 
  */
 // @lc code=start
-
 use std::collections::HashMap;
 
 impl Solution {
     /// ## 解题思路
-    /// 
+    /// * 使用一个map记录个字符上一次出现的位置；
+    /// * 遍历字符串，根据map计算和上一个字符出现位置的差；
+    /// * 记录最大的差，即为结果
     pub fn length_of_longest_substring(s: String) -> i32 {
         let mut map = HashMap::new();
-        let (mut l, mut m) = (0, 0);
+        let mut last_i = 0;
+        let mut max_len = 0;
         for (i, c) in s.chars().enumerate() {
-            l = l.max(*map.get(&c).unwrap_or(&0));
-            m = m.max(i - l + 1);
-            map.insert(c, i+1);
+            last_i = last_i.max(*map.get(&c).unwrap_or(&0));
+            max_len = max_len.max(i + 1 - last_i);
+            map.insert(c, i + 1);
         }
-        m as i32
+        max_len as i32
     }
 }
 // @lc code=end
