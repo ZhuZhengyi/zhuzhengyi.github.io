@@ -25,6 +25,8 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// * 类似15.三数和的思路
     pub fn three_sum_closest(nums: Vec<i32>, target: i32) -> i32 {
         //
         let len = nums.len();
@@ -33,7 +35,34 @@ impl Solution {
         }
 
         let mut nums = nums;
+        nums.sort();
+        let mut res = None;
+        let mut diff = i32::MAX;
+        
+        let c_diff = |sum, target| -> i32 { 
+            (sum as i32 - target as i32).abs()
+        };
+'outer:
+        for i in 0..len-2 {
+            let (mut l, mut r) = (i+1, len-1);
+            while l < r {
+                let sum = nums[i] + nums[l] + nums[r];
+                if c_diff(sum, target) < diff {
+                    diff = c_diff(sum, target);
+                    res = Some(sum);
+                    if diff == 0 {
+                        break 'outer;
+                    }
+                }
+                if sum > target {
+                    r -= 1;
+                } else {
+                    l += 1;
+                }
 
+            }
+        }
+        res.expect("no")
     }
 }
 // @lc code=end

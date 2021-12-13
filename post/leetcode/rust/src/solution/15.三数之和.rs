@@ -35,6 +35,12 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 1. 对数组进行排序；
+    /// 2. 设置3个指针i, l, r；
+    /// 3. i从0..size-2进行遍历
+    /// 4. l, r为i遍历剩下元素从左右到中间开始遍历；
+    /// 
     pub fn three_sum(nums: Vec<i32>) -> Vec<Vec<i32>> {
         let len = nums.len();
         if len < 3 {
