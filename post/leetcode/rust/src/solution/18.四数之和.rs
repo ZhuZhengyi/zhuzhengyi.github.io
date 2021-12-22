@@ -36,8 +36,48 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 1. 先排序；
+    /// 2. 先定前面两个进行遍历；
+    /// 3. 剩下两个用双指针从两边向中间遍历；
     pub fn four_sum(nums: Vec<i32>, target: i32) -> Vec<Vec<i32>> {
-
+        let mut res: Vec<Vec<i32>> = vec![];
+        let len = nums.len();
+        if len < 4 {
+            return res;
+        }
+        let mut nums = nums;
+        nums.sort();
+        for i in 0..len-3 {
+            if i > 0 && nums[i] == nums[i-1] {
+                continue;
+            }
+            for j in i+1..len-2 {
+                if j > i+1 && nums[j] == nums[j-1] {
+                    continue;
+                }
+                let (mut l, mut r) = (j + 1, len -1 );
+                while l < r {
+                    let t = nums[i] + nums[j] + nums[l] + nums[r];
+                    if t == target {
+                        res.push([nums[i], nums[j], nums[l], nums[r]].to_vec());
+                        l += 1;
+                        r -= 1;
+                        while l < r && nums[l] == nums[l-1] {
+                            l += 1;
+                        } 
+                        while l < r && nums[r] == nums[r+1] {
+                            r -= 1;
+                        }
+                    } else if t < target {
+                        l += 1;
+                    } else {
+                        r -= 1;
+                    } 
+                }
+            }
+        }
+        res
     }
 }
 // @lc code=end
