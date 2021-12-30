@@ -32,9 +32,10 @@ from typing import List
 class Solution:
     def twoSum(self, nums: List[int], target: int) -> List[int]:
         '''
-        思路：
-            用一个map记录遍历过的数字, map为(target-n) : id
-            遍历时如果map命中, 则表示已找到。
+        ## 解题思路：
+        * map
+        1. 用一个map记录遍历过的数字, map为(target-n) : id
+        2. 遍历时如果map命中, 则表示已找到。
         '''
         recorded = {}
         for i, num in enumerate(nums):

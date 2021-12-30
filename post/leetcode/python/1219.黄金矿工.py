@@ -68,7 +68,7 @@
 class Solution:
     '''
     ## 解题思路
-    ### 遍历表格，求每一个单元格开始的最大路径和
+    * 遍历表格，求每一个单元格开始的最大路径和
     '''
     def getMaximumGold(self, grid: List[List[int]]) -> int:
         if len(grid) == 0 or len(grid[0]) == 0: 

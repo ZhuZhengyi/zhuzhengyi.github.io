@@ -33,6 +33,12 @@
 # @lc code=start
 class Solution:
     def merge(self, intervals: List[List[int]]) -> List[List[int]]:
+        '''
+        ## 解题思路
+        * 
+        1. 先按区间左边界从小到大进行排序；
+        2. 从左至右遍历
+        '''
         if len(intervals) < 1:
             return []
         sorted_intervals = sorted(intervals, key=lambda s: s[0])

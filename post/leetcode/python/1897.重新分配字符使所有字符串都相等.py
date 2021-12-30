@@ -53,6 +53,8 @@
 # @lc code=start
 class Solution:
     def makeEqual(self, words: List[str]) -> bool:
+        '''
+        '''
         charCounts = [0] * 26
         wordCount = len(words)
 

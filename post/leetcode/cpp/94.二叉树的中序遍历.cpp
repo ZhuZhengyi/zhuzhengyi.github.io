@@ -80,7 +80,11 @@
  * };
  */
 class Solution {
-    void helper_rec(TreeNode * root, vector<int> &res) {
+    /*
+    * ### 递归解法
+    * 
+    */
+    void helper_rec(TreeNode *root, vector<int> &res) {
         if (root == NULL) {
             return;
         }
@@ -89,15 +93,19 @@ class Solution {
         helper_rec(root->right, res);
     }
 
-    void helper_iter(TreeNode * root, vector<int> &res) {
+    /*
+    * ## 迭代解法
+    * 
+    */
+    void helper_iter(TreeNode *root, vector<int> &res) {
         stack<TreeNode *> tmp;
+
         while (root || !tmp.empty()) {
             while(root) {
-                tmp.push(root);
+                tmp.push(root);         //将左子树入栈
                 root = root->left;
             }
-            root = tmp.top();
-            tmp.pop();
+            root = tmp.top(); tmp.pop(); //
             res.push_back(root->val);
             root = root->right;
         }

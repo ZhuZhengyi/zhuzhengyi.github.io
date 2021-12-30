@@ -30,6 +30,7 @@
 class Solution:
     def longestPalindrome(self, s: str) -> str:
         '''
+        ## 解题思路
         dp[l, r]: 表示s[l:r+1] 是否为回文串
         状态转移方程：
         dp[l, r] = (s[l] == s[r] and (r - l <= 2 or dp[l + 1, r - 1]))

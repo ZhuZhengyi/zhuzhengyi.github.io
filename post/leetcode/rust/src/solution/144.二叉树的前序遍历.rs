@@ -98,6 +98,7 @@ impl Solution {
     }
 
     /// 迭代
+    /// 使用stack
     pub fn preorder_traversal_iter(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<i32> {
         let mut res = vec![];
         let mut stack = vec![];
@@ -106,8 +107,8 @@ impl Solution {
         loop {
             //先遍历每一个节点的左子树，并将节点放入栈中
             while let Some(n) = node {
-                res.push(n.borrow().val);
-                stack.push(n.clone());
+                res.push(n.borrow().val); //现将当前节点输出
+                stack.push(n.clone());    //
                 node = n.borrow().left.clone();
             }
 

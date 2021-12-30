@@ -60,6 +60,7 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// * 迭代法
     /// 1. 将数组排序；
     /// 2. 依次从candidates中取出一个数，如果该数小于当前target，则加入临时数组中；
     /// 3. 
