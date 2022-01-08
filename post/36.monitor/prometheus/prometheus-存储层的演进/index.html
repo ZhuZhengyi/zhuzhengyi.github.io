@@ -24,12 +24,12 @@
 <meta property="og:description" content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/36.monitor/prometheus/prometheus-%E5%AD%98%E5%82%A8%E5%B1%82%E7%9A%84%E6%BC%94%E8%BF%9B/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2021-04-27T00:00:00+00:00">
-<meta property="article:modified_time" content="2021-04-27T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-01-08T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-01-08T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Prometheus 存储层的演进">
-<meta itemprop=description content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询"><meta itemprop=datePublished content="2021-04-27T00:00:00+00:00">
-<meta itemprop=dateModified content="2021-04-27T00:00:00+00:00">
-<meta itemprop=wordCount content="5203">
+<meta itemprop=description content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询"><meta itemprop=datePublished content="2022-01-08T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-01-08T00:00:00+00:00">
+<meta itemprop=wordCount content="5126">
 <meta itemprop=keywords content="monitor,prometheus,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Prometheus 存储层的演进">
 <meta name=twitter:description content="Prometheus 存储层的演进 Prometheus 是当下最流行的监控平台之一，它的主要职责是从各个目标节点中采集监控数据，后持久化到本地的时序数据库中，并向外部提供便捷的查询"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Prometheus 存储层的演进</h1>
 <div class=post-meta>
-<time datetime=2021-04-27 class=post-time>
-2021-04-27
+<time datetime=2022-01-08 class=post-time>
+2022-01-08
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/monitor/> monitor </a>
@@ -188,7 +188,7 @@ Justice's Blog
 <ul>
 <li><a href=#数据模型>数据模型</a></li>
 <li><a href=#第1代原型阶段>第1代：原型阶段</a></li>
-<li><a href=#2nd-generation-prometheus-v1>2nd Generation: Prometheus V1</a>
+<li><a href=#第2代-prometheus-v1>第2代: Prometheus V1</a>
 <ul>
 <li><a href=#compression>Compression</a></li>
 <li><a href=#chunk-encoding>Chunk Encoding</a></li>
@@ -197,7 +197,6 @@ Justice's Blog
 </li>
 <li><a href=#prometheus-v2>Prometheus V2</a>
 <ul>
-<li><a href=#the-main-problem-with-2nd-generation>The Main Problem With 2nd Generation</a></li>
 <li><a href=#macro-design>Macro Design</a></li>
 <li><a href=#many-little-databases>Many Little Databases</a></li>
 <li><a href=#mmap>mmap</a></li>
@@ -222,16 +221,13 @@ Justice's Blog
 <h2 id=tsdb基本问题>TSDB基本问题</h2>
 <p>TSDB 要解决的基本问题，可以概括为下图：</p>
 <p><img src=https://static001.geekbang.org/infoq/61/61e987cbb05f960a3ac43fb93c3a4ded.jpeg alt></p>
-<p>研究过存储引擎结构和性能优化的工程师都会知道：</p>
-<blockquote>
-<p>许多数据库的奇技淫巧都是在解决内存与磁盘的读写模式、性能的不匹配问题</p>
-</blockquote>
-<p>时序数据库也是数据库的一种，只要它想持久化，自然不能例外。但与键值数据库相比，时序数据库存储的数据有更特殊的读写特征，Björn Rabenstein 将称其为：</p>
+<p>与键值数据库相比，时序数据库存储的数据有更特殊的读写特征，Björn Rabenstein 将称其为：</p>
 <blockquote>
 <p>Vertical writes, horizontal(-ish) reads</p>
 <p>垂直写，水平读</p>
 </blockquote>
-<p>图中每条横线就是一个时序，每个时序由按照 (准) 固定间隔采集的样本数据构成，通常在时序数据库中会有很多活跃时序，因此数据写入可以用一个垂直的窄方框表示，即每个时序都要写入新的样本数据；用户在查询时，通常会观察某个、某几个时序在某个时间段内的变化趋势，或对其进行聚合计算，因此数据读取可以用一个水平的方框表示。是谓 “垂直写、水平读”。</p>
+<p>图中每条横线就是一个时序，每个时序由按照 (准) 固定间隔采集的样本数据构成，通常在时序数据库中会有很多活跃时序，因此数据写入可以用一个垂直的窄方框表示，即每个时序都要写入新的样本数据；</p>
+<p>用户在查询时，通常会观察某个、某几个时序在某个时间段内的变化趋势，或对其进行聚合计算，因此数据读取可以用一个水平的方框表示。是谓 “垂直写、水平读”。</p>
 <h1 id=prometheus存储层>Prometheus存储层</h1>
 <p>Prometheus 是为云原生环境中的数据监控而生，在其设计过程中至少需要考虑以下两个方面：</p>
 <p>1、在云原生环境中，实例可能随时出现、消失，因此时序也可能随时出现或消失，即系统中存在大量时序，其中部分处于活跃状态，这会在多方面带来挑战：</p>
@@ -297,7 +293,7 @@ Justice's Blog
 <p>将<strong>时序名称、标签 (固定顺序)、时间戳</strong>拼接成每个样本的键，于是同一个时序的数据就能够连续存储在键值数据库中，提高范围查询的效率。</p>
 <p>但从图中可以看出，这种方式存储的键很长，尽管键值数据库内部会对数据进行压缩，但是在内存中这样存储数据很浪费空间，这无法满足项目的设计要求。</p>
 <p>Prometheus 希望在内存中压缩数据，使得内存中可以容纳更多活跃的时序数据，同时在磁盘中也能按类似的方式压缩编码，提高效率。时序数据比通用键值数据有更显著的特征。即使键值数据库能够压缩数据，但针对时序数据的特征，使用特殊的压缩算法能够取得更好的压缩率。因此在 Prototype 阶段，使用三方键值数据库的方案最终流产。</p>
-<h2 id=2nd-generation-prometheus-v1>2nd Generation: Prometheus V1</h2>
+<h2 id=第2代-prometheus-v1>第2代: Prometheus V1</h2>
 <h3 id=compression>Compression</h3>
 <h5 id=why-compression>Why Compression</h5>
 <p>假设监控系统的需求如下：</p>
@@ -327,7 +323,7 @@ Justice's Blog
 <p>访问时序数据时，Prometheus 使用 3 层抽象，如下图所示：</p>
 <p><img src=https://static001.geekbang.org/infoq/b3/b3c625910f6056532e3786a15df352c4.jpeg alt></p>
 <p>应用层使用 Series Iterator 顺序访问时序中的样本，而 Series Iterator 底下由一个个 Chunk Iterator 拼接而成，每个 Chunk Iterator 负责将压缩编码的时序数据解码返回。这样做的好处是，<strong>每个 Chunk 甚至可以使用完全不同的方式编码</strong>，方便开发团队尝试不同的编码方案。</p>
-<h5 id=timestamp-compression-double-delta>Timestamp Compression: Double Delta</h5>
+<h5 id=timestamp-压缩-double-delta>Timestamp 压缩: Double Delta</h5>
 <p>由于通常数据采样间隔是固定值，因此前后时间戳的差值几乎固定，如 15s，30s。但如果我们更近一步，只存储差值的差值，那么几乎不用再为新的时间戳花费额外的空间，这便是所谓的 “<strong>Double Delta</strong>“。本质上，如果未来所有的采集时间戳都可以精准预测，那么每个新时间戳的信息熵为 0 bit。但现实并不完美，网络可能延迟、中断，实例可能遇到 GC、重启，采样间隔随时有可能波动：</p>
 <p><img src=https://static001.geekbang.org/infoq/01/01b5489a1d90b48f3e0e91bea69a2d57.jpeg alt></p>
 <p>但这种波动的幅度有限，Prometheus 采用了和 FB 的内存时序数据库 Gorilla 类似的方式编码时间戳，详情可以参考 <strong>Gorilla</strong>) 以及 Björn Rabenstein 在 PromConn 2016 的演讲 <a href="https://docs.google.com/presentation/d/1TMvzwdaS8Vw9MtscI9ehDyiMngII8iB_Z5D4QW4U4ho/edit#slide=id.g15afea0287_0_16">ppt</a> ，细节比较琐碎，这里不赘述。</p>
@@ -355,7 +351,6 @@ Justice's Blog
 <p>正因为 Prometheus V1 与 Gorilla 的设计理念、需求有所不同，我们可以通过对比二者来理解其设计过程中使用不同决策的原因。</p>
 <p><img src=https://static001.geekbang.org/infoq/8c/8ce5cdc24e75e89dcffb0122bdd1d018.png alt></p>
 <h2 id=prometheus-v2>Prometheus V2</h2>
-<h3 id=the-main-problem-with-2nd-generation>The Main Problem With 2nd Generation</h3>
 <p>Prometheus V1 中，每个时序数据对应一个磁盘文件的方式给系统带来了比较大的麻烦：</p>
 <ul>
 <li>
@@ -406,7 +401,8 @@ Justice's Blog
 <h3 id=mmap>mmap</h3>
 <p>第三代引擎将数百万的小文件合并成少量大文件，也让 mmap 成为可能。利用 mmap 将文件 I/O 、缓存管理交给操作系统，降低 OOM 发生的频率。</p>
 <h3 id=compaction>Compaction</h3>
-<p>在 Macro Design 中，我们将所有时序数据按时间切割成许多 blocks，当新写满的 block 持久化到磁盘后，相应的 WAL 文件也会被清除。写入数据时，我们希望每个 block 不要太大，比如 2 小时左右，来避免在内存中积累过多的数据。读取数据时，若查询涉及到多个时间段，就需要对许多个 block 分别执行查询，然后再合并结果。假如需要查询一周的数据，那么这个查询将涉及到 80 多个 blocks，降低数据读取的效率。</p>
+<p>在 Macro Design 中，我们将所有时序数据按时间切割成许多 blocks，当新写满的 block 持久化到磁盘后，相应的 WAL 文件也会被清除。写入数据时，我们希望每个 block 不要太大，比如 2 小时左右，来避免在内存中积累过多的数据。</p>
+<p>读取数据时，若查询涉及到多个时间段，就需要对许多个 block 分别执行查询，然后再合并结果。假如需要查询一周的数据，那么这个查询将涉及到 80 多个 blocks，降低数据读取的效率。</p>
 <p>为了既能写得快，又能读得快，我们就得引入 compaction，后者将一个或多个 blocks 中的数据合并成一个更大的 block，在合并的过程中会自动丢弃被删除的数据、合并多个版本的数据、重新结构化 chunks 来优化查询效率，如下图所示：</p>
 <p><img src=https://static001.geekbang.org/infoq/39/39790ee1365a2c32c142d68b4f8eea8b.jpeg alt></p>
 <h3 id=retention>Retention</h3>
@@ -415,7 +411,8 @@ Justice's Blog
 <p>直接删除在边界之外的 block 文件夹即可。如果边界在某个 block 之内，则暂时将它留存，知道边界超出为止。当然，在 Compaction 中，我们会将旧的 blocks 合并成更大的 block；在 Retention 时，我们又希望能够粒度更小。所以 Compaction 与 Retention 的策略之间存在着一定的互斥关系。Prometheus 的系统参数可以对单个 block 的大小作出限制，来寻找二者之间的平衡。</p>
 <p>看到这里，相信你已经发现了，这不就是 <strong>LSM Tree</strong> 吗？每个 block 就是按时间排序的 SSTable，内存中的 block 就是 MemTable。</p>
 <h3 id=compression-1>Compression</h3>
-<p>第三代存储引擎融合了 Gorilla 的<strong>XOR float encoding</strong>方案，将压缩能力提升到 1-2 bytes/sample。具体方案可以概括为：按顺序采用以下第一条适用的策略</p>
+<p>第三代存储引擎融合了 Gorilla 的<strong>XOR float encoding</strong>方案，将压缩能力提升到 1-2 bytes/sample。</p>
+<p>具体方案可以概括为：按顺序采用以下第一条适用的策略</p>
 <ol>
 <li>
 <p>Zero encoding：如果完全可预测，则无需额外空间</p>
@@ -457,6 +454,9 @@ Justice's Blog
 <li>
 <p><a href=https://segmentfault.com/a/1190000018479963>容器监控实践—Prometheus存储机制</a></p>
 </li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/68818945>从零写一个时间序列数据库</a></p>
+</li>
 </ul>
 </div>
 <div class=post-copyright>
@@ -467,7 +467,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2021-04-27
+2022-01-08
 </span>
 </p>
 <p class=copyright-item>
@@ -487,14 +487,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/prometheus/>prometheus</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/14.language/golang/golang%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83/>
+<a class=prev href=/post/30.architech/mysql/mysql%E9%94%81/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">Golang 编程规范</span>
+<span class="prev-text nav-default">MySQL锁</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/36.monitor/prometheus/prometheus%E9%85%8D%E7%BD%AE/>
-<span class="next-text nav-default">Prometheus基础知识</span>
+<a class=next href=/post/30.architech/protobuf/>
+<span class="next-text nav-default">Protobuf</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
@@ -526,7 +526,7 @@ Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane
 <span class=copyright-year>
 &copy;
 2000 -
-2021
+2022
 <span class=heart>
 <i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
 </i>
