@@ -24,12 +24,12 @@
 <meta property="og:description" content="ChubaoFS DataNode 简介 chubaofs datanode 是chubaofs中的数据存储节点，用于将chubaofs中的文件数据存储在磁盘中； chubaofs 中的datanode数据以dataPart">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-datanode/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-01-08T00:00:00+00:00">
-<meta property="article:modified_time" content="2022-01-08T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-01-11T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-01-11T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ChubaoFS DataNode">
-<meta itemprop=description content="ChubaoFS DataNode 简介 chubaofs datanode 是chubaofs中的数据存储节点，用于将chubaofs中的文件数据存储在磁盘中； chubaofs 中的datanode数据以dataPart"><meta itemprop=datePublished content="2022-01-08T00:00:00+00:00">
-<meta itemprop=dateModified content="2022-01-08T00:00:00+00:00">
-<meta itemprop=wordCount content="1547">
+<meta itemprop=description content="ChubaoFS DataNode 简介 chubaofs datanode 是chubaofs中的数据存储节点，用于将chubaofs中的文件数据存储在磁盘中； chubaofs 中的datanode数据以dataPart"><meta itemprop=datePublished content="2022-01-11T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-01-11T00:00:00+00:00">
+<meta itemprop=wordCount content="2780">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ChubaoFS DataNode">
 <meta name=twitter:description content="ChubaoFS DataNode 简介 chubaofs datanode 是chubaofs中的数据存储节点，用于将chubaofs中的文件数据存储在磁盘中； chubaofs 中的datanode数据以dataPart"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>ChubaoFS DataNode</h1>
 <div class=post-meta>
-<time datetime=2022-01-08 class=post-time>
-2022-01-08
+<time datetime=2022-01-11 class=post-time>
+2022-01-11
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/storage/> storage </a>
@@ -185,9 +185,15 @@ Justice's Blog
 <li><a href=#简介>简介</a></li>
 <li><a href=#大文件小文件>大文件/小文件</a></li>
 <li><a href=#顺序写随机写>顺序写/随机写</a></li>
+<li><a href=#datanode目录结构>datanode目录结构</a></li>
 <li><a href=#datapartition>DataPartition</a>
 <ul>
 <li><a href=#dp存储>dp存储</a></li>
+<li><a href=#apply文件>APPLY文件:</a></li>
+<li><a href=#meta文件>META文件</a></li>
+<li><a href=#extent_meta>EXTENT_META</a></li>
+<li><a href=#extent_crc>EXTENT_CRC</a></li>
+<li><a href=#extent-file>extent file</a></li>
 </ul>
 </li>
 <li><a href=#extent>Extent</a>
@@ -198,7 +204,7 @@ Justice's Blog
 </li>
 <li><a href=#extentstore>ExtentStore</a>
 <ul>
-<li><a href=#extent_crc>EXTENT_CRC</a></li>
+<li><a href=#extent_crc-1>EXTENT_CRC</a></li>
 </ul>
 </li>
 </ul>
@@ -282,6 +288,119 @@ Justice's Blog
 <span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
+</div><h2 id=datanode目录结构>datanode目录结构</h2>
+<ul>
+<li>
+<p>datanode配置文件中的<code>disks</code>指定了每个datanode dp的存储磁盘；</p>
+</li>
+<li>
+<p>每个<code>disk</code>中包含一系列<code>datapartition_&lt;id>_&lt;dp_size></code>和命名的目录，用于存储对应dp；</p>
+</li>
+<li>
+<p>每个<code>disk</code>中还可能包含<code>expired_dataparition_&lt;id>_&lt;dp_size></code>的过期dp，这些dp是在master中不存在的；</p>
+</li>
+<li>
+<p>每个dp</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>## datanode配置文件中的disks设置datanode管理的哪些disk； </span>
+$ cat /opt/chubaofs/conf/datanode.json
+  ...
+  <span class=s2>&#34;disks&#34;</span>: <span class=o>[</span>
+    <span class=s2>&#34;/data/hdfs10:159978629365&#34;</span>,        //磁盘目录：可用大小
+    <span class=s2>&#34;/data/hdfs12:159978629365&#34;</span>,        
+    ...
+  <span class=o>]</span>,
+...
+<span class=c1>## 每个disk中包含一系列的dp目录</span>
+$ ls -1 /data/hdfs10
+...
+datapartition_1001_128849018880        //正常dp，1001：dpid，128849018880：dpsize
+datapartition_1003_128849018880
+datapartition_1004_128849018880
+...
+expired_datapartition_2004_128849018880    //过期dp，在master中 不存在的dp
+...
+
+<span class=c1>## 每个dp包含一系列的extent file 和dp 元数据</span>
+$ tree /data/hdfs10/datapartition_1001_128849018880
+├── <span class=m>1</span>
+├── <span class=m>10</span>
+├── <span class=m>11</span>
+├── <span class=m>12</span>                       
+├── <span class=m>13</span>
+├── <span class=m>14</span>
+├── <span class=m>15</span>
+├── <span class=m>16</span>
+...
+├── <span class=m>63</span>
+├── <span class=m>64</span>
+├── <span class=m>7</span>
+├── <span class=m>8</span>
+├── <span class=m>9</span>                        //extent file，   1-64, tiny extent file<span class=p>;</span> 1000-, normal extent file
+├── APPLY                    //dp apply index, 里面存储了当前dp.appliedID<span class=o>(</span>raft rsm apply index<span class=o>)</span>
+├── .apply                   //apply index临时文件
+├── EXTENT_CRC               //extent file crc,
+├── EXTENT_META              //extent meta
+├── .meta                    //临时META文件，
+├── META                     //dp meta
+├── NORMALEXTENT_DELETE      //
+├── TINYEXTENT_DELETE
+└── wal_1001                 //raft wal 
+    ├── 0000000000000001-0000000000000001.log
+    └── META
+</code></pre></td></tr></table>
+</div>
 </div><h2 id=datapartition>DataPartition</h2>
 <h3 id=dp存储>dp存储</h3>
 <ul>
@@ -296,6 +415,166 @@ Justice's Blog
 </li>
 <li>
 <p>每个dp</p>
+</li>
+</ul>
+<h3 id=apply文件>APPLY文件:</h3>
+<ul>
+<li>
+<p>保存当前dp的<code>appliedID</code>；</p>
+</li>
+<li>
+<p>dp的<code>StartRaftLoggingSchedule()</code>协程周期性(10s)将dp的appliedID 写入到APPLY文件中(先写.apply,后move);</p>
+</li>
+<li>
+<p>dp</p>
+</li>
+</ul>
+<h3 id=meta文件>META文件</h3>
+<ul>
+<li>
+<p>META保存了当前dp的配置元信息；</p>
+</li>
+<li>
+<p>当dp配置信息改变时，由<code>PersistMetadata()</code>将dp的配置元信息持久化到该文件中；</p>
+</li>
+<li>
+<p>dp加载时(LoadDataPartition)，从META中读取dp元信息；</p>
+</li>
+<li>
+<p>写入时机包括：</p>
+<ul>
+<li>
+<p>dp创建时；</p>
+</li>
+<li>
+<p>周期性truncate raft log时，lastTruncateID发生改变；</p>
+</li>
+<li>
+<p>raft 配置变更；</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=err>//</span> <span class=err>cat</span> <span class=err>/data/hdfs</span><span class=mi>10</span><span class=err>/datapartition_</span><span class=mi>1001</span><span class=err>_</span><span class=mi>128849018880</span><span class=err>/META</span>
+<span class=p>{</span>
+  <span class=nt>&#34;VolumeID&#34;</span><span class=p>:</span> <span class=s2>&#34;weqewqe&#34;</span><span class=p>,</span>
+  <span class=nt>&#34;PartitionID&#34;</span><span class=p>:</span> <span class=mi>1001</span><span class=p>,</span>
+  <span class=nt>&#34;PartitionSize&#34;</span><span class=p>:</span> <span class=mi>128849018880</span><span class=p>,</span>
+  <span class=nt>&#34;CreateTime&#34;</span><span class=p>:</span> <span class=s2>&#34;2021-11-29 18:26:21&#34;</span><span class=p>,</span>
+  <span class=nt>&#34;Peers&#34;</span><span class=p>:</span> <span class=p>[</span>
+    <span class=p>{</span>
+      <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=mi>2</span><span class=p>,</span>
+      <span class=nt>&#34;addr&#34;</span><span class=p>:</span> <span class=s2>&#34;10.201.69.20:17310&#34;</span>
+    <span class=p>},</span>
+    <span class=p>{</span>
+      <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=mi>5</span><span class=p>,</span>
+      <span class=nt>&#34;addr&#34;</span><span class=p>:</span> <span class=s2>&#34;10.201.74.33:17310&#34;</span>
+    <span class=p>},</span>
+    <span class=p>{</span>
+      <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=mi>7</span><span class=p>,</span>
+      <span class=nt>&#34;addr&#34;</span><span class=p>:</span> <span class=s2>&#34;10.201.76.21:17310&#34;</span>
+    <span class=p>}</span>
+  <span class=p>],</span>
+  <span class=nt>&#34;Hosts&#34;</span><span class=p>:</span> <span class=p>[</span>
+    <span class=s2>&#34;10.201.74.33:17310&#34;</span><span class=p>,</span>
+    <span class=s2>&#34;10.201.69.20:17310&#34;</span><span class=p>,</span>
+    <span class=s2>&#34;10.201.76.21:17310&#34;</span>
+  <span class=p>],</span>
+  <span class=nt>&#34;DataPartitionCreateType&#34;</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span>
+  <span class=nt>&#34;LastTruncateID&#34;</span><span class=p>:</span> <span class=mi>0</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=extent_meta>EXTENT_META</h3>
+<ul>
+<li>
+<p>metadataFp</p>
+</li>
+<li>
+<p>保存baseExtentID + PreAllocSpaceExtentID, 2个uint64, 总共16字节；</p>
+</li>
+<li></li>
+</ul>
+<h3 id=extent_crc>EXTENT_CRC</h3>
+<ul>
+<li>
+<p>verifyExtentFp: 保存dp所有normal extent crc;</p>
+</li>
+<li>
+<p>extent 加载时，根据extentID， 从EXTENT_CRC中加载对应extent 的crc到extent header 中；</p>
+</li>
+<li>
+<p>normal extent写入时, 根据offset，size计算blockNo(128K为一个Block);</p>
+</li>
+<li>
+<p>如果刚好是一个整block, 将crc写入<code>EXTENT_CRC</code>文件; 否则规整化后，写0</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>|crc|
+| 4 | 4 |...   | 4 | 4 |...   |
+|--------------|--------------|---------------|
+   4k                4k
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=extent-file>extent file</h3>
+<ul>
+<li>
+<p>TinyExtent file(id: 1-64):</p>
+<ul>
+<li></li>
+</ul>
+</li>
+<li>
+<p>Normal Extent file:</p>
+<ul>
+<li>
+<p>写请求追加写到extent文件末尾；</p>
+</li>
+<li>
+<p>normal extent file最大128MB, 写入前会对写入数据offset，size进行检查，超出128MB时无法写入；</p>
+</li>
+<li></li>
+</ul>
 </li>
 </ul>
 <h4 id=status><strong>Status</strong></h4>
@@ -402,7 +681,7 @@ Justice's Blog
 <p><code>TINYEXTENT_DELETE</code>: <code>tinyExtentDeleteFp</code>,</p>
 </li>
 </ul>
-<h3 id=extent_crc>EXTENT_CRC</h3>
+<h3 id=extent_crc-1>EXTENT_CRC</h3>
 <ul>
 <li>
 <p>每个datapartition存储目录中有一个<code>EXTENT_CRC</code>文件，用于保存该datapartition 所有<code>normal_extent</code>的crc校验头；</p>
@@ -426,7 +705,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-01-08
+2022-01-11
 </span>
 </p>
 <p class=copyright-item>
@@ -446,14 +725,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/chubaofs/>chubaofs</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/14.language/golang/golang%E6%B1%87%E7%BC%96/>
+<a class=prev href=/post/12.data_struct/tree/b-link-tree/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">Golang汇编</span>
+<span class="prev-text nav-default">B-Link-Tree</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/30.architech/cratedb/>
-<span class="next-text nav-default">CrateDB</span>
+<a class=next href=/post/40.storage/fuse/fuse/>
+<span class="next-text nav-default">FUSE简介</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
