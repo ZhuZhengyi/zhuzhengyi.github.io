@@ -46,6 +46,7 @@ use std::iter;
 
 impl Solution {
     /// ## 解题思路
+    /// 
     pub fn add_binary(a: String, b: String) -> String {
         // 处理长度
         let (a, b) = match (a.len(), b.len()) {

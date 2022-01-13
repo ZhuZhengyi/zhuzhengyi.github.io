@@ -66,31 +66,31 @@ impl Solution {
         }
 
         // println!("root={:?}", root);
-        let mut nodes = Vec::new();
-        nodes.push(root.unwrap().clone());
+        let mut level = Vec::new();
+        level.push(root.unwrap().clone());
 
         let mut nodes_levels = Vec::new();
-        nodes_levels.push(nodes);
+        nodes_levels.push(level);
         while !nodes_levels.is_empty() {
-            let mut level_nodes = nodes_levels.remove(0);   //取出一层
+            let mut level = nodes_levels.remove(0);   //取出一层
+            let mut next_level = Vec::new();          //下层节点
             let mut level_res = Vec::new();                 //保存每一层的结果
-            let mut next_level_nodes = Vec::new();          //下层节点
 
             // 依次取出当前层下层子树节点，放入下层队列中
-            level_nodes.iter().for_each(|node| {
+            level.iter().for_each(|node| {
                 // 将本层节点数据加入到结果中
                 level_res.push(node.borrow().val);
                 if let Some(l) = node.borrow().left.clone() {
-                    next_level_nodes.push(l);
+                    next_level.push(l);
                 }
                 if let Some(r) = node.borrow().right.clone() {
-                    next_level_nodes.push(r);
+                    next_level.push(r);
                 }
             });
 
             // 将下层队列加入到队列末尾
-            if !next_level_nodes.is_empty() {
-                nodes_levels.push(next_level_nodes);
+            if !next_level.is_empty() {
+                nodes_levels.push(next_level);
             }
 
             // 将本层
