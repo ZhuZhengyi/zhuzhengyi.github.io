@@ -24,12 +24,12 @@
 <meta property="og:description" content="Hive 简介 Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hive/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2020-12-25T00:00:00+00:00">
-<meta property="article:modified_time" content="2020-12-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-01-14T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-01-14T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Hive">
-<meta itemprop=description content="Hive 简介 Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储"><meta itemprop=datePublished content="2020-12-25T00:00:00+00:00">
-<meta itemprop=dateModified content="2020-12-25T00:00:00+00:00">
-<meta itemprop=wordCount content="1462">
+<meta itemprop=description content="Hive 简介 Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储"><meta itemprop=datePublished content="2022-01-14T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-01-14T00:00:00+00:00">
+<meta itemprop=wordCount content="2088">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Hive">
 <meta name=twitter:description content="Hive 简介 Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Hive</h1>
 <div class=post-meta>
-<time datetime=2020-12-25 class=post-time>
-2020-12-25
+<time datetime=2022-01-14 class=post-time>
+2022-01-14
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
@@ -182,6 +182,7 @@ Justice's Blog
 <nav id=TableOfContents>
 <ul>
 <li><a href=#简介>简介</a></li>
+<li><a href=#特性>特性</a></li>
 <li><a href=#架构>架构</a>
 <ul>
 <li><a href=#服务端>服务端</a></li>
@@ -200,6 +201,7 @@ Justice's Blog
 <li><a href=#cli实例操作>CLI实例操作</a></li>
 <li><a href=#hive-on-spark>hive on spark</a></li>
 <li><a href=#hive-for-hbase>hive for hbase</a></li>
+<li><a href=#参考>参考</a></li>
 </ul>
 </nav>
 </div>
@@ -209,6 +211,61 @@ Justice's Blog
 <h2 id=简介>简介</h2>
 <p>Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。</p>
 <p>Hive 定义了简单的类 SQL 查询语言，称为 HQL，它允许熟悉 SQL 的用户查询数据。同时，这个语言也允许熟悉 MapReduce 开发者的开发自定义的 mapper 和 reducer 来处理内建的 mapper 和 reducer 无法完成的复杂的分析工作。</p>
+<h2 id=特性>特性</h2>
+<ol>
+<li>
+<p>Hive 的存储结构包括数据库、表、视图、分区和表数据等。数据库，表，分区等等都对应 HDFS 上的一个目录。表数据对应 HDFS 对应目录下的文件。</p>
+</li>
+<li>
+<p>Hive 中所有的数据都存储在 HDFS 中，没有专门的数据存储格式，因为 Hive 是读模式（Schema On Read），可支持 TextFile，SequenceFile，RCFile 或者自定义格式等</p>
+</li>
+<li>
+<p>只需要在创建表的时候告诉 Hive 数据中的列分隔符和行分隔符，Hive 就可以解析数据</p>
+<ul>
+<li>
+<p>Hive 的默认列分隔符：控制符 Ctrl + A，\x01</p>
+</li>
+<li>
+<p>Hive 的默认行分隔符：换行符 \n</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Hive 中包含以下数据模型：</p>
+<ul>
+<li>
+<p>database：在 HDFS 中表现为${hive.metastore.warehouse.dir}目录下一个文件夹</p>
+</li>
+<li>
+<p>table：在 HDFS 中表现所属 database 目录下一个文件夹</p>
+</li>
+<li>
+<p>external table：与 table 类似，不过其数据存放位置可以指定任意 HDFS 目录路径</p>
+</li>
+<li>
+<p>partition：在 HDFS 中表现为 table 目录下的子目录</p>
+</li>
+<li>
+<p>bucket：在 HDFS 中表现为同一个表目录或者分区目录下根据某个字段的值进行 hash 散列之后的多个文件</p>
+</li>
+<li>
+<p>view：与传统数据库类似，只读，基于基本表创建</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Hive 的元数据存储在 RDBMS 中，除元数据外的其它所有数据都基于 HDFS 存储。默认情况下，Hive 元数据保存在内嵌的 Derby 数据库中，只能允许一个会话连接，只适合简单的测试。实际生产环境中不适用，为了支持多用户会话，则需要一个独立的元数据库，使用MySQL 作为元数据库，Hive 内部对 MySQL 提供了很好的支持。</p>
+</li>
+</ol>
+<p><strong>内部表和外部表的区别：</strong></p>
+<ul>
+<li>
+<p>删除内部表，删除表元数据和数据</p>
+</li>
+<li>
+<p>删除外部表，删除元数据，不删除数据</p>
+</li>
+</ul>
 <h2 id=架构>架构</h2>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-10-01-21-image-20190430154313090.png alt=image-20190430154313090></p>
 <h3 id=服务端>服务端</h3>
@@ -528,6 +585,13 @@ Hive访问HBase中表数据，实质上是通过MapReduce读取HBase表数据，
 对HBase表的切分原则是一个Region切分成一个Split,即表中有多少个Regions,MR中就有多少个Map；
 读取HBase表数据都是通过构建Scanner，对表进行全表扫描，如果有过滤条件，则转化为Filter。当过滤条件为rowkey时，则转化为对rowkey的过滤；
 Scanner通过RPC调用RegionServer的next()来获取数据；</p>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://juejin.cn/post/6844904005756272654>Hive 基础教程 - 掘金</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>
@@ -537,7 +601,7 @@ Scanner通过RPC调用RegionServer的next()来获取数据；</p>
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2020-12-25
+2022-01-14
 </span>
 </p>
 <p class=copyright-item>
@@ -556,14 +620,8 @@ Scanner通过RPC调用RegionServer的next()来获取数据；</p>
 <a href=https://justice.bj.cn/tags/architech/>architech</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/70.tool/hexo/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">hexo</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/30.architech/impala/>
-<span class="next-text nav-default">Impala</span>
+<a class=next href=/post/30.architech/mysql/mysql%E6%97%A5%E5%BF%97/>
+<span class="next-text nav-default">MySQL 日志</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
