@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Justice的小站</title><link>https://justice.bj.cn/</link><description>Recent content on Justice的小站</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Fri, 14 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://justice.bj.cn/index.xml" rel="self" type="application/rss+xml"/><item><title>Justice's Blog</title><link>https://justice.bj.cn/homepage/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/about/</guid><description>&lt;h2 id="self-introduction">Self Introduction&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Justice的小站</title><link>https://justice.bj.cn/</link><description>Recent content on Justice的小站</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 17 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://justice.bj.cn/index.xml" rel="self" type="application/rss+xml"/><item><title>Justice's Blog</title><link>https://justice.bj.cn/homepage/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/about/</guid><description>&lt;h2 id="self-introduction">Self Introduction&lt;/h2>
 &lt;p>Cras ex dui, tristique a libero eget, consectetur semper ligula. Nunc augue arcu, malesuada a nisi et, molestie finibus metus. Sed lacus odio, ultricies a nisl vitae, sollicitudin tempor ipsum. Vivamus quis feugiat arcu. Sed mi nunc, efficitur quis tellus vitae, posuere mattis metus. Phasellus in mattis dui. Nullam blandit, augue non ullamcorper dapibus, lacus dui molestie massa, in iaculis purus lectus eu lectus. Duis hendrerit lacinia tellus, sit amet feugiat dolor placerat id. Aenean ac velit massa. Vivamus feugiat dui at magna viverra, ut dictum nunc rutrum. Duis eget sapien finibus, lobortis orci id, vestibulum tellus. Maecenas lobortis urna libero, quis fermentum lectus lobortis nec. Nullam laoreet volutpat libero, ac mattis magna ullamcorper quis. Duis eget ipsum eu nisi mattis cursus et vitae turpis.&lt;/p>
 &lt;p>Aliquam pretium diam eget leo feugiat finibus. Donec malesuada commodo ipsum. Aenean a massa in lacus venenatis vestibulum. Duis vel sem quis elit iaculis consectetur et quis dolor. Morbi eu ipsum hendrerit, malesuada ante sed, dapibus est. Suspendisse feugiat nulla ut gravida convallis. Phasellus id massa posuere, rhoncus justo ut, porttitor dolor. Nulla ultrices malesuada egestas. Nunc fermentum tincidunt sem ac vulputate. Donec mollis sollicitudin justo eget varius. Donec ornare velit et felis blandit, id molestie sapien lobortis. Morbi eget tristique justo. Mauris posuere, nibh eu laoreet ultricies, ligula erat iaculis sapien, vel dapibus lacus libero ut diam. Etiam viverra ante felis, et scelerisque nunc pellentesque vitae. Praesent feugiat dictum molestie.&lt;/p>
 &lt;h2 id="details">Details&lt;/h2>
@@ -17,6 +17,755 @@
 &lt;/ul></description></item><item><title>Pages</title><link>https://justice.bj.cn/homepage/pages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/pages/</guid><description/></item><item><title>Experiences</title><link>https://justice.bj.cn/homepage/experiences/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/experiences/</guid><description/></item><item><title>Vintage</title><link>https://justice.bj.cn/homepage/vintage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/vintage/</guid><description/></item><item><title>Blank</title><link>https://justice.bj.cn/homepage/blank/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/blank/</guid><description>
 &lt;div style="text-align:center">
 &lt;p>Write anything you like here!&lt;/p>
+&lt;/div></description></item><item><title>HBase WAL详解</title><link>https://justice.bj.cn/post/30.architech/hbase/hbase-log%E7%BB%93%E6%9E%84/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/hbase/hbase-log%E7%BB%93%E6%9E%84/</guid><description>&lt;h1 id="hbase-wal详解">HBase WAL详解&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;h2 id="hlog">HLog&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>每个RegionServer拥有一个或多个HLog（默认只有1个，1.x版本可以开启&lt;a href="http://hbase.apache.org/book.html#_multiwal">MultiWAL&lt;/a>功能，允许多个HLog）。每个HLog是多个Region共享的，如图所示，Region A、Region B和Region C共享一个HLog文件。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>HLog中日志单元WALEntry表示一次行级更新的最小追加单元（图中红色/黄色小方框），它由两部分组成：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>HLogKey中包含多个属性信息，包含table name、region name、sequenceid等；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>pWALEdit用来表示一个事务中的更新集合，一次行级事务可以原子操作同一行中的多个列。上图中WALEdit包含多个KeyValue。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/15-10-06-23-2022-01-15-10-06-17-image.png" alt="">&lt;/p>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="http://hbasefly.com/2017/07/02/hbase-sequenceid/">HBase原理－要弄懂的sequenceId&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>HBase事务</title><link>https://justice.bj.cn/post/30.architech/hbase/hbase%E4%BA%8B%E5%8A%A1/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/hbase/hbase%E4%BA%8B%E5%8A%A1/</guid><description>&lt;h1 id="hbase事务">HBase事务&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>HBase本身仅支持行级ACID事务一致性保证，通过行锁(RowLock) + MVCC实现。&lt;/p>
+&lt;h2 id="问题">问题&lt;/h2>
+&lt;h2 id="行锁">行锁&lt;/h2>
+&lt;p>行锁是基于行的独占锁来保证对同一行写的独立性，可用于保证写操作的一致性。基本流程如下：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>获取行锁&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>写WAL文件&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>更新MemStore：将每个cell写入到memstore&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>释放行锁&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="mvcc">MVCC&lt;/h2>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://my.oschina.net/u/189445/blog/597226">https://my.oschina.net/u/189445/blog/597226&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="http://www.codeceo.com/article/hbase-transaction.html">HBase 事务和并发控制机制原理 – 码农网&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.ktanx.com/blog/p/4517">HBase 事务和并发控制机制原理 - 每一个程序员都有一个大梦想&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>Pulsar</title><link>https://justice.bj.cn/post/30.architech/pulsar/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/pulsar/</guid><description>&lt;h1 id="pulsar">Pulsar&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>Pulsar 是一个用于服务器到服务器的消息系统，具有多租户、高性能等优势。&lt;/p>
+&lt;p>Pulsar 最初由 &lt;a href="http://yahoo.github.io/">Yahoo&lt;/a> 开发，目前由 &lt;a href="https://www.apache.org/">Apache 软件基金会&lt;/a>管理。&lt;/p>
+&lt;hr>
+&lt;h2 id="架构">架构&lt;/h2>
+&lt;ul>
+&lt;li>Pulsar采用存储计算分离的架构，pulsar使用了bookkeeper做消息的存储，bookkeeper保证了消息存储的可靠性和高效性，bookkeeper为pulsar提供了存储的扩展能力&lt;/li>
+&lt;li>Pulsar使用zk做元数据存储&lt;/li>
+&lt;li>多租户，pulsar最初的设计就是支持多租户的&lt;/li>
+&lt;li>命名空间：一个租户可以有多个命名空间，一个topic属于一个命名空间，pulsar中的配置都是以命名空间为单位配置的&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/08-20-05-42-2021-10-08-20-05-29-image.png" alt="">&lt;/p>
+&lt;h2 id="关系架构图">关系架构图&lt;/h2>
+&lt;p>&lt;img src="https://justice.bj.cn/Users/justice/tmp/notebook-img/2021-10-09-10-11-20-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>property/tenant：一个property代表一个租户，一个property可包含多个namesapce；假设部署了一个Pulsar集群来支持多个应用程序，在企业中每个property都可以代表一个团队，一个核心的功能，或者一个产品线；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>namespace：是Pulsar的基本管理单元，在namaspace级别可设置权限permission，备份fine-tune，跨集群管理消息数据的地理复制geo-replication、消息TTL等；一个namaspace里的所有topic都继承相同的设置；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>topic：一种通道，用作从producer到consumer传输消息：持久（默认，硬盘）和非持久（仅内存）；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="订阅模式">订阅模式&lt;/h2>
+&lt;p>Pulsar使用同一个模型支持流和队列语义。这个特性可以通过订阅模型实现。消费者使用订阅模型中的任何一个订阅主题：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>Exclusive： pulsar默认的消息订阅模式，支持流语义，在这种模式下，中能有一个consumer消息消息，一个订阅关系中只能有一台机器消费每个topic，如果有多于一个consumer消费此topic则会出错&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Failover：同一时刻只有一个有效的Consumer，支持流语义，其余的Consumer作为备用节点，在Master Consumer不可用后进行替代。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Shared： 支持队列语义&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>KeyShared：类似于shared模式，但是相同key的消息会传递给同一个消费者，（该模式限制:消息必须指定key/orderingKey;不能使用累计确认;该模式目前是测试版,可禁用）；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/09-09-57-24-2021-10-09-09-57-13-image.png" alt="">&lt;/p>
+&lt;p>ExclusiveMode&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/09-09-58-22-2021-10-09-09-58-18-image.png" alt="Exclusive" title="ExclusiveMode">&lt;/p>
+&lt;p>Failover&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/09-10-00-29-2021-10-09-10-00-20-image.png" alt="" title="Fail">&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/09-10-14-39-2021-10-09-10-14-12-image.png" alt="">&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/09-10-15-40-2021-10-09-10-15-35-image.png" alt="">&lt;/p>
+&lt;h2 id="消息分区">消息分区&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>Pulsar 的 Topic 分为 Partitioned Topic 和 Non-Partitioned Topic 两类，Non-Partitioned Topic 可以理解为一个分区数为1的 Topic。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>实际上在 Pulsar 中，Topic 是一个虚拟的概念，创建一个3分区的 Topic，实际上是创建了3个“分区Topic”，发给这个 Topic 的消息会被发往这个 Topic 对应的多个 “分区Topic”。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>分区 Topic 做数据持久化时，分区是逻辑上的概念，实际存储的单位是分片（Segment）的。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/09-10-37-16-2021-10-09-10-37-12-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>物理分区：计算与存储耦合，容错需要拷贝物理分区，扩容需要迁移物理分区来达到负载均衡。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>逻辑分区：物理“分片”，计算层与存储层隔离，这种结构使得 Apache Pulsar 具备以下优点。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>Broker 和 Bookie 相互独立，方便实现独立的扩展以及独立的容错。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Broker 无状态，便于快速上、下线，更加适合于云原生场景。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>分区存储不受限于单个节点存储容量。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>分区数据分布均匀，单个分区数据量突出不会使整个集群出现木桶效应。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>存储不足扩容时，能迅速利用新增节点平摊存储负载。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="消息-id-生成规则">消息 ID 生成规则&lt;/h2>
+&lt;p>在 Pulsar 中，每条消息都有自己的 ID（即 MessageID），MessageID 由四部分组成：&lt;code>ledgerId:entryID:partition-index:batch-index&lt;/code>。其中：&lt;/p>
+&lt;ul>
+&lt;li>partition-index：指分区的编号，在非分区 topic 的时候为 -1。&lt;/li>
+&lt;li>batch-index：在非批量消息的时候为 -1。&lt;/li>
+&lt;/ul>
+&lt;h2 id="消息去重">消息去重&lt;/h2>
+&lt;h2 id="pulsar和kafka对比">Pulsar和Kafka对比&lt;/h2>
+&lt;ul>
+&lt;li>pulsar是流式处理（kafka）和队列的合体；&lt;/li>
+&lt;li>都支持分区，但pulsar不是必须;&lt;/li>
+&lt;li>pulsar的broker是无状态的，而kafka是有状态的；&lt;/li>
+&lt;li>pulsar简单的跨域赋值、扩容简单，数据处理快；&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://alexstocks.github.io/html/pulsar.html">https://alexstocks.github.io/html/pulsar.html&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://pulsar.apache.org/docs/zh-CN/next/concepts-architecture-overview/">https://pulsar.apache.org/docs/zh-CN/next/concepts-architecture-overview/&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.infoq.cn/article/1uaxfkwuhukty1t_5gpq">比拼 Kafka, 大数据分析新秀Pulsar到底好在哪-InfoQ&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://cloud.tencent.com/document/product/1179/58527">消息队列 Pulsar 版 消息存储原理与 ID 规则 - 开发指南 - 文档中心 - 腾讯云&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>STL-deque</title><link>https://justice.bj.cn/post/14.language/c++/stl/stl-deque/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/c++/stl/stl-deque/</guid><description>&lt;h1 id="stl-deque">STL-deque&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;h2 id="参考">参考&lt;/h2></description></item><item><title>STL容器</title><link>https://justice.bj.cn/post/14.language/c++/stl/stl%E5%AE%B9%E5%99%A8/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/c++/stl/stl%E5%AE%B9%E5%99%A8/</guid><description>&lt;h1 id="stl容器">STL容器&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>容器库是类模板与算法的汇集，允许程序员简单地访问常见数据结构，例如队列、链表和栈。有三类容器——顺序容器、关联容器和无序关联容器——每种都被设计为支持不同组的操作。&lt;/p>
+&lt;p>容器管理为其元素分配的存储空间，并提供直接或间接地通过迭代器（拥有类似指针属性的对象）访问它们的函数。&lt;/p>
+&lt;p>大多数容器拥有至少几个常见的成员函数，并共享功能。特定应用的最佳容器不仅依赖于提供的功能，还依赖于对于不同工作量的效率。&lt;/p>
+&lt;h3 id="顺序容器">顺序容器&lt;/h3>
+&lt;p>顺序容器是实现能按顺序访问的数据结构。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>容器类型&lt;/th>
+&lt;th>版本&lt;/th>
+&lt;th>说明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/array" title="cpp/container/array">array&lt;/a>&lt;/td>
+&lt;td>(C++11 起)&lt;/td>
+&lt;td>静态的连续数组 (类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/vector" title="cpp/container/vector">vector&lt;/a>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>动态的连续数组(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/deque" title="cpp/container/deque">deque&lt;/a>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>双端队列(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/forward_list" title="cpp/container/forward list">forward_list&lt;/a>&lt;/td>
+&lt;td>(C++11 起)&lt;/td>
+&lt;td>单链表(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/list" title="cpp/container/list">list&lt;/a>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>双链表(类模板)&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="关联容器">关联容器&lt;/h3>
+&lt;p>关联容器实现能快速查找（ O(log n) 复杂度）的数据结构。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>容器类型&lt;/th>
+&lt;th>说明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/set" title="cpp/container/set">set&lt;/a>&lt;/td>
+&lt;td>唯一键的集合，按照键排序 (类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/map" title="cpp/container/map">map&lt;/a>&lt;/td>
+&lt;td>键值对的集合，按照键排序，键是唯一的(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/multiset" title="cpp/container/multiset">multiset&lt;/a>&lt;/td>
+&lt;td>键的集合，按照键排序(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/multimap" title="cpp/container/multimap">multimap&lt;/a>&lt;/td>
+&lt;td>键值对的集合，按照键排序(类模板)&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="无序关联容器">无序关联容器&lt;/h3>
+&lt;p>无序关联容器提供能快速查找（均摊 O(1) ，最坏情况 O(n) 的复杂度）的无序（哈希）数据结构。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>类型&lt;/th>
+&lt;th>版本&lt;/th>
+&lt;th>说明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_set" title="cpp/container/unordered set">unordered_set&lt;/a>&lt;/td>
+&lt;td>(C++11 起)&lt;/td>
+&lt;td>唯一键的集合，按照键生成散列 (类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_map" title="cpp/container/unordered map">unordered_map&lt;/a>&lt;/td>
+&lt;td>(C++11 起)&lt;/td>
+&lt;td>键值对的集合，按照键生成散列，键是唯一的(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_multiset" title="cpp/container/unordered multiset">unordered_multiset&lt;/a>&lt;/td>
+&lt;td>(C++11 起)&lt;/td>
+&lt;td>键的集合，按照键生成散列(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_multimap" title="cpp/container/unordered multimap">unordered_multimap&lt;/a>&lt;/td>
+&lt;td>(C++11 起)&lt;/td>
+&lt;td>键值对的集合，按照键生成散列&lt;br>(类模板)&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="容器适配器">容器适配器&lt;/h3>
+&lt;p>容器适配器提供顺序容器的不同接口。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;a href="https://zh.cppreference.com/w/cpp/container/stack" title="cpp/container/stack">stack&lt;/a>&lt;/th>
+&lt;th>适配一个容器以提供栈（LIFO 数据结构） &lt;br>(类模板)&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/queue" title="cpp/container/queue">queue&lt;/a>&lt;/td>
+&lt;td>适配一个容器以提供队列（FIFO 数据结构）&lt;br>(类模板)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/priority_queue" title="cpp/container/priority queue">priority_queue&lt;/a>&lt;/td>
+&lt;td>适配一个容器以提供优先级队列&lt;br>(类模板)&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="span">span&lt;/h3>
+&lt;p>&lt;code>span&lt;/code> 是相接的对象序列上的非占有视图，某个其他对象占有序列的存储。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;a href="https://zh.cppreference.com/w/cpp/container/span" title="cpp/container/span">span&lt;/a>&lt;br>&lt;br>(C++20)&lt;/th>
+&lt;th>对象的连续序列上的无所有权视图 &lt;br>(类模板)&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;/table>
+&lt;h3 id="迭代器非法化">迭代器非法化&lt;/h3>
+&lt;p>只读方法决不非法化迭代器或引用。修改容器内容的方法可能非法化迭代器和/或引用，总结于此表格。&lt;/p>
+&lt;p>此处&lt;strong>插入&lt;/strong>指代任何添加一或多个元素到容器的方法，而&lt;strong>擦除&lt;/strong>指代任何从容器移除一或多个元素的方法。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>插入方法的例子是 &lt;a href="https://zh.cppreference.com/w/cpp/container/set/insert" title="cpp/container/set/insert">std::set::insert&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/map/emplace" title="cpp/container/map/emplace">std::map::emplace&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/vector/push_back" title="cpp/container/vector/push back">std::vector::push_back&lt;/a> 和 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque/push_front" title="cpp/container/deque/push front">std::deque::push_front&lt;/a> 。&lt;/p>
+&lt;ul>
+&lt;li>注意 &lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_map/operator_at" title="cpp/container/unordered map/operator at">std::unordered_map::operator[]&lt;/a> 也算，因为它可能插入元素到 map 中。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>擦除方法的例子是 &lt;a href="https://zh.cppreference.com/w/cpp/container/set/erase" title="cpp/container/set/erase">std::set::erase&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/vector/pop_back" title="cpp/container/vector/pop back">std::vector::pop_back&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque/pop_front" title="cpp/container/deque/pop front">std::deque::pop_front&lt;/a> 和 &lt;a href="https://zh.cppreference.com/w/cpp/container/map/clear" title="cpp/container/map/clear">std::map::clear&lt;/a> 。&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>clear&lt;/code> 非法化所有迭代器和引用。因为它擦除所有元素，这在技术上遵照上述规则。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>尾后迭代器需要特别留意。通常像指向未被擦除元素的正常迭代器一般非法化此迭代器。故 &lt;a href="https://zh.cppreference.com/w/cpp/container/set/end" title="cpp/container/set/end">std::set::end&lt;/a> 决不被非法化， &lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_set/end" title="cpp/container/unordered set/end">std::unordered_set::end&lt;/a> 仅在重哈希时被非法化， &lt;a href="https://zh.cppreference.com/w/cpp/container/vector/end" title="cpp/container/vector/end">std::vector::end&lt;/a> 始终被非法化（因为它始终出现在被修改元素后），以此类推。&lt;/p>
+&lt;ul>
+&lt;li>例外：删除 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque" title="cpp/container/deque">std::deque&lt;/a> 末元素的擦除操作&lt;em>会&lt;/em>非法化尾后迭代器，尽管它不是容器的被擦除元素（或者说根本不是元素）。与 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque" title="cpp/container/deque">std::deque&lt;/a> 迭代器的通用规则结合后，最终结果是&lt;em>不&lt;/em>非法化 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque/end" title="cpp/container/deque/end">std::deque::end&lt;/a> 的唯一修改操作是删除首元素，而非末元素的擦除。&lt;/li>
+&lt;/ul>
+&lt;h3 id="线程安全">线程安全&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>能同时在不同容器上由不同线程调用所有容器函数。更广泛而言， C++ 标准库函数不读取能通过其他线程访问的对象，除非这些对象能直接或间接地经由函数参数，包含 this 指针访问;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>能同时在同一容器上由不同线程调用 const 成员函数。而且，成员函数 &lt;code>begin()&lt;/code> 、 &lt;code>end()&lt;/code>, &lt;code>rbegin()&lt;/code> 、 &lt;code>rend()&lt;/code> 、 &lt;code>front()&lt;/code> 、 &lt;code>back()&lt;/code> 、 &lt;code>data()&lt;/code> 、 &lt;code>find()&lt;/code> 、 &lt;code>lower_bound()&lt;/code> 、 &lt;code>upper_bound()&lt;/code> 、 &lt;code>equal_range()&lt;/code> 、 &lt;code>at()&lt;/code> 和除了关联容器中的 &lt;code>operator[]&lt;/code> 对于线程安全的目标表现如同 const （即它们亦能同时在同一容器上由不同线程调用）。更广泛而言， C++ 标准库函数不修改对象，除非这些对象能直接或间接地经由函数参数，包含 this 指针访问。&lt;br>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>同一容器中不同元素能由不同线程同时修改，除了 std::vector&lt;bool> 的元素（例如， &lt;a href="https://zh.cppreference.com/w/cpp/thread/future" title="cpp/thread/future">std::future&lt;/a> 对象的 vector 能从多个线程接收值）;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>迭代器操作（例如自增迭代器）读但不修改底层容器，而且能与同一容器上的其他迭代器操作同时由 const 成员函数执行。非法化任何迭代器的容器操作修改容器，且不能与任何在既存迭代器上的操作同时执行，即使这些迭代器未被非法化;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>同一容器上的元素可以同时由不指定为访问这些元素的函数修改。更广泛而言， C++ 标准库函数不间接读取能从其参数访问的对象（包含容器的其他对象），除非其规定要求如此；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>任何情况下，容器操作（还有算法，或其他 C++ 标准库函数）可于内部并行化，只要不更改用户可见的结果（例如 &lt;a href="https://zh.cppreference.com/w/cpp/algorithm/transform" title="cpp/algorithm/transform">std::transform&lt;/a> 可并行化，但指定了按顺序观览序列的每个元素的 &lt;a href="https://zh.cppreference.com/w/cpp/algorithm/for_each" title="cpp/algorithm/for each">std::for_each&lt;/a> 不行） | (C++11 起)&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="成员函数表格">成员函数表格&lt;/h3></description></item><item><title>无重复字符的最长子串</title><link>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="无重复字符的最长子串httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription-httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription">&lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/">无重复字符的最长子串&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Medium (32.18%)&lt;/td>
+&lt;td>2861&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/hash-table" title="https://leetcode.com/tag/hash-table">&lt;code>hash-table&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/two-pointers" title="https://leetcode.com/tag/two-pointers">&lt;code>two-pointers&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/string" title="https://leetcode.com/tag/string">&lt;code>string&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>adobe&lt;/code> | &lt;code>amazon&lt;/code> | &lt;code>bloomberg&lt;/code> | &lt;code>yelp&lt;/code>&lt;/p>
+&lt;p>给定一个字符串，请你找出其中不含有重复字符的 **最长子串 **的长度。&lt;/p>
+&lt;p>&lt;strong>示例 1:&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: &amp;#34;abcabcbb&amp;#34;
+输出: 3
+解释: 因为无重复字符的最长子串是 &amp;#34;abc&amp;#34;，所以其长度为 3。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 2:&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: &amp;#34;bbbbb&amp;#34;
+输出: 1
+解释: 因为无重复字符的最长子串是 &amp;#34;b&amp;#34;，所以其长度为 1。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: &amp;#34;pwwkew&amp;#34;
+输出: 3
+解释: 因为无重复字符的最长子串是 &amp;#34;wke&amp;#34;，所以其长度为 3。
+  请注意，你的答案必须是 子串 的长度，&amp;#34;pwke&amp;#34; 是一个子序列，不是子串。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/comments/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;h3 id="1-滑动窗口">1. 滑动窗口&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>使用一个滑动窗口来记录每个无重复字符子串；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>窗口的右边界&lt;code>r&lt;/code>为遍历时当前字符数组下标；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>窗口的左边界&lt;code>l&lt;/code>在出现重复字符&lt;code>c&lt;/code>时，向右滑动一格；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最长子串长度为所有滑动窗口长度&lt;code>m&lt;/code>的最大值；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>为了快速判断是否出现重复字符，使用map来记录每个已经遍历过的字符c的最后一次出现的下标；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="代码">代码&lt;/h2>
+&lt;ul>
+&lt;li>rust&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">std&lt;/span>::&lt;span class="n">collections&lt;/span>::&lt;span class="n">HashMap&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">impl&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Solution&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">length_of_longest_substring&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">i32&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">map&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">HashMap&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">for&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">in&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">chars&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="n">enumerate&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">max&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">map&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="n">unwrap_or&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">));&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">max&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">map&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">insert&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">as&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kt">i32&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div></description></item><item><title>最小覆盖子串</title><link>https://justice.bj.cn/post/leetcode/doc/76.%E6%9C%80%E5%B0%8F%E8%A6%86%E7%9B%96%E5%AD%90%E4%B8%B2/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/76.%E6%9C%80%E5%B0%8F%E8%A6%86%E7%9B%96%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="最小覆盖子串httpsleetcode-cncomproblemsminimum-window-substringdescription-httpsleetcode-cncomproblemsminimum-window-substringdescription">&lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/description/" title="https://leetcode-cn.com/problems/minimum-window-substring/description/">最小覆盖子串&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Hard (43.18%)&lt;/td>
+&lt;td>1565&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/hash-table" title="https://leetcode.com/tag/hash-table">&lt;code>hash-table&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/two-pointers" title="https://leetcode.com/tag/two-pointers">&lt;code>two-pointers&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/string" title="https://leetcode.com/tag/string">&lt;code>string&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>facebook&lt;/code> | &lt;code>linkedin&lt;/code> | &lt;code>snapchat&lt;/code> | &lt;code>uber&lt;/code>&lt;/p>
+&lt;p>给你一个字符串 &lt;code>s&lt;/code> 、一个字符串 &lt;code>t&lt;/code> 。返回 &lt;code>s&lt;/code> 中涵盖 &lt;code>t&lt;/code> 所有字符的最小子串。如果 &lt;code>s&lt;/code> 中不存在涵盖 &lt;code>t&lt;/code> 所有字符的子串，则返回空字符串 &lt;code>&amp;quot;&amp;quot;&lt;/code> 。&lt;/p>
+&lt;p>&lt;strong>注意：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>对于 &lt;code>t&lt;/code> 中重复字符，我们寻找的子字符串中该字符数量必须不少于 &lt;code>t&lt;/code> 中该字符数量。&lt;/li>
+&lt;li>如果 &lt;code>s&lt;/code> 中存在这样的子串，我们保证它是唯一的答案。&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：s = &amp;#34;ADOBECODEBANC&amp;#34;, t = &amp;#34;ABC&amp;#34;
+输出：&amp;#34;BANC&amp;#34;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：s = &amp;#34;a&amp;#34;, t = &amp;#34;a&amp;#34;
+输出：&amp;#34;a&amp;#34;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: s = &amp;#34;a&amp;#34;, t = &amp;#34;aa&amp;#34;
+输出: &amp;#34;&amp;#34;
+解释: t 中两个字符 &amp;#39;a&amp;#39; 均应包含在 s 的子串中，
+因此没有符合条件的子字符串，返回空字符串。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>1 &amp;lt;= s.length, t.length &amp;lt;= 105&lt;/code>&lt;/li>
+&lt;li>&lt;code>s&lt;/code> 和 &lt;code>t&lt;/code> 由英文字母组成&lt;/li>
+&lt;/ul>
+&lt;p>**进阶：**你能设计一个在 &lt;code>o(n)&lt;/code> 时间内解决此问题的算法吗？&lt;/p>
+&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/comments/" title="https://leetcode-cn.com/problems/minimum-window-substring/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/solution/" title="https://leetcode-cn.com/problems/minimum-window-substring/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;h3 id="滑动窗口">滑动窗口&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>右指针r: 当窗口未完整包含目标字符串t时，r右移，增大窗口范围；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>左指针l: 当窗口已经完整包含目标字符串t时，l右移，减小窗口范围，获取包含目标字符串最小长度；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://assets.leetcode-cn.com/solution-static/76/76_fig1.gif" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">class&lt;/span> &lt;span class="nc">Solution&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
+&lt;span class="cm">/*
+&lt;/span>&lt;span class="cm"> * ## 解题思路
+&lt;/span>&lt;span class="cm"> * * 滑动窗口
+&lt;/span>&lt;span class="cm"> * * 右指针r: 如果当前窗口没有完整包含t，则r右移，扩大窗口范围，直到窗口完整包含t；
+&lt;/span>&lt;span class="cm"> * * 左指针l: 如果当前已经完整包含t，则l右移，减小窗口范围，直到窗口为完整包含t的最小窗口；
+&lt;/span>&lt;span class="cm"> * *
+&lt;/span>&lt;span class="cm"> */&lt;/span>
+&lt;span class="n">string&lt;/span> &lt;span class="n">minWindow&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">string&lt;/span> &lt;span class="n">s&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">string&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">string&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//结果
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unordered_map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">char&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">s_map&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内字符数统计
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unordered_map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">char&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//目标字符数统计
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">valid_count&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内的有效字符数
+&lt;/span>&lt;span class="c1">&lt;/span>
+&lt;span class="c1">// 初始化目标hash数组
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">auto&lt;/span> &lt;span class="nl">c&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">l&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">length&lt;/span>&lt;span class="p">();&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]]&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内字符数+1；
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">//当前字符统计数未超过目标字符统计数是，
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]]&lt;/span> &lt;span class="o">&amp;lt;=&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]])&lt;/span> &lt;span class="n">valid_count&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 当前窗口内左字符有效字符数&amp;gt;目标字符数，滑动左指针
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">while&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">]]&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">]])&lt;/span> &lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">]]&lt;/span>&lt;span class="o">--&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 刚好
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">valid_count&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">length&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">res&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">empty&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">l&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">size&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">res&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">substr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">};&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div></description></item><item><title>滑动窗口最大值</title><link>https://justice.bj.cn/post/leetcode/doc/239.%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%9C%80%E5%A4%A7%E5%80%BC/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/239.%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%9C%80%E5%A4%A7%E5%80%BC/</guid><description>&lt;h1 id="滑动窗口最大值httpsleetcode-cncomproblemssliding-window-maximumdescription-httpsleetcode-cncomproblemssliding-window-maximumdescription">&lt;a href="https://leetcode-cn.com/problems/sliding-window-maximum/description/" title="https://leetcode-cn.com/problems/sliding-window-maximum/description/">滑动窗口最大值&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Hard (49.73%)&lt;/td>
+&lt;td>1350&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/heap" title="https://leetcode.com/tag/heap">&lt;code>heap&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>amazon&lt;/code> | &lt;code>google&lt;/code> | &lt;code>zenefits&lt;/code>&lt;/p>
+&lt;p>给你一个整数数组 &lt;code>nums&lt;/code>，有一个大小为 &lt;code>k&lt;/code> 的滑动窗口从数组的最左侧移动到数组的最右侧。你只可以看到在滑动窗口内的 &lt;code>k&lt;/code> 个数字。滑动窗口每次只向右移动一位。&lt;/p>
+&lt;p>返回滑动窗口中的最大值。&lt;/p>
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [1,3,-1,-3,5,3,6,7], k = 3
+输出：[3,3,5,5,6,7]
+解释：
+滑动窗口的位置 最大值
+--------------- -----
+[1 3 -1] -3 5 3 6 7 3
+1 [3 -1 -3] 5 3 6 7 3
+1 3 [-1 -3 5] 3 6 7 5
+1 3 -1 [-3 5 3] 6 7 5
+1 3 -1 -3 [5 3 6] 7 6
+1 3 -1 -3 5 [3 6 7] 7
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [1], k = 1
+输出：[1]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [1,-1], k = 1
+输出：[1,-1]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 4：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [9,11], k = 2
+输出：[11]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 5：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [4,-2], k = 2
+输出：[4]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>1 &amp;lt;= nums.length &amp;lt;= 105&lt;/code>&lt;/li>
+&lt;li>&lt;code>-104 &amp;lt;= nums[i] &amp;lt;= 104&lt;/code>&lt;/li>
+&lt;li>&lt;code>1 &amp;lt;= k &amp;lt;= nums.length&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/sliding-window-maximum/comments/" title="https://leetcode-cn.com/problems/sliding-window-maximum/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/sliding-window-maximum/solution/" title="https://leetcode-cn.com/problems/sliding-window-maximum/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
 &lt;/div></description></item><item><title>Hive</title><link>https://justice.bj.cn/post/30.architech/hive/</link><pubDate>Fri, 14 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/hive/</guid><description>&lt;h1 id="hive">Hive&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;p>Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。&lt;/p>
@@ -1246,1510 +1995,4 @@ RocksDB具有高度灵活的配置功能,可以通过配置使其运行在各种
 &lt;p>&lt;a href="https://www.cnblogs.com/wingsless/p/12295246.html">页面置换算法之Clock算法 - wingsless - 博客园&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>B-Link-Tree</title><link>https://justice.bj.cn/post/12.data_struct/tree/b-link-tree/</link><pubDate>Tue, 11 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/12.data_struct/tree/b-link-tree/</guid><description>&lt;h1 id="b-link-tree">B-Link-Tree&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>B-Link-Tree是B+ Tree的一个变种；优化了B+ Tree结构调整时的锁粒度，提升并发度，保持高并发下的性能稳定&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>在中间节点增加字段link pointer，指向右兄弟节点，B-link Tree的名字也由此而来&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>在每个节点内增加一个字段high key，在查询时如果目标值超过该节点的high key，就需要循着link pointer继续往后继节点查找&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="特点">特点&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>树结构调整时无需对全局或者局部子树加锁，进而有利于高并发下的性能稳定性；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>每个节点增加额外字段，link pointer和high key，但代价不大&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>查询时需要额外判断，如果查询找超过high key，需要额外通过link pointer查询其后继节点，在数据库应用中可能会产生一次额外的IO，从而造成单次查找性能的下降，但由于树结构调整是一个频率较低的动作，而且查询后继节点的操作也只会发生在子节点调整和父节点调整过程之间，一旦父节点调整完毕，就可以通过父节点的指针直接查询了而无需再通过子节点的后继指针查找。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="结构">结构&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/10-14-25-15-2022-01-10-14-25-07-image.png" alt="">&lt;/p>
-&lt;h2 id="节点分裂过程">节点分裂过程&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>B+ Tree在分裂时，为了保证一致性，需要使用全局锁住整棵树；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>B-Link-Tree在分裂时，执行一种自底向上的调整方法，每次只对当前调整节点加锁，当子节点调整完毕后再向上回溯调整父节点，直到所有调整完毕。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/10-14-28-05-2022-01-10-14-27-59-image.png" alt="">&lt;/p>
-&lt;h2 id="应用">应用&lt;/h2>
-&lt;ul>
-&lt;li>在GreenPlum中就使用了B-link Tree来作为其存储引擎的索引。&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/372830975">https://zhuanlan.zhihu.com/p/372830975&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://www.csd.uoc.gr/~hy460/pdf/p650-lehman.pdf">https://www.csd.uoc.gr/~hy460/pdf/p650-lehman.pdf&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://zhmin.github.io/posts/blink-tree/">B+Tree 的并发优化 BLink-Tree | 学习笔记&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>FUSE简介</title><link>https://justice.bj.cn/post/40.storage/fuse/fuse/</link><pubDate>Tue, 11 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/40.storage/fuse/fuse/</guid><description>&lt;h1 id="fuse简介">FUSE简介&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>FUSE（Filesystem in Userspace）是linux kernel中一个在用户空间的文件系统框架，通过FUSE内核模块的支持，使用者只需要根据fuse提供的接口实现具体的文件操作就可以实现一个文件系统。&lt;/p>
-&lt;p>fuse在linux kernel 2.6版本加入。&lt;/p>
-&lt;h2 id="特点">特点&lt;/h2>
-&lt;ul>
-&lt;li>用户空间文件系统——类Unix OS的框架&lt;/li>
-&lt;li>允许非超户在用户空间开发文件系统&lt;/li>
-&lt;li>内核的API接口，使用fs-type操作&lt;/li>
-&lt;li>支持多种编程语言（ c、c++、perl、java 等）&lt;/li>
-&lt;li>普通用户也可以挂载FUSE&lt;/li>
-&lt;li>不用重新编译内核&lt;/li>
-&lt;/ul>
-&lt;h2 id="fuse组成">FUSE组成&lt;/h2>
-&lt;p>fuse主要由三部分组成：&lt;/p>
-&lt;ul>
-&lt;li>fuse内核模块：实现了和VFS的对接，实现了一个能被用户空间进程打开的设备，当VFS发来文件操作请求之后，将请求转化为特定格式，并通过设备传递给用户空间进程，用户空间进程在处理完请求后，将结果返回给fuse内核模块，内核模块再将其还原为Linux kernel需要的格式，并返回给VFS；&lt;/li>
-&lt;li>fuse库libfuse：负责和内核空间通信，接收来自/dev/fuse的请求，并将其转化为一系列的函数调用，将结果写回到/dev/fuse；提供的函数可以对fuse文件系统进行挂载卸载、从linux内核读取请求以及发送响应到内核。libfuse提供了两个APIs：一个“high-level”同步API 和一个“low-level” 异步API 。这两种API 都从内核接收请求传递到主程序（fuse_main函数），主程序使用相应的回调函数进行处理。当使用high-level API时，回调函数使用文件名（file names）和路径（paths）工作，而不是索引节点inodes，回调函数返回时也就是一个请求处理的完成。使用low-level API 时，回调函数必须使用索引节点inode工作，响应发送必须显示的使用一套单独的API函数。&lt;/li>
-&lt;li>挂载工具：实现对用户态文件系统的挂载&lt;/li>
-&lt;/ul>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/10-12-17-08-2022-01-10-12-16-58-image.png" alt="">&lt;/p>
-&lt;p>Fuse包含一个内核模块和一个用户空间守护进程（下文称fuse daemon）。内核模块加载时被注册成 Linux 虚拟文件系统的一个 fuse 文件系统驱动。此外，还注册了一个/dev/fuse的块设备。该块设备作为fuse daemon与内核通信的桥梁，fuse daemon通过/dev/fuse读取fuse request，处理后将reply写入/dev/fuse。&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/12/09-15-29-23-2020-12-09-15-29-18-image.png" alt="">&lt;/p>
-&lt;h2 id="实现">实现&lt;/h2>
-&lt;p>编译过程中需要指定库文件：-lfuse -pthread&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;span class="lnt">33
-&lt;/span>&lt;span class="lnt">34
-&lt;/span>&lt;span class="lnt">35
-&lt;/span>&lt;span class="lnt">36
-&lt;/span>&lt;span class="lnt">37
-&lt;/span>&lt;span class="lnt">38
-&lt;/span>&lt;span class="lnt">39
-&lt;/span>&lt;span class="lnt">40
-&lt;/span>&lt;span class="lnt">41
-&lt;/span>&lt;span class="lnt">42
-&lt;/span>&lt;span class="lnt">43
-&lt;/span>&lt;span class="lnt">44
-&lt;/span>&lt;span class="lnt">45
-&lt;/span>&lt;span class="lnt">46
-&lt;/span>&lt;span class="lnt">47
-&lt;/span>&lt;span class="lnt">48
-&lt;/span>&lt;span class="lnt">49
-&lt;/span>&lt;span class="lnt">50
-&lt;/span>&lt;span class="lnt">51
-&lt;/span>&lt;span class="lnt">52
-&lt;/span>&lt;span class="lnt">53
-&lt;/span>&lt;span class="lnt">54
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_operations&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">getattr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">stat&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">readlink&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">mknod&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">mode_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dev_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">mkdir&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">mode_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">unlink&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">rmdir&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">symlink&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">rename&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">link&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">chmod&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">mode_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">chown&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">uid_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">gid_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">truncate&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">off_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">utime&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">utimbuf&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">open&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">read&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">off_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">write&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">off_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">statfs&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">statvfs&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">flush&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">release&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">fsync&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">setxattr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">getxattr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">listxattr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">removexattr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">opendir&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">readdir&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">fuse_fill_dir_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">off_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">releasedir&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">fsyncdir&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">init&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_conn_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">conn&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">void&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">destroy&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">access&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">create&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">mode_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">ftruncate&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">off_t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">fgetattr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">stat&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">lock&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_file_info&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">cmd&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">flock&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">utimens&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">timespec&lt;/span> &lt;span class="n">tv&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">]);&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">bmap&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span> &lt;span class="n">blocksize&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">uint64_t&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">idx&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;span class="k">static&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">fuse_operations&lt;/span> &lt;span class="n">memfs_oper&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">getattr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_getattr&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">access&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_access&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">readdir&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_readdir&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">open&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_open&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">read&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_read&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">write&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_write&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">release&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_release&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">mknod&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_mknod&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">unlink&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_unlink&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">mkdir&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_mkdir&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">rmdir&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_rmdir&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">.&lt;/span>&lt;span class="n">statfs&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">memfs_statfs&lt;/span>&lt;span class="p">,&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://blog.csdn.net/stayneckwind2/article/details/82876330">Linux下使用fuse编写自己的文件系统_staticnetwind的专栏-CSDN博客&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://blog.csdn.net/ty_laurel/article/details/51685193?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-2.control&amp;amp;depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-2.control">用户态文件系统fuse学习_ty_laurel的博客-CSDN博客_fuse文件系统&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://www.cnblogs.com/Linux-tech/p/14110335.html">FUSE文件系统 - 内核工匠 - 博客园&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Golang汇编</title><link>https://justice.bj.cn/post/14.language/golang/golang%E6%B1%87%E7%BC%96/</link><pubDate>Tue, 11 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E6%B1%87%E7%BC%96/</guid><description>&lt;h1 id="golang汇编">Golang汇编&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>golang的汇编基于plan9汇编,是一个中间汇编方式，以忽略底层不同架构之间的一些差别；&lt;/p>
-&lt;h3 id="寄存器">寄存器&lt;/h3>
-&lt;p>各种伪计数器:&lt;/p>
-&lt;ul>
-&lt;li>FP: Frame pointer: arguments and locals.(指向当前栈帧)&lt;/li>
-&lt;li>PC: Program counter: jumps and branches.(指向指令地址)&lt;/li>
-&lt;li>SB(Static base pointer,全局静态基指针): global symbols.(指向全局符号表)&lt;/li>
-&lt;li>SP: Stack pointer: top of stack.(指向当前栈顶部)&lt;/li>
-&lt;/ul>
-&lt;p>注意: 栈是向下整长 golang的汇编是调用者维护参数返回值跟返回地址。所以FP的值小于参数跟返回值。&lt;/p>
-&lt;h4 id="常用操作指令">常用操作指令&lt;/h4>
-&lt;p>格式：&amp;lt;指令&amp;gt; [源操作数] [目的操作数]&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>助记符&lt;/th>
-&lt;th>指令种类&lt;/th>
-&lt;th>用途&lt;/th>
-&lt;th>示例&lt;/th>
-&lt;th>说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;code>MOVQ&lt;/code>&lt;/td>
-&lt;td>传送&lt;/td>
-&lt;td>数据传送&lt;/td>
-&lt;td>MOVQ 48, AX&lt;/td>
-&lt;td>// 把 48 传送到 AX&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>LEAQ&lt;/code>&lt;/td>
-&lt;td>传送&lt;/td>
-&lt;td>地址传送&lt;/td>
-&lt;td>LEAQ AX, BX&lt;/td>
-&lt;td>// 把 AX 有效地址传送到 BX&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>PUSHQ&lt;/code>&lt;/td>
-&lt;td>传送&lt;/td>
-&lt;td>栈压入&lt;/td>
-&lt;td>PUSHQ AX&lt;/td>
-&lt;td>// 将 AX 内容送入栈顶位置&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>POPQ&lt;/code>&lt;/td>
-&lt;td>传送&lt;/td>
-&lt;td>栈弹出&lt;/td>
-&lt;td>POPQ AX&lt;/td>
-&lt;td>// 弹出栈顶数据后修改栈顶指针&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>ADDQ&lt;/code>&lt;/td>
-&lt;td>运算&lt;/td>
-&lt;td>相加并赋值&lt;/td>
-&lt;td>ADDQ BX, AX&lt;/td>
-&lt;td>// 等价于 AX+=BX&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>SUBQ&lt;/code>&lt;/td>
-&lt;td>运算&lt;/td>
-&lt;td>相减并赋值&lt;/td>
-&lt;td>SUBQ BX, AX&lt;/td>
-&lt;td>// 等价于 AX-=BX&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>CMPQ&lt;/code>&lt;/td>
-&lt;td>运算&lt;/td>
-&lt;td>比较大小&lt;/td>
-&lt;td>CMPQ SI CX&lt;/td>
-&lt;td>// 比较 SI 和 CX 的大小&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>CALL&lt;/code>&lt;/td>
-&lt;td>转移&lt;/td>
-&lt;td>调用函数&lt;/td>
-&lt;td>CALL runtime.printnl(SB)&lt;/td>
-&lt;td>// 发起调用&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>JMP&lt;/code>&lt;/td>
-&lt;td>转移&lt;/td>
-&lt;td>无条件转移指令&lt;/td>
-&lt;td>JMP 0x0185&lt;/td>
-&lt;td>//无条件转至 0x0185 地址处&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;code>JLS&lt;/code>&lt;/td>
-&lt;td>转移&lt;/td>
-&lt;td>条件转移指令&lt;/td>
-&lt;td>JLS 0x0185&lt;/td>
-&lt;td>//左边小于右边，则跳到 0x0185&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="汇编示例">汇编示例&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kn">package&lt;/span> &lt;span class="nx">main&lt;/span>
-&lt;span class="kd">func&lt;/span> &lt;span class="nf">add&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">a&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">b&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">{&lt;/span>
-&lt;span class="nx">sum&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="c1">// 不设置该局部变量sum，add栈空间大小会是0
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">sum&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">a&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="nx">b&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="nx">sum&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="kd">func&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">(){&lt;/span>
-&lt;span class="nb">println&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nf">add&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">))&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>编译汇编&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ go tool compile -N -l -S main.go
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;span class="lnt">33
-&lt;/span>&lt;span class="lnt">34
-&lt;/span>&lt;span class="lnt">35
-&lt;/span>&lt;span class="lnt">36
-&lt;/span>&lt;span class="lnt">37
-&lt;/span>&lt;span class="lnt">38
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-nasm" data-lang="nasm">&lt;span class="err">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nf">.add&lt;/span> &lt;span class="nv">STEXT&lt;/span> &lt;span class="nv">nosplit&lt;/span> &lt;span class="nb">si&lt;/span>&lt;span class="nv">ze&lt;/span>&lt;span class="err">=&lt;/span>&lt;span class="mi">60&lt;/span> &lt;span class="nv">args&lt;/span>&lt;span class="err">=&lt;/span>&lt;span class="mh">0x18&lt;/span> &lt;span class="nv">locals&lt;/span>&lt;span class="err">=&lt;/span>&lt;span class="mh">0x10&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0000&lt;/span> &lt;span class="mi">00000&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">TEXT&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.add&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nv">NOSPLIT&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">16&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">24&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0000&lt;/span> &lt;span class="mi">00000&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">SUBQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">16&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">SP&lt;/span> &lt;span class="c1">;;生成add栈空间&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0004&lt;/span> &lt;span class="mi">00004&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="nb">BP&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0009&lt;/span> &lt;span class="mi">00009&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">LEAQ&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">BP&lt;/span>
-&lt;span class="c1">;; ...omitted FUNCDATA stuff... &lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x000e&lt;/span> &lt;span class="mi">00014&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.~r2&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">40&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;初始化返回值&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0017&lt;/span> &lt;span class="mi">00023&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">4&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.sum&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;局部变量sum赋为0&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x001f&lt;/span> &lt;span class="mi">00031&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.a&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">24&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">AX&lt;/span> &lt;span class="c1">;;取参数a&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0024&lt;/span> &lt;span class="mi">00036&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">ADDQ&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.b&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">AX&lt;/span> &lt;span class="c1">;;等价于AX=a+b&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0029&lt;/span> &lt;span class="mi">00041&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="nb">AX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.sum&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;赋值局部变量sum&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x002d&lt;/span> &lt;span class="mi">00045&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">6&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="nb">AX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.~r2&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">40&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;设置返回值&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0032&lt;/span> &lt;span class="mi">00050&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">6&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">BP&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0037&lt;/span> &lt;span class="mi">00055&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">6&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">ADDQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">16&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">SP&lt;/span> &lt;span class="c1">;;清除add栈空间&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x003b&lt;/span> &lt;span class="mi">00059&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">6&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">RET&lt;/span>
-&lt;span class="nf">......&lt;/span>
-&lt;span class="err">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nf">.main&lt;/span> &lt;span class="nv">STEXT&lt;/span> &lt;span class="nb">si&lt;/span>&lt;span class="nv">ze&lt;/span>&lt;span class="err">=&lt;/span>&lt;span class="mi">107&lt;/span> &lt;span class="nv">args&lt;/span>&lt;span class="err">=&lt;/span>&lt;span class="mh">0x0&lt;/span> &lt;span class="nv">locals&lt;/span>&lt;span class="err">=&lt;/span>&lt;span class="mh">0x28&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0000&lt;/span> &lt;span class="mi">00000&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">9&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">TEXT&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.main&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">40&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">0&lt;/span>
-&lt;span class="nf">......&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x000f&lt;/span> &lt;span class="mi">00015&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">9&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">SUBQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">40&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">SP&lt;/span> &lt;span class="c1">;; 生成main栈空间&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0013&lt;/span> &lt;span class="mi">00019&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">9&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="nb">BP&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0018&lt;/span> &lt;span class="mi">00024&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">9&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">LEAQ&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">BP&lt;/span>
-&lt;span class="c1">;; ...omitted FUNCDATA stuff...&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x001d&lt;/span> &lt;span class="mi">00029&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;add入参：1&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0025&lt;/span> &lt;span class="mi">00037&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;add入参：2&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x002e&lt;/span> &lt;span class="mi">00046&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">CALL&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">.add&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">;;调用add函数&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0033&lt;/span> &lt;span class="mi">00051&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="mi">16&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">AX&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0038&lt;/span> &lt;span class="mi">00056&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="nb">AX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">..autotmp_0&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">24&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x003d&lt;/span> &lt;span class="mi">00061&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">CALL&lt;/span> &lt;span class="nv">runtime.printlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0042&lt;/span> &lt;span class="mi">00066&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="s">&amp;#34;&amp;#34;&lt;/span>&lt;span class="nv">..autotmp_0&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">24&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">AX&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0047&lt;/span> &lt;span class="mi">00071&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="nb">AX&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x004b&lt;/span> &lt;span class="mi">00075&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">CALL&lt;/span> &lt;span class="nv">runtime.printint&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0050&lt;/span> &lt;span class="mi">00080&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">CALL&lt;/span> &lt;span class="nv">runtime.printnl&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0055&lt;/span> &lt;span class="mi">00085&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">CALL&lt;/span> &lt;span class="nv">runtime.printunlock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nv">SB&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x005a&lt;/span> &lt;span class="mi">00090&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">11&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">MOVQ&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">SP&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">BP&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x005f&lt;/span> &lt;span class="mi">00095&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">11&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">ADDQ&lt;/span> &lt;span class="kc">$&lt;/span>&lt;span class="mi">40&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">SP&lt;/span> &lt;span class="c1">;;清除main栈空间&lt;/span>
-&lt;span class="err">0&lt;/span>&lt;span class="nf">x0063&lt;/span> &lt;span class="mi">00099&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nv">main.go&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="mi">11&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nv">RET&lt;/span>
-&lt;span class="nf">......&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/09-15-58-32-2022-01-09-15-58-27-image.png" alt="">&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://guidao.github.io/asm.html">golang汇编基础知识&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://chai2010.cn/advanced-go-programming-book/ch3-asm/ch3-02-arch.html">3.2 计算机结构 · Go语言高级编程&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://segmentfault.com/a/1190000039753236">汇编是深入理解 Go 的基础&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://go.dev/doc/asm">A Quick Guide to Go's Assembler - The Go Programming Language&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>MassTree</title><link>https://justice.bj.cn/post/12.data_struct/tree/masstree/</link><pubDate>Tue, 11 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/12.data_struct/tree/masstree/</guid><description>&lt;h1 id="masstree">MassTree&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>masstree 来源于 2012 年发表的论文(&lt;a href="https://pdos.csail.mit.edu/papers/masstree:eurosys12.pdf">Cache craftiness for fast multicore key-value storage&lt;/a>)，&lt;strong>可以理解为 B+ Tree 和 Radix Tree 的混合体&lt;/strong>，即将键切分成多个部分，每个部分为一个节点；每个节点内部又是一个 B+ Tree，兼顾空间和性能。&lt;/p>
-&lt;h2 id="特点">特点&lt;/h2>
-&lt;ul>
-&lt;li>Masstree 将变长键划分成多个固长部分，每个固长部分可以通过 int 类型表示，而不是 char 类型。由于处理器处理 int 类型比较操作的速度远远快于 char 数组的比较，因此 Masstree 通过 int 类型的比较进一步加速了查找过程。固定长度可以设置为 CPU 缓存行长度，以增加 CPU 缓存效率。&lt;/li>
-&lt;li>每个节点是一个 B+ Tree，因此 CPU 在查询的时候可以将节点所代表的 B+ Tree 加载到 CPU 缓存中，以增加 CPU 缓存命中率。&lt;/li>
-&lt;li>其并发控制用到了 Read-Copy-Update(RCU)。读不因任何数据更新而阻塞，但更新数据的时候，需要先复制一份副本，在副本上完成修改，再一次性地替换旧数据。因此读不会造成 CPU 缓存无效。&lt;/li>
-&lt;/ul>
-&lt;h2 id="结构">结构&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/14-10-57-34-image-20190528102500578-9312132.png" alt="image-20190528102500578">&lt;/p>
-&lt;h2 id="mass-tree-算法">&lt;strong>Mass Tree 算法&lt;/strong>&lt;/h2>
-&lt;h2 id="并发策略">&lt;strong>并发策略&lt;/strong>&lt;/h2>
-&lt;p>Mass Tree 的并发策略和 OLFIT Tree 是相似的：&lt;/p>
-&lt;ol>
-&lt;li>fine-grained locking，即节点锁，解决 write-write 竞争，同一时刻只有一个线程可以对当前节点进行写操作&lt;/li>
-&lt;li>optimistic concurrency control，即节点  &lt;code>version&lt;/code> (uint32_t)，解决 read-write 竞争，读开始前和读结束后都需要获取当前节点的最新 version，来判断在读过程中当前节点是否发生了写操作（插入或分裂），同时对节点的写操作都需要先修改 version，在插入 key 之前需要设置  &lt;code>inserting&lt;/code>  标记，插入完成之后将 insert 的 vinsert + 1；在分裂之前需要设置  &lt;code>splitting&lt;/code>  标记，分裂完成之后将 split 的 vsplit + 1。&lt;/li>
-&lt;/ol>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/14-11-00-01-2020-11-14-10-59-56-image.png" alt="">&lt;/p>
-&lt;p>和  &lt;code>permutation&lt;/code>  一样，&lt;code>version&lt;/code>  也被划分成了多个域，除了带有 insert 和 split 信息之外，还包含一个 lock bit，用于加锁；一个 root bit，用于指示否是根节点；一个 border bit，用于指示是否是 border node；一位 deleted 位，用于指示这个节点是否被标记为删除。&lt;/p>
-&lt;h2 id="下降流程">&lt;strong>下降流程&lt;/strong>&lt;/h2>
-&lt;p>对于每次插入，获取，删除操作，都需要从 root（可能是整棵树的根节点，也可能是某棵子树的根节点） 下降到对应的叶节点（border node）。&lt;/p>
-&lt;p>首先，在开始读取节点之前，必须获得节点的 stable version（图中橙色方块），即  &lt;code>version&lt;/code>  中的  &lt;code>inserting&lt;/code>  和  &lt;code>splitting&lt;/code>  位都为 0。&lt;/p>
-&lt;p>其次，在下降之前，需要获取最新的 root，因为在开始下降前，根节点可能分裂了，导致其发生了改变（图中蓝色方块）。&lt;/p>
-&lt;p>最后，如果当前节点已经是叶节点，那么可以返回，否则需要进行下降，读取内部结点根据  &lt;code>key[x, x+8)&lt;/code>(8 字节) 获得下降节点之后，分为 3 种情况处理：&lt;/p>
-&lt;ol>
-&lt;li>case 1 那行伪代码可以这样用 C 语言表示：&lt;/li>
-&lt;/ol>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="kt">uint32_t&lt;/span> &lt;span class="n">before&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">node_get_stable_version&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">n&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="c1">// read node here
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">uint32_t&lt;/span> &lt;span class="n">after&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">node_get_version&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">n&lt;/span>&lt;span class="p">);&lt;/span> &lt;span class="c1">// no need to be stable, just latest version
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">if&lt;/span> &lt;span class="p">((&lt;/span>&lt;span class="n">before&lt;/span> &lt;span class="o">^&lt;/span> &lt;span class="n">after&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">LOCK_BIT&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">before&lt;/span> &lt;span class="o">^&lt;/span> &lt;span class="n">after&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">))&lt;/span>
-&lt;span class="c1">// neither insert nor split happened
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>节点在我们读取期间没有发生任何变化，我们可以安全地进行下降；&lt;/p>
-&lt;ol start="2">
-&lt;li>
-&lt;p>节点发生了变化，而且是分裂，那么我们需要从根节点重新进行下降（内部节点没有相互连接起来，所以不能像 Blink Tree 那样获取右节点）；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>节点发生了变化，但只是插入，只需要重新对当前节点进行下降&lt;/p>
-&lt;/li>
-&lt;/ol>
-&lt;blockquote>
-&lt;p>注意第二个黄色方块，这一行非常关键，如果你细看下的话，它似乎可以挪到 case 1 的 if 语句里面，但实际上不能这样做。因为如果当前节点的孩子节点发生了分裂，但是还没来得及将新节点插入到当前节点，对调这两行代码，可能会导致下降到错误的节点。&lt;/p>
-&lt;/blockquote>
-&lt;h2 id="插入流程">&lt;strong>插入流程&lt;/strong>&lt;/h2>
-&lt;p>作者只给出了读取伪代码，这里给出插入伪代码。&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/14-11-02-06-2020-11-14-11-01-59-image.png" alt="">&lt;/p>
-&lt;p>当我们通过  &lt;code>findborder&lt;/code>  下降到叶节点后，需要对其加锁（图中蓝色方块），但是此时并不能直接将 key 进行插入，当两个写线程同时下降到同一个叶节点时，只有一个线程可以进行写入，所以加锁后需要查看在加锁前是否有其他线程对这个节点进行了写入，如果有的话需要查看是否需要右移，这里的逻辑和 Blink Tree 是一样的。&lt;/p>
-&lt;p>当我们成功加锁并且定位到正确的叶节点之后，可以进行写入，结果有 4 种：&lt;/p>
-&lt;ol>
-&lt;li>插入 key 成功或 key 已经存在；&lt;/li>
-&lt;li>需要下降到下一层，同时需要增加索引的偏移；&lt;/li>
-&lt;li>存在索引冲突，比如 &amp;ldquo;12345678AA&amp;rdquo; 和 &amp;ldquo;12345678BB&amp;rdquo;，此时需要创建一棵子树，存放 &amp;ldquo;AA&amp;rdquo; 和 &amp;ldquo;BB&amp;rdquo;，同时需要把原来存放 &amp;ldquo;AA&amp;rdquo; 的地方替换成这棵子树的根节点&lt;/li>
-&lt;li>节点已满，需要分裂之后再次插入（见下一小节）&lt;/li>
-&lt;/ol>
-&lt;blockquote>
-&lt;p>橙色方块在下面删除流程中介绍&lt;/p>
-&lt;/blockquote>
-&lt;h2 id="实现">实现&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;a href="https://link.zhihu.com/?target=https%3A//github.com/UncP/aili">UncP/aili&lt;/a>，没有实现删除操作；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://link.zhihu.com/?target=https%3A//github.com/rmind/masstree">https://github.com/rmind/masstree&lt;/a>，采用了激进生成子树的策略，缺点就是 cache locality 在有些情况下不好。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>论文作者的实现：&lt;a href="https://link.zhihu.com/?target=https%3A//github.com/kohler/masstree-beta">https://github.com/kohler/masstree-beta&lt;/a>。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="总结">&lt;strong>总结&lt;/strong>&lt;/h2>
-&lt;ol>
-&lt;li>Trie 和 B+ 两种索引树的结合，使得在下降过程中的重试不需要从整棵树的根节点开始，同时加快拥有相同前缀的 key 的处理速度&lt;/li>
-&lt;li>具体的内部结点与外部节点的结构&lt;/li>
-&lt;li>fine-grained locking 写以及 lock-free 读&lt;/li>
-&lt;li>比较具体的节点删除机制&lt;/li>
-&lt;li>较小的节点减少了线程的竞争&lt;/li>
-&lt;/ol>
-&lt;blockquote>
-&lt;p>需要指出的是这个算法不支持性能线性扩展，不过这并不是问题。&lt;/p>
-&lt;/blockquote>
-&lt;p>这个算法实现起来很有&lt;strong>挑战性&lt;/strong>，个人认为主要有两个方面，第一个是对于&lt;strong>树结构的把握&lt;/strong>，Mass Tree 是 Trie 和 B+ 树的结合。第二个是对于&lt;strong>并发下可见性的理解&lt;/strong>，”先改哪个域后改哪个域“，”谁先可见谁后可见“，”谁何时可见“，“在哪加以及加不加 memory barrier”等等这样的问题需要花很多时间考虑，而且出现 bug 非常难调试。&lt;/p>
-&lt;p>Mass Tree 性能比我预想中要好很多，对于均匀分布的 10 字节 key 随机插入，数据量 1000 万，在我的机器上 4 个线程可以到 500 万以上的 tps；对于分布集中的测试数据，可以到 1000 万以上。其实&lt;strong>对于内存索引来说，cache miss 对性能造成的影响有时候是远远大于线程竞争的&lt;/strong>，所以尽管数据分布非常集中（线程竞争更多），仍然可以获得更高的性能。&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://pdos.csail.mit.edu/papers/masstree:eurosys12.pdf">https://pdos.csail.mit.edu/papers/masstree:eurosys12.pdf&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://github.com/kohler/masstree-beta">https://github.com/kohler/masstree-beta&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/52624601">https://zhuanlan.zhihu.com/p/52624601&lt;/a>&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>智能指针</title><link>https://justice.bj.cn/post/14.language/c++/stl/stl%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88/</link><pubDate>Tue, 11 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/c++/stl/stl%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88/</guid><description>&lt;h1 id="智能指针">智能指针&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>智能指针&lt;/strong>(smart pointer)是C++用来自动管理对象生命周期的模板类；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>头文件 &lt;code>#include &amp;lt;memory&amp;gt;&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="unique_ptr">unique_ptr&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>独占指针，对象所有权只能被一个指针所拥有，无法被两个或两个以上同时拥有；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>不能进行拷贝及赋值操作，只能直接初始化；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>可以从函数中返回一个&lt;code>unique_ptr&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>unique_ptr&lt;/code>为数组提供了模板偏特化，因此&lt;code>unique_ptr&lt;/code>也可以指向数组；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>c++14 提供了&lt;code>make_unique&lt;/code>来直接创建；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>作为函数参数使用时，使用引用可避免所有权转移；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>实现原理：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>指针成员私有；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>禁用&lt;code>复制构造函数&lt;/code>和&lt;code>赋值函数&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="定义">定义&lt;/h3>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="c1">//定义
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">namespace&lt;/span> &lt;span class="n">std&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">template&lt;/span> &lt;span class="o">&amp;lt;&lt;/span>&lt;span class="k">typename&lt;/span> &lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">typename&lt;/span> &lt;span class="n">D&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">default_delete&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>
-&lt;span class="k">class&lt;/span> &lt;span class="nc">unique_ptr&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
-&lt;span class="k">explicit&lt;/span> &lt;span class="n">unique_ptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">pointer&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">noexcept&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="o">~&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">noexcept&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;amp;&lt;/span> &lt;span class="k">operator&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">const&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">T&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="k">operator&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="k">noexcept&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">unique_ptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="n">unique_ptr&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">delete&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//禁用复制构造函数
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;amp;&lt;/span> &lt;span class="k">operator&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">const&lt;/span> &lt;span class="n">unique_ptr&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">delete&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//禁用赋值函数
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unique_ptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">unique_ptr&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">noexcept&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;amp;&lt;/span> &lt;span class="k">operator&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">unique_ptr&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">noexcept&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="c1">// ...
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">private&lt;/span>&lt;span class="o">:&lt;/span>
-&lt;span class="n">pointer&lt;/span> &lt;span class="n">__ptr&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">//c++14
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">template&lt;/span> &lt;span class="o">&amp;lt;&lt;/span>&lt;span class="k">typename&lt;/span> &lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">typename&lt;/span>&lt;span class="p">...&lt;/span> &lt;span class="n">Ts&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
-&lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">make_unique&lt;/span>&lt;span class="p">(&lt;/span> &lt;span class="n">Ts&lt;/span>&lt;span class="o">&amp;amp;&amp;amp;&lt;/span>&lt;span class="p">...&lt;/span> &lt;span class="n">params&lt;/span> &lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="n">T&lt;/span>&lt;span class="p">(&lt;/span> &lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">forward&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Ts&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">params&lt;/span>&lt;span class="p">)...&lt;/span> &lt;span class="p">)&lt;/span> &lt;span class="p">);&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="用法">用法&lt;/h3>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="c1">// 4种初始化方式
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">up1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">());&lt;/span> &lt;span class="c1">// 使用原始指针初始化
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">up2&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">up2&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">reset&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">up1&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">release&lt;/span>&lt;span class="p">());&lt;/span> &lt;span class="c1">// 使用reset初始化
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">up3&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">move&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">up2&lt;/span>&lt;span class="p">);&lt;/span> &lt;span class="c1">// 通过move转移所有权
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">auto&lt;/span> &lt;span class="n">ptr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">make_unique&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">string&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;senlin&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span> &lt;span class="c1">// c++14使用make_unique
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="c1">//容器中使用
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">vector&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">vec&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="p">));&lt;/span>
-&lt;span class="n">vec&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push_back&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">move&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="p">));&lt;/span>
-&lt;span class="c1">//函数参数及返回
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="nf">fun1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">arg&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="n">fun1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">move&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="p">));&lt;/span> &lt;span class="c1">//必须使用move将所有权转移
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="c1">//使用引用，无需转移所有权
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="nf">fun2&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">arg&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="n">fun2&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="c1">//函数返回值为右值，无需使用move转移所有权
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">func3&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">//unique_ptr管理数组
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">unique_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="p">[]&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">5&lt;/span>&lt;span class="p">});&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="shared_ptr">shared_ptr&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>共享指针，对象所有权可以被多个共享指针同时拥有；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>内部使用引用计数自动记录引用次数的多少，当引用次数为0时，对象自动销毁；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>使用&lt;code>make_shared&lt;/code>创建;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>可以使用一个new表达式返回的指针进行初始化；但是不能将一个new表达式返回的指针赋值给shared_ptr；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>一旦将一个指针交由shared_ptr管理之后，就不要再通过普通指针访问这块内存；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>可以通过reset方法重置指向另一个对象，此时原对象的引用计数减一；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>可以定制一个deleter函数，用于在shared_ptr释放对象时调用;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>在有通过this指针构建shared_ptr的情况下要继承&lt;code>std::enable_shared_from_this&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>shared_ptr的计数操作具有原子性, 多线程操作不同的shared_ptr进行操作是线程安全的；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>shared_ptr本身就没有保证线程安全，多线程同时访问同一个shared_ptr对象线程不安全；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="n">cout&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="s">&amp;#34;test shared_ptr and new:&amp;#34;&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">shared_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">p4&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1024&lt;/span>&lt;span class="p">));&lt;/span>
-&lt;span class="c1">//shared_ptr&amp;lt;int&amp;gt; p5 = new int(1024); // wrong, no implicit constructor
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">cout&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;*&lt;/span>&lt;span class="n">p4&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="k">auto&lt;/span> &lt;span class="n">p2&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">make_shared&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">string&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;world&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="n">cout&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;*&lt;/span>&lt;span class="n">p1&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="sc">&amp;#39; &amp;#39;&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;*&lt;/span>&lt;span class="n">p2&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="enable_shared_from_this">enable_shared_from_this&lt;/h2>
-&lt;p>如果涉及到将this指针提升为shared_ptr的情况，直接提升会新建一个manager object。&lt;/p>
-&lt;p>使用两个manager object管理同一个对象会造成不可预知的后果。为避免这种情况，需要在对象中维护一个weak_ptr。这是通过enable_shared_from_this自动完成的。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="kt">void&lt;/span> &lt;span class="nf">f&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">shared_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Thing&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="k">class&lt;/span> &lt;span class="nc">Thing&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
-&lt;span class="kt">void&lt;/span> &lt;span class="n">foo&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">//f(shared_ptr&amp;lt;Thing&amp;gt;(this)); //new manager object A
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">f&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">shared_from_this&lt;/span>&lt;span class="p">());&lt;/span> &lt;span class="c1">//use manager object B
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;span class="kt">int&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="n">shared_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Thing&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sp&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="n">Thing&lt;/span>&lt;span class="p">());&lt;/span> &lt;span class="c1">//new manager object B
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">sp&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">foo&lt;/span>&lt;span class="p">();&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>当需要在object内部使用this指针时，调用shared_from_this()就可以避免新建manager object。需要注意的是，在构造函数中，对象还未构造完毕，并没有交由shared_ptr管理，即manager object还未创建，所以不能使用shared_from_this。&lt;/p>
-&lt;h2 id="weak_ptr">weak_ptr&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>weak_ptr一般和shared_ptr配合使用，用于消除shared_ptr循环引用问题；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>指向shared_ptr所指向的对象，但是却不增加对象的引用计数；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>weak_ptr有一个lock函数，尝试取回一个指向对象的shared_ptr；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">auto&lt;/span> &lt;span class="n">p10&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">make_shared&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">1024&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="n">weak_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">wp1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p10&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="n">cout&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="s">&amp;#34;p10 use_count: &amp;#34;&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">p10&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">use_count&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="c1">//p10.reset(new int(1025)); // this will cause wp1.lock() return a false obj
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">shared_ptr&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">p11&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">wp1&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">lock&lt;/span>&lt;span class="p">();&lt;/span>
-&lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p11&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="n">cout&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="s">&amp;#34;wp1: &amp;#34;&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;*&lt;/span>&lt;span class="n">p11&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="s">&amp;#34; use count: &amp;#34;&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">p11&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">use_count&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="auto_ptr">auto_ptr&lt;/h2>
-&lt;ul>
-&lt;li>c++98中使用，c++17中移除，不建议使用；&lt;/li>
-&lt;/ul>
-&lt;h2 id="最佳实践">最佳实践&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>必须保证所有managed object只有一个manager object；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>能用裸指针解决问题的情况下，就不要使用智能指针；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果决定了用智能指针，那就不要用裸指针管理同一个对象；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>能用&lt;code>unique_ptr&lt;/code>管理的对象，不要使用&lt;code>shared_ptr&lt;/code>/&lt;code>weak_ptr&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="http://senlinzhan.github.io/2015/04/20/%E8%B0%88%E8%B0%88C-%E7%9A%84%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88/">深入 C++ 的 unique_ptr | Senlin&amp;rsquo;s Blog&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/30933682?utm_source=wechat_session&amp;amp;utm_medium=social&amp;amp;utm_oi=28398072102912">https://zhuanlan.zhihu.com/p/30933682?utm_source=wechat_session&amp;amp;utm_medium=social&amp;amp;utm_oi=28398072102912&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>ElasticSearch基础</title><link>https://justice.bj.cn/post/30.architech/elasticsearch/elasticsearch%E5%9F%BA%E7%A1%80/</link><pubDate>Mon, 10 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/elasticsearch/elasticsearch%E5%9F%BA%E7%A1%80/</guid><description>&lt;h1 id="elasticsearch基础">ElasticSearch基础&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Elasticsearch 是一个基于lucene的分布式可扩展的近实时搜索和分析引擎。&lt;/p>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/07-14-03-48-2022-01-07-14-03-43-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>一个 ES Index 在集群模式下，有多个 Node （节点）组成。每个节点就是 ES 的Instance (实例)。&lt;/li>
-&lt;li>每个节点上会有多个 shard （分片）， P1 P2 是主分片, R1 R2 是副本分片&lt;/li>
-&lt;li>每个分片上对应着就是一个 Lucene Index（底层索引文件）&lt;/li>
-&lt;li>Lucene Index 是一个统称
-&lt;ul>
-&lt;li>由多个 Segment （段文件，就是倒排索引）组成。每个段文件存储着就是 Doc 文档。&lt;/li>
-&lt;li>commit point记录了所有 segments 的信息&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>Lucene索引结构&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/09-17-11-59-2022-01-09-17-11-56-image.png" alt="">&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/09-17-11-19-2022-01-09-17-11-13-image.png" alt="">&lt;/p>
-&lt;h3 id="lucene索引处理流程">Lucene索引处理流程&lt;/h3>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/09-17-09-44-2022-01-09-17-09-40-image.png" alt="">&lt;/p>
-&lt;h2 id="特点">特点&lt;/h2>
-&lt;ul>
-&lt;li>分布式存储&lt;/li>
-&lt;li>近实时检索&lt;/li>
-&lt;/ul>
-&lt;h2 id="核心概念">核心概念&lt;/h2>
-&lt;ul>
-&lt;li>索引(index):&lt;/li>
-&lt;li>分片(shard):&lt;/li>
-&lt;li>分段(segment):&lt;/li>
-&lt;li>Translog:&lt;/li>
-&lt;/ul>
-&lt;h2 id="数据类型">数据类型&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>Elasticsearch中每个field都要精确对应一个数据类型；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>类型包括：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>keyword：不需要分词，进行过滤、排序、聚合等操作；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>text：分词，用于全文搜索，无法排序，聚合等操作；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>integer：&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="写流程">写流程&lt;/h3>
-&lt;p>创建索引的过程：&lt;/p>
-&lt;ul>
-&lt;li>准备待索引的原文档，数据来源可能是文件、数据库或网络&lt;/li>
-&lt;li>对文档的内容进行分词组件处理，形成一系列的Term&lt;/li>
-&lt;li>索引组件对文档和Term处理，形成字典和倒排表&lt;/li>
-&lt;/ul>
-&lt;p>搜索索引的过程：&lt;/p>
-&lt;ul>
-&lt;li>对查询语句进行分词处理，形成一系列Term&lt;/li>
-&lt;li>根据倒排索引表查找出包含Term的文档，并进行合并形成符合结果的文档集&lt;/li>
-&lt;li>比对查询语句与各个文档相关性得分，并按照得分高低返回&lt;/li>
-&lt;/ul>
-&lt;h2 id="单文档写入流程">单文档写入流程&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/09-17-17-45-2022-01-09-17-17-40-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>客户端向 Node 1 发送新建、索引或者删除请求。&lt;/li>
-&lt;li>节点使用文档的 _id 确定文档属于分片 0 。请求会被转发到 Node 3，因为分片 0 的主分片目前被分配在 Node 3 上。&lt;/li>
-&lt;li>Node 3 在主分片上面执行请求。如果成功了，它将请求并行转发到 Node 1 和 Node 2 的副本分片上。一旦所有的副本分片都报告成功, Node 3 将向协调节点报告成功，协调节点向客户端报告成功。&lt;/li>
-&lt;/ul>
-&lt;h2 id="常用操作">常用操作&lt;/h2>
-&lt;ul>
-&lt;li>清空index数据&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># create index&lt;/span>
-curl -X PUT http://192.168.0.10:20000/test6 --header &lt;span class="s2">&amp;#34;Content-Type: application/json&amp;#34;&lt;/span> -d index.json
-cat index.json
-&lt;span class="c1"># delete index&lt;/span>
-curl -X DELETE http://192.168.0.10:20000/test6
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://pdai.tech/md/db/nosql-es/elasticsearch-y-th-2.html">ES详解 - 原理：ES原理知识点补充和整体结构 | Java 全栈知识体系&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>ES倒排索引原理</title><link>https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/</link><pubDate>Mon, 10 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E5%8E%9F%E7%90%86/</guid><description>&lt;h1 id="es倒排索引原理">ES倒排索引原理&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Elasticsearch通过Lucene的倒排索引技术实现比关系型数据库更快的过滤。&lt;/p>
-&lt;p>它对多条件的过滤支持非常好，比如年龄在18和30之间，性别为女性这样的组合查询。&lt;/p>
-&lt;p>倒排索引很多地方都有介绍，但是其比关系型数据库的b-tree索引快在哪里？&lt;/p>
-&lt;p>b-tree索引是为写入优化的索引结构。&lt;/p>
-&lt;p>可以用预先排序等方式换取更小的存储空间，更快的检索速度等好处，其代价就是更新慢。&lt;/p>
-&lt;p>要进一步深入的化，还是要看一下Lucene的倒排索引是怎么构成的。&lt;/p>
-&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-378bc62acf1a493c402291a8f8e99e6a_720w.jpg" alt="">&lt;/p>
-&lt;p>这里有好几个概念。我们来看一个实际的例子，假设有如下的数据：&lt;/p>
-&lt;p>&lt;img src="https://pic4.zhimg.com/80/v2-e6b81003803254b1d11b3384626c93ab_720w.jpg" alt="">&lt;/p>
-&lt;p>这里每一行是一个document。&lt;/p>
-&lt;p>每个document都有一个docid。那么给这些document建立的倒排索引就是：&lt;/p>
-&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-c1cf40e4c4218fd3e992258c08e4e334_720w.jpg" alt="">&lt;/p>
-&lt;p>可以看到，倒排索引是per field的，一个字段由一个自己的倒排索引。&lt;/p>
-&lt;p>18,20这些叫做 term，而[1,3]就是posting list。&lt;/p>
-&lt;p>Posting list就是一个int的数组，存储了所有符合某个term的文档id。&lt;/p>
-&lt;p>那么什么是term dictionary 和 term index？&lt;/p>
-&lt;p>假设我们有很多个term，比如：&lt;code>Carla,Sara,Elin,Ada,Patty,Kate,Selena&lt;/code>&lt;/p>
-&lt;p>如果按照这样的顺序排列，找出某个特定的term一定很慢，因为term没有排序，需要全部过滤一遍才能找出特定的term。&lt;/p>
-&lt;p>排序之后就变成了：&lt;code>Ada,Carla,Elin,Kate,Patty,Sara,Selena&lt;/code>&lt;/p>
-&lt;p>这样我们可以用二分查找的方式，比全遍历更快地找出目标的term。&lt;/p>
-&lt;p>这个就是 term dictionary。&lt;/p>
-&lt;p>有了&lt;code>term dictionary&lt;/code>之后，可以用 &lt;code>logN&lt;/code> 次磁盘查找得到目标。&lt;/p>
-&lt;p>但是磁盘的随机读操作仍然是非常昂贵的（一次&lt;code>random access&lt;/code>大概需要10ms的时间）。&lt;/p>
-&lt;p>所以尽量少的读磁盘，有必要把一些数据缓存到内存里。&lt;/p>
-&lt;p>但是整个&lt;code>term dictionary&lt;/code>本身又太大了，无法完整地放到内存里。&lt;/p>
-&lt;p>于是就有了&lt;code>term index&lt;/code>。&lt;/p>
-&lt;p>&lt;code>term index&lt;/code>有点像一本字典的大的章节表。&lt;/p>
-&lt;p>比如：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">A开头的term ……………. Xxx页
-C开头的term ……………. Xxx页
-E开头的term ……………. Xxx页
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>如果所有的term都是英文字符的话，可能这个term index就真的是26个英文字符表构成的了。&lt;/p>
-&lt;p>但是实际的情况是，term未必都是英文字符，term可以是任意的byte数组。&lt;/p>
-&lt;p>而且26个英文字符也未必是每一个字符都有均等的term，比如x字符开头的term可能一个都没有，&lt;/p>
-&lt;p>而s开头的term又特别多。实际的term index是一棵trie 树：&lt;/p>
-&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-e4632ac1392b01f7a39d963fddb1a1e0_720w.jpg" alt="">&lt;/p>
-&lt;p>例子是一个包含 &amp;ldquo;A&amp;rdquo;, &amp;ldquo;to&amp;rdquo;, &amp;ldquo;tea&amp;rdquo;, &amp;ldquo;ted&amp;rdquo;, &amp;ldquo;ten&amp;rdquo;, &amp;ldquo;i&amp;rdquo;, &amp;ldquo;in&amp;rdquo;, 和 &amp;ldquo;inn&amp;rdquo; 的 trie 树。&lt;/p>
-&lt;p>这棵树不会包含所有的term，它包含的是term的一些前缀。&lt;/p>
-&lt;p>通过term index可以快速地定位到term dictionary的某个offset，然后从这个位置再往后顺序查找。&lt;/p>
-&lt;p>再加上一些压缩技术（搜索 Lucene Finite State Transducers） term index 的尺寸可以只有所有term的尺寸的几十分之一，&lt;/p>
-&lt;p>使得用内存缓存整个term index变成可能。整体上来说就是这样的效果。&lt;/p>
-&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-e4599b618e270df9b64a75eb77bfb326_720w.jpg" alt="">&lt;/p>
-&lt;p>现在我们可以回答“为什么Elasticsearch/Lucene检索可以比mysql快了。&lt;/p>
-&lt;p>Mysql只有term dictionary这一层，是以b-tree排序的方式存储在磁盘上的。&lt;/p>
-&lt;p>检索一个term需要若干次的random access的磁盘操作。&lt;/p>
-&lt;p>而Lucene在term dictionary的基础上添加了term index来加速检索，term index以树的形式缓存在内存中。&lt;/p>
-&lt;p>从term index查到对应的term dictionary的block位置之后，&lt;/p>
-&lt;p>再去磁盘上找term，大大减少了磁盘的random access次数。&lt;/p>
-&lt;p>额外值得一提的两点是：&lt;/p>
-&lt;p>term index在内存中是以FST（finite state transducers）的形式保存的，其特点是非常节省内存。&lt;/p>
-&lt;p>Term dictionary在磁盘上是以分block的方式保存的，一个block内部利用公共前缀压缩，&lt;/p>
-&lt;p>比如都是Ab开头的单词就可以把Ab省去。这样term dictionary可以比b-tree更节约磁盘空间。&lt;/p>
-&lt;h2 id="如何联合索引查询">如何联合索引查询？&lt;/h2>
-&lt;p>所以给定查询过滤条件 age=18 的过程就是先从term index找到18在term dictionary的大概位置，&lt;/p>
-&lt;p>然后再从term dictionary里精确地找到18这个term，然后得到一个posting list或者一个指向posting list位置的指针。&lt;/p>
-&lt;p>然后再查询 gender=女 的过程也是类似的。&lt;/p>
-&lt;p>最后得出 age=18 AND gender=女 就是把两个 posting list 做一个“与”的合并。&lt;/p>
-&lt;p>这个理论上的“与”合并的操作可不容易。&lt;/p>
-&lt;p>对于mysql来说，如果你给age和gender两个字段都建立了索引，&lt;/p>
-&lt;p>查询的时候只会选择其中最selective的来用，然后另外一个条件: 是在遍历行的过程中在内存中计算之后过滤掉。&lt;/p>
-&lt;p>那么要如何才能联合使用两个索引呢？有两种办法：&lt;/p>
-&lt;ul>
-&lt;li>使用skip list数据结构。同时遍历gender和age的posting list，互相skip；&lt;/li>
-&lt;li>使用bitset数据结构，对gender和age两个filter分别求出bitset，对两个bitset做AN操作。&lt;/li>
-&lt;/ul>
-&lt;p>PostgreSQL 从 8.4 版本开始支持通过bitmap联合使用两个索引，就是利用了bitset数据结构来做到的。&lt;/p>
-&lt;p>当然一些商业的关系型数据库也支持类似的联合索引的功能。&lt;/p>
-&lt;p>Elasticsearch支持以上两种的联合索引方式，如果查询的filter缓存到了内存中（以bitset的形式），&lt;/p>
-&lt;p>那么合并就是两个bitset的AND。&lt;/p>
-&lt;p>如果查询的filter没有缓存，那么就用skip list的方式去遍历两个on disk的posting list。&lt;/p>
-&lt;h2 id="利用-skip-list-合并">利用 Skip List 合并&lt;/h2>
-&lt;p>&lt;img src="https://pic4.zhimg.com/80/v2-eafa46683272ff1b2081edbc8db5469f_720w.jpg" alt="">&lt;/p>
-&lt;p>以上是三个posting list。我们现在需要把它们用AND的关系合并，得出posting list的交集。&lt;/p>
-&lt;p>首先选择最短的posting list，然后从小到大遍历。&lt;/p>
-&lt;p>遍历的过程可以跳过一些元素，比如我们遍历到绿色的13的时候，就可以跳过蓝色的3了，因为3比13要小。&lt;/p>
-&lt;p>整个过程如下&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">Next -&amp;gt; 2
-Advance(2) -&amp;gt; 13
-Advance(13) -&amp;gt; 13
-Already on 13
-Advance(13) -&amp;gt; 13 MATCH!!!
-Next -&amp;gt; 17
-Advance(17) -&amp;gt; 22
-Advance(22) -&amp;gt; 98
-Advance(98) -&amp;gt; 98
-Advance(98) -&amp;gt; 98 MATCH!!!
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>最后得出的交集是[13,98]，所需的时间比完整遍历三个posting list要快得多。&lt;/p>
-&lt;p>但是前提是每个list需要指出Advance这个操作，快速移动指向的位置。&lt;/p>
-&lt;p>什么样的list可以这样Advance往前做蛙跳？skip list：&lt;/p>
-&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-a8b78c8e861c34a1afd7891284852b34_720w.jpg" alt="">&lt;/p>
-&lt;p>从概念上来说，对于一个很长的posting list，比如：&lt;/p>
-&lt;p>&lt;code>[1,3,13,101,105,108,255,256,257]&lt;/code>&lt;/p>
-&lt;p>我们可以把这个list分成三个block：&lt;/p>
-&lt;p>&lt;code>[1,3,13] [101,105,108] [255,256,257]&lt;/code>&lt;/p>
-&lt;p>然后可以构建出skip list的第二层：&lt;/p>
-&lt;p>&lt;code>[1,101,255]&lt;/code>&lt;/p>
-&lt;p>1,101,255分别指向自己对应的block。这样就可以很快地跨block的移动指向位置了。&lt;/p>
-&lt;p>Lucene自然会对这个block再次进行压缩。其压缩方式叫做Frame Of Reference编码。示例如下：&lt;/p>
-&lt;p>&lt;img src="https://pic4.zhimg.com/80/v2-9c03d3e449e3f8fb8182287048ad6db7_720w.jpg" alt="">&lt;/p>
-&lt;p>考虑到频繁出现的term（所谓low cardinality的值），比如gender里的男或者女。&lt;/p>
-&lt;p>如果有1百万个文档，那么性别为男的posting list里就会有50万个int值。&lt;/p>
-&lt;p>用Frame of Reference编码进行压缩可以极大减少磁盘占用。&lt;/p>
-&lt;p>这个优化对于减少索引尺寸有非常重要的意义。&lt;/p>
-&lt;p>当然mysql b-tree里也有一个类似的posting list的东西，是未经过这样压缩的。&lt;/p>
-&lt;p>因为这个Frame of Reference的编码是有解压缩成本的。&lt;/p>
-&lt;p>利用skip list，除了跳过了遍历的成本，也跳过了解压缩这些压缩过的block的过程，从而节省了cpu。&lt;/p>
-&lt;h2 id="利用bitset合并">利用bitset合并&lt;/h2>
-&lt;p>Bitset是一种很直观的数据结构，对应posting list如：&lt;/p>
-&lt;p>&lt;code>[1,3,4,7,10]&lt;/code>&lt;/p>
-&lt;p>对应的bitset就是：&lt;/p>
-&lt;p>&lt;code>[1,0,1,1,0,0,1,0,0,1]&lt;/code>&lt;/p>
-&lt;p>每个文档按照文档id排序对应其中的一个bit。&lt;/p>
-&lt;p>Bitset自身就有压缩的特点，其用一个byte就可以代表8个文档。&lt;/p>
-&lt;p>所以100万个文档只需要12.5万个byte。&lt;/p>
-&lt;p>但是考虑到文档可能有数十亿之多，在内存里保存bitset仍然是很奢侈的事情。&lt;/p>
-&lt;p>而且对于个每一个filter都要消耗一个bitset，比如age=18缓存起来的话是一个bitset，18&amp;lt;=age&amp;lt;25是另外一个filter缓存起来也要一个bitset。&lt;/p>
-&lt;p>所以秘诀就在于需要有一个数据结构：&lt;/p>
-&lt;ul>
-&lt;li>可以很压缩地保存上亿个bit代表对应的文档是否匹配filter；&lt;/li>
-&lt;li>这个压缩的bitset仍然可以很快地进行AND和 OR的逻辑操作。&lt;/li>
-&lt;/ul>
-&lt;p>Lucene使用的这个数据结构叫做 &lt;code>Roaring Bitmap&lt;/code>。&lt;/p>
-&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-9482b84c4aa3fb77a959c1ead553037e_720w.jpg" alt="">&lt;/p>
-&lt;p>其压缩的思路其实很简单。与其保存100个0，占用100个bit。&lt;/p>
-&lt;p>还不如保存0一次，然后声明这个0重复了100遍。&lt;/p>
-&lt;p>这两种合并使用索引的方式都有其用途。&lt;/p>
-&lt;p>Elasticsearch对其性能有详细的对比（&lt;a href="https://link.zhihu.com/?target=https%3A//www.elastic.co/blog/frame-of-reference-and-roaring-bitmaps">https://www.elastic.co/blog/frame-of-reference-and-roaring-bitmaps&lt;/a>）。&lt;/p>
-&lt;p>简单的结论是：&lt;/p>
-&lt;p>因为Frame of Reference编码是如此 高效，对于简单的相等条件的过滤缓存成纯内存的bitset还不如需要访问磁盘的skip list的方式要快。&lt;/p>
-&lt;h2 id="如何减少文档数">如何减少文档数？&lt;/h2>
-&lt;p>一种常见的压缩存储时间序列的方式是把多个数据点合并成一行。&lt;/p>
-&lt;p>Opentsdb支持海量数据的一个绝招就是定期把很多行数据合并成一行，这个过程叫compaction。&lt;/p>
-&lt;p>类似的vivdcortext使用mysql存储的时候，也把一分钟的很多数据点合并存储到mysql的一行里以减少行数。&lt;/p>
-&lt;p>这个过程可以示例如下：&lt;/p>
-&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-252d8f8ebe62e508f62049e80a9b9468_720w.jpg" alt="">&lt;/p>
-&lt;p>可以看到，行变成了列了。&lt;/p>
-&lt;p>每一列可以代表这一分钟内一秒的数据。&lt;/p>
-&lt;p>Elasticsearch有一个功能可以实现类似的优化效果，那就是Nested Document。&lt;/p>
-&lt;p>我们可以把一段时间的很多个数据点打包存储到一个父文档里，变成其嵌套的子文档。&lt;/p>
-&lt;p>示例如下：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">{timestamp:12:05:01, idc:sz, value1:10,value2:11}
-{timestamp:12:05:02, idc:sz, value1:9,value2:9}
-{timestamp:12:05:02, idc:sz, value1:18,value:17}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>可以打包成：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-json" data-lang="json">&lt;span class="p">{&lt;/span>
-    &lt;span class="err">max_timestamp:12:05:02,&lt;/span>
-    &lt;span class="err">min_timestamp:&lt;/span> &lt;span class="err">1205:01,&lt;/span>
-    &lt;span class="err">idc:sz,&lt;/span>
-    &lt;span class="err">records:&lt;/span> &lt;span class="err">[&lt;/span>
-&lt;span class="err">{timestamp:12:05:01,&lt;/span> &lt;span class="err">value1:10,value2:11&lt;/span>&lt;span class="p">}&lt;/span>
-        &lt;span class="p">{&lt;/span>&lt;span class="err">timestamp:12:05:02,&lt;/span> &lt;span class="err">value1:9,value2:9&lt;/span>&lt;span class="p">}&lt;/span>
-        &lt;span class="p">{&lt;/span>&lt;span class="err">timestamp:12:05:02,&lt;/span> &lt;span class="err">value1:18,value:17&lt;/span>&lt;span class="p">}&lt;/span>
-    &lt;span class="err">]&lt;/span>
-&lt;span class="err">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这样可以把数据点公共的维度字段上移到父文档里，而不用在每个子文档里重复存储，从而减少索引的尺寸。&lt;/p>
-&lt;p>&lt;img src="https://pic4.zhimg.com/80/v2-917578288797efab8f67e7b74d5ec6a3_720w.jpg" alt="">&lt;/p>
-&lt;p>在存储的时候，无论父文档还是子文档，对于Lucene来说都是文档，都会有文档Id。&lt;/p>
-&lt;p>但是对于嵌套文档来说，可以保存起子文档和父文档的文档id是连续的，而且父文档总是最后一个。&lt;/p>
-&lt;p>有这样一个排序性作为保障，那么有一个所有父文档的posting list就可以跟踪所有的父子关系。&lt;/p>
-&lt;p>也可以很容易地在父子文档id之间做转换。&lt;/p>
-&lt;p>把父子关系也理解为一个filter，那么查询时检索的时候不过是又AND了另外一个filter而已。&lt;/p>
-&lt;p>前面我们已经看到了Elasticsearch可以非常高效地处理多filter的情况，充分利用底层的索引。&lt;/p>
-&lt;p>使用了嵌套文档之后，对于term的posting list只需要保存父文档的doc id就可以了，&lt;/p>
-&lt;p>可以比保存所有的数据点的doc id要少很多。&lt;/p>
-&lt;p>如果我们可以在一个父文档里塞入50个嵌套文档，那么posting list可以变成之前的1/50。&lt;/p></description></item><item><title>Golang之mutex</title><link>https://justice.bj.cn/post/14.language/golang/golang%E4%B9%8Bmutex/</link><pubDate>Mon, 10 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E4%B9%8Bmutex/</guid><description>&lt;h1 id="golang之mutex">Golang之mutex&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>sync.Mutex是一个不可重入的排他锁;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>当一个 goroutine 获得了这个锁的拥有权后， 其它请求锁的 goroutine 就会阻塞在 Lock 方法的调用上，直到锁被释放;&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">type&lt;/span> &lt;span class="nx">Mutex&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">state&lt;/span> &lt;span class="kt">int32&lt;/span> &lt;span class="c1">//锁的状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">sema&lt;/span> &lt;span class="kt">uint32&lt;/span> &lt;span class="c1">//控制锁状态的信号量
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>
-&lt;span class="c1">//state
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="cm">/*
-&lt;/span>&lt;span class="cm">32 3 2 1 0
-&lt;/span>&lt;span class="cm"> | | | | |
-&lt;/span>&lt;span class="cm"> | | | | |
-&lt;/span>&lt;span class="cm"> v-----------------------------------------------v-------------v-------------v-------------+
-&lt;/span>&lt;span class="cm"> | | | | v
-&lt;/span>&lt;span class="cm"> | waitersCount |mutexStarving| mutexWoken | mutexLocked |
-&lt;/span>&lt;span class="cm"> | | | | |
-&lt;/span>&lt;span class="cm"> +-----------------------------------------------+-------------+-------------+-------------+
-&lt;/span>&lt;span class="cm">*/&lt;/span>
-&lt;span class="kd">const&lt;/span> &lt;span class="p">(&lt;/span>
-&lt;span class="nx">mutexLocked&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="kc">iota&lt;/span> &lt;span class="c1">// mutex is locked
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">mutexWoken&lt;/span> &lt;span class="c1">//2
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">mutexStarving&lt;/span> &lt;span class="c1">//4
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">mutexWaiterShift&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="kc">iota&lt;/span> &lt;span class="c1">//3
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>Mutex一旦使用之后，一定不要做copy操作。&lt;/p>
-&lt;p>最低三位分别表示 mutexLocked、mutexWoken 和 mutexStarving，剩下的位置用来表示当前有多少个 Goroutine 等待互斥锁的释放：&lt;/p>
-&lt;p>在默认情况下，互斥锁的所有状态位都是 0，int32 中的不同位分别表示了不同的状态：&lt;/p>
-&lt;ul>
-&lt;li>mutexLocked — 表示互斥锁的锁定状态；&lt;/li>
-&lt;li>mutexWoken — 表示从正常模式被从唤醒；&lt;/li>
-&lt;li>mutexStarving — 当前的互斥锁进入饥饿状态；&lt;/li>
-&lt;li>waitersCount — 当前互斥锁上等待的 goroutine 个数；&lt;/li>
-&lt;/ul>
-&lt;p>为了保证锁的公平性，设计上互斥锁有两种状态：正常状态和饥饿状态。&lt;/p>
-&lt;p>&lt;code>正常模式&lt;/code>下，所有等待锁的goroutine按照FIFO顺序等待。唤醒的goroutine不会直接拥有锁，而是会和新请求锁的goroutine竞争锁的拥有。新请求锁的goroutine具有优势：它正在CPU上执行，而且可能有好几个，所以刚刚唤醒的goroutine有很大可能在锁竞争中失败。在这种情况下，这个被唤醒的goroutine会加入到等待队列的前面。 &lt;code>如果一个等待的goroutine超过1ms没有获取锁，那么它将会把锁转变为饥饿模式&lt;/code>。&lt;/p>
-&lt;p>&lt;code>饥饿模式&lt;/code>下，锁的所有权将从unlock的gorutine直接交给交给等待队列中的第一个。新来的goroutine将不会尝试去获得锁，即使锁看起来是unlock状态, 也不会去尝试自旋操作，而是放在等待队列的尾部。&lt;/p>
-&lt;p>如果一个等待的goroutine获取了锁，并且满足一以下其中的任何一个条件：(1)它是队列中的最后一个；(2)它等待的时候小于1ms。它会将锁的状态转换为正常状态。&lt;/p>
-&lt;p>正常状态有很好的性能表现，饥饿模式也是非常重要的，因为它能阻止尾部延迟的现象。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt"> 10
-&lt;/span>&lt;span class="lnt"> 11
-&lt;/span>&lt;span class="lnt"> 12
-&lt;/span>&lt;span class="lnt"> 13
-&lt;/span>&lt;span class="lnt"> 14
-&lt;/span>&lt;span class="lnt"> 15
-&lt;/span>&lt;span class="lnt"> 16
-&lt;/span>&lt;span class="lnt"> 17
-&lt;/span>&lt;span class="lnt"> 18
-&lt;/span>&lt;span class="lnt"> 19
-&lt;/span>&lt;span class="lnt"> 20
-&lt;/span>&lt;span class="lnt"> 21
-&lt;/span>&lt;span class="lnt"> 22
-&lt;/span>&lt;span class="lnt"> 23
-&lt;/span>&lt;span class="lnt"> 24
-&lt;/span>&lt;span class="lnt"> 25
-&lt;/span>&lt;span class="lnt"> 26
-&lt;/span>&lt;span class="lnt"> 27
-&lt;/span>&lt;span class="lnt"> 28
-&lt;/span>&lt;span class="lnt"> 29
-&lt;/span>&lt;span class="lnt"> 30
-&lt;/span>&lt;span class="lnt"> 31
-&lt;/span>&lt;span class="lnt"> 32
-&lt;/span>&lt;span class="lnt"> 33
-&lt;/span>&lt;span class="lnt"> 34
-&lt;/span>&lt;span class="lnt"> 35
-&lt;/span>&lt;span class="lnt"> 36
-&lt;/span>&lt;span class="lnt"> 37
-&lt;/span>&lt;span class="lnt"> 38
-&lt;/span>&lt;span class="lnt"> 39
-&lt;/span>&lt;span class="lnt"> 40
-&lt;/span>&lt;span class="lnt"> 41
-&lt;/span>&lt;span class="lnt"> 42
-&lt;/span>&lt;span class="lnt"> 43
-&lt;/span>&lt;span class="lnt"> 44
-&lt;/span>&lt;span class="lnt"> 45
-&lt;/span>&lt;span class="lnt"> 46
-&lt;/span>&lt;span class="lnt"> 47
-&lt;/span>&lt;span class="lnt"> 48
-&lt;/span>&lt;span class="lnt"> 49
-&lt;/span>&lt;span class="lnt"> 50
-&lt;/span>&lt;span class="lnt"> 51
-&lt;/span>&lt;span class="lnt"> 52
-&lt;/span>&lt;span class="lnt"> 53
-&lt;/span>&lt;span class="lnt"> 54
-&lt;/span>&lt;span class="lnt"> 55
-&lt;/span>&lt;span class="lnt"> 56
-&lt;/span>&lt;span class="lnt"> 57
-&lt;/span>&lt;span class="lnt"> 58
-&lt;/span>&lt;span class="lnt"> 59
-&lt;/span>&lt;span class="lnt"> 60
-&lt;/span>&lt;span class="lnt"> 61
-&lt;/span>&lt;span class="lnt"> 62
-&lt;/span>&lt;span class="lnt"> 63
-&lt;/span>&lt;span class="lnt"> 64
-&lt;/span>&lt;span class="lnt"> 65
-&lt;/span>&lt;span class="lnt"> 66
-&lt;/span>&lt;span class="lnt"> 67
-&lt;/span>&lt;span class="lnt"> 68
-&lt;/span>&lt;span class="lnt"> 69
-&lt;/span>&lt;span class="lnt"> 70
-&lt;/span>&lt;span class="lnt"> 71
-&lt;/span>&lt;span class="lnt"> 72
-&lt;/span>&lt;span class="lnt"> 73
-&lt;/span>&lt;span class="lnt"> 74
-&lt;/span>&lt;span class="lnt"> 75
-&lt;/span>&lt;span class="lnt"> 76
-&lt;/span>&lt;span class="lnt"> 77
-&lt;/span>&lt;span class="lnt"> 78
-&lt;/span>&lt;span class="lnt"> 79
-&lt;/span>&lt;span class="lnt"> 80
-&lt;/span>&lt;span class="lnt"> 81
-&lt;/span>&lt;span class="lnt"> 82
-&lt;/span>&lt;span class="lnt"> 83
-&lt;/span>&lt;span class="lnt"> 84
-&lt;/span>&lt;span class="lnt"> 85
-&lt;/span>&lt;span class="lnt"> 86
-&lt;/span>&lt;span class="lnt"> 87
-&lt;/span>&lt;span class="lnt"> 88
-&lt;/span>&lt;span class="lnt"> 89
-&lt;/span>&lt;span class="lnt"> 90
-&lt;/span>&lt;span class="lnt"> 91
-&lt;/span>&lt;span class="lnt"> 92
-&lt;/span>&lt;span class="lnt"> 93
-&lt;/span>&lt;span class="lnt"> 94
-&lt;/span>&lt;span class="lnt"> 95
-&lt;/span>&lt;span class="lnt"> 96
-&lt;/span>&lt;span class="lnt"> 97
-&lt;/span>&lt;span class="lnt"> 98
-&lt;/span>&lt;span class="lnt"> 99
-&lt;/span>&lt;span class="lnt">100
-&lt;/span>&lt;span class="lnt">101
-&lt;/span>&lt;span class="lnt">102
-&lt;/span>&lt;span class="lnt">103
-&lt;/span>&lt;span class="lnt">104
-&lt;/span>&lt;span class="lnt">105
-&lt;/span>&lt;span class="lnt">106
-&lt;/span>&lt;span class="lnt">107
-&lt;/span>&lt;span class="lnt">108
-&lt;/span>&lt;span class="lnt">109
-&lt;/span>&lt;span class="lnt">110
-&lt;/span>&lt;span class="lnt">111
-&lt;/span>&lt;span class="lnt">112
-&lt;/span>&lt;span class="lnt">113
-&lt;/span>&lt;span class="lnt">114
-&lt;/span>&lt;span class="lnt">115
-&lt;/span>&lt;span class="lnt">116
-&lt;/span>&lt;span class="lnt">117
-&lt;/span>&lt;span class="lnt">118
-&lt;/span>&lt;span class="lnt">119
-&lt;/span>&lt;span class="lnt">120
-&lt;/span>&lt;span class="lnt">121
-&lt;/span>&lt;span class="lnt">122
-&lt;/span>&lt;span class="lnt">123
-&lt;/span>&lt;span class="lnt">124
-&lt;/span>&lt;span class="lnt">125
-&lt;/span>&lt;span class="lnt">126
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kd">func&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">m&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="nx">Mutex&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nf">Lock&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// 如果mutex的state没有被锁，也没有等待/唤醒的goroutine, 锁处于正常状态，那么获得锁，返回.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 比如锁第一次被goroutine请求时，就是这种状态。或者锁处于空闲的时候，也是这种状态。
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">atomic&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">CompareAndSwapInt32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">mutexLocked&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">return&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// Slow path (outlined so that the fast path can be inlined)
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">lockSlow&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="kd">func&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">m&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="nx">Mutex&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nf">lockSlow&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// 标记本goroutine的等待时间
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kd">var&lt;/span> &lt;span class="nx">waitStartTime&lt;/span> &lt;span class="kt">int64&lt;/span>
-&lt;span class="c1">// 本goroutine是否已经处于饥饿状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">starving&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="kc">false&lt;/span>
-&lt;span class="c1">// 本goroutine是否已唤醒
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">awoke&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="kc">false&lt;/span>
-&lt;span class="c1">// 自旋次数
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">iter&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="mi">0&lt;/span>
-&lt;span class="nx">old&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>
-&lt;span class="k">for&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// 第一个条件：1.mutex已经被锁了；2.不处于饥饿模式(如果时饥饿状态，自旋时没有用的，锁的拥有权直接交给了等待队列的第一个。)
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 尝试自旋的条件：参考runtime_canSpin函数
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">mutexLocked&lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="nx">mutexStarving&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="nx">mutexLocked&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nf">runtime_canSpin&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">iter&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// 进入这里肯定是普通模式
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 自旋的过程中如果发现state还没有设置woken标识，则设置它的woken标识， 并标记自己为被唤醒。
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">!&lt;/span>&lt;span class="nx">awoke&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">mutexWoken&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="nx">mutexWaiterShift&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span>
-&lt;span class="nx">atomic&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">CompareAndSwapInt32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="nx">mutexWoken&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">awoke&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="kc">true&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="nf">runtime_doSpin&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="nx">iter&lt;/span>&lt;span class="o">++&lt;/span>
-&lt;span class="nx">old&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>
-&lt;span class="k">continue&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 到了这一步， state的状态可能是：
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 1. 锁还没有被释放，锁处于正常状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 2. 锁还没有被释放， 锁处于饥饿状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 3. 锁已经被释放， 锁处于正常状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 4. 锁已经被释放， 锁处于饥饿状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 并且本gorutine的 awoke可能是true, 也可能是false (其它goutine已经设置了state的woken标识)
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="c1">// new 复制 state的当前状态， 用来设置新的状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// old 是锁当前的状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">new&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">old&lt;/span>
-&lt;span class="c1">// 如果old state状态不是饥饿状态, new state 设置锁， 尝试通过CAS获取锁,
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 如果old state状态是饥饿状态, 则不设置new state的锁，因为饥饿状态下锁直接转给等待队列的第一个.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">mutexStarving&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">new&lt;/span> &lt;span class="o">|=&lt;/span> &lt;span class="nx">mutexLocked&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 将等待队列的等待者的数量加1
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">mutexLocked&lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="nx">mutexStarving&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">new&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="nx">mutexWaiterShift&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 如果当前goroutine已经处于饥饿状态， 并且old state的已被加锁,
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 将new state的状态标记为饥饿状态, 将锁转变为饥饿状态.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">starving&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">mutexLocked&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">new&lt;/span> &lt;span class="o">|=&lt;/span> &lt;span class="nx">mutexStarving&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 如果本goroutine已经设置为唤醒状态, 需要清除new state的唤醒标记, 因为本goroutine要么获得了锁，要么进入休眠，
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 总之state的新状态不再是woken状态.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">awoke&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// The goroutine has been woken from sleep,
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// so we need to reset the flag in either case.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">new&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">mutexWoken&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nf">throw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;sync: inconsistent mutex state&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="nx">new&lt;/span> &lt;span class="o">&amp;amp;^=&lt;/span> &lt;span class="nx">mutexWoken&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 通过CAS设置new state值.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 注意new的锁标记不一定是true, 也可能只是标记一下锁的state是饥饿状态.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">atomic&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">CompareAndSwapInt32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">new&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// 如果old state的状态是未被锁状态，并且锁不处于饥饿状态,
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 那么当前goroutine已经获取了锁的拥有权，返回
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">mutexLocked&lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="nx">mutexStarving&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">break&lt;/span> &lt;span class="c1">// locked the mutex with CAS
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
-&lt;span class="c1">// If we were already waiting before, queue at the front of the queue.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 设置并计算本goroutine的等待时间
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">queueLifo&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nx">waitStartTime&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span>
-&lt;span class="k">if&lt;/span> &lt;span class="nx">waitStartTime&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">waitStartTime&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nf">runtime_nanotime&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 既然未能获取到锁， 那么就使用sleep原语阻塞本goroutine
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 如果是新来的goroutine,queueLifo=false, 加入到等待队列的尾部，耐心等待
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 如果是唤醒的goroutine, queueLifo=true, 加入到等待队列的头部
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nf">runtime_SemacquireMutex&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">sema&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">queueLifo&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="c1">// sleep之后，此goroutine被唤醒
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 计算当前goroutine是否已经处于饥饿状态.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">starving&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">starving&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nf">runtime_nanotime&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="nx">waitStartTime&lt;/span> &lt;span class="p">&amp;gt;&lt;/span> &lt;span class="nx">starvationThresholdNs&lt;/span>
-&lt;span class="c1">// 得到当前的锁状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">old&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>
-&lt;span class="c1">// 如果当前的state已经是饥饿状态
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 那么锁应该处于Unlock状态，那么应该是锁被直接交给了本goroutine
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">mutexStarving&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// If this goroutine was woken and mutex is in starvation mode,
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// ownership was handed off to us but mutex is in somewhat
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// inconsistent state: mutexLocked is not set and we are still
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// accounted as waiter. Fix that.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">mutexLocked&lt;/span>&lt;span class="p">|&lt;/span>&lt;span class="nx">mutexWoken&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="nx">mutexWaiterShift&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nf">throw&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;sync: inconsistent mutex state&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 当前goroutine用来设置锁，并将等待的goroutine数减1.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">delta&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">int32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">mutexLocked&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&lt;/span>&lt;span class="nx">mutexWaiterShift&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="c1">// 如果本goroutine是最后一个等待者，或者它并不处于饥饿状态，
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 那么我们需要把锁的state状态设置为正常模式.
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">!&lt;/span>&lt;span class="nx">starving&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nx">old&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="nx">mutexWaiterShift&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="c1">// 退出饥饿模式
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">delta&lt;/span> &lt;span class="o">-=&lt;/span> &lt;span class="nx">mutexStarving&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 设置新state, 因为已经获得了锁，退出、返回
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">atomic&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">AddInt32&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">delta&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="k">break&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="nx">awoke&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="kc">true&lt;/span>
-&lt;span class="nx">iter&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="mi">0&lt;/span>
-&lt;span class="p">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">old&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">state&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>整个过程比较复杂，这里总结一下一些重点：&lt;/p>
-&lt;ol>
-&lt;li>如果锁处于初始状态(unlock, 正常模式)，则通过CAS(0 -&amp;gt; Locked)获取锁；如果获取失败，那么就进入slowLock的流程：&lt;/li>
-&lt;/ol>
-&lt;p>slowLock的获取锁流程有两种模式： 饥饿模式 和 正常模式。&lt;/p>
-&lt;h2 id="1正常模式">(1)正常模式&lt;/h2>
-&lt;ol>
-&lt;li>mutex已经被locked了，处于正常模式下；&lt;/li>
-&lt;li>前 Goroutine 为了获取该锁进入自旋的次数小于四次；&lt;/li>
-&lt;li>当前机器CPU核数大于1；&lt;/li>
-&lt;li>当前机器上至少存在一个正在运行的处理器 P 并且处理的运行队列为空；&lt;/li>
-&lt;/ol>
-&lt;p>满足上面四个条件的goroutine才可以做自旋。自旋就会调用sync.runtime_doSpin 和 runtime.procyield 并执行 30 次的 PAUSE 指令，该指令只会占用 CPU 并消耗 CPU 时间。&lt;/p>
-&lt;p>处理了自旋相关的特殊逻辑之后，互斥锁会根据上下文计算当前互斥锁最新的状态new。几个不同的条件分别会更新 state 字段中存储的不同信息 — mutexLocked、mutexStarving、mutexWoken 和 mutexWaiterShift：&lt;/p>
-&lt;p>计算最新的new之后，CAS更新，如果更新成功且old状态是未被锁状态，并且锁不处于饥饿状态，就代表当前goroutine竞争成功并获取到了锁返回。(这也就是当前goroutine在正常模式下竞争时更容易获得锁的原因)&lt;/p>
-&lt;p>如果当前goroutine竞争失败，会调用 &lt;code>sync.runtime_SemacquireMutex&lt;/code> 使用信号量保证资源不会被两个 Goroutine 获取。&lt;code>sync.runtime_SemacquireMutex&lt;/code> 会在方法中不断调用尝试获取锁并休眠当前 Goroutine 等待信号量的释放，一旦当前 Goroutine 可以获取信号量，它就会立刻返回，sync.Mutex.Lock 方法的剩余代码也会继续执行。&lt;/p>
-&lt;h2 id="2-饥饿模式">(2) 饥饿模式&lt;/h2>
-&lt;p>饥饿模式本身是为了一定程度保证公平性而设计的模式。所以饥饿模式不会有自旋的操作，新的 Goroutine 在该状态下不能获取锁、也不会进入自旋状态，它们只会在队列的末尾等待。&lt;/p>
-&lt;p>不管是正常模式还是饥饿模式，获取信号量，它就会从阻塞中立刻返回，并执行剩下代码：&lt;/p>
-&lt;ol>
-&lt;li>在正常模式下，这段代码会设置唤醒和饥饿标记、重置迭代次数并重新执行获取锁的循环；&lt;/li>
-&lt;li>在饥饿模式下，当前 Goroutine 会获得互斥锁，如果等待队列中只存在当前 Goroutine，互斥锁还会从饥饿模式中退出；&lt;/li>
-&lt;/ol>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://segmentfault.com/a/1190000023874384">【golang】sync.Mutex互斥锁的实现原理&lt;/a>&lt;/li>
 &lt;/ol></description></item></channel></rss>
