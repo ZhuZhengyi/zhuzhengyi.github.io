@@ -50,7 +50,7 @@
 class Solution {
 public:
     /*
-    * ## 解题思路
+    ## 解题思路
     * * 双指针法
     * 1. 分别用l,r指向数组左右边界；
     * 2. 依次判断height[l], height[r]大小，将小的指针向中间移动一格，同时记录小的高度lower
@@ -61,15 +61,15 @@ public:
     int trap(vector<int>& height) {
         int l = 0;
         int r = height.size() - 1;
-        int level = 0; //当前桶的高度
-        int water = 0; //
+        int level = 0; //已遍历过两边的外侧柱子的最大高度
+        int total_water = 0; //总水量
         while (l<r) {
             int lower = height[ height[l] < height[r] ? l++: r-- ];
             level = max(level, lower);
-            water += level - lower;
+            total_water += level - lower;
         }
 
-        return water;
+        return total_water;
     }
 };
 // @lc code=end
