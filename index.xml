@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Justice的小站</title><link>https://justice.bj.cn/</link><description>Recent content on Justice的小站</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 19 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://justice.bj.cn/index.xml" rel="self" type="application/rss+xml"/><item><title>Justice's Blog</title><link>https://justice.bj.cn/homepage/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/about/</guid><description>&lt;h2 id="self-introduction">Self Introduction&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Justice的小站</title><link>https://justice.bj.cn/</link><description>Recent content on Justice的小站</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Thu, 20 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://justice.bj.cn/index.xml" rel="self" type="application/rss+xml"/><item><title>Justice's Blog</title><link>https://justice.bj.cn/homepage/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/about/</guid><description>&lt;h2 id="self-introduction">Self Introduction&lt;/h2>
 &lt;p>Cras ex dui, tristique a libero eget, consectetur semper ligula. Nunc augue arcu, malesuada a nisi et, molestie finibus metus. Sed lacus odio, ultricies a nisl vitae, sollicitudin tempor ipsum. Vivamus quis feugiat arcu. Sed mi nunc, efficitur quis tellus vitae, posuere mattis metus. Phasellus in mattis dui. Nullam blandit, augue non ullamcorper dapibus, lacus dui molestie massa, in iaculis purus lectus eu lectus. Duis hendrerit lacinia tellus, sit amet feugiat dolor placerat id. Aenean ac velit massa. Vivamus feugiat dui at magna viverra, ut dictum nunc rutrum. Duis eget sapien finibus, lobortis orci id, vestibulum tellus. Maecenas lobortis urna libero, quis fermentum lectus lobortis nec. Nullam laoreet volutpat libero, ac mattis magna ullamcorper quis. Duis eget ipsum eu nisi mattis cursus et vitae turpis.&lt;/p>
 &lt;p>Aliquam pretium diam eget leo feugiat finibus. Donec malesuada commodo ipsum. Aenean a massa in lacus venenatis vestibulum. Duis vel sem quis elit iaculis consectetur et quis dolor. Morbi eu ipsum hendrerit, malesuada ante sed, dapibus est. Suspendisse feugiat nulla ut gravida convallis. Phasellus id massa posuere, rhoncus justo ut, porttitor dolor. Nulla ultrices malesuada egestas. Nunc fermentum tincidunt sem ac vulputate. Donec mollis sollicitudin justo eget varius. Donec ornare velit et felis blandit, id molestie sapien lobortis. Morbi eget tristique justo. Mauris posuere, nibh eu laoreet ultricies, ligula erat iaculis sapien, vel dapibus lacus libero ut diam. Etiam viverra ante felis, et scelerisque nunc pellentesque vitae. Praesent feugiat dictum molestie.&lt;/p>
 &lt;h2 id="details">Details&lt;/h2>
@@ -17,6 +17,1150 @@
 &lt;/ul></description></item><item><title>Pages</title><link>https://justice.bj.cn/homepage/pages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/pages/</guid><description/></item><item><title>Experiences</title><link>https://justice.bj.cn/homepage/experiences/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/experiences/</guid><description/></item><item><title>Vintage</title><link>https://justice.bj.cn/homepage/vintage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/vintage/</guid><description/></item><item><title>Blank</title><link>https://justice.bj.cn/homepage/blank/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/blank/</guid><description>
 &lt;div style="text-align:center">
 &lt;p>Write anything you like here!&lt;/p>
+&lt;/div></description></item><item><title>ChubaoFS DataNode</title><link>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-datanode/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-datanode/</guid><description>&lt;h1 id="chubaofs-datanode">ChubaoFS DataNode&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>chubaofs datanode 是chubaofs中的数据存储节点，用于将chubaofs中的文件数据存储在磁盘中；&lt;/p>
+&lt;p>chubaofs 中的datanode数据以&lt;code>dataPartition&lt;/code>为单位进行管理。&lt;code>dataPartition&lt;/code>是datanode中进行数据管理的最高单位。&lt;/p>
+&lt;h2 id="大文件小文件">大文件/小文件&lt;/h2>
+&lt;p>文件系统中，每个文件存在元数据。由于磁盘和内存的性能成本差别，导致同一个文件系统对于大小文件的操作管理成本存在显著的差异。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>对于小文件，其单个文件数据量少，平均磁盘操作成本巨大，且元数据数量膨胀快；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大文件数据文件大，顺序读写可以获得较低的磁盘操作成本，取得较高的性能，元数据相对总数据量成本低；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>因此同一个文件系统对于大小文件很难使用同一策略来满足高效低费存储需求。&lt;/p>
+&lt;p>chubaofs对于大小文件的读写使用了不同的策略，以此满足大小文件的不同需求。&lt;/p>
+&lt;p>chubaofs中的小文件是客户端指定，小于一定大小（默认为：1MB）的文件。可以通过客户端配置参数&lt;code>tinySize&lt;/code>指定。&lt;/p>
+&lt;p>每个客户端文件的前1MB字节内的文件都使用&lt;code>TinyExtent&lt;/code>进行存储管理，&lt;/p>
+&lt;p>大于&lt;code>1MB&lt;/code>的文件部分使用&lt;code>NormalExtent&lt;/code>方式进行存储管理。&lt;/p>
+&lt;h2 id="顺序写随机写">顺序写/随机写&lt;/h2>
+&lt;p>ChubaoFS同时支持&lt;code>顺序写&lt;/code>和&lt;code>随机写&lt;/code>两种文件写入方式。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>顺序写&lt;/code>: 指写入的数据每次只往文件末尾追加;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>随机写&lt;/code>: 指覆盖之前已经写过的文件内容;&lt;/p>
+&lt;p>客户端在发起写请求时，根据写入数据的偏移是否已经存在，来决定使用那种写入方式；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>顺序写&lt;/code>: 使用主从方式进行副本间同步数据, 对应的存储引擎；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>随机写&lt;/code>: 使用Raft协议来在数据副本间同步数据；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="c1">// sdk/data/stream/stream_writer.go
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">func&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">s&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="nx">Streamer&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="nf">write&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">data&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">offset&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">flags&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">total&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="kt">error&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="o">...&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="nx">_&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">req&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="k">range&lt;/span> &lt;span class="nx">requests&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="kd">var&lt;/span> &lt;span class="nx">writeSize&lt;/span> &lt;span class="kt">int&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="nx">req&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">ExtentKey&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">nil&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="c1">//已存在旧写入数据extentkey
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">writeSize&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">doOverwrite&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">req&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">direct&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">//随机覆盖写
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="nx">writeSize&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">doWrite&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">req&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Data&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">req&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">FileOffset&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">req&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">direct&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="c1">//顺序写
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;span class="o">...&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="o">...&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="datanode目录结构">datanode目录结构&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>datanode配置文件中的&lt;code>disks&lt;/code>指定了每个datanode dp的存储磁盘；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个&lt;code>disk&lt;/code>中包含一系列&lt;code>datapartition_&amp;lt;id&amp;gt;_&amp;lt;dp_size&amp;gt;&lt;/code>和命名的目录，用于存储对应dp；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个&lt;code>disk&lt;/code>中还可能包含&lt;code>expired_dataparition_&amp;lt;id&amp;gt;_&amp;lt;dp_size&amp;gt;&lt;/code>的过期dp，这些dp是在master中不存在的；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## datanode配置文件中的disks设置datanode管理的哪些disk； &lt;/span>
+$ cat /opt/chubaofs/conf/datanode.json
+...
+&lt;span class="s2">&amp;#34;disks&amp;#34;&lt;/span>: &lt;span class="o">[&lt;/span>
+&lt;span class="s2">&amp;#34;/data/hdfs10:159978629365&amp;#34;&lt;/span>, //磁盘目录：可用大小
+&lt;span class="s2">&amp;#34;/data/hdfs12:159978629365&amp;#34;&lt;/span>,
+...
+&lt;span class="o">]&lt;/span>,
+...
+&lt;span class="c1">## 每个disk中包含一系列的dp目录&lt;/span>
+$ ls -1 /data/hdfs10
+...
+datapartition_1001_128849018880 //正常dp，1001：dpid，128849018880：dpsize
+datapartition_1003_128849018880
+datapartition_1004_128849018880
+...
+expired_datapartition_2004_128849018880 //过期dp，在master中 不存在的dp
+...
+&lt;span class="c1">## 每个dp包含一系列的extent file 和dp 元数据&lt;/span>
+$ tree /data/hdfs10/datapartition_1001_128849018880
+├── &lt;span class="m">1&lt;/span>
+├── &lt;span class="m">10&lt;/span>
+├── &lt;span class="m">11&lt;/span>
+├── &lt;span class="m">12&lt;/span>
+├── &lt;span class="m">13&lt;/span>
+├── &lt;span class="m">14&lt;/span>
+├── &lt;span class="m">15&lt;/span>
+├── &lt;span class="m">16&lt;/span>
+...
+├── &lt;span class="m">63&lt;/span>
+├── &lt;span class="m">64&lt;/span>
+├── &lt;span class="m">7&lt;/span>
+├── &lt;span class="m">8&lt;/span>
+├── &lt;span class="m">9&lt;/span> //extent file， 1-64, tiny extent file&lt;span class="p">;&lt;/span> 1000-, normal extent file
+├── APPLY //dp apply index, 里面存储了当前dp.appliedID&lt;span class="o">(&lt;/span>raft rsm apply index&lt;span class="o">)&lt;/span>
+├── .apply //apply index临时文件
+├── EXTENT_CRC //extent file crc,
+├── EXTENT_META //extent meta
+├── .meta //临时META文件，
+├── META //dp meta
+├── NORMALEXTENT_DELETE //
+├── TINYEXTENT_DELETE
+└── wal_1001 //raft wal
+├── 0000000000000001-0000000000000001.log
+└── META
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="datapartition">DataPartition&lt;/h2>
+&lt;h3 id="dp存储">dp存储&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>datanode配置文件中的&lt;code>disks&lt;/code>指定了每个datanode dp的存储磁盘；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个&lt;code>disk&lt;/code>中包含一系列&lt;code>datapartition_&amp;lt;id&amp;gt;_&amp;lt;dp_size&amp;gt;&lt;/code>和命名的目录，用于存储对应dp；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个&lt;code>disk&lt;/code>中还可能包含&lt;code>expired_dataparition_&amp;lt;id&amp;gt;_&amp;lt;dp_size&amp;gt;&lt;/code>的过期dp，这些dp是在master中不存在的；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个dp&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="apply文件">APPLY文件:&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>保存当前dp的&lt;code>appliedID&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>dp的&lt;code>StartRaftLoggingSchedule()&lt;/code>协程周期性(10s)将dp的appliedID 写入到APPLY文件中(先写.apply,后move);&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>dp&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="meta文件">META文件&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>META保存了当前dp的配置元信息；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当dp配置信息改变时，由&lt;code>PersistMetadata()&lt;/code>将dp的配置元信息持久化到该文件中；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>dp加载时(LoadDataPartition)，从META中读取dp元信息；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>写入时机包括：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>dp创建时；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>周期性truncate raft log时，lastTruncateID发生改变；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>raft 配置变更；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-json" data-lang="json">&lt;span class="err">//&lt;/span> &lt;span class="err">cat&lt;/span> &lt;span class="err">/data/hdfs&lt;/span>&lt;span class="mi">10&lt;/span>&lt;span class="err">/datapartition_&lt;/span>&lt;span class="mi">1001&lt;/span>&lt;span class="err">_&lt;/span>&lt;span class="mi">128849018880&lt;/span>&lt;span class="err">/META&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="nt">&amp;#34;VolumeID&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;weqewqe&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;PartitionID&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">1001&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;PartitionSize&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">128849018880&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;CreateTime&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;2021-11-29 18:26:21&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;Peers&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="nt">&amp;#34;id&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;addr&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;10.201.69.20:17310&amp;#34;&lt;/span>
+&lt;span class="p">},&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="nt">&amp;#34;id&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">5&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;addr&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;10.201.74.33:17310&amp;#34;&lt;/span>
+&lt;span class="p">},&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="nt">&amp;#34;id&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">7&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;addr&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="s2">&amp;#34;10.201.76.21:17310&amp;#34;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">],&lt;/span>
+&lt;span class="nt">&amp;#34;Hosts&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="p">[&lt;/span>
+&lt;span class="s2">&amp;#34;10.201.74.33:17310&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="s2">&amp;#34;10.201.69.20:17310&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="s2">&amp;#34;10.201.76.21:17310&amp;#34;&lt;/span>
+&lt;span class="p">],&lt;/span>
+&lt;span class="nt">&amp;#34;DataPartitionCreateType&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="nt">&amp;#34;LastTruncateID&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">0&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="extent_meta">EXTENT_META&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>metadataFp&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>保存baseExtentID + PreAllocSpaceExtentID, 2个uint64, 总共16字节；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h3 id="extent_crc">EXTENT_CRC&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>verifyExtentFp: 保存dp所有normal extent crc;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>extent 加载时，根据extentID， 从EXTENT_CRC中加载对应extent 的crc到extent header 中；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>normal extent写入时, 根据offset，size计算blockNo(128K为一个Block);&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果刚好是一个整block, 将crc写入&lt;code>EXTENT_CRC&lt;/code>文件; 否则规整化后，写0&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;ul>
+&lt;li>
+&lt;p>每个datapartition存储目录中有一个&lt;code>EXTENT_CRC&lt;/code>文件，用于保存该datapartition 所有&lt;code>normal_extent&lt;/code>的crc校验头；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>EXTENT_CRC&lt;/code>文件由多个4KB大小的校验块组成，每个校验块存储一个&lt;code>normal_extent&lt;/code>的crc校验；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个4KB的校验块由1000个4B的CRC检验数据组成；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>datanode节点在加载normal_extent时，&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">|crc|
+| 4 | 4 |... | 4 | 4 |... |
+|--------------|--------------|---------------|
+4k 4k
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="extent-file">extent file&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>TinyExtent file(id: 1-64):&lt;/p>
+&lt;ul>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Normal Extent file:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>写请求追加写到extent文件末尾；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>normal extent file最大128MB, 写入前会对写入数据offset，size进行检查，超出128MB时无法写入；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="normalextent_delete">NORMALEXTENT_DELETE&lt;/h3>
+&lt;h3 id="tinyextent_delete">TINYEXTENT_DELETE&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>记录本dp已经删除过的tiny extent 数据块, 在第一次调用fallocate puchhole后记录；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个被删除的tiny extent 数据块记录为24Byte，按&lt;code>&amp;lt;extentID&amp;gt;&amp;lt;offset&amp;gt;&amp;lt;size&amp;gt;&lt;/code>这个依次追加到该文件中；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h4 id="status">&lt;strong>Status&lt;/strong>&lt;/h4>
+&lt;h2 id="extent">Extent&lt;/h2>
+&lt;p>每个dp包含多个&lt;code>extent&lt;/code>, 每个extent 对应一个extent file，用于存储数据。&lt;/p>
+&lt;p>extent file大小限制为128MB, 每个datapartition 包含的extent 个数不超过2000个(256GB)&lt;/p>
+&lt;p>extent分为&lt;code>NormalExtent&lt;/code> 和 &lt;code>TinyExtent&lt;/code> 两种类型。&lt;/p>
+&lt;h3 id="tinyextent">TinyExtent&lt;/h3>
+&lt;ul>
+&lt;li>id范围: [1, 64]&lt;/li>
+&lt;li>在每个dp加载时，会通过&lt;/li>
+&lt;/ul>
+&lt;h3 id="normalextent">NormalExtent&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>id: [1000, +)&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h2 id="extentstore">ExtentStore&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>datanode 数据存储目录结构&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>EXTENT_META&lt;/code>: &lt;code>metadataFp&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>EXTENT_CRC&lt;/code>: &lt;code>verifyExtentFp&lt;/code>, 存储当前datapartition 的所有&lt;code>normal_extent&lt;/code>crc校验数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>TINYEXTENT_DELETE&lt;/code>: &lt;code>tinyExtentDeleteFp&lt;/code>,&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="tinyextent中的删除">TinyExtent中的删除&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>删除的extent数据段offset必须是4K对齐的；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>先通过seek从文件中找到从offset开始的DATA起始位置newoffset；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过newoffset 和 offset之间的关系判断要删除的数据段是否已被删除；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>总共有以下4种情形：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>其中第2中的数据完全落在Hole中，其中数据已经删除过；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>其他情况都需要通过fallocate PunchHole来打洞删除从offset开始的size长的数据；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">// 情形1：待删除数据区offset+size完全落在DATA区域, newoffset == offset
+data hole data hole
+|-------------|xxxxxxxxx|--------------|xxxxxxxx|--------
+^-----+
+offset size
+// 情形2：待删除数据区offset+size完全落在HOLE区域， newoffset - offset &amp;gt; size
+data hole data hole
+|-------------|xxxxxxxxx|--------------|xxxxxxxx|--------
+^---+ ^
+offset newoffset
+// 情形3：待删除数据区offset+size部分落在DATA区域；
+data hole data hole
+|-------------|xxxxxxxxx|--------------|xxxxxxxx|--------
+^----------+
+offset size
+// 情形4：待删除数据区offset+size部分落在DATA区域；
+data hole data hole
+|-------------|xxxxxxxxx|--------------|xxxxxxxx|--------
+^-------------+
+offset ^newoffset
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="datapartition加载">DataPartition加载&lt;/h2>
+&lt;h2 id="datapartition修复">DataPartition修复&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>每个dp在新建和加载后会启动一个&lt;code>statusUpdateScheduler()&lt;/code>协程;&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>该协程每过1min会先更新一下dp状态(计算usage，更新status)，并交替启动repair任务(TinyExtent, NormalExtent交替分开)；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每5min会启动&lt;code>ReloadSnapshot()&lt;/code>任务；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Repair任务由&lt;code>LaunchRepair()&lt;/code>启动；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>先检查dp状态, &lt;code>Unavailable&lt;/code>状态的dp不参与修复；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>然后&lt;code>updateRelicas()&lt;/code>从master获取最新的副本ip；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>检查是否为leader，非leader退出，不启动 修复；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后由&lt;code>repair()&lt;/code>函数执行修复任务；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul></description></item><item><title>Flink-基本</title><link>https://justice.bj.cn/post/30.architech/flink/flink%E5%9F%BA%E7%A1%80/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/flink/flink%E5%9F%BA%E7%A1%80/</guid><description>&lt;h1 id="flink-基本">Flink-基本&lt;/h1>
+&lt;h2 id="数据流">数据流&lt;/h2>
+&lt;p>数据流就是一个无界（unbounded）的事件序列。事件（Event）可以是监控报警数据、传感器感知数据、信用卡交易、用户在APP上的行为&amp;hellip;随着数据量的爆炸式增长，单台机器无法处理庞大的数据流，一般需要多台机器并行地处理，因此需要一种并行的流式计算引擎来对大数据场景下的数据流做处理。&lt;/p>
+&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-44a4023fff6f8d0944cece45b24a25ec_1440w.jpg" alt="">&lt;/p>
+&lt;p>有界和无界数据 来源：Flink官网&lt;/p>
+&lt;h2 id="流式计算的衡量指标延迟和吞吐">流式计算的衡量指标：延迟和吞吐&lt;/h2>
+&lt;p>在批量计算场景，主要通过一次计算的总时间来评价性能。在流式计算场景，数据源源不断地流入系统，计算引擎对每个数据处理地越快越好，计算引擎能处理的数据量越大越好。例如处理实时的Twitter文本数据案例，如果系统只能处理一个人发的Tweet或处理时间长达一天，那说明这个系统非常不靠谱。为了衡量流式计算的“快”和“量”两方面的性能，一般用延迟（Latency）和吞吐（Throughput）这两个指标。&lt;/p>
+&lt;p>&lt;strong>延迟 Latency&lt;/strong>&lt;/p>
+&lt;p>延迟表示一个事件被系统处理的总时间，一般以毫秒为单位。根据业务应用不同，我们一般关心平均延迟和分位延迟（Percentile Latency）。假设一个煎饼摊就是一个流式计算系统，每个顾客来购买煎饼是它所需要处理的事件，从顾客到达到顾客拿到购买的煎饼并付费离开，就是这个顾客的延迟。如果正赶上了早餐高峰期，顾客极有可能排队，这个排队时间也要算在延迟时间中。例如，99分位延迟表示系统处理前99%顾客所需的最长时间，也就是对所有顾客延迟排名后，第99%的那个时间。一般商业系统更关注分位延迟，因为分位延迟比平均延迟能反应出这个系统的一些潜在问题。还是以煎饼摊为例，一般煎饼中都有薄脆，薄脆是单独制作的，如果薄脆制作的速度跟不上煎饼制作的速度，那在高峰期，将拖慢整个过程的延迟，部分用户会因为等待时间过久而放弃排队。&lt;/p>
+&lt;p>延迟对于很多流式计算非常重要，比如欺诈检测、告警监控等等。像Flink这样的流式计算引擎可以将延迟降到毫秒级别，如果用mini-batch的方法处理同样的问题，很可能是分钟级到小时级的延迟，因为计算引擎必须等待一批数据达到才开始进行计算。&lt;/p>
+&lt;p>&lt;strong>吞吐 Throughput&lt;/strong>&lt;/p>
+&lt;p>吞吐表示一个系统最大能处理多少事件，一般以单位时间处理的事件数量为单位。需要注意的是，吞吐除了与引擎自身设计有关，也与数据源发送过来的事件数据量有关，有可能计算引擎的最大吞吐量远大于数据源的数据量。比如，煎饼摊可能在早七点到九点的需求最高，很可能出现大量排队的情况，但另外的时间几乎不需要排队等待。假设一天能提供1000个煎饼，服务10个小时，那它的平均吞吐量为100个/小时；仅早上2小时的高峰期就提供了600个煎饼，它的峰值吞吐量是300个/小时。比起平均吞吐量，峰值吞吐量更影响用户体验，如果峰值吞吐量低，也会导致用户等待时间过久而放弃排队。早高峰时，一般用户都需要排队等待，排队的过程被称作缓存（Buffering）。如果仍然有大量事件进入缓存，很可能超出系统的极限，就会出现反压问题（Backpressure），这时候就需要一些优雅的策略来处理类似问题，否则会造成系统崩溃，用户体验极差。&lt;/p>
+&lt;p>&lt;strong>延迟与吞吐&lt;/strong>&lt;/p>
+&lt;p>延迟与吞吐其实并不是相互孤立的，他们相互影响。如果延迟高，那么很可能造成吞吐低，系统处理不了太多事件。为了优化这两个指标，一种办法是提高煎饼师傅的制作速度，当用户量大到超过单个煎饼师傅的瓶颈时，接着就需要考虑再增加一个煎饼师傅。这也是当前大数据系统都在采用的并行(parallelism)策略，如果一个机器做不了或做得不够快，那就用更多的机器一起来做。&lt;/p>
+&lt;h2 id="数据流图">数据流图&lt;/h2>
+&lt;p>数据流图描述了数据如何在不同的操作间流动。数据流图一般是一个有向图，图中的节点是一个算子（Operator），表示某种运算，边表示数据间的相互依赖关系或数据的流动方向。算子从输入读取数据，进行一些计算，接着将计算结果发送到下一个算子。Source是所有计算的开始，Sink是所有计算的终点。&lt;/p>
+&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-e9d18ef9720eb373896825ccfd66635c_1440w.png" alt="">&lt;/p>
+&lt;p>一个解析Twitter标签的数据流图逻辑视角 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>上图从逻辑角度描述数据的流动，对于一个Twitter数据流，接收输入源后需要将Twitter文本中的#井号标签去除，提取关键词，再对关键词做词频统计。这样一个图并没有考虑大数据情况下跨计算节点计算的问题，它只是一种处理问题的逻辑思路，因此称之为逻辑视角。&lt;/p>
+&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-aa6d4062c5fbe69b8f118823a8a72c76_1440w.jpg" alt="">&lt;/p>
+&lt;p>数据流图的物理视角 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>实现一个能够处理大数据的分布式系统，需要考虑在多个节点上并行计算。上图将逻辑视角细化为物理视角。Source发出的数据会兵分两路，被分配到两个节点上，在各自节点上进行&amp;quot;Extract hashtags&amp;quot;和&amp;quot;Count&amp;quot;运算。每个&amp;quot;Extract hashtags&amp;quot;和&amp;quot;Count&amp;quot;运算只处理一部分数据。最终数据要聚合到Sink上。&lt;/p>
+&lt;h2 id="数据交换策略">数据交换策略&lt;/h2>
+&lt;p>在物理视角中，我们看到数据经历了跨节点的数据交换。比如，我们要统计&amp;quot;Flink&amp;quot;这个单词出现的次数，各个节点可能都会解析出&amp;quot;Flink&amp;quot;这个单词，但是我们最终要的是所有节点上的&amp;quot;Flink&amp;quot;单词的总和。因此从&amp;quot;Extract hashtags&amp;quot;到&amp;quot;Count&amp;quot;，发生了数据交换，所有的&amp;quot;Flink&amp;quot;被发送到第一个节点上，才能做词频求和统计。在这个任务中，同一个词需要交换到同一个节点上，就是一种数据交换。&lt;/p>
+&lt;p>在流式计算场景，某个节点及节点上的数据通常被称为分区（partition）。&lt;/p>
+&lt;p>数据交换一般有以下几种策略。&lt;/p>
+&lt;p>&lt;img src="https://pic2.zhimg.com/80/v2-f4e055bfad75c037ea5c07acc26481bd_1440w.jpg" alt="">&lt;/p>
+&lt;p>数据交换策略 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;ul>
+&lt;li>Forward：数据在一个分区上前向传播，无需跨节点通信。&lt;/li>
+&lt;li>Broadcast：将数据发送到所有分区上，需要大量的跨节点通信开销。&lt;/li>
+&lt;li>Key-Based：按照某个key将数据做分片，某个key的所有数据都会分配到一个分区上。刚才词频统计的例子中，就是以单词为key进行的分片处理。&lt;/li>
+&lt;li>Random：将数据做随机均匀分片，以避某个分区上的数据过大。&lt;/li>
+&lt;/ul>
+&lt;h2 id="状态-state">状态 State&lt;/h2>
+&lt;p>状态是流式计算特有的概念。比如刚才计算词频的例子，要统计实时数据流一分钟内的单词词频，一方面要处理每一瞬间新流入的数据，另一方面要保存之前一分钟内已经进入系统的单词词频。再举一个告警的例子，当系统在监听到“高温”事件后10分钟内又监听到“冒烟”的事件，系统必须及时报警，系统必须把“高温”的事件作为状态记录下来，并判断这个状态下十分钟内是否有“冒烟”事件。&lt;/p>
+&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-48e2ac54d3ca4a9040e4b37a71f31d20_1440w.jpg" alt="">&lt;/p>
+&lt;p>无状态算子 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>上图中的圆圈就是一个无状态算子，它将每个输入方框都转化成黑色。&lt;/p>
+&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-1f07121b4f763eca8a89057add6ac6a2_1440w.jpg" alt="">&lt;/p>
+&lt;p>有状态算子 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>上图的圆圈是一个有状态算子，计算的是一个数据流中的最小值。它需要保存一个当前的最小值作为状态，并根据新事件来不断更新这个状态。&lt;/p>
+&lt;p>流式计算要处理无界的数据流，要注意如果将这些状态不断增长，最后造成数据爆炸，因此会使用一些机制来限制状态的数据总量。&lt;/p>
+&lt;p>综上，实现一个流式计算系统非常复杂，需要考虑几个因素：&lt;/p>
+&lt;ol>
+&lt;li>系统必须能有效管理状态。因为一般的计算既依赖当前事件，也依赖之前事件产生的状态。&lt;/li>
+&lt;li>设计能够管理状态的并行算法极具挑战。一般将数据按照某个key进行切片，将一组大数据切分成小的分区，每个分区单独维护状态数据。&lt;/li>
+&lt;li>当系统出现错误而挂掉重启时，必须能够保证之前保存的状态数据也能恢复，否则重启后很多计算结果有可能是错误的。一般使用checkpoint来解决这个问题。&lt;/li>
+&lt;/ol>
+&lt;p>可见，流式计算系统比批量计算系统更难实现。&lt;/p>
+&lt;h2 id="窗口">窗口&lt;/h2>
+&lt;p>我们一般要对流式数据以窗口的形式做聚合统计分析。一般有如下几种定义窗口的方式。&lt;/p>
+&lt;p>&lt;strong>Tumbling&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://pic4.zhimg.com/80/v2-dbfc6013f3dadf1bae2c6802ae35ff97_1440w.jpg" alt="">&lt;/p>
+&lt;p>Count-Based Tumbling Window 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-36611d45c569176cc03ab990bf7acfc8_1440w.jpg" alt="">&lt;/p>
+&lt;p>Time-based Tumbing Window 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>Tumbling窗口互不重叠且一般是定长的，可以是固定事件数目，也可以是固定时间间隔。&lt;/p>
+&lt;p>&lt;strong>Sliding&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-6666b3b8ccf8e39d18d558770f5a3d86_1440w.jpg" alt="">&lt;/p>
+&lt;p>Sliding Window 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>滑动窗口的窗口与窗口之间有滑动间隔（Slide）。&lt;/p>
+&lt;p>&lt;strong>Session&lt;/strong>&lt;/p>
+&lt;p>Session是一个用户与互联网应用交互的概念，一般指用户在APP或网站上的一系列行为。比如，用户在淘宝上短时间有大量的搜索和点击的行为，这一些列行为组成了一个Session，接着可能因为一些其他因素，用户暂停了与APP的交互，过一会用户又返回了APP，经过一系列搜索、点击、与客服沟通，最终下单。Session窗口的长度并不固定，因此不能简单用上面两种形式的窗口来建模。&lt;/p>
+&lt;p>&lt;img src="https://pic3.zhimg.com/80/v2-b34efc018a871410e8747363c53754be_1440w.jpg" alt="">&lt;/p>
+&lt;p>Session Window 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>Session窗口没有固定长度，一般使用Session Gap将数据做分组。&lt;/p>
+&lt;p>&lt;strong>并行物理视角&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://pic2.zhimg.com/80/v2-7ea5729416de90dffe8f1414e6484e49_1440w.jpg" alt="">&lt;/p>
+&lt;p>Parallel Count-based Tumbling Window 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>前面讲的几种窗口都是从全局视角定义的逻辑窗口，实际上数据是在不同分区上的。例如，接受一个传感器数据流，我们可以根据传感器id作为key，将来自同一个传感器的事件都切分到一个分区上。每个分区的数据是独立的，其窗口策略也是独立的。例如上图所示的，同一颜色的事件被分到同一个分区上，组成固定长度为2的窗口。&lt;/p>
+&lt;h2 id="时间语义">时间语义&lt;/h2>
+&lt;p>&lt;strong>“一分钟”真的是一分钟吗？&lt;/strong>&lt;/p>
+&lt;p>你可能觉得时间是最简单不过的事情，没什么可讨论的，恰恰相反，在很多应用场景，时间有着不同的意义。“一分钟”真的是一分钟吗？&lt;/p>
+&lt;p>&lt;img src="https://pic1.zhimg.com/80/v2-36ba1b13b076e27eac94a37077165604_1440w.jpg" alt="">&lt;/p>
+&lt;p>穿越隧道的一分钟 来源：Streaming Processing With Apache Flink&lt;/p>
+&lt;p>假设你坐高铁并玩王者荣耀消磨时间，王者荣耀在最终计算MVP时，要考虑的一个因素是玩家每分钟释放技能次数。在一波团战中，你疯狂抢了三个人头，正当你觉得稳拿MVP时，高铁穿越进了隧道，手机丢失信号，你掉线了！好在高铁在隧道里只停留了几十秒，APP缓存了你掉线时的数据，并在信号恢复后将缓存数据传回了服务器。在这种情形下，时间比想象中更复杂，有一个时间记录事件实际发生的时间（Event Time），还有一个时间是事件上传到服务器后，服务器处理时间（Processing Time）。&lt;/p>
+&lt;p>比如，你旁边的小伙伴跟你一起开黑，他的手机运营商更给力，进隧道后没有丢信号，如果都使用Processing Time，在丢失信号的这段时间，你的数据没有计算进去，显然对你来说是不公平的。但是当信号恢复，数据重传到服务器，再根据Event Time重新计算一次，那就非常公平了。我们可以根据Event Time复现一个事件序列的顺序，因此，使用Event Time是最准确的。&lt;/p>
+&lt;p>&lt;strong>Watermark&lt;/strong>&lt;/p>
+&lt;p>虽然使用Event Time更准确，但问题在于，因为各种不可控因素，事件上报会有延迟，那么最多要等待多长时间呢？从服务器的角度来看，在事件到达之前，我们也无法确定是否有事件已经延迟，如何设置Event Time时间窗口成了很大的问题。比如刚才的例子，我们要统计一分钟内的实时数据，考虑到事件的延迟，如何设置合理的等待时间，以等待一分钟内所有事件都到达服务器？也正因为这个问题，流式计算比批量计算在准确性上有差距，因为批量计算一般以更长的一段时间为一个批次，一个批次内延迟上报的数据比一个时间窗口内延迟上报的数据相对比例更少。比如某个电商平台上，去计算一件商品每分钟点击次数，使用一天的总数除以分钟数的计算方法，比使用一分钟时间窗口实时的点击次数更准确。可以看到，数据的实时性和准确性二者不可得兼，必须取一个平衡。&lt;/p>
+&lt;p>Watermark是一种折中解决方案，它假设某个时间点上，不会有比这个时间点更晚的上报数据。当算子接受到一个Watermark后，它会假定后续不会再接收到这个时间窗口的内容，然后会触发对当前时间窗口的计算。比如，一种 Eager Watermark 策略的等待延迟上报的时间非常短，这样能保证低延迟，但是会导致错误率上升。在实际应用中，Watermark设计多长非常有挑战。还是以刚才手机游戏的例子，系统不知道玩家这次掉线的原因是什么，可能是在穿越隧道，也可能是坐飞机进入飞行模式，还有可能把这个游戏删了再也不玩了。&lt;/p>
+&lt;p>&lt;strong>Processing Time 与 Event Time&lt;/strong>&lt;/p>
+&lt;p>那既然Event Time似乎可以解决一切问题，为什么还要使用Processing Time？前面也提到了，为了处理延迟上报或顺序错乱的事件，需要使用一些机制来做等待，这样会导致延迟上升。在某些场景可能对准确性要求不高，但是要求实时性更高，Processing Time就更合适一些。&lt;/p>
+&lt;h2 id="投递保障">投递保障&lt;/h2>
+&lt;p>事件进入到计算引擎，如果引擎遇到故障并重启，该事件是否被成功处理了呢？一般有三种结果。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>At Most Once&lt;/strong>: 每个事件最多被处理一次，也就是说，有可能某些事件没有被处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>At Least Once&lt;/strong>: 每个事件至少被处理一次，如果系统遇到故障，系统重启后该事件会被再次处理一次。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Exactly Once&lt;/strong>: 每个事件只被处理一次，无论是否有故障重启。&amp;ldquo;Exactly Once&amp;quot;意味着事件不能有任何丢失，也必须保障状态也&amp;quot;Exactly Once&amp;rdquo;。Flink实现了&amp;quot;Exactly Once&amp;quot;语义。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="小结">小结&lt;/h2>
+&lt;p>本文简述了流式大数据处理引擎的一些基础概念，包括数据流、数据流图、衡量指标、状态、时间、以及投递保障，每个流式计算引擎的实现过程都要面对这些问题，Flink对这些问题做出了具体实现。&lt;/p></description></item><item><title>RocksDB</title><link>https://justice.bj.cn/post/30.architech/rocksdb/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/rocksdb/</guid><description>&lt;h1 id="rocksdb">RocksDB&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>RocksDB是Facebook基于LevelDB开发的一种嵌入式Key-value存储系统，该数据库能够充分利用闪存的性能，大大提升应用服务器的速度。
+这是一个c++库,用于存储键和值,可以是任意大小的字节流。支持原子读和写。
+RocksDB具有高度灵活的配置功能,可以通过配置使其运行在各种各样的生产环境,包括纯内存,Flash,硬盘或HDFS。它支持各种压缩算法，并提供了便捷的生产环境维护和调试工具。&lt;/p>
+&lt;ul>
+&lt;li>内存结构memtable&lt;/li>
+&lt;li>类似事务日志角色的WAL文件：&lt;/li>
+&lt;li>持久化的SST文件：&lt;/li>
+&lt;/ul>
+&lt;h2 id="写流程">写流程&lt;/h2>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/12/25-09-36-56-image-20190905182525925.png" alt="image-20190905182525925">&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/12/25-09-37-55-image-20190905182625720.png" alt="image-20190905182625720">&lt;/p>
+&lt;p>SST file&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&amp;lt;beginning_of_file&amp;gt;
+[data block 1] // 具体的 KV 数据
+[data block 2] // 具体的 KV 数据
+...
+[data block N] // 具体的 KV 数据
+[meta block 1: filter block] // Filter 信息，比如 bloom filter
+[meta block 2: index block] // data block 对应的 index，查询中通过对 index block 进行二分查找来定位到具体的 data block
+... (compression/range deletion/stats block)
+[meta block K: future extended block]
+[metaindex block]
+[Footer]
+&amp;lt;end_of_file&amp;gt;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="compaction">Compaction&lt;/h2>
+&lt;h3 id="compaction策略">Compaction策略&lt;/h3>
+&lt;ul>
+&lt;li>Leveled Compaction（默认策略）：Compaction 触发频率相对高，读放大低，写放大高&lt;/li>
+&lt;li>&lt;a href="https://link.zhihu.com/?target=https%3A//github.com/facebook/rocksdb/wiki/Universal-Compaction">Universal Compaction&lt;/a>：Compaction 触发频率相对低，读放大高，写放大低&lt;/li>
+&lt;li>&lt;a href="https://link.zhihu.com/?target=https%3A//github.com/facebook/rocksdb/wiki/FIFO-compaction-style">FIFO Compaction&lt;/a>：几乎不发生 Compaction，读放大高，写放大几乎没有&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://www.cnblogs.com/pdev/p/11277784.html">RocksDB解析 - Pentium.Labs - 博客园&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/458148962">https://zhuanlan.zhihu.com/p/458148962&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>专题1：二叉树相关</title><link>https://justice.bj.cn/post/leetcode/doc/%E4%B8%93%E9%A2%981%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9B%B8%E5%85%B3/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/%E4%B8%93%E9%A2%981%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9B%B8%E5%85%B3/</guid><description>&lt;h1 id="专题1二叉树相关">专题1：二叉树相关&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>二叉树是一个递归的结构&lt;/p>
+&lt;h2 id="相关题目">相关题目&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="./94.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E4%B8%AD%E5%BA%8F%E9%81%8D%E5%8E%86.md">94.二叉树的中序遍历&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>后序遍历&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="./100.%E7%9B%B8%E5%90%8C%E7%9A%84%E6%A0%91.md">100.相同的树&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="./101.%E5%AF%B9%E7%A7%B0%E4%BA%8C%E5%8F%89%E6%A0%91.md">101.对称二叉树&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>102.二叉树的层序遍历&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>路径和&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>543.二叉树的直径&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="./617.%E5%90%88%E5%B9%B6%E4%BA%8C%E5%8F%89%E6%A0%91.md">617.合并二叉树&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="./101.%E5%AF%B9%E7%A7%B0%E4%BA%8C%E5%8F%89%E6%A0%91.md">101.对称二叉树&lt;/a>：&lt;/p>
+&lt;/li>
+&lt;/ul></description></item><item><title>对称二叉树</title><link>https://justice.bj.cn/post/leetcode/doc/101.%E5%AF%B9%E7%A7%B0%E4%BA%8C%E5%8F%89%E6%A0%91/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/101.%E5%AF%B9%E7%A7%B0%E4%BA%8C%E5%8F%89%E6%A0%91/</guid><description>&lt;h1 id="对称二叉树httpsleetcode-cncomproblemssymmetric-treedescription-httpsleetcode-cncomproblemssymmetric-treedescription">&lt;a href="https://leetcode-cn.com/problems/symmetric-tree/description/" title="https://leetcode-cn.com/problems/symmetric-tree/description/">对称二叉树&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Easy (56.66%)&lt;/td>
+&lt;td>1665&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/tree" title="https://leetcode.com/tag/tree">&lt;code>tree&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/depth-first-search" title="https://leetcode.com/tag/depth-first-search">&lt;code>depth-first-search&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/breadth-first-search" title="https://leetcode.com/tag/breadth-first-search">&lt;code>breadth-first-search&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>bloomberg&lt;/code> | &lt;code>linkedin&lt;/code> | &lt;code>microsoft&lt;/code>&lt;/p>
+&lt;p>给定一个二叉树，检查它是否是镜像对称的。&lt;/p>
+&lt;p>例如，二叉树 &lt;code>[1,2,2,3,4,4,3]&lt;/code> 是对称的。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback"> 1
+/ \
+2 2
+/ \ / \
+3 4 4 3
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>但是下面这个 &lt;code>[1,2,2,null,3,null,3]&lt;/code> 则不是镜像对称的:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback"> 1
+/ \
+2 2
+\ \
+3 3
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>进阶：&lt;/strong>&lt;/p>
+&lt;p>你可以运用递归和迭代两种方法解决这个问题吗？&lt;/p>
+&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/symmetric-tree/comments/" title="https://leetcode-cn.com/problems/symmetric-tree/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/symmetric-tree/solution/" title="https://leetcode-cn.com/problems/symmetric-tree/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;span class="lnt">50
+&lt;/span>&lt;span class="lnt">51
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">class&lt;/span> &lt;span class="nc">Solution&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
+&lt;span class="cm">/*
+&lt;/span>&lt;span class="cm"> ## 解题思路
+&lt;/span>&lt;span class="cm"> * * 解法一：递归法
+&lt;/span>&lt;span class="cm"> * * 转化为镜像树问题；
+&lt;/span>&lt;span class="cm"> * * 镜像子树：根节点相等 且 相互的左子树，右子树互为镜像子树；
+&lt;/span>&lt;span class="cm"> */&lt;/span>
+&lt;span class="kt">bool&lt;/span> &lt;span class="n">isSymmetric&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">root&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="nf">isMirrorByRec&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">root&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">root&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">//return isMirrorByIter(root, root);
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;span class="c1">// check p,q is mirror
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">bool&lt;/span> &lt;span class="nf">isMirrorByRec&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">true&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">false&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">val&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">val&lt;/span>
+&lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">isMirrorByRec&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">left&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">right&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">isMirrorByRec&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">right&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">left&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">)&lt;/span> &lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="cm">/*
+&lt;/span>&lt;span class="cm"> ## 解法二：迭代法
+&lt;/span>&lt;span class="cm"> * 使用一个队列层历该树；
+&lt;/span>&lt;span class="cm"> * 初始将root入队两次；
+&lt;/span>&lt;span class="cm"> * 然后每次队列出队时，
+&lt;/span>&lt;span class="cm"> */&lt;/span>
+&lt;span class="kt">bool&lt;/span> &lt;span class="nf">isMirrorByIter&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">true&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">false&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&amp;gt;&lt;/span> &lt;span class="n">queue&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="k">while&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">empty&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">p&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">front&lt;/span>&lt;span class="p">();&lt;/span> &lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">pop&lt;/span>&lt;span class="p">();&lt;/span>
+&lt;span class="n">q&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">front&lt;/span>&lt;span class="p">();&lt;/span> &lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">pop&lt;/span>&lt;span class="p">();&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">continue&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">false&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">val&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">val&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">false&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">left&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">right&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">right&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">queue&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">push&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">left&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="nb">true&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">};&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div></description></item><item><title>最小覆盖子串</title><link>https://justice.bj.cn/post/leetcode/doc/76.%E6%9C%80%E5%B0%8F%E8%A6%86%E7%9B%96%E5%AD%90%E4%B8%B2/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/76.%E6%9C%80%E5%B0%8F%E8%A6%86%E7%9B%96%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="最小覆盖子串httpsleetcode-cncomproblemsminimum-window-substringdescription-httpsleetcode-cncomproblemsminimum-window-substringdescription">&lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/description/" title="https://leetcode-cn.com/problems/minimum-window-substring/description/">最小覆盖子串&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Hard (43.18%)&lt;/td>
+&lt;td>1565&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/hash-table" title="https://leetcode.com/tag/hash-table">&lt;code>hash-table&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/two-pointers" title="https://leetcode.com/tag/two-pointers">&lt;code>two-pointers&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/string" title="https://leetcode.com/tag/string">&lt;code>string&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>facebook&lt;/code> | &lt;code>linkedin&lt;/code> | &lt;code>snapchat&lt;/code> | &lt;code>uber&lt;/code>&lt;/p>
+&lt;p>给你一个字符串 &lt;code>s&lt;/code> 、一个字符串 &lt;code>t&lt;/code> 。返回 &lt;code>s&lt;/code> 中涵盖 &lt;code>t&lt;/code> 所有字符的最小子串。如果 &lt;code>s&lt;/code> 中不存在涵盖 &lt;code>t&lt;/code> 所有字符的子串，则返回空字符串 &lt;code>&amp;quot;&amp;quot;&lt;/code> 。&lt;/p>
+&lt;p>&lt;strong>注意：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>对于 &lt;code>t&lt;/code> 中重复字符，我们寻找的子字符串中该字符数量必须不少于 &lt;code>t&lt;/code> 中该字符数量。&lt;/li>
+&lt;li>如果 &lt;code>s&lt;/code> 中存在这样的子串，我们保证它是唯一的答案。&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：s = &amp;#34;ADOBECODEBANC&amp;#34;, t = &amp;#34;ABC&amp;#34;
+输出：&amp;#34;BANC&amp;#34;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：s = &amp;#34;a&amp;#34;, t = &amp;#34;a&amp;#34;
+输出：&amp;#34;a&amp;#34;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: s = &amp;#34;a&amp;#34;, t = &amp;#34;aa&amp;#34;
+输出: &amp;#34;&amp;#34;
+解释: t 中两个字符 &amp;#39;a&amp;#39; 均应包含在 s 的子串中，
+因此没有符合条件的子字符串，返回空字符串。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>1 &amp;lt;= s.length, t.length &amp;lt;= 105&lt;/code>&lt;/li>
+&lt;li>&lt;code>s&lt;/code> 和 &lt;code>t&lt;/code> 由英文字母组成&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>进阶&lt;/strong>：你能设计一个在 &lt;code>o(n)&lt;/code> 时间内解决此问题的算法吗？&lt;/p>
+&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/comments/" title="https://leetcode-cn.com/problems/minimum-window-substring/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/solution/" title="https://leetcode-cn.com/problems/minimum-window-substring/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;h3 id="滑动窗口">滑动窗口&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>右指针r: 当窗口未完整包含目标字符串t时，r右移，增大窗口范围；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>左指针l: 当窗口已经完整包含目标字符串t时，l右移，减小窗口范围，获取包含目标字符串最小长度；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://assets.leetcode-cn.com/solution-static/76/76_fig1.gif" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">class&lt;/span> &lt;span class="nc">Solution&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
+&lt;span class="cm">/*
+&lt;/span>&lt;span class="cm"> * ## 解题思路
+&lt;/span>&lt;span class="cm"> * * 滑动窗口
+&lt;/span>&lt;span class="cm"> * * 右指针r: 如果当前窗口没有完整包含t，则r右移，扩大窗口范围，直到窗口完整包含t；
+&lt;/span>&lt;span class="cm"> * * 左指针l: 如果当前已经完整包含t，则l右移，减小窗口范围，直到窗口为完整包含t的最小窗口；
+&lt;/span>&lt;span class="cm"> * *
+&lt;/span>&lt;span class="cm"> */&lt;/span>
+&lt;span class="n">string&lt;/span> &lt;span class="n">minWindow&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">string&lt;/span> &lt;span class="n">s&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">string&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">string&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//结果
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unordered_map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">char&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">s_map&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内字符数统计
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unordered_map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">char&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//目标字符数统计
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">valid_count&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内的有效字符数
+&lt;/span>&lt;span class="c1">&lt;/span>
+&lt;span class="c1">// 初始化目标hash数组
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">auto&lt;/span> &lt;span class="nl">c&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">l&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">length&lt;/span>&lt;span class="p">();&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]]&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内字符数+1；
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">//当前字符统计数未超过目标字符统计数是，
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]]&lt;/span> &lt;span class="o">&amp;lt;=&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]])&lt;/span> &lt;span class="n">valid_count&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 当前窗口内左字符有效字符数&amp;gt;目标字符数，滑动左指针
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">while&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">]]&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">]])&lt;/span> &lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">]]&lt;/span>&lt;span class="o">--&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 刚好
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">valid_count&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">length&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">res&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">empty&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">l&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">size&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">res&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">substr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">};&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div></description></item><item><title>相同的树</title><link>https://justice.bj.cn/post/leetcode/doc/100.%E7%9B%B8%E5%90%8C%E7%9A%84%E6%A0%91/</link><pubDate>Thu, 20 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/100.%E7%9B%B8%E5%90%8C%E7%9A%84%E6%A0%91/</guid><description>&lt;h1 id="相同的树httpsleetcode-cncomproblemssame-treedescription-httpsleetcode-cncomproblemssame-treedescription">&lt;a href="https://leetcode-cn.com/problems/same-tree/description/" title="https://leetcode-cn.com/problems/same-tree/description/">相同的树&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Easy (59.91%)&lt;/td>
+&lt;td>753&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/tree" title="https://leetcode.com/tag/tree">&lt;code>tree&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/depth-first-search" title="https://leetcode.com/tag/depth-first-search">&lt;code>depth-first-search&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>bloomberg&lt;/code>&lt;/p>
+&lt;p>给你两棵二叉树的根节点 &lt;code>p&lt;/code> 和 &lt;code>q&lt;/code> ，编写一个函数来检验这两棵树是否相同。&lt;/p>
+&lt;p>如果两个树在结构上相同，并且节点具有相同的值，则认为它们是相同的。&lt;/p>
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://assets.leetcode.com/uploads/2020/12/20/ex1.jpg" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：p = [1,2,3], q = [1,2,3]
+输出：true
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://assets.leetcode.com/uploads/2020/12/20/ex2.jpg" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：p = [1,2], q = [1,null,2]
+输出：false
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://assets.leetcode.com/uploads/2020/12/20/ex3.jpg" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：p = [1,2,1], q = [1,1,2]
+输出：false
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>两棵树上的节点数目都在范围 &lt;code>[0, 100]&lt;/code> 内&lt;/li>
+&lt;li>&lt;code>-104 &amp;lt;= Node.val &amp;lt;= 104&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/same-tree/comments/" title="https://leetcode-cn.com/problems/same-tree/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/same-tree/solution/" title="https://leetcode-cn.com/problems/same-tree/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">class&lt;/span> &lt;span class="nc">Solution&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
+&lt;span class="cm">/*
+&lt;/span>&lt;span class="cm"> ## 解题思路
+&lt;/span>&lt;span class="cm"> * 解法一：递归法
+&lt;/span>&lt;span class="cm"> */&lt;/span>
+&lt;span class="kt">bool&lt;/span> &lt;span class="n">isSameTree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">TreeNode&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">true&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="n">p&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="n">q&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="nb">false&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="p">(&lt;/span> &lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">val&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">val&lt;/span>
+&lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">isSameTree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">left&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">left&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">isSameTree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">p&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">right&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">q&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">right&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">};&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
 &lt;/div></description></item><item><title>ElasticSearch基础</title><link>https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%9F%BA%E7%A1%80/</link><pubDate>Wed, 19 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%9F%BA%E7%A1%80/</guid><description>&lt;h1 id="elasticsearch基础">ElasticSearch基础&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;p>Elasticsearch 是一个基于lucene的分布式可扩展的近实时搜索和分析引擎。&lt;/p>
@@ -679,1076 +1823,6 @@ curl -X DELETE http://192.168.0.10:20000/test6
 &lt;/li>
 &lt;li>
 &lt;p>&lt;a href="https://cloud.tencent.com/document/product/1179/58527">消息队列 Pulsar 版 消息存储原理与 ID 规则 - 开发指南 - 文档中心 - 腾讯云&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>STL-deque</title><link>https://justice.bj.cn/post/14.language/c++/stl/stl-deque/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/c++/stl/stl-deque/</guid><description>&lt;h1 id="stl-deque">STL-deque&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;h2 id="参考">参考&lt;/h2></description></item><item><title>STL容器</title><link>https://justice.bj.cn/post/14.language/c++/stl/stl%E5%AE%B9%E5%99%A8/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/c++/stl/stl%E5%AE%B9%E5%99%A8/</guid><description>&lt;h1 id="stl容器">STL容器&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>容器库是类模板与算法的汇集，允许程序员简单地访问常见数据结构，例如队列、链表和栈。有三类容器——顺序容器、关联容器和无序关联容器——每种都被设计为支持不同组的操作。&lt;/p>
-&lt;p>容器管理为其元素分配的存储空间，并提供直接或间接地通过迭代器（拥有类似指针属性的对象）访问它们的函数。&lt;/p>
-&lt;p>大多数容器拥有至少几个常见的成员函数，并共享功能。特定应用的最佳容器不仅依赖于提供的功能，还依赖于对于不同工作量的效率。&lt;/p>
-&lt;h3 id="顺序容器">顺序容器&lt;/h3>
-&lt;p>顺序容器是实现能按顺序访问的数据结构。&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>容器类型&lt;/th>
-&lt;th>版本&lt;/th>
-&lt;th>说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/array" title="cpp/container/array">array&lt;/a>&lt;/td>
-&lt;td>(C++11 起)&lt;/td>
-&lt;td>静态的连续数组 (类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/vector" title="cpp/container/vector">vector&lt;/a>&lt;/td>
-&lt;td>&lt;/td>
-&lt;td>动态的连续数组(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/deque" title="cpp/container/deque">deque&lt;/a>&lt;/td>
-&lt;td>&lt;/td>
-&lt;td>双端队列(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/forward_list" title="cpp/container/forward list">forward_list&lt;/a>&lt;/td>
-&lt;td>(C++11 起)&lt;/td>
-&lt;td>单链表(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/list" title="cpp/container/list">list&lt;/a>&lt;/td>
-&lt;td>&lt;/td>
-&lt;td>双链表(类模板)&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="关联容器">关联容器&lt;/h3>
-&lt;p>关联容器实现能快速查找（ O(log n) 复杂度）的数据结构。&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>容器类型&lt;/th>
-&lt;th>说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/set" title="cpp/container/set">set&lt;/a>&lt;/td>
-&lt;td>唯一键的集合，按照键排序 (类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/map" title="cpp/container/map">map&lt;/a>&lt;/td>
-&lt;td>键值对的集合，按照键排序，键是唯一的(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/multiset" title="cpp/container/multiset">multiset&lt;/a>&lt;/td>
-&lt;td>键的集合，按照键排序(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/multimap" title="cpp/container/multimap">multimap&lt;/a>&lt;/td>
-&lt;td>键值对的集合，按照键排序(类模板)&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="无序关联容器">无序关联容器&lt;/h3>
-&lt;p>无序关联容器提供能快速查找（均摊 O(1) ，最坏情况 O(n) 的复杂度）的无序（哈希）数据结构。&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>类型&lt;/th>
-&lt;th>版本&lt;/th>
-&lt;th>说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_set" title="cpp/container/unordered set">unordered_set&lt;/a>&lt;/td>
-&lt;td>(C++11 起)&lt;/td>
-&lt;td>唯一键的集合，按照键生成散列 (类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_map" title="cpp/container/unordered map">unordered_map&lt;/a>&lt;/td>
-&lt;td>(C++11 起)&lt;/td>
-&lt;td>键值对的集合，按照键生成散列，键是唯一的(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_multiset" title="cpp/container/unordered multiset">unordered_multiset&lt;/a>&lt;/td>
-&lt;td>(C++11 起)&lt;/td>
-&lt;td>键的集合，按照键生成散列(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_multimap" title="cpp/container/unordered multimap">unordered_multimap&lt;/a>&lt;/td>
-&lt;td>(C++11 起)&lt;/td>
-&lt;td>键值对的集合，按照键生成散列&lt;br>(类模板)&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="容器适配器">容器适配器&lt;/h3>
-&lt;p>容器适配器提供顺序容器的不同接口。&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>&lt;a href="https://zh.cppreference.com/w/cpp/container/stack" title="cpp/container/stack">stack&lt;/a>&lt;/th>
-&lt;th>适配一个容器以提供栈（LIFO 数据结构） &lt;br>(类模板)&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/queue" title="cpp/container/queue">queue&lt;/a>&lt;/td>
-&lt;td>适配一个容器以提供队列（FIFO 数据结构）&lt;br>(类模板)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;a href="https://zh.cppreference.com/w/cpp/container/priority_queue" title="cpp/container/priority queue">priority_queue&lt;/a>&lt;/td>
-&lt;td>适配一个容器以提供优先级队列&lt;br>(类模板)&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="span">span&lt;/h3>
-&lt;p>&lt;code>span&lt;/code> 是相接的对象序列上的非占有视图，某个其他对象占有序列的存储。&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>&lt;a href="https://zh.cppreference.com/w/cpp/container/span" title="cpp/container/span">span&lt;/a>&lt;br>&lt;br>(C++20)&lt;/th>
-&lt;th>对象的连续序列上的无所有权视图 &lt;br>(类模板)&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;/table>
-&lt;h3 id="迭代器非法化">迭代器非法化&lt;/h3>
-&lt;p>只读方法决不非法化迭代器或引用。修改容器内容的方法可能非法化迭代器和/或引用，总结于此表格。&lt;/p>
-&lt;p>此处&lt;strong>插入&lt;/strong>指代任何添加一或多个元素到容器的方法，而&lt;strong>擦除&lt;/strong>指代任何从容器移除一或多个元素的方法。&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>插入方法的例子是 &lt;a href="https://zh.cppreference.com/w/cpp/container/set/insert" title="cpp/container/set/insert">std::set::insert&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/map/emplace" title="cpp/container/map/emplace">std::map::emplace&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/vector/push_back" title="cpp/container/vector/push back">std::vector::push_back&lt;/a> 和 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque/push_front" title="cpp/container/deque/push front">std::deque::push_front&lt;/a> 。&lt;/p>
-&lt;ul>
-&lt;li>注意 &lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_map/operator_at" title="cpp/container/unordered map/operator at">std::unordered_map::operator[]&lt;/a> 也算，因为它可能插入元素到 map 中。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>擦除方法的例子是 &lt;a href="https://zh.cppreference.com/w/cpp/container/set/erase" title="cpp/container/set/erase">std::set::erase&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/vector/pop_back" title="cpp/container/vector/pop back">std::vector::pop_back&lt;/a> 、 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque/pop_front" title="cpp/container/deque/pop front">std::deque::pop_front&lt;/a> 和 &lt;a href="https://zh.cppreference.com/w/cpp/container/map/clear" title="cpp/container/map/clear">std::map::clear&lt;/a> 。&lt;/p>
-&lt;ul>
-&lt;li>&lt;code>clear&lt;/code> 非法化所有迭代器和引用。因为它擦除所有元素，这在技术上遵照上述规则。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>尾后迭代器需要特别留意。通常像指向未被擦除元素的正常迭代器一般非法化此迭代器。故 &lt;a href="https://zh.cppreference.com/w/cpp/container/set/end" title="cpp/container/set/end">std::set::end&lt;/a> 决不被非法化， &lt;a href="https://zh.cppreference.com/w/cpp/container/unordered_set/end" title="cpp/container/unordered set/end">std::unordered_set::end&lt;/a> 仅在重哈希时被非法化， &lt;a href="https://zh.cppreference.com/w/cpp/container/vector/end" title="cpp/container/vector/end">std::vector::end&lt;/a> 始终被非法化（因为它始终出现在被修改元素后），以此类推。&lt;/p>
-&lt;ul>
-&lt;li>例外：删除 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque" title="cpp/container/deque">std::deque&lt;/a> 末元素的擦除操作&lt;em>会&lt;/em>非法化尾后迭代器，尽管它不是容器的被擦除元素（或者说根本不是元素）。与 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque" title="cpp/container/deque">std::deque&lt;/a> 迭代器的通用规则结合后，最终结果是&lt;em>不&lt;/em>非法化 &lt;a href="https://zh.cppreference.com/w/cpp/container/deque/end" title="cpp/container/deque/end">std::deque::end&lt;/a> 的唯一修改操作是删除首元素，而非末元素的擦除。&lt;/li>
-&lt;/ul>
-&lt;h3 id="线程安全">线程安全&lt;/h3>
-&lt;ol>
-&lt;li>
-&lt;p>能同时在不同容器上由不同线程调用所有容器函数。更广泛而言， C++ 标准库函数不读取能通过其他线程访问的对象，除非这些对象能直接或间接地经由函数参数，包含 this 指针访问;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>能同时在同一容器上由不同线程调用 const 成员函数。而且，成员函数 &lt;code>begin()&lt;/code> 、 &lt;code>end()&lt;/code>, &lt;code>rbegin()&lt;/code> 、 &lt;code>rend()&lt;/code> 、 &lt;code>front()&lt;/code> 、 &lt;code>back()&lt;/code> 、 &lt;code>data()&lt;/code> 、 &lt;code>find()&lt;/code> 、 &lt;code>lower_bound()&lt;/code> 、 &lt;code>upper_bound()&lt;/code> 、 &lt;code>equal_range()&lt;/code> 、 &lt;code>at()&lt;/code> 和除了关联容器中的 &lt;code>operator[]&lt;/code> 对于线程安全的目标表现如同 const （即它们亦能同时在同一容器上由不同线程调用）。更广泛而言， C++ 标准库函数不修改对象，除非这些对象能直接或间接地经由函数参数，包含 this 指针访问。&lt;br>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>同一容器中不同元素能由不同线程同时修改，除了 std::vector&lt;bool> 的元素（例如， &lt;a href="https://zh.cppreference.com/w/cpp/thread/future" title="cpp/thread/future">std::future&lt;/a> 对象的 vector 能从多个线程接收值）;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>迭代器操作（例如自增迭代器）读但不修改底层容器，而且能与同一容器上的其他迭代器操作同时由 const 成员函数执行。非法化任何迭代器的容器操作修改容器，且不能与任何在既存迭代器上的操作同时执行，即使这些迭代器未被非法化;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>同一容器上的元素可以同时由不指定为访问这些元素的函数修改。更广泛而言， C++ 标准库函数不间接读取能从其参数访问的对象（包含容器的其他对象），除非其规定要求如此；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>任何情况下，容器操作（还有算法，或其他 C++ 标准库函数）可于内部并行化，只要不更改用户可见的结果（例如 &lt;a href="https://zh.cppreference.com/w/cpp/algorithm/transform" title="cpp/algorithm/transform">std::transform&lt;/a> 可并行化，但指定了按顺序观览序列的每个元素的 &lt;a href="https://zh.cppreference.com/w/cpp/algorithm/for_each" title="cpp/algorithm/for each">std::for_each&lt;/a> 不行） | (C++11 起)&lt;/p>
-&lt;/li>
-&lt;/ol>
-&lt;h3 id="成员函数表格">成员函数表格&lt;/h3></description></item><item><title>无重复字符的最长子串</title><link>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="无重复字符的最长子串httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription-httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription">&lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/">无重复字符的最长子串&lt;/a>&lt;/h1>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Category&lt;/th>
-&lt;th>Difficulty&lt;/th>
-&lt;th>Likes&lt;/th>
-&lt;th>Dislikes&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>algorithms&lt;/td>
-&lt;td>Medium (32.18%)&lt;/td>
-&lt;td>2861&lt;/td>
-&lt;td>-&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
-&lt;p>&lt;a href="https://leetcode.com/tag/hash-table" title="https://leetcode.com/tag/hash-table">&lt;code>hash-table&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/two-pointers" title="https://leetcode.com/tag/two-pointers">&lt;code>two-pointers&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/string" title="https://leetcode.com/tag/string">&lt;code>string&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
-&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
-&lt;p>&lt;code>adobe&lt;/code> | &lt;code>amazon&lt;/code> | &lt;code>bloomberg&lt;/code> | &lt;code>yelp&lt;/code>&lt;/p>
-&lt;p>给定一个字符串，请你找出其中不含有重复字符的 **最长子串 **的长度。&lt;/p>
-&lt;p>&lt;strong>示例 1:&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: &amp;#34;abcabcbb&amp;#34;
-输出: 3
-解释: 因为无重复字符的最长子串是 &amp;#34;abc&amp;#34;，所以其长度为 3。
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 2:&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: &amp;#34;bbbbb&amp;#34;
-输出: 1
-解释: 因为无重复字符的最长子串是 &amp;#34;b&amp;#34;，所以其长度为 1。
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: &amp;#34;pwwkew&amp;#34;
-输出: 3
-解释: 因为无重复字符的最长子串是 &amp;#34;wke&amp;#34;，所以其长度为 3。
-  请注意，你的答案必须是 子串 的长度，&amp;#34;pwke&amp;#34; 是一个子序列，不是子串。
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;hr>
-&lt;p>&lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/comments/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/">Solution&lt;/a>&lt;/p>
-&lt;h2 id="解法">解法&lt;/h2>
-&lt;h3 id="1-滑动窗口">1. 滑动窗口&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>使用一个滑动窗口来记录每个无重复字符子串；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>窗口的右边界&lt;code>r&lt;/code>为遍历时当前字符数组下标；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>窗口的左边界&lt;code>l&lt;/code>在出现重复字符&lt;code>c&lt;/code>时，向右滑动一格；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>最长子串长度为所有滑动窗口长度&lt;code>m&lt;/code>的最大值；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>为了快速判断是否出现重复字符，使用map来记录每个已经遍历过的字符c的最后一次出现的下标；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="代码">代码&lt;/h2>
-&lt;ul>
-&lt;li>rust&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">std&lt;/span>::&lt;span class="n">collections&lt;/span>::&lt;span class="n">HashMap&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">impl&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Solution&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">length_of_longest_substring&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">i32&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">map&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">HashMap&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">for&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">in&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">chars&lt;/span>&lt;span class="p">().&lt;/span>&lt;span class="n">enumerate&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">max&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">map&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="n">unwrap_or&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">));&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">max&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">map&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">insert&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">m&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">as&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kt">i32&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div></description></item><item><title>最小覆盖子串</title><link>https://justice.bj.cn/post/leetcode/doc/76.%E6%9C%80%E5%B0%8F%E8%A6%86%E7%9B%96%E5%AD%90%E4%B8%B2/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/76.%E6%9C%80%E5%B0%8F%E8%A6%86%E7%9B%96%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="最小覆盖子串httpsleetcode-cncomproblemsminimum-window-substringdescription-httpsleetcode-cncomproblemsminimum-window-substringdescription">&lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/description/" title="https://leetcode-cn.com/problems/minimum-window-substring/description/">最小覆盖子串&lt;/a>&lt;/h1>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Category&lt;/th>
-&lt;th>Difficulty&lt;/th>
-&lt;th>Likes&lt;/th>
-&lt;th>Dislikes&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>algorithms&lt;/td>
-&lt;td>Hard (43.18%)&lt;/td>
-&lt;td>1565&lt;/td>
-&lt;td>-&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
-&lt;p>&lt;a href="https://leetcode.com/tag/hash-table" title="https://leetcode.com/tag/hash-table">&lt;code>hash-table&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/two-pointers" title="https://leetcode.com/tag/two-pointers">&lt;code>two-pointers&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/string" title="https://leetcode.com/tag/string">&lt;code>string&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
-&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
-&lt;p>&lt;code>facebook&lt;/code> | &lt;code>linkedin&lt;/code> | &lt;code>snapchat&lt;/code> | &lt;code>uber&lt;/code>&lt;/p>
-&lt;p>给你一个字符串 &lt;code>s&lt;/code> 、一个字符串 &lt;code>t&lt;/code> 。返回 &lt;code>s&lt;/code> 中涵盖 &lt;code>t&lt;/code> 所有字符的最小子串。如果 &lt;code>s&lt;/code> 中不存在涵盖 &lt;code>t&lt;/code> 所有字符的子串，则返回空字符串 &lt;code>&amp;quot;&amp;quot;&lt;/code> 。&lt;/p>
-&lt;p>&lt;strong>注意：&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>对于 &lt;code>t&lt;/code> 中重复字符，我们寻找的子字符串中该字符数量必须不少于 &lt;code>t&lt;/code> 中该字符数量。&lt;/li>
-&lt;li>如果 &lt;code>s&lt;/code> 中存在这样的子串，我们保证它是唯一的答案。&lt;/li>
-&lt;/ul>
-&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：s = &amp;#34;ADOBECODEBANC&amp;#34;, t = &amp;#34;ABC&amp;#34;
-输出：&amp;#34;BANC&amp;#34;
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：s = &amp;#34;a&amp;#34;, t = &amp;#34;a&amp;#34;
-输出：&amp;#34;a&amp;#34;
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入: s = &amp;#34;a&amp;#34;, t = &amp;#34;aa&amp;#34;
-输出: &amp;#34;&amp;#34;
-解释: t 中两个字符 &amp;#39;a&amp;#39; 均应包含在 s 的子串中，
-因此没有符合条件的子字符串，返回空字符串。
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>&lt;code>1 &amp;lt;= s.length, t.length &amp;lt;= 105&lt;/code>&lt;/li>
-&lt;li>&lt;code>s&lt;/code> 和 &lt;code>t&lt;/code> 由英文字母组成&lt;/li>
-&lt;/ul>
-&lt;p>**进阶：**你能设计一个在 &lt;code>o(n)&lt;/code> 时间内解决此问题的算法吗？&lt;/p>
-&lt;hr>
-&lt;p>&lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/comments/" title="https://leetcode-cn.com/problems/minimum-window-substring/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/minimum-window-substring/solution/" title="https://leetcode-cn.com/problems/minimum-window-substring/solution/">Solution&lt;/a>&lt;/p>
-&lt;h2 id="解法">解法&lt;/h2>
-&lt;h3 id="滑动窗口">滑动窗口&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>右指针r: 当窗口未完整包含目标字符串t时，r右移，增大窗口范围；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>左指针l: 当窗口已经完整包含目标字符串t时，l右移，减小窗口范围，获取包含目标字符串最小长度；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://assets.leetcode-cn.com/solution-static/76/76_fig1.gif" alt="">&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;span class="lnt">33
-&lt;/span>&lt;span class="lnt">34
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">class&lt;/span> &lt;span class="nc">Solution&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">public&lt;/span>&lt;span class="o">:&lt;/span>
-&lt;span class="cm">/*
-&lt;/span>&lt;span class="cm"> * ## 解题思路
-&lt;/span>&lt;span class="cm"> * * 滑动窗口
-&lt;/span>&lt;span class="cm"> * * 右指针r: 如果当前窗口没有完整包含t，则r右移，扩大窗口范围，直到窗口完整包含t；
-&lt;/span>&lt;span class="cm"> * * 左指针l: 如果当前已经完整包含t，则l右移，减小窗口范围，直到窗口为完整包含t的最小窗口；
-&lt;/span>&lt;span class="cm"> * *
-&lt;/span>&lt;span class="cm"> */&lt;/span>
-&lt;span class="n">string&lt;/span> &lt;span class="n">minWindow&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">string&lt;/span> &lt;span class="n">s&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">string&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="n">string&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//结果
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unordered_map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">char&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">s_map&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内字符数统计
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">unordered_map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">char&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//目标字符数统计
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">valid_count&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内的有效字符数
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="c1">// 初始化目标hash数组
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">auto&lt;/span> &lt;span class="nl">c&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">l&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">length&lt;/span>&lt;span class="p">();&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]]&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//当前窗口内字符数+1；
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">//当前字符统计数未超过目标字符统计数是，
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]]&lt;/span> &lt;span class="o">&amp;lt;=&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="p">]])&lt;/span> &lt;span class="n">valid_count&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="c1">// 当前窗口内左字符有效字符数&amp;gt;目标字符数，滑动左指针
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">while&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">]]&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">t_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">]])&lt;/span> &lt;span class="n">s_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">]]&lt;/span>&lt;span class="o">--&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="c1">// 刚好
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">valid_count&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">t&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">length&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">if&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">res&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">empty&lt;/span>&lt;span class="p">()&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">l&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">size&lt;/span>&lt;span class="p">())&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="n">res&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">substr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">r&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">l&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="n">res&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div></description></item><item><title>滑动窗口最大值</title><link>https://justice.bj.cn/post/leetcode/doc/239.%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%9C%80%E5%A4%A7%E5%80%BC/</link><pubDate>Mon, 17 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/239.%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%9C%80%E5%A4%A7%E5%80%BC/</guid><description>&lt;h1 id="滑动窗口最大值httpsleetcode-cncomproblemssliding-window-maximumdescription-httpsleetcode-cncomproblemssliding-window-maximumdescription">&lt;a href="https://leetcode-cn.com/problems/sliding-window-maximum/description/" title="https://leetcode-cn.com/problems/sliding-window-maximum/description/">滑动窗口最大值&lt;/a>&lt;/h1>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Category&lt;/th>
-&lt;th>Difficulty&lt;/th>
-&lt;th>Likes&lt;/th>
-&lt;th>Dislikes&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>algorithms&lt;/td>
-&lt;td>Hard (49.73%)&lt;/td>
-&lt;td>1350&lt;/td>
-&lt;td>-&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
-&lt;p>&lt;a href="https://leetcode.com/tag/heap" title="https://leetcode.com/tag/heap">&lt;code>heap&lt;/code>&lt;/a> | &lt;a href="https://leetcode.com/tag/sliding-window" title="https://leetcode.com/tag/sliding-window">&lt;code>sliding-window&lt;/code>&lt;/a>&lt;/p>
-&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
-&lt;p>&lt;code>amazon&lt;/code> | &lt;code>google&lt;/code> | &lt;code>zenefits&lt;/code>&lt;/p>
-&lt;p>给你一个整数数组 &lt;code>nums&lt;/code>，有一个大小为 &lt;code>k&lt;/code> 的滑动窗口从数组的最左侧移动到数组的最右侧。你只可以看到在滑动窗口内的 &lt;code>k&lt;/code> 个数字。滑动窗口每次只向右移动一位。&lt;/p>
-&lt;p>返回滑动窗口中的最大值。&lt;/p>
-&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [1,3,-1,-3,5,3,6,7], k = 3
-输出：[3,3,5,5,6,7]
-解释：
-滑动窗口的位置 最大值
---------------- -----
-[1 3 -1] -3 5 3 6 7 3
-1 [3 -1 -3] 5 3 6 7 3
-1 3 [-1 -3 5] 3 6 7 5
-1 3 -1 [-3 5 3] 6 7 5
-1 3 -1 -3 [5 3 6] 7 6
-1 3 -1 -3 5 [3 6 7] 7
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [1], k = 1
-输出：[1]
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [1,-1], k = 1
-输出：[1,-1]
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 4：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [9,11], k = 2
-输出：[11]
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 5：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：nums = [4,-2], k = 2
-输出：[4]
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>&lt;code>1 &amp;lt;= nums.length &amp;lt;= 105&lt;/code>&lt;/li>
-&lt;li>&lt;code>-104 &amp;lt;= nums[i] &amp;lt;= 104&lt;/code>&lt;/li>
-&lt;li>&lt;code>1 &amp;lt;= k &amp;lt;= nums.length&lt;/code>&lt;/li>
-&lt;/ul>
-&lt;hr>
-&lt;p>&lt;a href="https://leetcode-cn.com/problems/sliding-window-maximum/comments/" title="https://leetcode-cn.com/problems/sliding-window-maximum/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/sliding-window-maximum/solution/" title="https://leetcode-cn.com/problems/sliding-window-maximum/solution/">Solution&lt;/a>&lt;/p>
-&lt;h2 id="解法">解法&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div></description></item><item><title>Hive</title><link>https://justice.bj.cn/post/30.architech/hive/</link><pubDate>Fri, 14 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/hive/</guid><description>&lt;h1 id="hive">Hive&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Hive是建立在 Hadoop 上的数据仓库基础构架。它提供了一系列的工具，可以用来进行数据提取转化加载（ETL），这是一种可以存储、查询和分析存储在 Hadoop 中的大规模数据的机制。&lt;/p>
-&lt;p>Hive 定义了简单的类 SQL 查询语言，称为 HQL，它允许熟悉 SQL 的用户查询数据。同时，这个语言也允许熟悉 MapReduce 开发者的开发自定义的 mapper 和 reducer 来处理内建的 mapper 和 reducer 无法完成的复杂的分析工作。&lt;/p>
-&lt;h2 id="特性">特性&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>Hive 的存储结构包括数据库、表、视图、分区和表数据等。数据库，表，分区等等都对应 HDFS 上的一个目录。表数据对应 HDFS 对应目录下的文件。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Hive 中所有的数据都存储在 HDFS 中，没有专门的数据存储格式，因为 Hive 是读模式（Schema On Read），可支持 TextFile，SequenceFile，RCFile 或者自定义格式等&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>只需要在创建表的时候告诉 Hive 数据中的列分隔符和行分隔符，Hive 就可以解析数据&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>Hive 的默认列分隔符：控制符 Ctrl + A，\x01&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Hive 的默认行分隔符：换行符 \n&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>Hive 中包含以下数据模型：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>database：在 HDFS 中表现为${hive.metastore.warehouse.dir}目录下一个文件夹&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>table：在 HDFS 中表现所属 database 目录下一个文件夹&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>external table：与 table 类似，不过其数据存放位置可以指定任意 HDFS 目录路径&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>partition：在 HDFS 中表现为 table 目录下的子目录&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>bucket：在 HDFS 中表现为同一个表目录或者分区目录下根据某个字段的值进行 hash 散列之后的多个文件&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>view：与传统数据库类似，只读，基于基本表创建&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>Hive 的元数据存储在 RDBMS 中，除元数据外的其它所有数据都基于 HDFS 存储。默认情况下，Hive 元数据保存在内嵌的 Derby 数据库中，只能允许一个会话连接，只适合简单的测试。实际生产环境中不适用，为了支持多用户会话，则需要一个独立的元数据库，使用MySQL 作为元数据库，Hive 内部对 MySQL 提供了很好的支持。&lt;/p>
-&lt;/li>
-&lt;/ol>
-&lt;p>&lt;strong>内部表和外部表的区别：&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>删除内部表，删除表元数据和数据&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>删除外部表，删除元数据，不删除数据&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-10-01-21-image-20190430154313090.png" alt="image-20190430154313090">&lt;/p>
-&lt;h3 id="服务端">服务端&lt;/h3>
-&lt;ul>
-&lt;li>&lt;strong>Driver&lt;/strong>：包含Complier, Optimizer, Executor。作用是将HiveQL进行解析、编译优化，生成执行计划，然后调用底层的mapreduce计算框架。&lt;/li>
-&lt;li>&lt;strong>Metastore&lt;/strong>：元数据服务组件，这个组件存储hive的元数据，hive的元数据存储在关系数据库里，hive支持的关系数据库有derby、mysql。元数据对于hive十分重要，因此hive支持把metastore服务独立出来，安装到远程的服务器集群里，从而解耦hive服务和metastore服务，保证hive运行的健壮性。&lt;/li>
-&lt;li>&lt;strong>Thrift服务&lt;/strong>：提供rpc接口服务。&lt;/li>
-&lt;/ul>
-&lt;h3 id="客户端">客户端&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>CLI&lt;/strong>：command line interface，命令行接口。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>Thrift客户端&lt;/strong>：上面的架构图里没有写上Thrift客户端，但是hive架构的许多客户端接口是建立在thrift客户端之上，包括JDBC和ODBC接口。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>WEBGUI&lt;/strong>：hive客户端提供了一种通过网页的方式访问hive所提供的服务。这个接口对应hive的hwi组件（hive web interface），使用前要启动hwi服务。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="执行流程">执行流程&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-10-01-28-image-20190430153754789.png" alt="image-20190430153754789">&lt;/p>
-&lt;h2 id="部署">部署&lt;/h2>
-&lt;h3 id="依赖">依赖&lt;/h3>
-&lt;ul>
-&lt;li>jdk&lt;/li>
-&lt;li>hadoop&lt;/li>
-&lt;li>mysql&lt;/li>
-&lt;li>hive&lt;/li>
-&lt;/ul>
-&lt;h3 id="组件">组件&lt;/h3>
-&lt;ul>
-&lt;li>metastore： 元数据存储服务&lt;/li>
-&lt;li>hive：hive 命令行接口工具；&lt;/li>
-&lt;li>Hiveserver2：hive thrift server&lt;/li>
-&lt;li>beeline：hive thrift client&lt;/li>
-&lt;li>HCatalog：&lt;/li>
-&lt;li>WebHCat&lt;/li>
-&lt;/ul>
-&lt;p>Core-site.xml&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-xml" data-lang="xml">&lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>fs.defaultFS&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>file:///mnt/cfs/hive01&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>hadoop.tmp.dir&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>/export/Data/Hadoop/temp&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="metastore">metastore&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>内嵌模式：&lt;/p>
-&lt;p>hive-site.xml&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-xml" data-lang="xml">&lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>javax.jdo.option.ConnectionURL&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>jdbc:derby:;databaseName=metastore_db;create=true&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>javax.jdo.option.ConnectionDriverName&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>org.apache.derby.jdbc.EmbeddedDriver&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>hive.metastore.local&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>true&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>hive.metastore.schema.verification&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>false&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>hive.metastore.warehouse.dir&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>/user/hive/warehouse&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>datanucleus.schema.autoCreateAll&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>true&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;/li>
-&lt;li>
-&lt;p>本地模式：&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>远程模式：&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="启动">启动&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">//初始化元数据表
-bin/schematool -initSchema -dbType mysql --verbose
-//启动metastore
-nohup bin/hive --service metastore -v &amp;gt; /export/Logs/hive/hive-metastore.out &lt;span class="p">&amp;amp;&lt;/span>
-//启动
-nohup bin/hive --service hiveserver2 &amp;gt; /export/Logs/hive/hiveserver2.out &lt;span class="p">&amp;amp;&lt;/span>
-//打开调试
-bin/hive --hiveconf hive.root.logger&lt;span class="o">=&lt;/span>INFO,cosole
-//执行脚本
-bin/hive -f script.q
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="cli实例操作">CLI实例操作&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-sql" data-lang="sql">&lt;span class="k">create&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ht_big_data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">int&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">string&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">row&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">delimited&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">fields&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">terminated&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">by&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;\t&amp;#39;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">insert&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ht_big_data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">values&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;name1&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">insert&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ht_big_data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">values&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;name2&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">insert&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ht_big_data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">values&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;name3&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">load&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">local&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">inpath&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;/mnt/cfs/hive01/a.txt&amp;#39;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">overwrite&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ht_big_data&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ht_big_data&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">create&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">records&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">string&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">temperature&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">int&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">quality&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">int&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">row&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">delimited&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">fields&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">terminated&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">by&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;\t&amp;#39;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">load&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">data&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">local&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">inpath&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;/mnt/cfs/hive02/records/sample.txt&amp;#39;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">overwrite&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">records&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">insert&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">records&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">temperature&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">quality&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">values&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;2019&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">30&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">max&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">temperature&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">records&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">group&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">by&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">count&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">records&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">group&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">by&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">year&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">cat sample.txt
-1990 23 2
-1990 21 2
-1990 25 2
-1991 32 2
-1991 34 2
-1991 24 2
-1992 42 2
-1992 32 2
-1992 25 2
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="hive-on-spark">hive on spark&lt;/h2>
-&lt;ul>
-&lt;li>配置文件&lt;/li>
-&lt;/ul>
-&lt;p>$HIVE_HOME/conf/hive-site.xml&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-xml" data-lang="xml"> &lt;span class="nt">&amp;lt;property&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;name&amp;gt;&lt;/span>hive.execution.engine&lt;span class="nt">&amp;lt;/name&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;value&amp;gt;&lt;/span>spark&lt;span class="nt">&amp;lt;/value&amp;gt;&lt;/span>
-&lt;span class="nt">&amp;lt;/property&amp;gt;&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>$HIVE_HOME/conf/spark-defaults.conf&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;span class="lnt">9
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">spark.home /export/App/spark-2.3.0
-spark.master spark://10.194.138.200:7077
-&lt;span class="c1">#spark.master yarn&lt;/span>
-&lt;span class="c1">#spark.submit.deployMode cluster&lt;/span>
-spark.eventLog.enabled &lt;span class="nb">true&lt;/span>
-spark.eventLog.dir /mnt/cfs/spark/log
-spark.yarn.stagingDir /mnt/cfs/spark/staging
-spark.executor.memory 512m
-spark.serializer org.apache.spark.serializer.KryoSerializer
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">在 bin/hive 中，输入：
-set hive.execution.engine=spark;
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="hive-for-hbase">hive for hbase&lt;/h2>
-&lt;p>Hive中执行如下操作&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-sql" data-lang="sql">&lt;span class="k">SET&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">hbase&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">zookeeper&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">quorum&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">zkNode1&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">zkNode2&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">zkNode3&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">SET&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">zookeeper&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">znode&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">parent&lt;/span>&lt;span class="o">=/&lt;/span>&lt;span class="n">hbase&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">ADD&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">jar&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="n">usr&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="k">local&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="n">apache&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">hive&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="mi">13&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">bin&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="n">lib&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="n">hive&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">hbase&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="k">handler&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="mi">13&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">jar&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">CREATE&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">EXTERNAL&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">TABLE&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">lxw1234&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="n">rowkey&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">string&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="n">f1&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">STRING&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">STRING&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="n">f2&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">STRING&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">STRING&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="n">f3&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">map&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">STRING&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">STRING&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">STORED&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">BY&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s1">&amp;#39;org.apache.hadoop.hive.hbase.HBaseStorageHandler&amp;#39;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">WITH&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">SERDEPROPERTIES&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;hbase.columns.mapping&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;:key,f1:,f2:,f3:&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="n">TBLPROPERTIES&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;hbase.table.name&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;lxw1234&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">lxw1234&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;ul>
-&lt;li>原理&lt;/li>
-&lt;/ul>
-&lt;p>Hive与HBase利用两者本身对外的API来实现整合，主要是靠HBaseStorageHandler进行通信，利用 HBaseStorageHandler，Hive可以获取到Hive表对应的HBase表名，列簇以及列，InputFormat和 OutputFormat类，创建和删除HBase表等。
-Hive访问HBase中表数据，实质上是通过MapReduce读取HBase表数据，其实现是在MR中，使用HiveHBaseTableInputFormat完成对HBase表的切分，获取RecordReader对象来读取数据。
-对HBase表的切分原则是一个Region切分成一个Split,即表中有多少个Regions,MR中就有多少个Map；
-读取HBase表数据都是通过构建Scanner，对表进行全表扫描，如果有过滤条件，则转化为Filter。当过滤条件为rowkey时，则转化为对rowkey的过滤；
-Scanner通过RPC调用RegionServer的next()来获取数据；&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://juejin.cn/post/6844904005756272654">Hive 基础教程 - 掘金&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Spark 基础知识</title><link>https://justice.bj.cn/post/30.architech/spark/spark%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</link><pubDate>Fri, 14 Jan 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/spark/spark%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</guid><description>&lt;h1 id="spark-基础知识">Spark 基础知识&lt;/h1>
-&lt;hr>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Spark 是一种快速、通用、可扩展的大数据分析引擎，2009 年诞生于加州大学伯克利分校 AMPLab，2010 年开源，2013 年 6 月成为 Apache 孵化项目，2014 年 2 月成为 Apache 顶级项目。项目是用 Scala 进行编写。&lt;/p>
-&lt;p>Spark 是基于内存计算的大数据并行计算框架。除了扩展了广泛使用的 MapReduce 计算模型，而且高效地支持更多计算模式，包括交互式查询和流处理。&lt;/p>
-&lt;hr>
-&lt;h2 id="特性">特性&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>基于内存，高性能；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>同时支持流批两种方式；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>拥有多种算子；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>多语言支持；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;hr>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>Spark 架构采用了分布式计算中的 Master-Slave 模型，支持Yarn、Mesos、K8S进行资源调度，主要组件包括：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>Driver Node：&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Cluster Manager：&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Worker Node：&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="../../img/2020-01-15-14-49-53-image.png" alt="">&lt;/p>
-&lt;hr>
-&lt;h2 id="核心概念">核心概念&lt;/h2>
-&lt;ul>
-&lt;li>&lt;strong>RDD&lt;/strong>: Resilent Distributed DataSets，弹性数据集。&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="../../img/2020-01-10-14-09-49-image.png" alt="stage">&lt;/p>
-&lt;hr>
-&lt;ul>
-&lt;li>
-&lt;h2 id="stage">Stage&lt;/h2>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="../../img/2020-01-09-11-25-11-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>窄依赖&lt;/strong>(Narrow Depency):&lt;/p>
-&lt;ul>
-&lt;li>父RDD的每个分区只被一个子RDD分区使用，子RDD分区通常只对应常数个父RDD分区&lt;/li>
-&lt;/ul>
-&lt;ul>
-&lt;li>child RDD 只依赖于 parent RDD(s)固定数量的 partition；&lt;/li>
-&lt;li>窄依赖的函数有：&lt;br>
-map, filter, union, join(父RDD是hash-partitioned ), mapPartitions, mapValues&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>宽依赖&lt;/strong>（Wide Depency）:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>父RDD的每个分区都有可能被多个子RDD分区使用，子RDD分区通常对应父RDD所有分区；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>child RDD 的每一个 partition 都依赖于 parent RDD(s)所有 partition；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>宽依赖往往对应着shuffle操作；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>宽依赖的函数有：&lt;br>
-groupByKey, join(父RDD不是hash-partitioned ), partitionBy&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>stage: 根据宽依赖和窄依赖，&lt;/p>
-&lt;ul>
-&lt;li>整个 job 会划分为不同的 stage, 像是用篱笆隔开了一样， 如果中间有宽依赖，就用刀切一刀， 前后划分为两个 stage；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>stage 分为两种， ResultStage 和 ShuffleMapStage，&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>spark job 中产生结果最后一个阶段生成的 stage 是 ResultStage ，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>中间阶段生成的 stage 是 ShuffleMapStage&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/03-19-40-05-2022-01-03-19-40-00-image.png" alt="窄依赖">&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/03-19-41-20-2022-01-03-19-41-12-image.png" alt="宽依赖">&lt;/p>
-&lt;p>&lt;img src="../../img/2020-01-09-11-29-09-image.png" alt="">&lt;/p>
-&lt;hr>
-&lt;h2 id="partition">Partition&lt;/h2>
-&lt;p>Spark RDD 是一种分布式的数据集，由于数据量很大，因此要它被切分并存储在各个结点的分区当中。从而当我们对 RDD 进行操作时，实际上是对每个分区中的数据并行操作。&lt;/p>
-&lt;hr>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://www.cnblogs.com/parent-absent-son/p/9969767.html">spark内核源码深度剖析（1）&amp;ndash;Spark内核架构深度剖析 - 上海小墨子 - 博客园&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li>&lt;/li>
 &lt;/ol></description></item></channel></rss>
