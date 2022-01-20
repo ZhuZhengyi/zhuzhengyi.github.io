@@ -81,11 +81,15 @@
  */
 class Solution {
     /*
-    * ### 递归解法
-    * 
+    * ## 递归解法
+    * * 1. 先判断退出条件：root == NULL
+    * * 2. 先递归调用左子树；
+    * * 3. 输出root节点；
+    * * 4. 再递归调用右子树；
+    * * 
     */
     void helper_rec(TreeNode *root, vector<int> &res) {
-        if (root == NULL) {
+        if (!root) {
             return;
         }
         helper_rec(root->left, res);
@@ -95,19 +99,22 @@ class Solution {
 
     /*
     * ## 迭代解法
-    * 
+    * * 1. 使用一个栈来保存遍历左子树时的当前节点；
+    * * 2. 
     */
     void helper_iter(TreeNode *root, vector<int> &res) {
         stack<TreeNode *> tmp;
 
         while (root || !tmp.empty()) {
+            //依次将每个节点沿左子树遍历入栈
             while(root) {
-                tmp.push(root);         //将左子树入栈
+                tmp.push(root);        
                 root = root->left;
             }
-            root = tmp.top(); tmp.pop(); //
-            res.push_back(root->val);
-            root = root->right;
+            //待节点沿左子树遍历到底后，依次弹出左节点；
+            root = tmp.top(); tmp.pop(); 
+            res.push_back(root->val);    //输出当前节点
+            root = root->right;          //切换到右子树
         }
 
     }
