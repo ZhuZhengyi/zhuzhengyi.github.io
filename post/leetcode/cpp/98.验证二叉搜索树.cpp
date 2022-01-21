@@ -65,8 +65,17 @@
  */
 class Solution {
 public:
-    bool isValidBST(TreeNode* root) {
+    /*
+    ## 解题思路
 
+    */
+    bool isValidBST(TreeNode* root) {
+        if (!root) 
+            return true;
+        return (!root->left || root->val > root->left->val) 
+            && (!root->right || root->val < root->right->val) 
+            && isValidBST(root->left)
+            && isValidBST(root->right);
     }
 };
 // @lc code=end
