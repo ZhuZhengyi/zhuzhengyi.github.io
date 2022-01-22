@@ -67,15 +67,30 @@ class Solution {
 public:
     /*
     ## 解题思路
-
+    * 递归法：
+    *   有效二叉树条件：
+    *   1. 空树是一个有效的二叉搜索树；
+    *   2. 如果存在左子树，则同时满足以下两个条件：
+    *       2.1 根节点val > 左子树的最大节点值；
+    *       2.2 左子树也是一颗有效二叉搜索树；
+    *   3. 如果存在右子树，同时满足：
+    *       3.1 根节点val < 右子树最小节点值；
+    *       3.2 右子树也是一颗有效二叉搜索树；
     */
     bool isValidBST(TreeNode* root) {
-        if (!root) 
-            return true;
-        return (!root->left || root->val > root->left->val) 
-            && (!root->right || root->val < root->right->val) 
-            && isValidBST(root->left)
-            && isValidBST(root->right);
+        return isValid(root, NULL, NULL);
+    }
+
+    // 以root为根，lower为下限， upper为上限的树是否为有效二叉树
+    bool isValid(TreeNode* root, int* lower, int* upper) {
+        if (!root) return true;
+
+        if (upper && root->val >= *upper) return false;
+        if (lower && root->val <= *lower) return false;
+
+        return isValid(root->left, lower, &(root->val))
+            && isValid(root->right, &(root->val), upper);
+
     }
 };
 // @lc code=end
