@@ -71,19 +71,21 @@ public:
     *   4. 左，右子树为该值左、右两侧数组生成的子平衡二叉搜索树；
     */
     TreeNode* sortedArrayToBST(vector<int>& nums) {
-        return dfs(nums, 0, nums.size());
+        return converVecToBSTRec(nums, 0, nums.size());
     }
 
-    //
-    TreeNode* dfs(vector<int>& nums, int start, int end) {
-        if (start >= end) {
+    // 递归将有序数组nums中[start, end)的元素转换成平衡二叉搜索树
+    TreeNode* converVecToBSTRec(vector<int>& nums, int start, int end) {
+        if (start >= end) {  //递归终止条件
             return NULL;
         }
+        //数组中间节点为根节点
         int mid = start + (end-start) / 2;
         TreeNode* root = new TreeNode();
         root->val = nums[mid];
-        root->left = dfs(nums, start, mid);
-        root->right = dfs(nums, mid+1, end);
+        //递归处理左右子树
+        root->left = converVecToBSTRec(nums, start, mid);
+        root->right = converVecToBSTRec(nums, mid+1, end);
 
         return root;
     }
