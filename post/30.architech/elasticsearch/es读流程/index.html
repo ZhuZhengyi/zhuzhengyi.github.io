@@ -24,12 +24,12 @@
 <meta property="og:description" content="Elasticsearch内核解析 - 查询篇 读操作 实时性和《Elasticsearch内核解析 - 写入篇》中的“写操作”一样，对于搜索而言是近实">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/elasticsearch/es%E8%AF%BB%E6%B5%81%E7%A8%8B/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-01-08T00:00:00+00:00">
-<meta property="article:modified_time" content="2022-01-08T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-02-18T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-02-18T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Elasticsearch内核解析 - 查询篇">
-<meta itemprop=description content="Elasticsearch内核解析 - 查询篇 读操作 实时性和《Elasticsearch内核解析 - 写入篇》中的“写操作”一样，对于搜索而言是近实"><meta itemprop=datePublished content="2022-01-08T00:00:00+00:00">
-<meta itemprop=dateModified content="2022-01-08T00:00:00+00:00">
-<meta itemprop=wordCount content="7903">
+<meta itemprop=description content="Elasticsearch内核解析 - 查询篇 读操作 实时性和《Elasticsearch内核解析 - 写入篇》中的“写操作”一样，对于搜索而言是近实"><meta itemprop=datePublished content="2022-02-18T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-02-18T00:00:00+00:00">
+<meta itemprop=wordCount content="8135">
 <meta itemprop=keywords content="architech,elasticsearch,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Elasticsearch内核解析 - 查询篇">
 <meta name=twitter:description content="Elasticsearch内核解析 - 查询篇 读操作 实时性和《Elasticsearch内核解析 - 写入篇》中的“写操作”一样，对于搜索而言是近实"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Elasticsearch内核解析 - 查询篇</h1>
 <div class=post-meta>
-<time datetime=2022-01-08 class=post-time>
-2022-01-08
+<time datetime=2022-02-18 class=post-time>
+2022-02-18
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
@@ -184,12 +184,17 @@ Justice's Blog
 <ul>
 <li><a href=#读操作>读操作</a></li>
 <li><a href=#lucene的读>Lucene的读</a></li>
-<li><a href=#elasticsearch的读>Elasticsearch的读</a></li>
+<li><a href=#get>get</a>
+<ul>
+<li><a href=#search>search</a></li>
+</ul>
+</li>
 <li><a href=#elasticsearch查询流程>Elasticsearch查询流程</a></li>
 <li><a href=#client-node><strong>Client Node</strong></a></li>
 <li><a href=#query-phase>Query Phase</a></li>
 <li><a href=#fetch-phase>Fetch Phase</a></li>
 <li><a href=#总结>总结</a></li>
+<li><a href=#参考>参考</a></li>
 </ul>
 </nav>
 </div>
@@ -221,7 +226,8 @@ Justice's Blog
 </div>
 </div><p>第一个search接口实现搜索功能，返回最满足Query的N个结果；第二个doc接口通过doc id查询Doc内容；第三个count接口通过Query获取到命中数。</p>
 <p>这三个功能是搜索中的最基本的三个功能点，对于大部分Elasticsearch中的查询都是比较复杂的，直接用这个接口是无法满足需求的，比如分布式问题。这些问题都留给了Elasticsearch解决，我们接下来看Elasticsearch中相关读功能的剖析。</p>
-<h2 id=elasticsearch的读>Elasticsearch的读</h2>
+<h2 id=get>get</h2>
+<p><img src=/Users/justice/tmp/notebook-img/2022-02-13-16-39-21-image.png alt></p>
 <p>Elasticsearch中每个Shard都会有多个Replica，主要是为了保证数据可靠性，除此之外，还可以增加读能力，因为写的时候虽然要写大部分Replica Shard，但是查询的时候只需要查询Primary和Replica中的任何一个就可以了。</p>
 <p><img src=https://pic1.zhimg.com/80/v2-1ad1351408bdf0ce7f76f251d6ef8bc4_720w.jpg alt></p>
 <p>Search On Replicas</p>
@@ -229,6 +235,15 @@ Justice's Blog
 <blockquote>
 <p>上述代码逻辑在OperationRouting.Java的searchShards方法中。</p>
 </blockquote>
+<h3 id=search>search</h3>
+<p><img src=/Users/justice/tmp/notebook-img/2022-02-13-17-12-15-image.png alt></p>
+<p>查询阶段包含以下步骤:</p>
+<ol>
+<li>客户端的搜索请求被随机发送到某个节点（协调节点），协调节点创建一个大小为 <code>from + size</code> 的空优先队列；</li>
+<li>查询请求转发到索引的每个primary shard或replica shard分片中；</li>
+<li>每个分片在本地执行查询，添加结果到大小为 <code>from + size</code> 的本地有序优先队列中，并返回各自优先队列中所有文档的 ID 和排序值给协调节点；</li>
+<li>协调节点合并这些值到自己的优先队列中来产生一个全局排序后的结果列表；</li>
+</ol>
 <p>接下来看一下，Elasticsearch中的查询是如何支持分布式的。</p>
 <p><img src=https://pic1.zhimg.com/80/v2-737f6cb48ccf22c50c2e630433c6ad48_720w.jpg alt></p>
 <p>Elasticsearch中通过分区实现分布式，数据写入的时候根据_routing规则将数据写入某一个Shard中，这样就能将海量数据分布在多个Shard以及多台机器上，已达到分布式的目标。这样就导致了查询的时候，潜在数据会在当前index的所有的Shard中，所以Elasticsearch查询的时候需要查询所有Shard，同一个Shard的Primary和Replica选择一个即可，查询请求会分发给所有Shard，每个Shard中都是一个独立的查询引擎，比如需要返回Top 10的结果，那么每个Shard都会查询并且返回Top 10的结果，然后在Client Node里面会接收所有Shard的结果，然后通过优先级队列二次排序，选择出Top 10的结果返回给用户。</p>
@@ -354,6 +369,16 @@ actions.register(SearchAction.INSTANCE, TransportSearchAction.class);
 <p>Fetch Phase执行完后，整个查询流程就结束了。</p>
 <h2 id=总结>总结</h2>
 <p>Elasticsearch中的查询流程比较简单，更多的查询原理都在Lucene中，后续我们会有针对不同请求的Lucene原理介绍性文章。</p>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://xie.infoq.cn/article/7f84ceaca3e1537eab40b853d>【Elasticsearch 技术分享】—— ES 查询检索数据的过程，是什么样子的？</a></p>
+</li>
+<li>
+<p><a href=https://www.elastic.co/guide/cn/elasticsearch/guide/current/_query_phase.html#_query_phase>查询阶段 | Elasticsearch: 权威指南 | Elastic</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>
@@ -363,7 +388,7 @@ actions.register(SearchAction.INSTANCE, TransportSearchAction.class);
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-01-08
+2022-02-18
 </span>
 </p>
 <p class=copyright-item>
@@ -383,14 +408,14 @@ actions.register(SearchAction.INSTANCE, TransportSearchAction.class);
 <a href=https://justice.bj.cn/tags/elasticsearch/>elasticsearch</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/30.architech/cratedb/>
+<a class=prev href=/post/40.storage/chubaofs/cubefs-blobstore/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">CrateDB</span>
+<span class="prev-text nav-default">CubeFS-BlobStore</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/30.architech/elasticsearch/es%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B/>
-<span class="next-text nav-default">Elasticsearch写流程</span>
+<a class=next href=/post/30.architech/elasticsearch/es%E5%9F%BA%E7%A1%80/>
+<span class="next-text nav-default">ElasticSearch基础</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

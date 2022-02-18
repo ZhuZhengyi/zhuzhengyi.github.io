@@ -76,10 +76,13 @@ class Solution {
 public:
     /*
     ## 解题思路
-
+    * 1. 将两个数组分别排序；
+    * 2. 判断排序后的数组是否相等；
     */
     bool canBeEqual(vector<int>& target, vector<int>& arr) {
-        
+        sort(target.begin(), target.end());
+        sort(arr.begin(), arr.end());
+        return target == arr;
     }
 };
 // @lc code=end
