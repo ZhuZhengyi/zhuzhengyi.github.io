@@ -608,7 +608,7 @@
 &lt;/div>&lt;h3 id="clustermgr集群管理器">ClusterMgr(集群管理器)&lt;/h3>
 &lt;ul>
 &lt;li>
-&lt;p>clustermgr用于集群管理；&lt;/p>
+&lt;p>clustermgr用于集群相关信息的管理；&lt;/p>
 &lt;/li>
 &lt;li>
 &lt;p>clustermgr内部由多个管理器组成，包括：&lt;/p>
@@ -634,7 +634,7 @@
 &lt;p>clustermgr内置kvdb(目前为rocksdb)来保存各种管理器的相关数据；&lt;/p>
 &lt;/li>
 &lt;li>
-&lt;p>多个clustermgr通过raft保证kvdb数据在多个节点的同步以保证clustermgr的高可用；&lt;/p>
+&lt;p>多个clustermgr通过raft保证kvdb数据在多个节点的同步以保证高可用；&lt;/p>
 &lt;/li>
 &lt;li>
 &lt;p>clustermgr周期性(参数&lt;code>cluster_report_interval_s&lt;/code>，默认：60s)的将clusterinfo汇报给&lt;code>consul_agent_addr&lt;/code>上，以&lt;code>ebs/&amp;lt;region&amp;gt;/clusters/&amp;lt;clusterID&amp;gt;:&amp;lt;clusterInfo&amp;gt;&lt;/code>；&lt;/p>
@@ -935,8 +935,46 @@
 &lt;/li>
 &lt;/ul>
 &lt;/li>
+&lt;/ul>
+&lt;h4 id="blobnode中disk的管理">blobnode中disk的管理&lt;/h4>
+&lt;ul>
 &lt;li>
-&lt;p>每个disk加载后，会启动如下协程：&lt;/p>
+&lt;p>blobnode中disk由配置文件中&lt;code>disks&lt;/code>项指定，一个blobnode可以包含多个disk;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>blobnode启动时，先通过rpc从&lt;code>clusterMgr&lt;/code>获取该host已经注册的disk；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>然后根据配置文件, 逐个加载disk；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个disk包含.sys, meta等子目录，.sys目录里面保存disk的格式相关信息；.meta里面使用rocksdb来记录chunk相关的元数据信息；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>blobnode&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>disk加载流程：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>通过配置文件获取disk根目录；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>加载磁盘format信息。通过读取.sys目录下的format.json内获取disk format信息(包括DiskID), 如果该文件不存在，则从&lt;code>clusterMgr&lt;/code>分配一个新的DiskID, 并注册disk到clusterMgr的table中;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>打开meta目录下的rocksdb，初始化化superblock;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从meta db中读取&lt;code>diskinfo&lt;/code>来加载diskinfo；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>设置disk iostat 相关数据结构；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>启动loop相关后台协程&lt;/p>
+&lt;/li>
+&lt;li>
 &lt;ul>
 &lt;li>
 &lt;p>&lt;code>ds.loopCleanChunk&lt;/code>: 清理已released 的chunk；&lt;/p>
@@ -956,9 +994,12 @@
 &lt;/ul>
 &lt;/li>
 &lt;li>
-&lt;p>配置文件&lt;/p>
+&lt;p>加载好的diskStorage记录在map[diskID]&lt;code>Disks&lt;/code> 中;&lt;/p>
 &lt;/li>
 &lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h4 id="配置文件">配置文件&lt;/h4>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">
 &lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
@@ -1180,7 +1221,7 @@
 &lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="cm">/*
 &lt;/span>&lt;span class="cm"> * ${diskRoot}/
 &lt;/span>&lt;span class="cm"> * - .sys/ //disk
-&lt;/span>&lt;span class="cm"> * - .format.json
+&lt;/span>&lt;span class="cm"> * - .format.json //disk 格式信息；
 &lt;/span>&lt;span class="cm"> * - .format.json.tmp
 &lt;/span>&lt;span class="cm"> * - .trash/ //回收站，被清理的chunk
 &lt;/span>&lt;span class="cm"> * - data/ //disk数据信息, chunk file
@@ -2108,9 +2149,42 @@
 &lt;/div>&lt;h2 id="关键流程">关键流程&lt;/h2>
 &lt;h3 id="创建卷createvolume">创建卷(CreateVolume)&lt;/h3>
 &lt;ul>
-&lt;li>create volume&lt;/li>
+&lt;li>
+&lt;p>入口为clusterMgr中volumeMgr的&lt;code>createVolume()&lt;/code>函数；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>先通过&lt;code>scopMgr.Alloc&lt;/code> 分配一个新vid;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>根据mode获取unitCount(为tactic的N+M+L);&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>初始化volume units信息vuInfos；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>初始化volInfo；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过raft执行initCreateVolume指令，将volume信息记录到transitedTable中；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过&lt;code>allocChunkForAllUnits&lt;/code>为vol所有的units分配chunk;&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>allocChunkForAllUnits会根据vol的编码策略，将chunk随机分布到不同idc上；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过blobnode ChunkCreate rpc调用在blobnode上创建chunk;&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
 &lt;/ul>
-&lt;h3 id="put">Put&lt;/h3>
+&lt;/li>
+&lt;li>
+&lt;p>通过raft执行CreateVolume指令，删除transitedTbl中的volume units，将volume units相关信息记录到volumeTbl中 ；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h3 id="写入put">写入(Put)&lt;/h3>
 &lt;ul>
 &lt;li>
 &lt;p>put提供了将数据写入到blobstore中的能力；&lt;/p>
@@ -2297,7 +2371,7 @@
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="get">Get&lt;/h3>
+&lt;h3 id="读取get">读取(Get)&lt;/h3>
 &lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/02/08-10-45-04-2022-02-08-10-44-59-image.png" alt="">&lt;/p>
 &lt;h4 id="access-client-2">access-client&lt;/h4>
 &lt;ul>
@@ -2350,14 +2424,16 @@
 &lt;/li>
 &lt;/ul>
 &lt;h4 id="blobnode-3">blobnode&lt;/h4>
-&lt;h3 id="delete">Delete&lt;/h3>
+&lt;h3 id="删除delete">删除(Delete)&lt;/h3>
 &lt;ul>
 &lt;li>
-&lt;p>删除调用了punch hole&lt;/p>
+&lt;p>删除调用了punch hole来是否被删除的data；&lt;/p>
 &lt;/li>
-&lt;li>&lt;/li>
+&lt;li>
+&lt;p>通过compact异步对碎片化过多的chunkfile进行整理；&lt;/p>
+&lt;/li>
 &lt;/ul>
-&lt;h3 id="compact">Compact&lt;/h3>
+&lt;h3 id="合并compact">合并(Compact)&lt;/h3>
 &lt;ul>
 &lt;li>
 &lt;p>compact用于在后台整理chunkfile，由blobnode提供了rpc api；&lt;/p>
@@ -2439,6 +2515,130 @@
 &lt;li>
 &lt;p>&lt;a href="https://blog.csdn.net/shelldon/article/details/54144730?spm=1001.2101.3001.6661.1&amp;amp;utm_medium=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_default&amp;amp;depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1.pc_relevant_default&amp;amp;utm_relevant_index=1">Erasure Code - EC纠删码原理_shelldon的专栏-CSDN博客_ec纠删码&lt;/a>&lt;/p>
 &lt;/li>
+&lt;/ol></description></item><item><title>Golang数据结构之map</title><link>https://justice.bj.cn/post/14.language/golang/go%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B9%8Bmap/</link><pubDate>Fri, 25 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/go%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B9%8Bmap/</guid><description>&lt;h1 id="golang数据结构之map">Golang数据结构之map&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;h2 id="用法">用法&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="c1">//字面量初始化
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="nx">hash1&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="kd">map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="p">{&lt;/span>
+&lt;span class="s">&amp;#34;1&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">2&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="s">&amp;#34;3&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="s">&amp;#34;5&amp;#34;&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="mi">6&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="c1">//make初始化
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="nx">hash2&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nb">make&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kd">map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="kt">string&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">3&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="nx">hash2&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s">&amp;#34;1&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="mi">2&lt;/span>
+&lt;span class="nx">hash2&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s">&amp;#34;3&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="mi">4&lt;/span>
+&lt;span class="nx">hash2&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s">&amp;#34;5&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="mi">6&lt;/span>
+&lt;span class="c1">//取值
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="nx">_&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">hash1&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="nx">key&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;span class="c1">//for 遍历
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">for&lt;/span> &lt;span class="nx">k&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">v&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="k">range&lt;/span> &lt;span class="nx">hash2&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="c1">// k, v
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>
+&lt;span class="c1">// delete
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="nx">hash1&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="nx">key&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">value&lt;/span>
+&lt;span class="nx">hash1&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="nx">key&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">newValue&lt;/span>
+&lt;span class="nb">delete&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">hash&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">key&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="底层实现">底层实现&lt;/h2>
+&lt;p>golang的map核心结构是&lt;code>hmap&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kd">type&lt;/span> &lt;span class="nx">hmap&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="nx">count&lt;/span> &lt;span class="kt">int&lt;/span>
+&lt;span class="nx">flags&lt;/span> &lt;span class="kt">uint8&lt;/span>
+&lt;span class="nx">B&lt;/span> &lt;span class="kt">uint8&lt;/span>
+&lt;span class="nx">noverflow&lt;/span> &lt;span class="kt">uint16&lt;/span>
+&lt;span class="nx">hash0&lt;/span> &lt;span class="kt">uint32&lt;/span>
+&lt;span class="nx">buckets&lt;/span> &lt;span class="nx">unsafe&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Pointer&lt;/span>
+&lt;span class="nx">oldbuckets&lt;/span> &lt;span class="nx">unsafe&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Pointer&lt;/span>
+&lt;span class="nx">nevacuate&lt;/span> &lt;span class="kt">uintptr&lt;/span>
+&lt;span class="nx">extra&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="nx">mapextra&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="kd">type&lt;/span> &lt;span class="nx">mapextra&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="nx">overflow&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">[]&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="nx">bmap&lt;/span>
+&lt;span class="nx">oldoverflow&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">[]&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="nx">bmap&lt;/span>
+&lt;span class="nx">nextOverflow&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="nx">bmap&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="kd">type&lt;/span> &lt;span class="nx">bmap&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="nx">topbits&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">8&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="kt">uint8&lt;/span>
+&lt;span class="nx">keys&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">8&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="nx">keytype&lt;/span>
+&lt;span class="nx">values&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="mi">8&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="nx">valuetype&lt;/span>
+&lt;span class="nx">pad&lt;/span> &lt;span class="kt">uintptr&lt;/span>
+&lt;span class="nx">overflow&lt;/span> &lt;span class="kt">uintptr&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/02/25-18-17-28-2022-02-25-18-17-22-image.png" alt="">&lt;/p>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://segmentfault.com/a/1190000023879178">https://segmentfault.com/a/1190000023879178&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.bookstack.cn/read/go-internals/zh-02.3.md">基本数据结构 - map的实现 - 《深入解析Go》 - 书栈网 · BookStack&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://draveness.me/golang/docs/part2-foundation/ch03-datastructure/golang-hashmap/">理解 Golang 哈希表 Map 的原理 | Go 语言设计与实现&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
 &lt;/ol></description></item><item><title>两数之和</title><link>https://justice.bj.cn/post/leetcode/doc/1.%E4%B8%A4%E6%95%B0%E4%B9%8B%E5%92%8C/</link><pubDate>Fri, 25 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/1.%E4%B8%A4%E6%95%B0%E4%B9%8B%E5%92%8C/</guid><description>&lt;h1 id="两数之和httpsleetcode-cncomproblemstwo-sumdescription-httpsleetcode-cncomproblemstwo-sumdescription">&lt;a href="https://leetcode-cn.com/problems/two-sum/description/" title="https://leetcode-cn.com/problems/two-sum/description/">两数之和&lt;/a>&lt;/h1>
 &lt;table>
 &lt;thead>
@@ -2821,7 +3021,96 @@ countAndSay(4) = 读 &amp;#34;21&amp;#34; = 一 个 2 + 一 个 1 = &amp;#34;12&
 &lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="w">
 &lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
-&lt;/div></description></item><item><title>无重复字符的最长子串</title><link>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</link><pubDate>Fri, 25 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="无重复字符的最长子串httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription-httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription">&lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/">无重复字符的最长子串&lt;/a>&lt;/h1>
+&lt;/div></description></item><item><title>数据湖(Delta Lake)</title><link>https://justice.bj.cn/post/30.architech/%E6%95%B0%E6%8D%AE%E6%B9%96/</link><pubDate>Fri, 25 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/%E6%95%B0%E6%8D%AE%E6%B9%96/</guid><description>&lt;h1 id="数据湖delta-lake">数据湖(Delta Lake)&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>Data lake&lt;/strong>这个术语由Pentaho公司创始人兼CTO&lt;strong>詹姆斯·狄克逊&lt;/strong>(James Dixon)发明，他对数据湖的解释是： &lt;u>把你以前在磁带上拥有的东西倒入到数据湖，然后开始探索这些数据&lt;/u>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据湖的想法是将企业中的所有数据（从原始数据开始保存，这意味着源系统数据的精确副本）保存于同一个存储介质中，以用于各种任务（包括报告，可视化，分析和机器学习）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据湖创建了一个适用于所有格式数据的集中式数据存储，包括：关系数据库的数据（行和列），半结构化数据（CSV，日志，XML，JSON），非结构化数据（电子邮件，文档，PDF）甚至二进制数据（图像，音频，视频）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在数据湖方案里，数据移动和管理的工具非常重要。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="数据湖与数据仓库数据集市的区别">数据湖与数据仓库、数据集市的区别&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>数据库：侧重事务处理能力，OLTP，关注:QPS, TPS, IOPS这些指标；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据仓库：侧重分析能力，数据入库时有一定的scheme，OLAP；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据湖：入库时没有scheme，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>湖仓一体：&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="主要功能">主要功能&lt;/h2>
+&lt;ul>
+&lt;li>&lt;strong>ACID 事务&lt;/strong>：Delta Lake 提供多次写入之间的 ACID 事务。每次写入都是一个事务，并且在事务日志中顺序记录了写入的序列。事务日志跟踪文件级别的写入并使用&lt;a href="https://links.jianshu.com/go?to=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FOptimistic_concurrency_control">乐观并发控制&lt;/a>，这非常适合数据湖泊，因为不会经常发生多个写入尝试修改相同的文件的情况。在存在冲突的情况下，Delta Lake 会抛出并发修改异常以遍用户处理并重试其作业。 Delta Lake 还提供强大的&lt;a href="https://links.jianshu.com/go?to=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FIsolation_%28database_systems%29%23Serializable">可序列化隔离级别&lt;/a>，允许工程师持续写入一个目录或表，并允许消费者持续从同一目录或表中进行读取。读取者将会看到开始读取时存在的最新快照。&lt;/li>
+&lt;li>&lt;strong>Schema 管理&lt;/strong>：Delta Lake 自动验证正在写入的 DataFrame 的 Schema 是否与表的 Schema 兼容。表中存在但不在 DataFrame 中的列设置为 null。如果 DataFrame 中有 Schema 中没有定义的列，则此操作会引发异常。 Delta Lake 具有显式添加新列的 DDL 以及自动更新 Schema 的能力。&lt;/li>
+&lt;li>&lt;strong>可扩展的元数据处理&lt;/strong>：Delta Lake 将表或目录的元数据信息存储在事务日志中，而不是 Metastore 中，这允许Delta Lake在恒定时间内列出大型目录中的文件，并在读取数据时更高效。&lt;/li>
+&lt;li>&lt;strong>数据版本控制和时间旅行&lt;/strong>：Delta Lake 允许用户读取表或目录的历史快照。在写入或者修改文件时，Delta Lake会创建较新版本的文件并保留旧版本。当用户想要读取旧版本的表或目录时，他们可以为 Apache Spark 的读取 API 提供时间戳或版本号，Delta Lake 根据事务日志中的信息构建该时间戳或版本的完整快照。这允许用户重现实验和报告，并在需要时将表还原为旧版本。&lt;/li>
+&lt;li>&lt;strong>统一批处理和流式处理&lt;/strong>：除了批量写入，Delta Lake 还可以用作 Apache Spark Structured Streaming 的高效流式接收器。结合 ACID 事务和可扩展的元数据处理，高效的流式传输接收器现在可以实现大量近实时分析用例，而无需维护复杂的流式传输和批处理管道。&lt;/li>
+&lt;li>&lt;strong>记录更新和删除&lt;/strong>（即将发布）：Delta Lake 提供合并、更新和删除这些 DML 命令。这允许工程师很方便的对数据进行修改和删除，简化数据变更捕获以及 GDPR。因为 Delta Lake 按文件粒度跟踪数据变更，所以比一次处理所有分区或表要高效的多。&lt;/li>
+&lt;li>&lt;strong>数据期望&lt;/strong>（即将推出）：Delta Lake 还将支持新的 API 来设置表或目录的数据期望。工程师将能够指定布尔条件并调整严重程度以处理数据期望。当 Apache Spark 作业写入表或目录时，Delta Lake 将自动验证记录，当存在违规时，它将根据提供的严重程度配置对记录进行处理。&lt;/li>
+&lt;/ul>
+&lt;h2 id="deltalake">deltalake&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-scala" data-lang="scala">&lt;span class="c1">//# spark version: 2.4.6
+&lt;/span>&lt;span class="c1">//# jdk: 1.8.0_172
+&lt;/span>&lt;span class="c1">//# scala: 2.11
+&lt;/span>&lt;span class="c1">//$ cd $SPARK_HOME
+&lt;/span>&lt;span class="c1">//$ bin/spark-shell --jars ./jars/delta-core_2.11-0.6.0.jar
+&lt;/span>&lt;span class="c1">&lt;/span>
+&lt;span class="k">val&lt;/span> &lt;span class="n">data&lt;/span> &lt;span class="k">=&lt;/span> &lt;span class="n">spark&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">range&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">5&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="n">data&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">write&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;delta&amp;#34;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="n">save&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;file:///mnt/cfs/spark/delta-table&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="k">val&lt;/span> &lt;span class="n">data&lt;/span> &lt;span class="k">=&lt;/span> &lt;span class="n">spark&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">range&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="mi">5&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">10&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="n">data&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">write&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;delta&amp;#34;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="n">mode&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;overwrite&amp;#34;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="n">save&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;file:///mnt/cfs/spark/delta-table&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="c1">//du数据
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">val&lt;/span> &lt;span class="n">df&lt;/span> &lt;span class="k">=&lt;/span> &lt;span class="n">spark&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">read&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;delta&amp;#34;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="n">load&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;/tmp/delta-table&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="n">df&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">show&lt;/span>&lt;span class="o">()&lt;/span>
+&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">val&lt;/span> &lt;span class="n">df&lt;/span> &lt;span class="k">=&lt;/span> &lt;span class="n">spark&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">read&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;delta&amp;#34;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="n">option&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;versionAsOf&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="n">load&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;/tmp/delta-table&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="n">df&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">show&lt;/span>&lt;span class="o">()&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://help.aliyun.com/document_detail/148369.html?spm=a2c6h.12873639.0.0.43197803PJYFDj">https://help.aliyun.com/document_detail/148369.html?spm=a2c6h.12873639.0.0.43197803PJYFDj&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>无重复字符的最长子串</title><link>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</link><pubDate>Fri, 25 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/3.%E6%97%A0%E9%87%8D%E5%A4%8D%E5%AD%97%E7%AC%A6%E7%9A%84%E6%9C%80%E9%95%BF%E5%AD%90%E4%B8%B2/</guid><description>&lt;h1 id="无重复字符的最长子串httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription-httpsleetcode-cncomproblemslongest-substring-without-repeating-charactersdescription">&lt;a href="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/" title="https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/">无重复字符的最长子串&lt;/a>&lt;/h1>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -3691,447 +3980,4 @@ curl -X DELETE http://192.168.0.10:20000/test6
 &lt;p>&lt;a href="https://www.nosuchfield.com/2019/03/18/How-Elasticsearch-elected-the-master/">Elasticsearch是如何选举出master的 - 御坂研究所&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Golang内存对齐</title><link>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90/</link><pubDate>Fri, 18 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90/</guid><description>&lt;h1 id="golang内存对齐">Golang内存对齐&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>CPU 始终以字长访问内存，&lt;/li>
-&lt;/ul>
-&lt;h2 id="对齐保证align-guarantee">对齐保证(align guarantee)&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>结构体的成员变量，第一个成员变量的偏移量为 0。往后的每个成员变量的对齐值必须为&lt;strong>编译器默认对齐长度&lt;/strong>（&lt;code>#pragma pack(n)&lt;/code>）或&lt;strong>当前成员变量类型的长度&lt;/strong>（&lt;code>unsafe.Sizeof&lt;/code>），取&lt;strong>最小值作为当前类型的对齐值&lt;/strong>。其偏移量必须为对齐值的整数倍&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>结构体本身，对齐值必须为&lt;strong>编译器默认对齐长度&lt;/strong>（&lt;code>#pragma pack(n)&lt;/code>）或&lt;strong>结构体的所有成员变量类型中的最大长度&lt;/strong>，取&lt;strong>最大数的最小整数倍&lt;/strong>作为对齐值&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>结合以上两点，可得知若&lt;strong>编译器默认对齐长度&lt;/strong>（&lt;code>#pragma pack(n)&lt;/code>）超过结构体内成员变量的类型最大长度时，默认对齐长度是没有任何意义的&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://geektutu.com/post/hpg-struct-alignment.html">https://geektutu.com/post/hpg-struct-alignment.html&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://eddycjy.gitbook.io/golang/di-1-ke-za-tan/go-memory-align">1.5 在 Go 中恰到好处的内存对齐 - 跟煎鱼学 Go&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="http://blog.newbmiao.com/2020/02/10/dig101-golang-struct-memory-align.html">http://blog.newbmiao.com/2020/02/10/dig101-golang-struct-memory-align.html&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Rust Trait</title><link>https://justice.bj.cn/post/14.language/rust/20.rust%E7%89%B9%E6%80%A7trait/</link><pubDate>Fri, 18 Feb 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/rust/20.rust%E7%89%B9%E6%80%A7trait/</guid><description>&lt;h1 id="rust-trait">Rust Trait&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>trait&lt;/code>(特性) 是一组方法的集合，实现trait的类型可以访问该 trait 中定义的其他方法。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>任何类型都可以实现 trait；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="要点">要点&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Trait&lt;/code>必须声明可见后才能使用；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Trait本身并没有固定的大小，不能直接声明和使用Trait类型的变量，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>某个实现该Trait类型的实例的有效引用称为&lt;code>Trait Object&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Trait Object&lt;/code>实际是一个胖指针&lt;code>fat pointer&lt;/code>, 占用两个机器字字节, 一个指向实际的实例对象, 一个指向虚基表&lt;code>vtable&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>所有trait都有一个隐藏的类型&lt;code>Self&lt;/code>，代表当前实现此Trait的具体类型；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>函数&lt;u>第一个参数&lt;/u>是&lt;code>self&lt;/code>且为&lt;code>Self&lt;/code>相关类型(&lt;code>Self, &amp;amp;Self, &amp;amp;mut Self, Box&amp;lt;Self&amp;gt;&lt;/code>)，则函数为&lt;strong>方法&lt;/strong>(method)，&lt;code>self&lt;/code>称为&lt;code>receiver&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>没有receiver参数的函数为&lt;strong>静态方法&lt;/strong>，可通过&lt;code>Type::Function()&lt;/code>方式调用；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>匿名Trait无须名字，可直接在impl中实现；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>可以在trait的声明中定义默认方法；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>扩展trait(extension trait), 可以为其它trait类型扩展出自定义trait的接口，impl块必须与trait或struct声明在同一个crate中（孤儿规则）；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>继承：凡是实现了Subtrait(&lt;code>Creature&lt;/code>)的类型, 也必须实现父Trait(&lt;code>Visible&lt;/code>)的&lt;strong>所有方法&lt;/strong>；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;hr>
-&lt;h2 id="孤儿规则orphan-rule">孤儿规则(orphan rule)&lt;/h2>
-&lt;ul>
-&lt;li>如果要实现外部定义的 &lt;code>trait&lt;/code> 需要先将其导入作用域；&lt;/li>
-&lt;li>不允许对外部类型实现外部 &lt;code>trait&lt;/code>；&lt;/li>
-&lt;li>可以对外部类型实现自定义的 &lt;code>trait&lt;/code>；&lt;/li>
-&lt;li>可以对自定义类型上实现外部 &lt;code>trait&lt;/code>；&lt;/li>
-&lt;/ul>
-&lt;h2 id="示例">示例&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// trait声明
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Shape&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">area1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//method1(self: Self);
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">area&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//area(self: &amp;amp;Self);
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">larger&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">f64&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Circle&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">r&lt;/span>: &lt;span class="kt">f64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// trait 实现
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">impl&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Shape&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">for&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Circle&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">area&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">f64&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">std&lt;/span>::&lt;span class="kt">f64&lt;/span>::&lt;span class="n">consts&lt;/span>::&lt;span class="n">PI&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// 匿名trait
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">impl&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Circle&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">get_radius&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">f64&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">r&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="trait-泛型">Trait 泛型&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// where 从句
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">foo&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">K&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>: &lt;span class="nc">T&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">y&lt;/span>: &lt;span class="nc">K&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">T&lt;/span>: &lt;span class="nb">Clone&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">K&lt;/span>: &lt;span class="nb">Clone&lt;/span> &lt;span class="o">+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Debug&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">clone&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">clone&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;{:?}&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="trait对象trait-object">Trait对象(trait object)&lt;/h2>
-&lt;h2 id="supertrait">Supertrait&lt;/h2>
-&lt;h2 id="关联类型">关联类型&lt;/h2>
-&lt;p>关联类型是一个将类型占位符与 trait 相关联的方式，这样 trait 的方法签名中就可以使用这些占位符类型。&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>关联类型类似泛型，不同之处关联类型，无需标注类型，无须多次实现trait；&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Iterator&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">type&lt;/span> &lt;span class="nc">Item&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//关联类型
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">next&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Self&lt;/span>::&lt;span class="n">Item&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="常用trait">常用Trait&lt;/h2>
-&lt;h3 id="default">Default&lt;/h3>
-&lt;p>Default trait是针对无参构造函数的抽象&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//std::default::Default
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Default&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">default&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nc">Self&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// Vec default
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">impl&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Default&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">for&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">default&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Vec&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="derive">Derive&lt;/h3>
-&lt;p>Rust提供了一个特殊属性，以自动impl某些trait，编译阶段会自动展开为相应的impl块：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="cp">#[derive(Copy, Clone, Default)]&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Foo&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">data&lt;/span>: &lt;span class="kt">i32&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>Rust支持自动derive的trait有：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>Debug&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Clone/Copy&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Hash&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>PartialEq/Eq/PartialOrd/Ord&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Send/Sync&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Default&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>FromPrimitive&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>RustcEncodable/RustcDecodable&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="displaydebug">Display/Debug&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>实现&lt;code>Display&lt;/code>特性的类型，可用&lt;code>{}&lt;/code>格式控制打印；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>实现&lt;code>Debug&lt;/code>特性的类型，可用&lt;code>{:?},{:#?}&lt;/code>格式控制打印；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Display&lt;/code>一般给最终用户显示的，通常用utf-8格式字符输出；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Debug&lt;/code>特性主要用于调试，一般为byte字符，编译器提供自动derive功能；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>实现&lt;code>Dispaly&lt;/code>特性的类型都自动实现了&lt;code>ToString&lt;/code>特性，可直接通过&lt;code>to_string()&lt;/code>格式化字符串；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//std::fmt::Display
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Display&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">fmt&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">f&lt;/span>: &lt;span class="kp">&amp;amp;&lt;/span>&lt;span class="nc">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Formatter&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="p">(),&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Error&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//std::fmt::Debug
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Debug&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">fmt&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">f&lt;/span>: &lt;span class="kp">&amp;amp;&lt;/span>&lt;span class="nc">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Formatter&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="p">(),&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Error&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="ordpartialordeqpartialeq">Ord/PartialOrd/Eq/PartialEq&lt;/h3>
-&lt;h2 id="标签trait">标签Trait&lt;/h2>
-&lt;h3 id="sized">Sized&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Sized&lt;/code>是一种&lt;code>maker trait&lt;/code>，表示类型size是固定的 , 没有任何方法和联合类型，无法实现；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Rust不能在变量里保存&lt;em>unsized&lt;/em>的值, 也不能把&lt;em>unsize&lt;/em>的值作为参数.&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>所有固定大小的类型都实现里&lt;code>std::marker::Sized&lt;/code>trait；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Sized trait只能用于绑定到类型参数, 也就是用于参数的类型声明(及检查), 例如 &lt;code>T: Sized&lt;/code>不能用于其它用途；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>?Sized&lt;/code>叫 &lt;em>questionably sized&lt;/em>, 允许固定大小, 也允许非固定大小类型.&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>struct的最后一个字段允许是&lt;code>?Sized&lt;/code>类型, 但如果这样, struct本身就变为了unsized.&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>但如果写成泛型, 并传入一个Sized类型, 那么这个类型的struct仍然是Sized. 大小取决于泛型的参数类型:&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="copyclone">Copy/Clone&lt;/h3>
-&lt;p>Copy:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>如果一个类型 impl 了 Copy trait，意味着任何时候，我们可以通过简单的内存拷贝实现该类型的复制，而不会产生任何问题；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>一旦一个类型实现了 Copy trait，那么它在变量绑定、函数参数传递、函数返回值传递等场景下，它都是 copy 语义，而不再是默认的 move 语义；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>只有所有的成员都实现了 Copy trait，这个类型才有资格实现 Copy trait；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>Clone:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Clone&lt;/code>是&lt;code>Sized&lt;/code>的sub-trait, 所以Self类型必须是Sized；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>clone&lt;/code>方法必须返回和&lt;code>self&lt;/code>独立无关的一份拷贝；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果所有的字段都实现了Clone, 那么&lt;code>struct&lt;/code>可以加上属性: &lt;code>#[derive(Clone)]&lt;/code>自动实现Clone trait；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;ul>
-&lt;li>
-&lt;p>通常情况下clone的成本比较高, 但是对于&lt;code>Rc&amp;lt;T&amp;gt;&lt;/code>和&lt;code>Arc&amp;lt;T&amp;gt;&lt;/code>这类的类型, Rust的对它们的clone只是简单的增加计数.&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>通常尽可能使用&lt;code>clone_from&lt;/code>来减少clone开销, 这会允许一些优化. 例如, String的clone, 被赋值的String如果capacity够大, 可以不需要释放内存, 直接把源的内容拷贝过来.&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果所有的字段都实现了Clone, 那么&lt;code>struct&lt;/code>可以加上属性: &lt;code>#[derive(Clone)]&lt;/code>自动实现Clone trait&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>clone&lt;/code>方法不能失败(&lt;em>infallible&lt;/em>), 对于&lt;code>std::fs::File&lt;/code>这样的类型, 有&lt;code>try_clone&lt;/code>方法, 返回&lt;code>std::io::Result&amp;lt;File&amp;gt;&lt;/code>&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Clone&lt;/span>: &lt;span class="nb">Sized&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">clone&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nc">Self&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">clone_from&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">source&lt;/span>: &lt;span class="kp">&amp;amp;&lt;/span>&lt;span class="nc">Self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">source&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">clone&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="frominto">From/Into&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>From&lt;/code>: 对于类型为 &lt;code>U&lt;/code> 的对象 &lt;code>foo&lt;/code>，如果它实现了 &lt;code>From&amp;lt;T&amp;gt;&lt;/code>，那么，可以通过 &lt;code>let foo = U::from(bar)&lt;/code> 来生成自己&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Into&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>: &lt;span class="nb">Sized&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">into&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nc">T&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">From&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>: &lt;span class="nb">Sized&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">from&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nc">Self&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">// 静态方法
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;span class="lnt">9
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// as_ref和Borrow的区别 ?
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// as_ref 是转引用函数, 将具有所有权对象转换成引用对象,
-&lt;/span>&lt;span class="c1">// 不改变被转换对象的基础上产生一个引用对象.
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// as_ref 并不是所有类型都默认支持, 很多时候都需要自己去声明.
-&lt;/span>&lt;span class="c1">// as_ref 是AsRef trait 的公共接口方法.
-&lt;/span>&lt;span class="c1">// 只有那些实现了 as_ref 公共接口方法的类型才能使用as_ref.
-&lt;/span>&lt;span class="c1">// 目前: Option, Box, Result 这三种类型默认提供支持as_ref.
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://wiki.jikexueyuan.com/project/rust-primer/">https://wiki.jikexueyuan.com/project/rust-primer/&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://unpluggedcoder.me/2019/08/31/Rust%E5%85%A5%E9%97%A8%E5%A4%B1%E8%B4%A5%E4%B9%8BTraits&amp;amp;Generics/">https://unpluggedcoder.me/2019/08/31/Rust%E5%85%A5%E9%97%A8%E5%A4%B1%E8%B4%A5%E4%B9%8BTraits&amp;amp;Generics/&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/21730929">https://zhuanlan.zhihu.com/p/21730929&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://unpluggedcoder.me/2019/09/01/Rust%E5%85%A5%E9%97%A8%E5%A4%B1%E8%B4%A5%E4%B9%8BUtility%20Traits/">https://unpluggedcoder.me/2019/09/01/Rust%E5%85%A5%E9%97%A8%E5%A4%B1%E8%B4%A5%E4%B9%8BUtility%20Traits/&lt;/a>&lt;/p>
-&lt;/li>
 &lt;/ol></description></item></channel></rss>
