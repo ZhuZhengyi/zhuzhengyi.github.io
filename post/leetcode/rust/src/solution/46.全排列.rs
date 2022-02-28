@@ -32,7 +32,20 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 回溯法
     pub fn permute(nums: Vec<i32>) -> Vec<Vec<i32>> {
+
+    }
+
+    fn dfs(nums: Vec<i32>, 
+        acc: &mut Vec<i32>,
+        res: &mut Vec<i32>, 
+        visited: &mut HashSet<i32>
+    ) {
+        if acc.len() == nums.len() {
+            
+        }
 
     }
 }

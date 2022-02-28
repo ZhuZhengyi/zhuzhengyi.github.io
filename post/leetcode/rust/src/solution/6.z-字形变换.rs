@@ -53,7 +53,11 @@ impl Solution {
         let n = num_rows;
         let it = (0..n).into_iter().chain((1..n-1).rev().into_iter());
         let mut vr: Vec<Vec<char>> = vec![vec![]; n as usize];
-        s.chars().zip(it.cycle()).for_each(|(c, i)|vr[i as usize].push(c));
+        s.chars()
+         .zip(it.cycle())
+         .for_each(
+             |(c, i)| vr[i as usize].push(c)
+          );
 
         vr.into_iter().flatten().collect()
     }
