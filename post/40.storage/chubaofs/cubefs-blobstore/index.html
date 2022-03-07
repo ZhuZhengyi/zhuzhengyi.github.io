@@ -24,12 +24,12 @@
 <meta property="og:description" content="CubeFS-BlobStore 简介 CubeFS-BlobStore是一个高可靠、高可用、低成本、支持超大规模(EB)的分布式存储系统。 采用纠删码中的Reed-Solom">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/cubefs-blobstore/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-02-25T00:00:00+00:00">
-<meta property="article:modified_time" content="2022-02-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-03-07T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-03-07T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="CubeFS-BlobStore">
-<meta itemprop=description content="CubeFS-BlobStore 简介 CubeFS-BlobStore是一个高可靠、高可用、低成本、支持超大规模(EB)的分布式存储系统。 采用纠删码中的Reed-Solom"><meta itemprop=datePublished content="2022-02-25T00:00:00+00:00">
-<meta itemprop=dateModified content="2022-02-25T00:00:00+00:00">
-<meta itemprop=wordCount content="12086">
+<meta itemprop=description content="CubeFS-BlobStore 简介 CubeFS-BlobStore是一个高可靠、高可用、低成本、支持超大规模(EB)的分布式存储系统。 采用纠删码中的Reed-Solom"><meta itemprop=datePublished content="2022-03-07T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-03-07T00:00:00+00:00">
+<meta itemprop=wordCount content="12579">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="CubeFS-BlobStore">
 <meta name=twitter:description content="CubeFS-BlobStore 简介 CubeFS-BlobStore是一个高可靠、高可用、低成本、支持超大规模(EB)的分布式存储系统。 采用纠删码中的Reed-Solom"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>CubeFS-BlobStore</h1>
 <div class=post-meta>
-<time datetime=2022-02-25 class=post-time>
-2022-02-25
+<time datetime=2022-03-07 class=post-time>
+2022-03-07
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/storage/> storage </a>
@@ -196,8 +196,8 @@ Justice's Blog
 <li><a href=#blobnode>BlobNode</a></li>
 <li><a href=#mqproxy消息代理>MQProxy(消息代理)</a></li>
 <li><a href=#scheduler任务调度器>Scheduler(任务调度器)</a></li>
-<li><a href=#worker>Worker()</a></li>
 <li><a href=#tinker修补器>Tinker(修补器)</a></li>
+<li><a href=#worker>Worker()</a></li>
 <li><a href=#cli>Cli</a></li>
 </ul>
 </li>
@@ -211,7 +211,6 @@ Justice's Blog
 </li>
 <li><a href=#参数>参数</a>
 <ul>
-<li><a href=#consul-1>Consul</a></li>
 <li><a href=#blobnode-1>BlobNode</a></li>
 </ul>
 </li>
@@ -275,19 +274,19 @@ Justice's Blog
 <td>Allocator</td>
 <td>集群管理代理</td>
 <td>提供数据写入资源id的分配</td>
-<td>clusterMgr</td>
+<td>ClusterMgr</td>
 <td>无</td>
 <td></td>
-<td></td>
+<td>>=1</td>
 </tr>
 <tr>
 <td>Access</td>
 <td>接入模块</td>
 <td>对外提供数据读、写和删除接口</td>
-<td>redis,consul</td>
+<td>Redis,consul</td>
 <td>无</td>
 <td>单节点部署，一个机房部署一个，</td>
-<td></td>
+<td>>=1</td>
 </tr>
 <tr>
 <td>BlobNode</td>
@@ -300,12 +299,12 @@ Justice's Blog
 </tr>
 <tr>
 <td>Worker</td>
-<td></td>
+<td>blob任务执行模块</td>
 <td>卷修补、迁移和回收任务执行模块</td>
-<td></td>
+<td>BlobNode，Scheduler</td>
 <td>无</td>
 <td></td>
-<td></td>
+<td>>=1</td>
 </tr>
 <tr>
 <td>Scheduler</td>
@@ -323,7 +322,7 @@ Justice's Blog
 <td>kafka</td>
 <td>无</td>
 <td></td>
-<td></td>
+<td>>=1</td>
 </tr>
 <tr>
 <td>Tinker</td>
@@ -332,16 +331,16 @@ Justice's Blog
 <td>kafka，mongodb</td>
 <td>无</td>
 <td></td>
-<td></td>
+<td>>=1</td>
 </tr>
 <tr>
-<td>cli</td>
+<td>Cli</td>
 <td>cli工具</td>
 <td>提供cli管理操作</td>
 <td>consul，redis</td>
 <td>无</td>
 <td></td>
-<td></td>
+<td>>=</td>
 </tr>
 <tr>
 <td>Consul</td>
@@ -359,7 +358,7 @@ Justice's Blog
 <td></td>
 <td></td>
 <td></td>
-<td></td>
+<td>必须</td>
 </tr>
 <tr>
 <td>Kafaka</td>
@@ -368,7 +367,7 @@ Justice's Blog
 <td></td>
 <td></td>
 <td></td>
-<td></td>
+<td>必须</td>
 </tr>
 <tr>
 <td>Redis</td>
@@ -379,8 +378,18 @@ Justice's Blog
 <td></td>
 <td>可选</td>
 </tr>
+<tr>
+<td>Zookeeper</td>
+<td></td>
+<td>为kafka提供注册服务</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </tbody>
 </table>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2022/02/28-16-20-30-2022-02-28-16-20-19-image.png alt></p>
 <h2 id=资源>资源</h2>
 <ul>
 <li>
@@ -482,7 +491,7 @@ Justice's Blog
 </span><span class=c1></span>                     <span class=c1>//当1en(data) &lt; MinShardSize*N, 每个shard大小为MinShardSize, 后面不够的填0
 </span><span class=c1></span>                     <span class=c1>//当len(data) &gt; MinShardSize*N, 每个shard大小为[len(data)/N], 后面填0;
 </span><span class=c1></span><span class=p>}</span>
-<span class=c1>// 预制的ec
+<span class=c1>// 定义的ec算法
 </span><span class=c1></span><span class=kd>var</span> <span class=nx>constCodeModeTactic</span> <span class=p>=</span> <span class=kd>map</span><span class=p>[</span><span class=nx>CodeMode</span><span class=p>]</span><span class=nx>Tactic</span><span class=p>{</span>
     <span class=nx>EC15P12</span><span class=p>:</span>   <span class=p>{</span><span class=nx>N</span><span class=p>:</span> <span class=mi>15</span><span class=p>,</span> <span class=nx>M</span><span class=p>:</span> <span class=mi>12</span><span class=p>,</span> <span class=nx>L</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span> <span class=nx>AZCount</span><span class=p>:</span> <span class=mi>3</span><span class=p>,</span> <span class=nx>PutQuorum</span><span class=p>:</span> <span class=mi>24</span><span class=p>,</span> <span class=nx>GetQuorum</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span> <span class=nx>MinShardSize</span><span class=p>:</span> <span class=nx>alignSize2KB</span><span class=p>},</span>
     <span class=nx>EC6P6</span><span class=p>:</span>     <span class=p>{</span><span class=nx>N</span><span class=p>:</span> <span class=mi>6</span><span class=p>,</span> <span class=nx>M</span><span class=p>:</span> <span class=mi>6</span><span class=p>,</span> <span class=nx>L</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span> <span class=nx>AZCount</span><span class=p>:</span> <span class=mi>3</span><span class=p>,</span> <span class=nx>PutQuorum</span><span class=p>:</span> <span class=mi>11</span><span class=p>,</span> <span class=nx>GetQuorum</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span> <span class=nx>MinShardSize</span><span class=p>:</span> <span class=nx>alignSize2KB</span><span class=p>},</span>
@@ -574,19 +583,28 @@ Justice's Blog
 <p>一个access为一个<code>region</code>下的所有<code>cluster</code>提供访问接入点;</p>
 </li>
 <li>
-<p>access主要提供如下访问接口：</p>
+<p>access主要提供如下rpc：</p>
 <ul>
 <li>
-<p>put: 单个put对象, 默认最大size：5GB;</p>
+<p>/put: put数据，动态分配location, 默认最大size：5GB;</p>
 </li>
 <li>
-<p>putAt:</p>
+<p>/putAt: 将数据put到指定的location；</p>
 </li>
 <li>
-<p>get:</p>
+<p>/get: 根据location读取数据；</p>
 </li>
 <li>
-<p>delete</p>
+<p>/delete：删除指定location的数据；</p>
+</li>
+<li>
+<p>/deleteblob: 删除指定blob;</p>
+</li>
+<li>
+<p>/alloc: 分配blob;</p>
+</li>
+<li>
+<p>/sign: 签名;</p>
 </li>
 </ul>
 </li>
@@ -624,8 +642,6 @@ Justice's Blog
 </span><span class=lnt>26
 </span><span class=lnt>27
 </span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
 </span></code></pre></td>
 <td class=lntd>
 <pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// Location: 一次put的数据位置信息；
@@ -640,13 +656,11 @@ Justice's Blog
     <span class=nx>Blobs</span>     <span class=p>[]</span><span class=nx>SliceInfo</span>       <span class=s>`json:&#34;blobs&#34;`</span>
 <span class=p>}</span>
 
-
 <span class=kd>type</span> <span class=nx>Blob</span> <span class=kd>struct</span> <span class=p>{</span>
     <span class=nx>Bid</span>  <span class=nx>proto</span><span class=p>.</span><span class=nx>BlobID</span>
     <span class=nx>Vid</span>  <span class=nx>proto</span><span class=p>.</span><span class=nx>Vid</span>
     <span class=nx>Size</span> <span class=kt>uint32</span>
 <span class=p>}</span>
-
 
 <span class=kd>type</span> <span class=nx>SliceInfo</span> <span class=kd>struct</span> <span class=p>{</span>
     <span class=nx>_</span>      <span class=p>[</span><span class=mi>0</span><span class=p>]</span><span class=kt>byte</span>
@@ -781,6 +795,17 @@ Justice's Blog
 </ul>
 </li>
 <li>
+<p>rpc：</p>
+<ul>
+<li>
+<p>/volume/alloc:</p>
+</li>
+<li>
+<p>/volume/list:</p>
+</li>
+</ul>
+</li>
+<li>
 <p>配置文件：</p>
 </li>
 </ul>
@@ -845,7 +870,7 @@ Justice's Blog
 <p>ConfigMgr(配置管理): cluster_config, 集群的全局配置；</p>
 </li>
 <li>
-<p>VolumeMgr(逻辑卷管理)：管理逻辑卷</p>
+<p>VolumeMgr(逻辑卷管理)：负责volume的allocate，状态监测等, ;</p>
 </li>
 <li>
 <p>DiskMgr(磁盘管理)：管理集群内所有blobnode磁盘；</p>
@@ -1074,10 +1099,10 @@ Justice's Blog
 <p>Volume Status</p>
 <ul>
 <li>
-<p>idle:</p>
+<p>idle: volume刚创建时，尚未被分配的volume状态；</p>
 </li>
 <li>
-<p>active:</p>
+<p>active: volume分配给某一个allocator后的状态；</p>
 </li>
 <li>
 <p>lock:</p>
@@ -1164,25 +1189,33 @@ Justice's Blog
 </ul>
 </li>
 </ul>
-<h4 id=blobnode中disk的管理>blobnode中disk的管理</h4>
+<h4 id=blobnode中disk>blobnode中disk</h4>
 <ul>
 <li>
 <p>blobnode中disk由配置文件中<code>disks</code>项指定，一个blobnode可以包含多个disk;</p>
 </li>
 <li>
-<p>blobnode启动时，先通过rpc从<code>clusterMgr</code>获取该host已经注册的disk；</p>
+<p>blobnode启动时，先通过rpc从<code>clusterMgr</code>获取该host所有已经注册的disk；</p>
 </li>
 <li>
 <p>然后根据配置文件, 逐个加载disk；</p>
 </li>
 <li>
-<p>每个disk包含.sys, meta等子目录，.sys目录里面保存disk的格式相关信息；.meta里面使用rocksdb来记录chunk相关的元数据信息；</p>
+<p>每个disk包含.sys, meta等子目录，</p>
+<ul>
+<li>
+<p>.sys目录里面保存disk的格式相关信息；</p>
 </li>
 <li>
-<p>blobnode</p>
+<p>.meta里面使用rocksdb来记录chunk相关的元数据信息；</p>
 </li>
 <li>
-<p>disk加载流程：</p>
+<p>.data目录包含chunkfile;</p>
+</li>
+</ul>
+</li>
+<li>
+<p>blobnode disk加载流程：</p>
 <ul>
 <li>
 <p>通过配置文件获取disk根目录；</p>
@@ -1223,6 +1256,32 @@ Justice's Blog
 </li>
 <li>
 <p>加载好的diskStorage记录在map[diskID]<code>Disks</code> 中;</p>
+</li>
+</ul>
+</li>
+<li>
+<p>blobnode rpc:</p>
+<ul>
+<li>
+<p>/chunk/create</p>
+</li>
+<li>
+<p>/chunk/release</p>
+</li>
+<li>
+<p>/chunk/compact</p>
+</li>
+<li>
+<p>&mldr;</p>
+</li>
+<li>
+<p>/shard/get/&mldr;</p>
+</li>
+<li>
+<p>/shard/put/&mldr;.</p>
+</li>
+<li>
+<p>/shard/delete/&mldr;</p>
 </li>
 </ul>
 </li>
@@ -1342,7 +1401,16 @@ Justice's Blog
 <span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
-</div><h4 id=disk磁盘>Disk(磁盘)</h4>
+</div><h4 id=存储格式>存储格式</h4>
+<ul>
+<li>volume->chunk</li>
+</ul>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2022/02/28-17-40-09-2022-02-28-17-39-53-image.png alt></p>
+<ul>
+<li>chunk->shard</li>
+</ul>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2022/02/28-17-41-54-2022-02-28-17-41-44-image.png alt></p>
+<h4 id=disk磁盘>Disk(磁盘)</h4>
 <ul>
 <li>
 <p>Disk是BlobNode节点上一个格式化后挂载到某一目录的物理磁盘，用来存储具体的数据；</p>
@@ -1441,7 +1509,6 @@ Justice's Blog
 </span><span class=lnt>43
 </span><span class=lnt>44
 </span><span class=lnt>45
-</span><span class=lnt>46
 </span></code></pre></td>
 <td class=lntd>
 <pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// disk format
@@ -1479,7 +1546,6 @@ Justice's Blog
 </span><span class=c1>// vuid/&lt;vuid&gt;          [vuid]
 </span><span class=c1>// diskinfo             [diskmeta]
 </span><span class=c1></span>
-
 <span class=c1>//DiskMeta
 </span><span class=c1></span><span class=kd>type</span> <span class=nx>DiskMeta</span> <span class=kd>struct</span> <span class=p>{</span>
     <span class=nx>FormatInfo</span>
@@ -1726,16 +1792,19 @@ Justice's Blog
 </li>
 </ul>
 </li>
-<li></li>
 </ul>
 <h3 id=mqproxy消息代理>MQProxy(消息代理)</h3>
 <ul>
 <li>mqproxy为kafka mq代理，作为异步消息传输通道；</li>
 <li>启动时，将自身作为 service注册到<code>clustermsg</code>中的service table中；</li>
-<li>mqproxy接收<code>access</code>下发的<code>shardRepardMsg</code>和<code>blobDeleteMsg</code>消息，被<code>scheduler</code>消费；</li>
+<li>mqproxy接收<code>access</code>下发的<code>shardRepardMsg</code>和<code>blobDeleteMsg</code>消息，发送到kafka中，最后被<code>scheduler</code>消费；</li>
 <li>scheduler中的<code>inspectMgr</code>在巡检时，如果发现丢失的shard，将给mqproxy发送<code>shardRepairedMsg</code>;</li>
 <li>提供rpc接口：
-*</li>
+<ul>
+<li>/repairmsg: shard修复消息；</li>
+<li>/deletemsg: blob删除消息；</li>
+</ul>
+</li>
 </ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -1800,17 +1869,17 @@ Justice's Blog
 </div><h3 id=scheduler任务调度器>Scheduler(任务调度器)</h3>
 <ul>
 <li><code>scheduler</code>提供所在cluster后台任务调度服务;</li>
-<li>内置管理器：
+<li>内置多种管理器，来对各种任务进行管理：
 <ul>
 <li>ClusterTopoMgr: 集群拓扑管理器, 周期性(默认：5min)的从<code>clustermgr</code>获取配置集群的disk信息，然后构建拓扑信息；</li>
 <li>BalanceMgr：数据平衡管理器, 周期性(默认：5s)收集disk分布情况，构建MigrateMgr任务，使数据自动保证平衡；</li>
-<li>MigrateMgr: 迁移管理器, 分为自动、手动迁移管理器两种。自动迁移管理器有BalanceMgr管理；手动迁移管理器由api调用触发：</li>
+<li>MigrateMgr: 迁移管理器, 分为自动、手动迁移管理器两种。自动迁移管理器由BalanceMgr管理；手动迁移管理器由api调用触发：</li>
 <li>DiskDropMgr：下线磁盘管理器，负责；</li>
-<li>RepairMgr：修复任务管理器，</li>
+<li>RepairMgr：shard修复任务管理器，管理下发shardreapirmsg task;</li>
 <li>InspectMgr: 巡检管理器, 巡检vol，发现坏的blob时，给mqproxy发送<code>ShardRepairMsg</code>；</li>
 </ul>
 </li>
-<li>启动时，先根据配置文件初始化化各个管理器 ，再从mongo中加载已有的task，最后使各个mgr run起来；</li>
+<li>启动时，先根据配置文件初始化各个管理器 ，再从mongo中加载已有的task，最后使各个mgr run起来；</li>
 <li>scheduler内置service table, tinker和worker组件在启动时，会将自身注册到scheduler的service table中；</li>
 <li>各管理器生成task，并插入到相应的mongdb task table中；</li>
 <li></li>
@@ -1876,7 +1945,7 @@ Justice's Blog
 </code></pre></td></tr></table>
 </div>
 </div><ul>
-<li>API</li>
+<li>rpc:</li>
 </ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -1930,76 +1999,18 @@ Justice's Blog
     <span class=nx>rpc</span><span class=p>.</span><span class=nf>POST</span><span class=p>(</span><span class=s>&#34;/service/delete&#34;</span><span class=p>,</span> <span class=nx>service</span><span class=p>.</span><span class=nx>HTTPServiceDelete</span><span class=p>,</span> <span class=nx>rpc</span><span class=p>.</span><span class=nf>OptArgsBody</span><span class=p>())</span>
 </code></pre></td></tr></table>
 </div>
-</div><h3 id=worker>Worker()</h3>
-<ul>
-<li>
-<p>执行tinker下发(rpc api)的shard repair, blob delete任务；</p>
-</li>
-<li>
-<p>启动时，将自身注册到<code>scheduler</code>的service 列表中；</p>
-</li>
-<li>
-<p>周期性(默认: 500ms)的从<code>scheduler</code>获取task, 并执行task(包括: Repair, Balance, DiskDrop, ManualMigrate, Inspect)；</p>
-</li>
-<li></li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json>  <span class=err>//worker.conf</span>
-  <span class=p>{</span>
-   <span class=nt>&#34;bind_addr&#34;</span><span class=p>:</span> <span class=s2>&#34;:9910&#34;</span><span class=p>,</span>                <span class=err>#</span> <span class=err>服务端口</span>
-   <span class=nt>&#34;cluster_id&#34;</span><span class=p>:</span> <span class=mi>1</span><span class=p>,</span>                     <span class=err>#</span> <span class=err>集群id</span>
-   <span class=nt>&#34;service_register&#34;</span><span class=p>:</span> <span class=p>{</span>                <span class=err>#</span> <span class=err>自身服务consul注册信息</span>
-     <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:9910&#34;</span><span class=p>,</span>   <span class=err>#</span> <span class=err>服务地址</span>
-     <span class=nt>&#34;idc&#34;</span><span class=p>:</span> <span class=s2>&#34;z0&#34;</span>                        <span class=err>#</span> <span class=err>服务所属机房</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;scheduler&#34;</span><span class=p>:</span> <span class=p>{</span>                       <span class=err>#</span> <span class=err>scheduler服务相关配置</span>
-     <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:9800&#34;</span>    <span class=err>#</span> <span class=err>服务地址</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;dropped_bid_record&#34;</span><span class=p>:</span> <span class=p>{</span>              <span class=err>#</span> <span class=err>丢弃blob</span> <span class=err>id原因记录</span>
-     <span class=nt>&#34;dir&#34;</span><span class=p>:</span> <span class=s2>&#34;./dropped&#34;</span>                 <span class=err>#</span> <span class=err>记录目录</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;log&#34;</span><span class=p>:{</span>                              <span class=err>#</span> <span class=err>运行日志相关配置</span>
-     <span class=nt>&#34;level&#34;</span><span class=p>:</span><span class=mi>0</span><span class=p>,</span>                         <span class=err>#</span> <span class=err>0:debug,</span> <span class=err>1:info,</span> <span class=err>2:warn,</span> <span class=err>3:error,</span> <span class=err>4:panic,</span> <span class=err>5:fatal</span>
-     <span class=nt>&#34;filename&#34;</span><span class=p>:</span> <span class=s2>&#34;/tmp/worker.log&#34;</span>      <span class=err>#</span> <span class=err>运行日志文件，会自动轮转</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;auditlog&#34;</span><span class=p>:</span> <span class=p>{</span>                        <span class=err>#</span> <span class=err>审计日志相关配置</span>
-     <span class=nt>&#34;logdir&#34;</span><span class=p>:</span> <span class=s2>&#34;./auditlog/worker&#34;</span>      <span class=err>#</span> <span class=err>审计日志目录</span>
-   <span class=p>}</span>
-  <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
 </div><h3 id=tinker修补器>Tinker(修补器)</h3>
 <ul>
 <li>启动时，将自身注册到<code>scheduler</code>的service服务列表中；</li>
 <li>内置<code>shardRepairMgr</code>, <code>BlobDeleteMgr</code>, 执行shard repair，blob delete任务；</li>
 <li>从kafka mq中消费相应的消息, 并通过rpc通知<code>worker</code>执行相应的任务;</li>
 <li>tinker使用mongodb保存kafka offset和<code>orphanShard</code>;</li>
-<li></li>
+<li>rpc:
+<ul>
+<li>/update/vol:</li>
+<li>/stats:</li>
+</ul>
+</li>
 </ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -2095,8 +2106,8 @@ Justice's Blog
              <span class=nt>&#34;topic&#34;</span><span class=p>:</span><span class=s2>&#34;shard_repair_failed&#34;</span><span class=p>,</span> <span class=err>#</span> <span class=err>主题</span>
              <span class=nt>&#34;partitions&#34;</span><span class=p>:[</span><span class=mi>0</span><span class=p>]</span>      <span class=err>#</span> <span class=err>消费分区</span>
         <span class=p>}</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;blob_delete&#34;</span><span class=p>:{</span>                 <span class=err>#</span> <span class=err>数据删除相关配置</span>
+   <span class=p>},</span>   
+    <span class=nt>&#34;blob_delete&#34;</span><span class=p>:{</span>                 <span class=err>#</span> <span class=err>数据删除相关配置</span>
          <span class=nt>&#34;broker_list&#34;</span><span class=p>:[</span><span class=s2>&#34;127.0.0.1:9092&#34;</span><span class=p>],</span> <span class=err>#</span> <span class=err>kafka地址</span>
          <span class=nt>&#34;normal_topic&#34;</span><span class=p>:{</span>          <span class=err>#</span> <span class=err>删除消息消费配置</span>
              <span class=nt>&#34;topic&#34;</span><span class=p>:</span><span class=s2>&#34;blob_delete&#34;</span><span class=p>,</span><span class=err>#</span> <span class=err>主题</span>
@@ -2110,28 +2121,112 @@ Justice's Blog
          <span class=nt>&#34;dellog&#34;</span><span class=p>:{</span>                <span class=err>#</span> <span class=err>删除记录相关配置</span>
              <span class=nt>&#34;dir&#34;</span><span class=p>:</span> <span class=s2>&#34;./delete_log&#34;</span> <span class=err>#</span> <span class=err>删除日志目录</span>
          <span class=p>}</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;clustermgr&#34;</span><span class=p>:</span> <span class=p>{</span>                 <span class=err>#</span> <span class=err>clustermgr地址</span>
-       <span class=nt>&#34;hosts&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;http://127.0.0.1:9998&#34;</span><span class=p>,</span> <span class=s2>&#34;http://127.0.0.1:9999&#34;</span><span class=p>,</span> <span class=s2>&#34;http://127.0.0.1:10000&#34;</span><span class=p>]</span>
-    <span class=p>},</span>
-   <span class=nt>&#34;scheduler&#34;</span><span class=p>:</span> <span class=p>{</span>                  <span class=err>#</span> <span class=err>scheduler服务地址</span>
-       <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:9800&#34;</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;service_register&#34;</span><span class=p>:{</span>            <span class=err>#</span> <span class=err>自身服务注册信息</span>
-       <span class=nt>&#34;host&#34;</span><span class=p>:</span><span class=s2>&#34;http://127.0.0.1:9700&#34;</span><span class=p>,</span>    <span class=err>#</span> <span class=err>服务地址</span>
-       <span class=nt>&#34;idc&#34;</span><span class=p>:</span><span class=s2>&#34;z0&#34;</span>                 <span class=err>#</span> <span class=err>服务所属机房</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;log&#34;</span><span class=p>:{</span>                         <span class=err>#</span> <span class=err>运行日志相关配置</span>
-     <span class=nt>&#34;level&#34;</span><span class=p>:</span><span class=mi>0</span><span class=p>,</span>                    <span class=err>#</span> <span class=err>0:debug,</span> <span class=err>1:info,</span> <span class=err>2:warn,</span> <span class=err>3:error,</span> <span class=err>4:panic,</span> <span class=err>5:fatal</span>
-     <span class=nt>&#34;filename&#34;</span><span class=p>:</span> <span class=s2>&#34;/tmp/tinker.log&#34;</span>     <span class=err>#</span> <span class=err>运行日志文件，会自动轮转</span>
-   <span class=p>},</span>
-   <span class=nt>&#34;auditlog&#34;</span><span class=p>:</span> <span class=p>{</span>                    <span class=err>#</span> <span class=err>审计日志相关配置</span>
-     <span class=nt>&#34;logdir&#34;</span><span class=p>:</span> <span class=s2>&#34;./auditlog/tinker&#34;</span> <span class=err>#</span> <span class=err>审计日志目录</span>
-   <span class=p>}</span>
+    <span class=p>},</span> 
+    <span class=nt>&#34;clustermgr&#34;</span><span class=p>:</span> <span class=p>{</span> <span class=err>#</span> <span class=err>clustermgr地址</span>
+         <span class=nt>&#34;hosts&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;http://127.0.0.1:9998&#34;</span><span class=p>,</span> <span class=s2>&#34;http://127.0.0.1:9999&#34;</span><span class=p>,</span> <span class=s2>&#34;http://127.0.0.1:10000&#34;</span><span class=p>]</span>
+     <span class=p>},</span>
+     <span class=nt>&#34;scheduler&#34;</span><span class=p>:</span> <span class=p>{</span> <span class=err>#</span> <span class=err>scheduler服务地址</span>
+         <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:9800&#34;</span>
+     <span class=p>},</span>
+     <span class=nt>&#34;service_register&#34;</span><span class=p>:{</span> <span class=err>#</span> <span class=err>自身服务注册信息</span>
+         <span class=nt>&#34;host&#34;</span><span class=p>:</span><span class=s2>&#34;http://127.0.0.1:9700&#34;</span><span class=p>,</span> <span class=err>#</span> <span class=err>服务地址</span>
+         <span class=nt>&#34;idc&#34;</span><span class=p>:</span><span class=s2>&#34;z0&#34;</span> <span class=err>#</span> <span class=err>服务所属机房</span>
+     <span class=p>},</span>
+     <span class=nt>&#34;log&#34;</span><span class=p>:{</span> <span class=err>#</span> <span class=err>运行日志相关配置</span>
+         <span class=nt>&#34;level&#34;</span><span class=p>:</span><span class=mi>0</span><span class=p>,</span> <span class=err>#</span> <span class=err>0:debug,</span> <span class=err>1:info,</span> <span class=err>2:warn,</span> <span class=err>3:error,</span> <span class=err>4:panic,</span> <span class=err>5:fatal</span>
+         <span class=nt>&#34;filename&#34;</span><span class=p>:</span> <span class=s2>&#34;/tmp/tinker.log&#34;</span> <span class=err>#</span> <span class=err>运行日志文件，会自动轮转</span>
+     <span class=p>},</span>
+     <span class=nt>&#34;auditlog&#34;</span><span class=p>:</span> <span class=p>{</span> <span class=err>#</span> <span class=err>审计日志相关配置</span>
+         <span class=nt>&#34;logdir&#34;</span><span class=p>:</span> <span class=s2>&#34;./auditlog/tinker&#34;</span> <span class=err>#</span> <span class=err>审计日志目录</span>
+     <span class=p>}</span>
 <span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
+</div><h3 id=worker>Worker()</h3>
+<ul>
+<li>
+<p>执行tinker下发(rpc api)的shard repair, blob delete任务；</p>
+</li>
+<li>
+<p>启动时，将自身注册到<code>scheduler</code>的service 列表中；</p>
+</li>
+<li>
+<p>周期性(默认: 500ms)的从<code>scheduler</code>获取task(调用scheduler rpc：<code>/task/acquire</code>), 并执行task(包括: Repair, Balance, DiskDrop, ManualMigrate, Inspect)；</p>
+</li>
+<li>
+<p>rpc api:</p>
+<ul>
+<li>
+<p>/shard/repair</p>
+</li>
+<li>
+<p>/stats</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-json data-lang=json>  <span class=err>//worker.conf</span>
+  <span class=p>{</span>
+   <span class=nt>&#34;bind_addr&#34;</span><span class=p>:</span> <span class=s2>&#34;:9910&#34;</span><span class=p>,</span>                <span class=err>#</span> <span class=err>服务端口</span>
+   <span class=nt>&#34;cluster_id&#34;</span><span class=p>:</span> <span class=mi>1</span><span class=p>,</span>                     <span class=err>#</span> <span class=err>集群id</span>
+   <span class=nt>&#34;service_register&#34;</span><span class=p>:</span> <span class=p>{</span>                <span class=err>#</span> <span class=err>自身服务consul注册信息</span>
+     <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:9910&#34;</span><span class=p>,</span>   <span class=err>#</span> <span class=err>服务地址</span>
+     <span class=nt>&#34;idc&#34;</span><span class=p>:</span> <span class=s2>&#34;z0&#34;</span>                        <span class=err>#</span> <span class=err>服务所属机房</span>
+   <span class=p>},</span>
+   <span class=nt>&#34;scheduler&#34;</span><span class=p>:</span> <span class=p>{</span>                       <span class=err>#</span> <span class=err>scheduler服务相关配置</span>
+     <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;http://127.0.0.1:9800&#34;</span>    <span class=err>#</span> <span class=err>服务地址</span>
+   <span class=p>},</span>
+   <span class=nt>&#34;dropped_bid_record&#34;</span><span class=p>:</span> <span class=p>{</span>              <span class=err>#</span> <span class=err>丢弃blob</span> <span class=err>id原因记录</span>
+     <span class=nt>&#34;dir&#34;</span><span class=p>:</span> <span class=s2>&#34;./dropped&#34;</span>                 <span class=err>#</span> <span class=err>记录目录</span>
+   <span class=p>},</span>
+   <span class=nt>&#34;log&#34;</span><span class=p>:{</span>                              <span class=err>#</span> <span class=err>运行日志相关配置</span>
+     <span class=nt>&#34;level&#34;</span><span class=p>:</span><span class=mi>0</span><span class=p>,</span>                         <span class=err>#</span> <span class=err>0:debug,</span> <span class=err>1:info,</span> <span class=err>2:warn,</span> <span class=err>3:error,</span> <span class=err>4:panic,</span> <span class=err>5:fatal</span>
+     <span class=nt>&#34;filename&#34;</span><span class=p>:</span> <span class=s2>&#34;/tmp/worker.log&#34;</span>      <span class=err>#</span> <span class=err>运行日志文件，会自动轮转</span>
+   <span class=p>},</span>
+   <span class=nt>&#34;auditlog&#34;</span><span class=p>:</span> <span class=p>{</span>                        <span class=err>#</span> <span class=err>审计日志相关配置</span>
+     <span class=nt>&#34;logdir&#34;</span><span class=p>:</span> <span class=s2>&#34;./auditlog/worker&#34;</span>      <span class=err>#</span> <span class=err>审计日志目录</span>
+   <span class=p>}</span>
+  <span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
 </div><h3 id=cli>Cli</h3>
+<ul>
+<li>
+<p>cli是blobstore提供的一个命令行工具，用于对blobstore进行管理操作；</p>
+</li>
+<li>
+<p>cli通过<code>access-clinet</code>api 提供和access交互的能力；</p>
+</li>
+<li>
+<p>cli可配置redis来缓存；</p>
+</li>
+</ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt> 1
@@ -2195,7 +2290,19 @@ Justice's Blog
 <ul>
 <li>提供cluster信息注册，查询服务；</li>
 </ul>
-<h3 id=mongodb>MongoDB</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// ConsulRegisterPath
+</span><span class=c1></span>                   <span class=nx>key</span>                             <span class=nx>value</span>
+<span class=nx>clusterMgr</span><span class=p>:</span> <span class=nx>ebs</span><span class=o>/</span><span class=p>&lt;</span><span class=nx>region</span><span class=p>&gt;</span><span class=o>/</span><span class=nx>clusters</span><span class=o>/</span><span class=p>&lt;</span><span class=nx>cluster_id</span><span class=p>&gt;</span> <span class=p>:</span>  <span class=p>&lt;</span><span class=nx>cluster_info</span><span class=p>&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=mongodb>MongoDB</h3>
 <ul>
 <li>
 <p>mongodb用于存储scheduler模块调度信息；</p>
@@ -2303,20 +2410,7 @@ Justice's Blog
 </code></pre></td></tr></table>
 </div>
 </div><h2 id=参数>参数</h2>
-<h3 id=consul-1>Consul</h3>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// ConsulRegisterPath
-</span><span class=c1></span>                   <span class=nx>key</span>                             <span class=nx>value</span>
-<span class=nx>clusterMgr</span><span class=p>:</span> <span class=nx>ebs</span><span class=o>/</span><span class=p>&lt;</span><span class=nx>region</span><span class=p>&gt;</span><span class=o>/</span><span class=nx>clusters</span><span class=o>/</span><span class=p>&lt;</span><span class=nx>cluster_id</span><span class=p>&gt;</span> <span class=p>:</span>  <span class=p>&lt;</span><span class=nx>cluster_info</span><span class=p>&gt;</span>
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=blobnode-1>BlobNode</h3>
+<h3 id=blobnode-1>BlobNode</h3>
 <ul>
 <li>
 <p>一个disk默认最多chunk数<code>DefaultMaxChunks</code>：8192;</p>
@@ -2327,7 +2421,6 @@ Justice's Blog
 <li>
 <p>默认chunk size<code>DefaultChunkSize</code>：16GiB;</p>
 </li>
-<li></li>
 </ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -2387,6 +2480,9 @@ Justice's Blog
 <h3 id=创建卷createvolume>创建卷(CreateVolume)</h3>
 <ul>
 <li>
+<p><code>ClusterMgr</code>启动后，会根据配置为每种ec策略预先创建一定数量的Volume用于分配；</p>
+</li>
+<li>
 <p>入口为clusterMgr中volumeMgr的<code>createVolume()</code>函数；</p>
 </li>
 <li>
@@ -2413,18 +2509,16 @@ Justice's Blog
 <li>
 <p>通过blobnode ChunkCreate rpc调用在blobnode上创建chunk;</p>
 </li>
-<li></li>
 </ul>
 </li>
 <li>
 <p>通过raft执行CreateVolume指令，删除transitedTbl中的volume units，将volume units相关信息记录到volumeTbl中 ；</p>
 </li>
-<li></li>
 </ul>
 <h3 id=写入put>写入(Put)</h3>
 <ul>
 <li>
-<p>put提供了将数据写入到blobstore中的能力；</p>
+<p>put提供将数据写入到blobstore中的能力；</p>
 </li>
 <li></li>
 </ul>
@@ -2581,7 +2675,7 @@ Justice's Blog
 <h4 id=blobnode-2>blobnode</h4>
 <ul>
 <li>
-<p>blobnode ShardPut_():</p>
+<p>blobnode <code>ShardPut_()</code>:</p>
 <ul>
 <li>ShardPut_接收<code>access</code>节点发送的PutShard Rpc调用，执行shard put 写入shard数据操作；</li>
 </ul>
@@ -2661,6 +2755,12 @@ Justice's Blog
 </li>
 </ul>
 <h4 id=blobnode-3>blobnode</h4>
+<ul>
+<li>
+<p>ShardGet_:</p>
+</li>
+<li></li>
+</ul>
 <h3 id=删除delete>删除(Delete)</h3>
 <ul>
 <li>
@@ -2723,14 +2823,12 @@ Justice's Blog
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span><span class=lnt>15
 </span></code></pre></td>
 <td class=lntd>
 <pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// token between alloc and putat
 </span><span class=c1></span>    <span class=c1>// TokenSize max size of token array
 </span><span class=c1></span>    <span class=c1>// clusterID + vid + bid + count + time + size
 </span><span class=c1></span>    <span class=nx>TokenSize</span> <span class=p>=</span> <span class=mi>4</span> <span class=o>+</span> <span class=mi>4</span> <span class=o>+</span> <span class=mi>10</span> <span class=o>+</span> <span class=mi>5</span> <span class=o>+</span> <span class=mi>5</span> <span class=o>+</span> <span class=mi>5</span>
-
 
 <span class=c1>// UploadToken token between alloc and putat
 </span><span class=c1>// [0:8]   hmac (8) first 8 bytes of sha1 summary
@@ -2764,7 +2862,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-02-25
+2022-03-07
 </span>
 </p>
 <p class=copyright-item>
@@ -2784,14 +2882,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/chubaofs/>chubaofs</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/leetcode/doc/46.%E5%85%A8%E6%8E%92%E5%88%97/>
+<a class=prev href=/post/40.storage/chubaofs/cubefs-bcache/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">全排列</span>
+<span class="prev-text nav-default">CubeFS Bcache</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/14.language/golang/go%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B9%8Bmap/>
-<span class="next-text nav-default">Golang数据结构之map</span>
+<a class=next href=/post/40.storage/chubaofs/cubefs-blobstore%E9%85%8D%E7%BD%AE/>
+<span class="next-text nav-default">CubeFS-BlobStore配置</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
