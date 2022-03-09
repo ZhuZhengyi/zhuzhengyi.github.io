@@ -80,27 +80,36 @@ class Solution {
 public:
     /*
      * ## 解题思路
-     * 
+     * 1. 遍历序列；
+     * 2. 使用一个deque来模拟大顶heap，用来记录当前窗口中元素的下标i；
+     * 3. curHeap[0]为当前窗口最大元素下标；
+     * 4. 遍历时，如果curHeap元素个数>=k(i-curHeap[0]), 则收缩左边元素； 
+     * 5. 右侧弹出curHeap中所有<nums[i]的元素, 以保证对
+     * 6. 将i加入到curHeap；
+     * 7. 从k步开始，依次收集curHeap[0], 即为每个滑窗中的最大元素；
      */
     vector<int> maxSlidingWindow(vector<int>& nums, int k) {
-        //
+        //边界条件
         if(k==0) return {};
 
         vector<int> res;
-        deque<int> cur; //当前窗口中,按序排列的值下标
+        deque<int> curHeap; //当前窗口中,按序排列的值下标
 
         for(int i=0; i<nums.size(); i++) {
-            if (i >= k) {
-                if (!cur.empty() && cur.front() <= i - k) {
-                    cur.pop_front();
-                }
+            //窗口中数间隔>=k, 弹出左侧元素，缩小窗口；
+            if (!curHeap.empty() && i-curHeap.front() >= k) {
+                curHeap.pop_front();
             }
-            while(!cur.empty() && nums[i] > nums[cur.back()]) {
-                cur.pop_back();
+            //弹出窗口右侧所有<nums[i]的元素；
+            while(!curHeap.empty() && nums[curHeap.back()] < nums[i]) {
+                curHeap.pop_back();
             }
-            cur.push_back(i);
-            if (i>=k-1) {
-                res.push_back(nums[cur.front()]);
+            //将当前坐标加入窗口
+            curHeap.push_back(i);
+
+            //i>k开始，窗口
+            if (i>k) {
+                res.push_back(nums[curHeap.front()]);
             }
         }
 
