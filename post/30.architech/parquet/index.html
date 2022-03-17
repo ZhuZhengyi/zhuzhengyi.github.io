@@ -24,12 +24,12 @@
 <meta property="og:description" content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/parquet/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2020-12-25T00:00:00+00:00">
-<meta property="article:modified_time" content="2020-12-25T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-03-17T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-03-17T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="列式存储格式Parquet">
-<meta itemprop=description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><meta itemprop=datePublished content="2020-12-25T00:00:00+00:00">
-<meta itemprop=dateModified content="2020-12-25T00:00:00+00:00">
-<meta itemprop=wordCount content="6015">
+<meta itemprop=description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><meta itemprop=datePublished content="2022-03-17T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-03-17T00:00:00+00:00">
+<meta itemprop=wordCount content="5992">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="列式存储格式Parquet">
 <meta name=twitter:description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>列式存储格式Parquet</h1>
 <div class=post-meta>
-<time datetime=2020-12-25 class=post-time>
-2020-12-25
+<time datetime=2022-03-17 class=post-time>
+2022-03-17
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
@@ -295,7 +295,9 @@ Justice's Blog
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-29-02-2020-11-11-15-28-56-image.png alt></p>
 <h3 id=definition-levels>Definition levels</h3>
 <p>Definition level指明该列的路径上多少个可选field被定义了。</p>
-<p>嵌套数据类型的特点是有些field（optional field 和 repeated field）可以是空的，也就是没有定义。如果一个field是定义的，那么它的所有的父节点都是被定义的。从根节点开始遍历，当某一个field的路径上的节点开始是空的时候我们记录下当前的深度作为这个field的Definition Level。如果一个field的definition Level等于这个field的最大definition Level就说明这个field是有数据的。对于required类型的field必须是有定义的，所以这个Definition Level是不需要的。在关系型数据中，optional类型的field被编码成0表示空和1表示非空（或者反之）。</p>
+<p>嵌套数据类型的特点是有些field（optional field 和 repeated field）可以是空的，也就是没有定义。如果一个field是定义的，那么它的所有的父节点都是被定义的。从根节点开始遍历，当某一个field的路径上的节点开始是空的时候我们记录下当前的深度作为这个field的Definition Level。如果一个field的definition Level等于这个field的最大definition Level就说明这个field是有数据的。</p>
+<p>对于required类型的field必须是有定义的，所以这个Definition Level是不需要的。</p>
+<p>在关系型数据中，optional类型的field被编码成0表示空和1表示非空（或者反之）。</p>
 <p>注：definition Level是该路径上有定义的repeated field 和 optional field的个数，不包括required field，因为required field是必须有定义的。</p>
 <p>再举个简单的例子：</p>
 <div class=highlight><div class=chroma>
@@ -319,10 +321,15 @@ Justice's Blog
 </span></code></pre></td></tr></table>
 </div>
 </div><p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-19-04-2020-11-11-15-18-59-image.png alt></p>
-<p>因为b是required field，所以第3行c的definition level为1而不是2（因为b是required field，所有不需计算在内）；第4行c的definition level为2而不是3（理由同上）.</p>
+<p>因为b是required field，所以第3行c的definition level为1而不是2（因为b是required field，所有不需计算在内）；</p>
+<p>第4行c的definition level为2而不是3（理由同上）.</p>
 <h3 id=repetition-levels>Repetition levels</h3>
 <p>Repetition level指明该值在路径中哪个repeated field重复。</p>
-<p>Repetition level是针对repeted field的。注意在图2中的Code字段。可以看到它在r1出现了3次。‘en-us’、‘en’在第一个Name中，而‘en-gb’在第三个Name中。结合了图2你肯定能理解我上一句话并知道‘en-us’、‘en’、‘en-gb’出现在r1中的具体位置，但是不看图的话呢？怎么用文字，或者说是一种定义、一种属性、一个数值，诠释清楚它们出现的位置？这就是重复深度这个概念的作用，它能用一个数字告诉我们在路径中的什么重复字段，此值重复了，以此来确定此值的位置（注意，这里的重复，特指在某个repeated类型的字段下“重复”出现的“重复”）。我们用深度0表示一个纪录的开头（虚拟的根节点），深度的计算忽略非重复字段（标签不是repeated的字段都不算在深度里）。所以在Name.Language.Code这个路径中，包含两个重复字段，Name和Language，如果在Name处重复，重复深度为1（虚拟的根节点是0，下一级就是1），在Language处重复就是2，不可能在Code处重复，它是required类型，表示有且仅有一个；同样的，在路径Links.Forward中，Links是optional的，不参与深度计算（不可能重复），Forward是repeated的，因此只有在Forward处重复时重复深度为1。现在我们从上至下扫描纪录r1。当我们遇到’en-us’，我们没看到任何重复字段，也就是说，重复深度是0。当我们遇到‘en’，字段Language重复了（在‘en-us’的路径里已经出现过一个Language），所以重复深度是2.最终，当我们遇到’en-gb‘，Name重复了（Name在前面‘en-us’和‘en’的路径里已经出现过一次，而此Name后Language只出现过一次，没有重复），所以重复深度是1。因此，r1中Code的值的重复深度是0、2、1.</p>
+<p>Repetition level是针对repeted field的。</p>
+<p>注意在图2中的Code字段。可以看到它在r1出现了3次。‘en-us’、‘en’在第一个Name中，而‘en-gb’在第三个Name中。</p>
+<p>结合了图2你肯定能理解我上一句话并知道‘en-us’、‘en’、‘en-gb’出现在r1中的具体位置，但是不看图的话呢？怎么用文字，或者说是一种定义、一种属性、一个数值，诠释清楚它们出现的位置？</p>
+<p>这就是重复深度这个概念的作用，它能用一个数字告诉我们在路径中的什么重复字段，此值重复了，以此来确定此值的位置（注意，这里的重复，特指在某个repeated类型的字段下“重复”出现的“重复”）。</p>
+<p>我们用深度0表示一个纪录的开头（虚拟的根节点），深度的计算忽略非重复字段（标签不是repeated的字段都不算在深度里）。所以在Name.Language.Code这个路径中，包含两个重复字段，Name和Language，如果在Name处重复，重复深度为1（虚拟的根节点是0，下一级就是1），在Language处重复就是2，不可能在Code处重复，它是required类型，表示有且仅有一个；同样的，在路径Links.Forward中，Links是optional的，不参与深度计算（不可能重复），Forward是repeated的，因此只有在Forward处重复时重复深度为1。现在我们从上至下扫描纪录r1。当我们遇到’en-us’，我们没看到任何重复字段，也就是说，重复深度是0。当我们遇到‘en’，字段Language重复了（在‘en-us’的路径里已经出现过一个Language），所以重复深度是2.最终，当我们遇到’en-gb‘，Name重复了（Name在前面‘en-us’和‘en’的路径里已经出现过一次，而此Name后Language只出现过一次，没有重复），所以重复深度是1。因此，r1中Code的值的重复深度是0、2、1.</p>
 <p>要注意第二个Name在r1中没有包含任何Code值。为了确定‘en-gb’出现在第三个Name而不是第二个，我们添加一个NULL值在‘en’和‘en-gb’之间（如图3所示）。</p>
 <h3 id=striping-and-assembly>Striping and assembly</h3>
 <p>下面用AddressBook的例子来说明Striping和assembly的过程。</p>
@@ -367,7 +374,10 @@ Justice's Blog
 </span><span class=err></span><span class=p>}</span><span class=err>
 </span></code></pre></td></tr></table>
 </div>
-</div><p>以contacts.phoneNumber这一列为例，&ldquo;555 987 6543"这个contacts.phoneNumber的Definition Level是最大Definition Level=2。而如果一个contact没有phoneNumber，那么它的Definition Level就是1。如果连contact都没有，那么它的Definition Level就是0。</p>
+</div><p>以contacts.phoneNumber这一列为例，</p>
+<p>&ldquo;555 987 6543"这个contacts.phoneNumber的Definition Level是最大Definition Level=2。</p>
+<p>而如果一个contact没有phoneNumber，那么它的Definition Level就是1。</p>
+<p>如果连contact都没有，那么它的Definition Level就是0。</p>
 <p>下面我们拿掉其他三个column只看contacts.phoneNumber这个column，把上面的两条record简化成下面的样子：</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -396,7 +406,7 @@ Justice's Blog
 </div><p>这两条记录的序列化过程如下图所示：</p>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-22-00-2020-11-11-15-21-55-image.png alt></p>
 <p>如果我们要把这个column写到磁盘上，磁盘上会写入这样的数据：</p>
-<p><img src=/Users/zhuzhengyi/code/github/gitnote/img/2020-11-11-15-22-20-image.png alt></p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2022/03/16-18-23-37-2022-03-16-18-23-30-image.png alt></p>
 <p>注意：NULL实际上不会被存储，如果一个column value的Definition Level小于该column最大Definition Level的话，那么就表示这是一个空值。</p>
 <p>下面是从磁盘上读取数据并反序列化成AddressBook对象的过程：</p>
 <ol>
@@ -441,7 +451,32 @@ Justice's Blog
 </ul>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-23-49-2020-11-11-15-23-44-image.png alt></p>
 <p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/11-15-24-14-2020-11-11-15-24-08-image.png alt></p>
-<p>上图展示了一个Parquet文件的结构，一个文件中可以存储多个行组，文件的首位都是该文件的Magic Code，用于校验它是否是一个Parquet文件，Footer length存储了文件元数据的大小，通过该值和文件长度可以计算出元数据的偏移量，文件的元数据中包括每一个行组的元数据信息和当前文件的Schema信息。除了文件中每一个行组的元数据，每一页的开始都会存储该页的元数据，在Parquet中，有三种类型的页：数据页、字典页和索引页。数据页用于存储当前行组中该列的值，字典页存储该列值的编码字典，每一个列块中最多包含一个字典页，索引页用来存储当前行组下该列的索引，目前Parquet中还不支持索引页，但是在后面的版本中增加。</p>
+<p>上图展示了一个Parquet文件的结构:</p>
+<ul>
+<li>
+<p>一个文件中可以存储多个行组;</p>
+</li>
+<li>
+<p>文件的首位都是该文件的Magic Code，用于校验它是否是一个Parquet文件;</p>
+</li>
+<li>
+<p>Footer length存储了文件元数据的大小，通过该值和文件长度可以计算出元数据的偏移量，文件的元数据中包括每一个行组的元数据信息和当前文件的Schema信息。</p>
+</li>
+</ul>
+<p>除了文件中每一个行组的元数据，每一页的开始都会存储该页的元数据，</p>
+<p>在Parquet中，有三种类型的页：</p>
+<ul>
+<li>
+<p>数据页: 用于存储当前行组中该列的值，</p>
+</li>
+<li>
+<p>字典页: 存储该列值的编码字典，每一个列块中最多包含一个字典页，</p>
+</li>
+<li>
+<p>索引页: 用来存储当前行组下该列的索引，</p>
+</li>
+</ul>
+<p>目前Parquet中还不支持索引页，但是在后面的版本中增加。</p>
 <h3 id=映射下推project-pushdown>映射下推(Project PushDown)</h3>
 <p>说到列式存储的优势，映射下推是最突出的，它意味着在获取表中原始数据时只需要扫描查询中需要的列，由于每一列的所有值都是连续存储的，所以分区取出每一列的所有值就可以实现TableScan算子，而避免扫描整个表文件内容。</p>
 <p>在Parquet中原生就支持映射下推，执行查询的时候可以通过Configuration传递需要读取的列的信息，这些列必须是Schema的子集，映射每次会扫描一个Row Group的数据，然后一次性得将该Row Group里所有需要的列的Cloumn Chunk都读取到内存中，每次读取一个Row Group的数据能够大大降低随机读的次数，除此之外，Parquet在读取的时候会考虑列是否连续，如果某些需要的列是存储位置是连续的，那么一次读操作就可以把多个列的数据读取到内存。</p>
@@ -476,7 +511,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2020-12-25
+2022-03-17
 </span>
 </p>
 <p class=copyright-item>
@@ -495,14 +530,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/architech/>architech</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/31.distribute/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E6%97%B6%E9%92%9F/>
+<a class=prev href=/post/leetcode/doc/111.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E5%B0%8F%E6%B7%B1%E5%BA%A6/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">分布式系统时钟</span>
+<span class="prev-text nav-default">二叉树的最小深度</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/14.language/c++/%E8%87%AA%E5%8A%A8%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/>
-<span class="next-text nav-default">动态内存管理</span>
+<a class=next href=/post/leetcode/doc/108.%E5%B0%86%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E8%BD%AC%E6%8D%A2%E4%B8%BA%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91/>
+<span class="next-text nav-default">将有序数组转换为二叉搜索树</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

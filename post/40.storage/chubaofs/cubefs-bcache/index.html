@@ -24,12 +24,12 @@
 <meta property="og:description" content="CubeFS Bcache 简介 CubeFS 3.0.0-beta增加了bcache功能， 新增blockcache节点，提供本地缓存能力； 新增preload模块，用于预加载； 增">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/cubefs-bcache/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-03-09T00:00:00+00:00">
-<meta property="article:modified_time" content="2022-03-09T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-03-17T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-03-17T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="CubeFS Bcache">
-<meta itemprop=description content="CubeFS Bcache 简介 CubeFS 3.0.0-beta增加了bcache功能， 新增blockcache节点，提供本地缓存能力； 新增preload模块，用于预加载； 增"><meta itemprop=datePublished content="2022-03-09T00:00:00+00:00">
-<meta itemprop=dateModified content="2022-03-09T00:00:00+00:00">
-<meta itemprop=wordCount content="265">
+<meta itemprop=description content="CubeFS Bcache 简介 CubeFS 3.0.0-beta增加了bcache功能， 新增blockcache节点，提供本地缓存能力； 新增preload模块，用于预加载； 增"><meta itemprop=datePublished content="2022-03-17T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-03-17T00:00:00+00:00">
+<meta itemprop=wordCount content="830">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="CubeFS Bcache">
 <meta name=twitter:description content="CubeFS Bcache 简介 CubeFS 3.0.0-beta增加了bcache功能， 新增blockcache节点，提供本地缓存能力； 新增preload模块，用于预加载； 增"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>CubeFS Bcache</h1>
 <div class=post-meta>
-<time datetime=2022-03-09 class=post-time>
-2022-03-09
+<time datetime=2022-03-17 class=post-time>
+2022-03-17
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/storage/> storage </a>
@@ -183,6 +183,9 @@ Justice's Blog
 <nav id=TableOfContents>
 <ul>
 <li><a href=#简介>简介</a></li>
+<li><a href=#blockcache>blockcache</a></li>
+<li><a href=#preload>Preload</a></li>
+<li><a href=#blobstore>blobstore</a></li>
 <li><a href=#参考>参考</a></li>
 </ul>
 </nav>
@@ -216,6 +219,67 @@ Justice's Blog
 </li>
 </ul>
 </li>
+<li>
+<p>bcache</p>
+</li>
+</ul>
+<h2 id=blockcache>blockcache</h2>
+<ul>
+<li>blockcache 为本节点的client，提供基于本地磁盘的缓存；</li>
+<li>blockcache 提供lrucache策略，通过定期(1 min)检测store使用率和文件数，删除过期文件；</li>
+<li>主要提供如下接口：
+<ul>
+<li>Put：根据key，将data写入到缓存文件中, 每次put都会 写入到一个缓存文件中，文件名为key的值，disk为 key%len(disks)，写入的key将记录在内存中；</li>
+<li>Get：根据key，offset，获取data；</li>
+<li>Evict：移除失效的kv；</li>
+</ul>
+</li>
+</ul>
+<h2 id=preload>Preload</h2>
+<ul>
+<li>
+<p>将blobstore中的volume数据提前加载到datanode中；</p>
+</li>
+<li>
+<p>在read时，如果datanode中存在dp，则从datanode中read；</p>
+</li>
+</ul>
+<h2 id=blobstore>blobstore</h2>
+<ul>
+<li>
+<p>client Super中增加<code>volType, ebsEndpoint, cache</code>等字段；</p>
+</li>
+<li>
+<p>client File中增加<code>blobstore.Reader，blobstore.Writer</code>来代表blobstore的读写接口；</p>
+</li>
+<li>
+<p>client read/write时，根据<code>volType</code>判断来分别调用ec或esObj来分别调用datanode/blobstore来处理请求；</p>
+</li>
+<li>
+<p>create vol, 增加<code>volType,coldArgs</code>相关字段表示冷vol；</p>
+</li>
+<li>
+<p>streamer(hot) read()时，如果<code>bcacheEnable</code>,</p>
+<ul>
+<li>
+<p>先从bcache load；</p>
+</li>
+<li>
+<p>否则，Read data后，再通过<code>cacheBcache()</code>将数据放入bcache缓存中；</p>
+</li>
+</ul>
+</li>
+<li>
+<p>cold vol可以有两级cache:</p>
+<ul>
+<li>
+<p>L1: bcache</p>
+</li>
+<li>
+<p>L2: datanode</p>
+</li>
+</ul>
+</li>
 <li></li>
 </ul>
 <h2 id=参考>参考</h2>
@@ -232,7 +296,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-03-09
+2022-03-17
 </span>
 </p>
 <p class=copyright-item>
@@ -252,8 +316,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/chubaofs/>chubaofs</a>
 </div>
 <nav class=post-nav>
-<a class=next href=/post/14.language/rust/02.rust%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/>
-<span class="next-text nav-default">Rust 数据类型</span>
+<a class=prev href=/post/30.architech/hudi/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">Apache Hudi</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/14.language/golang/golang-channel/>
+<span class="next-text nav-default">Golang Channel</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
