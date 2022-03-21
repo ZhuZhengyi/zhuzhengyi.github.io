@@ -24,12 +24,12 @@
 <meta property="og:description" content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hudi/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-03-17T00:00:00+00:00">
-<meta property="article:modified_time" content="2022-03-17T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-03-21T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-03-21T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Apache Hudi">
-<meta itemprop=description content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两"><meta itemprop=datePublished content="2022-03-17T00:00:00+00:00">
-<meta itemprop=dateModified content="2022-03-17T00:00:00+00:00">
-<meta itemprop=wordCount content="793">
+<meta itemprop=description content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两"><meta itemprop=datePublished content="2022-03-21T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-03-21T00:00:00+00:00">
+<meta itemprop=wordCount content="1346">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Apache Hudi">
 <meta name=twitter:description content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Apache Hudi</h1>
 <div class=post-meta>
-<time datetime=2022-03-17 class=post-time>
-2022-03-17
+<time datetime=2022-03-21 class=post-time>
+2022-03-21
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
@@ -185,6 +185,11 @@ Justice's Blog
 <li><a href=#cow表>COW表</a></li>
 <li><a href=#mor表>MOR表</a></li>
 <li><a href=#index>Index</a></li>
+<li><a href=#查询><strong>查询</strong></a>
+<ul>
+<li><a href=#读优化查询><strong>读优化查询</strong></a></li>
+</ul>
+</li>
 <li><a href=#参考>参考</a></li>
 </ul>
 </nav>
@@ -204,7 +209,7 @@ Justice's Blog
 </ul>
 <h2 id=cow表>COW表</h2>
 <ul>
-<li>cow, copy on write，是在写入时；</li>
+<li>cow, copy on write，COW表写的时候数据直接写入basefile,（parquet）不写log文件；</li>
 </ul>
 <p>Upsert的过程整体分为3步（这里省略了很多不太重要的步骤）：</p>
 <ol>
@@ -222,7 +227,7 @@ Justice's Blog
 <h2 id=mor表>MOR表</h2>
 <ul>
 <li>
-<p>merge on read，</p>
+<p>merge on read，MOR表写数据时，记录首先会被快速的写进日志文件，稍后会使用时间轴上的压缩操作将其与基础文件合并。</p>
 </li>
 <li>
 <p>MOR表在更新时只会把更新的那部分数据写入一个.log文件;</p>
@@ -252,9 +257,63 @@ Justice's Blog
 <p>HBase Index：实现原理是把index存放在HBase里面。优点是性能最高，缺点是需要外部的系统，增加了运维压力。</p>
 </li>
 </ul>
+<h2 id=查询><strong>查询</strong></h2>
+<p>鉴于这种灵活而全面的数据布局和丰富的时间线，Hudi能够支持三种不同的查询表方式，具体取决于表的类型。</p>
+<table>
+<thead>
+<tr>
+<th>查询类型</th>
+<th>COW</th>
+<th>MOR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>快照查询</td>
+<td>查询在给定表或表分区中所有文件片中的最新基本文件上执行，将查看到最新提交的记录。</td>
+<td>通过并到给定表或表分区中的所有文件切片中最新的基本文件及其日志文件合来执行查询，将看到最新的delta-commit操作写入的的记录。</td>
+</tr>
+<tr>
+<td>增量查询</td>
+<td>在给定的开始，结束即时时间范围内，对最新的基本文件执行查询（称为增量查询窗口），同时仅使用Hudi指定的列提取在此窗口中写入的记录。</td>
+<td>查询是在增量查询窗口中对最新的文件片执行的，具体取决于窗口本身，读取基本块或日志块中读取记录的组合。</td>
+</tr>
+<tr>
+<td>读优化查询</td>
+<td>和快照查询相同</td>
+<td>仅访问基本文件，提供给定文件片自上次执行压缩操作以来的数据。通常查询数据的最新程度的保证取决于压缩策略</td>
+</tr>
+</tbody>
+</table>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2022/03/17-10-12-49-2022-03-17-10-12-42-image.png alt></p>
+<h3 id=读优化查询><strong>读优化查询</strong></h3>
+<p>可查看给定的commit/compact即时操作的表的最新快照。仅将最新文件片的基本/列文件暴露给查询，并保证与非Hudi表相同的列查询性能。</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>读优化查询</th>
+<th>快照查询</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据延迟</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>查询延迟</td>
+<td>低</td>
+<td>高</td>
+</tr>
+</tbody>
+</table>
 <h2 id=参考>参考</h2>
 <ol>
 <li><a href=https://mp.weixin.qq.com/s/5LQH50gZkNulDMLlcKABeg>聊一聊Apache Hudi的原理（1）</a></li>
+<li><a href=https://www.cnblogs.com/leesf456/p/12710118.html>Apache Hudi 设计与架构最强解读 - leesf - 博客园</a></li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzIyMzQ0NjA0MQ==&mid=2247485735&idx=1&sn=51915c05f158bdffa96f231a31bb1675&chksm=e81f5c51df68d5471097a8d12c62c83fe8cb0491da50f7d37fae6d831fed1506e14966832229&scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzIyMzQ0NjA0MQ==&mid=2247485735&idx=1&sn=51915c05f158bdffa96f231a31bb1675&chksm=e81f5c51df68d5471097a8d12c62c83fe8cb0491da50f7d37fae6d831fed1506e14966832229&scene=21#wechat_redirect</a></li>
 <li></li>
 </ol>
 </div>
@@ -266,7 +325,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-03-17
+2022-03-21
 </span>
 </p>
 <p class=copyright-item>
@@ -285,8 +344,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/architech/>architech</a>
 </div>
 <nav class=post-nav>
-<a class=next href=/post/40.storage/chubaofs/cubefs-bcache/>
-<span class="next-text nav-default">CubeFS Bcache</span>
+<a class=prev href=/post/30.architech/avro/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">Apache Avro</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/12.data_struct/tree/b-link-tree/>
+<span class="next-text nav-default">B-Link-Tree</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

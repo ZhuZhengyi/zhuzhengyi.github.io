@@ -63,37 +63,38 @@ impl Solution {
     /// ## 解题思路
     /// 
     pub fn solve_sudoku(board: &mut Vec<Vec<char>>) {
-        let mut row: Vec<Vec<bool>> = vec![vec![false; 9]];
-        let mut col: Vec<Vec<bool>> = vec![vec![false; 9]];
-        let mut mini: Vec<Vec<bool>> = vec![vec![false; 9]];
+        let mut row: Vec<Vec<bool>> = vec![vec![false; 9]; 9];
+        let mut col: Vec<Vec<bool>> = vec![vec![false; 9]; 9];
+        let mut mini: Vec<Vec<bool>> = vec![vec![false; 9]; 9];
         for i in 0..board.len() {
             for j in 0..board.len() {
                 if board[i][j] == '.' {
                     continue;
                 }
-                let num = ((board[i][j] as u32) - ('0' as u32)) as usize) ;
+                let num = ((board[i][j] as u32) - ('1' as u32)) as usize ;
                 row[i][num] = true;
                 col[j][num] = true;
-                let k = ((i / 3)  + j / 3) as usize;
+                let k = ((i / 3)  + j % 3) as usize;
                 mini[k][num] = true;
             }
         }
 
-        return Self::check(board, 1, &mut row, &mut col, &mut mini);
+        return Self::fill(board, 0, &mut row, &mut col, &mut mini);
     }
 
-    fn check(board: &mut Vec<Vec<char>>, n: u32, row: &mut Vec<Vec<bool>>, col: &mut Vec<Vec<bool>>, mini: &mut Vec<Vec<bool>>) {
+    fn fill(board: &mut Vec<Vec<char>>, n: u32, row: &mut Vec<Vec<bool>>, col: &mut Vec<Vec<bool>>, mini: &mut Vec<Vec<bool>>) {
         let n = n as usize;
-        if n > 9 {
+        if n >= 9 {
             return;
         }
         for i in 0..board.len() {
             for j in 0..board.len() {
                 if board[i][j] == '.' {
-                    let k = ((i / 3) + j / 3) as usize;
+                    //
+                    let k = ((i / 3) + j % 3) as usize;
                     if n <=9 && !row[i][n] && !col[j][n] && !mini[k][n] {
                         board[i][j] = char::from_u32(n as u32).unwrap();
-                        Self::check(board, (n+1) as u32, row, col, mini);
+                        Self::fill(board, (n+1) as u32, row, col, mini);
                         board[i][j] = '.';
                     }
                 }
