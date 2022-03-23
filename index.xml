@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Justice的小站</title><link>https://justice.bj.cn/</link><description>Recent content on Justice的小站</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 21 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://justice.bj.cn/index.xml" rel="self" type="application/rss+xml"/><item><title>Justice's Blog</title><link>https://justice.bj.cn/homepage/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/about/</guid><description>&lt;h2 id="self-introduction">Self Introduction&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Justice的小站</title><link>https://justice.bj.cn/</link><description>Recent content on Justice的小站</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 23 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://justice.bj.cn/index.xml" rel="self" type="application/rss+xml"/><item><title>Justice's Blog</title><link>https://justice.bj.cn/homepage/about/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/about/</guid><description>&lt;h2 id="self-introduction">Self Introduction&lt;/h2>
 &lt;p>Cras ex dui, tristique a libero eget, consectetur semper ligula. Nunc augue arcu, malesuada a nisi et, molestie finibus metus. Sed lacus odio, ultricies a nisl vitae, sollicitudin tempor ipsum. Vivamus quis feugiat arcu. Sed mi nunc, efficitur quis tellus vitae, posuere mattis metus. Phasellus in mattis dui. Nullam blandit, augue non ullamcorper dapibus, lacus dui molestie massa, in iaculis purus lectus eu lectus. Duis hendrerit lacinia tellus, sit amet feugiat dolor placerat id. Aenean ac velit massa. Vivamus feugiat dui at magna viverra, ut dictum nunc rutrum. Duis eget sapien finibus, lobortis orci id, vestibulum tellus. Maecenas lobortis urna libero, quis fermentum lectus lobortis nec. Nullam laoreet volutpat libero, ac mattis magna ullamcorper quis. Duis eget ipsum eu nisi mattis cursus et vitae turpis.&lt;/p>
 &lt;p>Aliquam pretium diam eget leo feugiat finibus. Donec malesuada commodo ipsum. Aenean a massa in lacus venenatis vestibulum. Duis vel sem quis elit iaculis consectetur et quis dolor. Morbi eu ipsum hendrerit, malesuada ante sed, dapibus est. Suspendisse feugiat nulla ut gravida convallis. Phasellus id massa posuere, rhoncus justo ut, porttitor dolor. Nulla ultrices malesuada egestas. Nunc fermentum tincidunt sem ac vulputate. Donec mollis sollicitudin justo eget varius. Donec ornare velit et felis blandit, id molestie sapien lobortis. Morbi eget tristique justo. Mauris posuere, nibh eu laoreet ultricies, ligula erat iaculis sapien, vel dapibus lacus libero ut diam. Etiam viverra ante felis, et scelerisque nunc pellentesque vitae. Praesent feugiat dictum molestie.&lt;/p>
 &lt;h2 id="details">Details&lt;/h2>
@@ -17,6 +17,1533 @@
 &lt;/ul></description></item><item><title>Pages</title><link>https://justice.bj.cn/homepage/pages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/pages/</guid><description/></item><item><title>Experiences</title><link>https://justice.bj.cn/homepage/experiences/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/experiences/</guid><description/></item><item><title>Vintage</title><link>https://justice.bj.cn/homepage/vintage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/vintage/</guid><description/></item><item><title>Blank</title><link>https://justice.bj.cn/homepage/blank/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/blank/</guid><description>
 &lt;div style="text-align:center">
 &lt;p>Write anything you like here!&lt;/p>
+&lt;/div></description></item><item><title>CockroachDB</title><link>https://justice.bj.cn/post/30.architech/cockroachdb/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/cockroachdb/</guid><description>&lt;h1 id="cockroachdb">CockroachDB&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>&lt;code>CockroachDB&lt;/code>是一个分布式的K/V数据仓库，是Google Spanner的一个开源实现。&lt;/p>
+&lt;p>CockroachDB具有支持标准SQL接口，线性扩展，强一致，高可用等重要特性。&lt;/p>
+&lt;p>支持ACID事务，多版本值存储是其首要特性。&lt;/p>
+&lt;p>主要的设计目标是最终一致性和可靠性，&lt;/p>
+&lt;p>CockroachDB对外提供标准SQL接口，集群中任意节点都可以作为接入节点处理用户的SQL请求。&lt;/p>
+&lt;p>接入节点把SQL请求转换为KV操作，并且在必要时将该操作发送至其它节点进行处理，完成后将结果返回给客户端。&lt;/p>
+&lt;p>CockroachDB底层将数据组织成有序的Key-Value对形成一个KV map，其中Key和Value均为字节串。&lt;/p>
+&lt;h2 id="架构">架构&lt;/h2>
+&lt;p>CockroachDB采用分层架构，最顶层是SQL层。&lt;/p>
+&lt;p>CockroachDB在SQL层沿用了传统关系型数据库的概念，如schema, table, column和 index。同时，SQL层构建于分布式KV存储之上，后者负责Range路由寻址，提供统一的key-value存储。&lt;/p>
+&lt;p>分布式KV存储可以由任意数量的CockroachDB物理节点组成，每个节点包含一个或多个Store（通常一个Store独占一块磁盘）。&lt;/p>
+&lt;p>每个Store包含多个Range，Range为KV层数据管理的最小单元，每个Range的多个副本之间使用Raft协议进行同步。如下图所示，每个Range有3个副本，同一Range的副本用相同颜色标识，副本之间使用Raft协议同步。&lt;/p>
+&lt;p>每个物理节点都提供两组基于RPC实现的key-value API：一组用于外部客户端调用（注：目前对外的KV接口已被关闭）；另一组用于集群内部节点间交互。两者都支持批量请求和应答。所有节点均使用相同的二进制包部署，每个节点均提供相同的功能和接口，无角色差异。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/03/10-16-57-55-2021-03-10-16-57-47-image.png" alt="">&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/03/10-16-59-40-2021-03-10-16-59-36-image.png" alt="">&lt;/p>
+&lt;h2 id="元数据管理">元数据管理&lt;/h2>
+&lt;p>CockroachDB通过两级路由的方式管理元数据，元数据基于Range进行管理。每条路由元数据约为256B，默认情况下,单个元数据Range可存储256K条路由信息（64MB/256B）,那么，CockroachDB集群理论上最大容量为4EB（256K * 256K * 64MB）。&lt;/p>
+&lt;p>第一级元数据永远不会发生分裂而且第一级元数据的路由信息会通过Gossip协议同步到各个节点。&lt;/p>
+&lt;p>由于第一级元数据发生变更的几率较小，所以各个节点大部分时间可直接根据本地的元数据信息将请求路由到指定节点处理。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/03/10-15-51-46-2021-03-10-15-51-41-image.png" alt="">&lt;/p>
+&lt;h2 id="sql层">SQL层&lt;/h2>
+&lt;p>CockroachDB兼容PostgreSQL协议，对于报文的封装和解析完全按照PostgreSQL的方式进行，所以用户可以直接使用PostgreSQL的客户端访问CockroachDB。&lt;/p>
+&lt;h2 id="分布式kv层">分布式KV层&lt;/h2>
+&lt;p>在CockroachDB中，所有的Table必须包含一个主键(若建表时无显式声明主键，则系统默认创建)。每列数据构成一个Key-Value存储单元。Key就是每个存储单元值的地址，如/&lt;TableID>/&lt;IndexID>/&lt;Primary Key>/&lt;Column>。举个例子，我们创建一张水果价格表：&lt;/p>
+&lt;p>对于Key-Value存储单元，分布式KV存储层对外提供了操作原语接口，SQL层通过调用KV操作原语接口实现对KV对象的增删改查操作。&lt;/p>
+&lt;h2 id="分布式事务">分布式事务&lt;/h2>
+&lt;p>对于CockroachDB集群，接收请求的节点会充当事务协调节点(Coordinator),&lt;/p>
+&lt;p>不同于传统的2PC，CockroachDB通过事务表来保证事务的原子性。&lt;/p>
+&lt;p>CockroachDB在事务开始时，会在事务表中新增一条事务记录，初始状态为Pending，&lt;/p>
+&lt;p>然后协调节点会将请求发送给参与节点进行处理，&lt;/p>
+&lt;p>当所有的参与节点执行完毕后，协调节点会将该事务的状态置为Committed；&lt;/p>
+&lt;p>若事务回滚，则把事务状态标记为Abort。&lt;/p>
+&lt;p>这样做的优点是既消除了两阶段锁，同时大大降低了事务提交和回滚的开销。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/03/10-16-11-32-2021-03-10-16-11-28-image.png" alt="">&lt;/p>
+&lt;h2 id="多副本强一致">多副本强一致&lt;/h2>
+&lt;p>多副本数据：Range默认3副本存储，副本数可设置成2N+1；若少于一半的副本丢失，CockroachDB集群会自动在其他可用节点上补齐丢失的副本数据。&lt;br>
+故障容灾：根据不同的容灾等级，Range数据多副本可配置为跨机器、跨数据中心、跨地域存储。Range数据分布越分散，相应的读写延时也会越大，集群整体性能会有所下降。&lt;/p>
+&lt;h2 id="混合逻辑时钟hybrid-logical-clock">混合逻辑时钟(Hybrid Logical Clock)&lt;/h2>
+&lt;p>每一个CockroachDB节点维持各自本地的混合逻辑时钟（HLC），参见论文《Hybrid Logical Clock》。HLC由物理部分(wall time)和逻辑部分(用于区分物理部分相同的不同事件)组成。类似于vector clock，HLC使我们能够跟踪关联事件的因果关系，但开销更低。&lt;/p>
+&lt;p>本质上，它类似于逻辑时钟：当节点发送事件时，节点会获取本地HLC时间作为该事件的时间戳；当节点接收到事件时，节点会根据接收事件的HLC更新本地的HLC。&lt;/p>
+&lt;p>CockroachDB使用HLC作为事务时间戳。在本文中，时间戳指的就是HLC。每个节点维护自己本地的HLC，所有读写事件都会更新节点的HLC，且保证HLC &amp;gt;= wall time。从其他节点接收到请求时，该请求（read/write）的时间戳不仅用于冲突处理，而且还会更新节点本地的HLC。这可以保证节点上正在发生的所有数据读写操作的时间戳小于该节点的下一个HLC时间。&lt;/p>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="http://www.freeoa.net/product/server/cockroachdb_3190.html">分布式数据存储系统-CockroachDB-FreeOA&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="http://www.nosqlnotes.com/technotes/cockroach-mvcc/">Cockroach的MVCC实现机制 | NoSQL漫谈&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="http://www.cockroachchina.cn/?p=685">CockroachDB架构浅析 – CockroachDB&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="http://doc.cockroachchina.baidu.com/#">CockroachDB用户手册&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol></description></item><item><title>HBase事务</title><link>https://justice.bj.cn/post/30.architech/hbase/hbase%E4%BA%8B%E5%8A%A1/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/hbase/hbase%E4%BA%8B%E5%8A%A1/</guid><description>&lt;h1 id="hbase事务">HBase事务&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>HBase本身仅支持行级ACID事务一致性保证，通过行锁(RowLock) + MVCC实现。&lt;/p>
+&lt;h2 id="问题">问题&lt;/h2>
+&lt;h2 id="行锁">行锁&lt;/h2>
+&lt;p>行锁是基于行的独占锁来保证对同一行写的独立性，可用于保证写操作的一致性。基本流程如下：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>获取行锁&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>写WAL文件&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>更新MemStore：将每个cell写入到memstore&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>释放行锁&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="hbase同步机制">HBase同步机制&lt;/h2>
+&lt;p>HBase提供了两种同步机制，&lt;/p>
+&lt;p>一种是基于CountDownLatch实现的互斥锁，常见的使用场景是行数据更新时所持的行锁。&lt;/p>
+&lt;p>另一种是基于ReentrantReadWriteLock实现的读写锁，该锁可以给临界资源加上read-lock或者write-lock。&lt;/p>
+&lt;p>其中read-lock允许并发的读取操作，而write-lock是完全的互斥操作。&lt;/p>
+&lt;h2 id="countdownlatch">CountDownLatch&lt;/h2>
+&lt;p>Java中，CountDownLatch是一个同步辅助类，在完成一组其他线程执行的操作之前，它允许一个或多个线程阻塞等待。CountDownLatch使用给定的计数初始化，核心的两个方法是countDown()和await()，前者可以实现给定计数倒数一次，后者是等待计数倒数到0，如果没有到达0，就一直阻塞等待。结合线程安全的map容器，基于test-and-set机制，CountDownLatch可以实现基本的互斥锁，原理如下：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>初始化：CountDownLatch初始化计数为1&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>test过程：线程首先将临界资源作为key，latch作为value尝试插入线程安全的map中。如果返回失败，表示其他线程已经持有了该锁，调用await方法阻塞到该latch上，等待其他线程释放锁；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>set过程：如果返回成功，就表示已经持有该锁，其他线程必然插入失败。持有该锁之后执行各种操作，执行完成之后释放锁，释放锁首先将map中对应的KeyValue移除，再调用latch的countDown方法，该方法会将计数减1，变为0之后就会唤醒其他阻塞线程。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="reentrantreadwritelock">ReentrantReadWriteLock&lt;/h2>
+&lt;p>读写锁分为读锁、写锁，和互斥锁相比可以提供更高的并行性。读锁允许多个线程同时以读模式占有锁资源，而写锁只能由一个线程以写模式占有。如果读写锁是写加锁状态，在锁释放之前，所有试图对该锁占有的线程都会被阻塞；如果是读加锁状态，所有其他对该锁的读请求都会并行执行，但是写请求会被阻塞。显而易见，读写锁适合于读多写少的场景，也因为读锁可以共享，写锁只能某个线程独占，读写锁也被称为共享－独占锁，即经常见到的S锁和X锁。&lt;/p>
+&lt;p>Java中，ReentrantReadWriteLock是读写锁的实现类，该类中有两个方法readLock()和writeLock()分别用来获取读锁和写锁。&lt;/p>
+&lt;h2 id="hbase中行锁的具体实现">HBase中行锁的具体实现&lt;/h2>
+&lt;p>HBase采用行锁实现更新的原子性，要么全部更新成功，要么失败。&lt;/p>
+&lt;p>所有对HBase行级数据的更新操作，都需要首先获取该行的行锁，并且在更新完成之后释放，等待其他线程获取。&lt;/p>
+&lt;p>因此，HBase中对同一行数据的更新操作都是串行操作。&lt;/p>
+&lt;h2 id="行锁相关数据结构">行锁相关数据结构&lt;/h2>
+&lt;p>&lt;img src="https://sslstatic.ktanx.com/images/release/201610/201610/8iP73qpadTOSq1g9.jpg" alt="">&lt;/p>
+&lt;p>如上图所示，HBase中行锁相关的主要结构有RowLock和RowLockContext两个类，&lt;/p>
+&lt;p>其中RowLockContext类存储行锁相关上下文信息，包括持锁线程、被锁对象以及可以实现互斥锁的CountDownLatch对象等等，RowLockContext是RowLock的一个属性，&lt;/p>
+&lt;p>除此之外，RowLock还包含表征行锁是否已经释放的release字段。具体字段如下图所示：&lt;/p>
+&lt;p>&lt;img src="https://sslstatic.ktanx.com/images/release/201610/201610/8DWRTNclsRfLZLcB.jpg" alt="">&lt;/p>
+&lt;p>&lt;img src="https://sslstatic.ktanx.com/images/release/201610/201610/jCXIojnWC2ThEUIc.jpg" alt="">&lt;/p>
+&lt;h2 id="更新加锁流程">更新加锁流程&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>首先使用rowkey以及自身线程对象生成行锁上下文RowLockContext对象&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>再将rowkey作为key，RowLockContext对象作为value调用putIfAbsert方法写入全局map中。key的唯一性，保证map中最多只有一个RowLockContext。putIfAbsent方法会返回一个existingContext对象，该对象表示key插入前map中对应该key的value值，根据existingContext是否为null、是否是自身线程创建，可以分为如下三种情况：&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>（1）existingContext对象为null，表示该行锁没有被其他线程持有，可以根据创建的上下文对象持有该锁&lt;/p>
+&lt;p>（2）existingContext是自身线程创建，表示自身线程已经再创建RowLockContext对象，直接使用存在的RowLockContext对象持有该锁。这种情况会出现在批量更新线程中，一次批量更新可能前前后后对某一行数据更新多次，需要多次持有该行数据的行锁，在HBase中是被允许的。&lt;/p>
+&lt;p>（3）existingContext是其他线程创建，则该线程会阻塞在此上下文所持锁上，直至所持行锁被释放或者阻塞超时。如果所持行锁释放，该线程会重新竞争写全局map，一旦竞争成功就持有该行锁，否则继续阻塞。而如果阻塞超时，就会抛出异常，不会再去竞争该锁。&lt;/p>
+&lt;h2 id="释放流程">释放流程&lt;/h2>
+&lt;p>在线程更新完成操作之后，必须在finnally方法中执行行锁释放操作，即调用rowLock.release()方法，该方法主要执行如下两个操作：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>从lockedRows这个全局map中将该row对应的RowLockContext移除&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用latch.countDown()方法，唤醒其他阻塞在await上等待该行锁的线程&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="hbase中读写锁的使用">HBase中读写锁的使用&lt;/h2>
+&lt;p>HBase中除了使用互斥锁实现行级数据的一致性之外，也使用读写锁实现store级别操作以及region级别操作的并发控制。比如：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>Region更新读写锁：HBase在执行数据更新操作之前都会加一把Region级别的读锁（共享锁），所有更新操作线程之间不会相互阻塞；然而，HBase在将memstore数据落盘时会加一把Region级别的写锁（独占锁）。因此，在memstore数据落盘时，数据更新操作线程（Put操作、Append操作、Delete操作）都会阻塞等待至该写锁释放。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Region Close保护锁：HBase在执行close操作以及split操作时会首先加一把Region级别的写锁（独占锁），阻塞对region的其他操作，比如compact操作、flush操作以及其他更新操作，这些操作都会持有一把读锁（共享锁）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Store snapshot保护锁：HBase在执行flush memstore的过程中首先会基于memstore做snapshot，这个阶段会加一把store级别的写锁（独占锁），用以阻塞其他线程对该memstore的各种更新操作；清除snapshot时也相同，会加一把写锁阻塞其他对该memstore的更新操作。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="hbase中mvcc机制的实现">HBase中MVCC机制的实现&lt;/h2>
+&lt;p>如上文所述，HBase分别提供了行锁和读写锁来实现行级数据、Store级别以及Region级别的并发控制。除此之外，HBase还提供了MVCC机制实现数据的读写并发控制。&lt;/p>
+&lt;p>MVCC，即多版本并发控制技术，它使得事务引擎不再单纯地使用行锁实现数据读写的并发控制，取而代之的是，把行锁与行的多个版本结合起来，经过简单的算法就可以实现非锁定读，进而大大的提高系统的并发性能。&lt;/p>
+&lt;p>HBase正是使用行锁 ＋ MVCC保证高效的并发读写以及读写数据一致性。&lt;/p>
+&lt;h2 id="mvcc机制简介">MVCC机制简介&lt;/h2>
+&lt;p>在了解HBase如何实现MVCC之前，我们首先需要了解当前仅基于行锁实现的更新操作对于读请求有什么影响。&lt;/p>
+&lt;p>下图为HBase基于行锁实现的数据更新时序示意图：&lt;/p>
+&lt;p>&lt;img src="https://sslstatic.ktanx.com/images/release/201610/201610/Oi7sncjyfrK2OpQI.jpg" alt="">&lt;/p>
+&lt;p>上图中简单地表述了数据更新流程（后续文章会对HBase数据写入进行深入的介绍），简单来说，数据更新可以分为如下几个阶段：获取行锁、更新WAL、数据写入本地缓存memstore、释放行锁。&lt;/p>
+&lt;p>如上图所示，前后分别有两次对同一行数据的更新操作。假如第二次更新过程在将列簇cf1更新为t2_cf1之后中有一次读请求进来，此时读到的第一列数据将是第二次更新后的数据t2_cf1，然而第二列数据却是第一次更新后的数据t1_cf2，很显然，只针对更行操作加行锁会产生读取数据不一致的情况。最简单的数据不一致解决方案是读写线程公用一把行锁，这样可以保证读写之间互斥，但是读写线程同时抢占行锁必然会极大地影响性能。&lt;/p>
+&lt;p>为此，HBase采用MVCC解决方案避免读线程去获取行锁。MVCC解决方案对上述数据更新操作时序和读操作都进行了一定的修正，主要新增了一个写序号和读序号，其实就是数据的版本号。修正后的更新操作时序示意图为：&lt;/p>
+&lt;p>&lt;img src="https://sslstatic.ktanx.com/images/release/201610/201610/EXcq89hRMQxgwoKJ.jpg" alt="">&lt;/p>
+&lt;p>如上图所示，修正后的更新操作主要新增了‘获取写序号’和’结束写序号’两个步骤，并且每个cell数据写memstore操作都会携带该写序号。那读请求需要经过什么样的修正呢？HBase的做法如下：&lt;/p>
+&lt;p>（1）每个读操作开始时都会分配一个读序号，称为读取点 （2）读取点的值是所有的写操作完成序号中的最大整数 （3）一次读操作的结果就是读取点对应的所有cell值的集合&lt;/p>
+&lt;p>如下图所示，第一次更新获取的写序号为1，第二次更新获取的写序号为2。读请求进来时写操作完成序号中的最大整数为wn ＝ 1，因此对应的读取点为wn ＝ 1，读取的结果为wn ＝ 1所对应的所有cell值集合，即为t1_cf1和t1_cf2，这样就可以实现以无锁的方式读取到一致的数据。&lt;/p>
+&lt;p>&lt;img src="https://sslstatic.ktanx.com/images/release/201610/201610/mVteoMgUa1NwXLlX.jpg" alt="">&lt;/p>
+&lt;h2 id="hbase中mvcc实现">HBase中MVCC实现&lt;/h2>
+&lt;p>HBase中，MVCC的具体实现类为MultiVersionConsistencyControl，该类维护了两个long型的变量、一个WriteEntry对象和一个writeQueue队列：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>long memstoreRead：记录当前全局的读取点，读请求进来之后首先会获取该读取点&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>long memstoreWrite：记录当前全局的写序号，根据它为下一个更新线程分配新的写序号&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>writeEntry：记录更新操作的写序号对象，主要包含两个变量，一个是writeNumber，表示写序号；一个是布尔类型的completed，表示该次更新是否完成&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>writeQueue：当前所有更新操作的写序号对象集合&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="获取写序号">获取写序号&lt;/h2>
+&lt;p>根据上文中更新数据时序图可知，更新线程获取行锁之后就需要获取写序号，对应的方法为beginMemstoreInsert，该方法将memstoreWrite加1，生成writeEntry对象并插入到队列writeQueue，返回writeEntry对象。Note：生成的writeEntry对象中包含写序号writeNumber，更新线程会将该writeNumber设置为cell数据的一个属性。&lt;/p>
+&lt;h2 id="结束写序号">结束写序号&lt;/h2>
+&lt;p>数据更新完成之后，释放行锁之前，更新线程会调用completeMemstoreInsert方法更新writeEntry对象以及memstoreRead变量，具体分为如下两步：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>首先将该writeEntry对象标记为’已完成’，再将全局读取点memstoreRead尽可能多地往前移。前移算法为遍历队列writeQueue中所有的writeEntry对象，移除掉已经标记为’已完成’的writeEntry直至遇到未完成的writeEntry，最后将memstoreRead变量更新为最新已完成的writeNumber。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>注意上述memstoreRead变量有可能并不等于当前更新线程的writeNumber，这种情况下该更新线程对数据的更新操作对用户并不可见。为了实现更新完成之后更新结果即对用户可见，需要等待memstoreRead变量前移到当前更新线程的witeNumber。因此它会阻塞当前线程，等待其他线程对应的writeEntry对象标记为’已完成’，直至memstoreRead等于当前线程的writeNumber。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>HBase提供了各种锁机制和MVCC机制来保证数据的原子性、一致性等特性，其中使用互斥锁实现的行锁保证了行级数据的原子性，使用JDK提供的读写锁实现了Store级别、Region级别的数据一致性，同时使用行锁+MVCC机制实现了在高性能非锁定读场景下的数据一致性。&lt;/p>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>ß&lt;a href="https://www.ktanx.com/blog/p/4517">HBase 事务和并发控制机制原理 - 每一个程序员都有一个大梦想&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>MySQL 日志</title><link>https://justice.bj.cn/post/30.architech/mysql/mysql%E6%97%A5%E5%BF%97/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/mysql/mysql%E6%97%A5%E5%BF%97/</guid><description>&lt;h1 id="mysql-日志">MySQL 日志&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>MySQL innodb引擎中有6种日志：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>重做日志（redo log）:&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>回滚日志（undo log）:&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>二进制日志（binlog）：&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>错误日志（errorlog）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>慢查询日志（slow query log）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>一般查询日志（general log）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>中继日志（relay log）&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="日志">日志&lt;/h2>
+&lt;h3 id="redo-log">redo log&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>物理日志；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>wal;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在事务开始时产生；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>innodb层产生的；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用来恢复数据的 用于保障已提交事务的持久化特性；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="undo-log">undo log&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>逻辑日志；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用来回滚数据的用于保障 未提交事务的原子性；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="bin-log">bin log&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>用于复制；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>binlog的内容是二进制的，根据binlog_format参数的不同，可能基于sql语句、基于数据本身或者二者的混合。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>MySQL的服务器层(可以参考文章前面对MySQL逻辑架构的介绍)实现的，同时支持InnoDB和其他存储引擎。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>binlog在事务提交时写入&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://www.jianshu.com/p/d829df873332">MySQL innoDB——redo log/undo log - 简书&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>MySQL事务</title><link>https://justice.bj.cn/post/30.architech/mysql/mysql%E4%BA%8B%E5%8A%A1/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/mysql/mysql%E4%BA%8B%E5%8A%A1/</guid><description>&lt;h1 id="mysql事务">MySQL事务&lt;/h1>
+&lt;h2 id="定义">定义&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>数据库事务是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>事务的使用是数据库管理系统区别文件系统的重要特征之一。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据库事务指的是一组数据操作，事务内的操作要么就是全部成功，要么就是全部失败，什么都不做，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>InnoDB 引擎支持事务，MyISAM 引擎是不支持事务。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="事务acid">事务ACID&lt;/h2>
+&lt;p>原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability），人们习惯称之为 ACID 特性。下面我逐一对其进行解释。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>原子性&lt;/strong> （Atomicity）&lt;/p>
+&lt;p>事务开始后所有操作，要么全部做完，要么全部不做，不可能停滞在中间环节。事务执行过程中出错，会回滚到事务开始前的状态，所有的操作就像没有发生一样。例如，如果一个事务需要新增 100 条记录，但是在新增了 10 条记录之后就失败了，那么数据库将回滚对这 10 条新增的记录。也就是说事务是一个不可分割的整体，就像化学中学过的原子，是物质构成的基本单位。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>一致性&lt;/strong> （Consistency）&lt;/p>
+&lt;p>指事务将数据库从一种状态转变为另一种一致的的状态。事务开始前和结束后，数据库的完整性约束没有被破坏。例如工号带有唯一属性，如果经过一个修改工号的事务后，工号变的非唯一了，则表明一致性遭到了破坏。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>隔离性&lt;/strong> （Isolation）&lt;/p>
+&lt;p>要求每个读写事务的对象对其他事务的操作对象能互相分离，即该事务提交前对其他事务不可见。 也可以理解为多个事务并发访问时，事务之间是隔离的，一个事务不应该影响其它事务运行效果。这指的是在并发环境中，当不同的事务同时操纵相同的数据时，每个事务都有各自的完整数据空间。由并发事务所做的修改必须与任何其他并发事务所做的修改隔离。例如一个用户在更新自己的个人信息的同时，是不能看到系统管理员也在更新该用户的个人信息（此时更新事务还未提交）。&lt;/p>
+&lt;p>注：MySQL 通过锁机制来保证事务的隔离性。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>持久性&lt;/strong> （Durability）&lt;/p>
+&lt;p>事务一旦提交，则其结果就是永久性的。即使发生宕机的故障，数据库也能将数据恢复，也就是说事务完成后，事务对数据库的所有更新将被保存到数据库，不能回滚。这只是从事务本身的角度来保证，排除 RDBMS（关系型数据库管理系统，例如 Oracle、MySQL 等）本身发生的故障。&lt;/p>
+&lt;p>注：MySQL 使用 &lt;code>redo log&lt;/code> 来保证事务的持久性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>并发控制
+（1）DBS（数据库系统）一个明显的特点是多个用户共享数据库资源，尤其是多个用户可以同时存取相同数据。&lt;/p>
+&lt;p>串行控制：如果事务是顺序执行的，即一个事务完成之后，再开始另一事务。
+并行控制：如果DBMS可以同时接受多个事务，并且这些事务在时间上可以重叠执行。
+（2）并发控制概述&lt;/p>
+&lt;p>事务是并发控制的基本单位，保证事务ACID的特性是事务处理的重要任务，而并发操作有可能会破坏其ACID特性。&lt;/p>
+&lt;p>DBMS并发控制机制的责任：对并发操作进行正确调度，保证事务的隔离更一般，确保数据库的一致性。&lt;/p>
+&lt;h3 id="数据的不一致性">数据的不一致性&lt;/h3>
+&lt;p>如果没有锁定且多个用户同时访问一个数据库，则当他们的事务同时使用相同的数据时可能会发生问题。由于并发操作带来的数据不一致性包括：丢失数据更新、读“脏”数据（脏读）、不可重复读。&lt;/p>
+&lt;p>（1）更新丢失
+两个事务都同时更新一行数据，一个事务对数据的更新把另一个事务对数据的更新覆盖了。这是因为系统没有执行任何的锁操作，因此并发并没有被隔离开来。&lt;/p>
+&lt;p>（2）脏读
+一个事务读取到了另一事务未提交的数据操作结果。&lt;/p>
+&lt;p>（3）不可重复读
+不可重复读（Non-repeatable Reads）：一个事务对同一行数据重复读取两次，但是却得到了不同的结果。&lt;/p>
+&lt;p>包括以下情况：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>虚读：事务T1读取某一数据后，事务T2对其做了修改，当事务T1再次读取该数据时得到与前一次不同的值。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>幻读：事务在操作过程中进行两次查询，第二次查询的结果包含了第一次查询中未出现的数据或者缺少了第一次查询中出现的数据。这是因为在两次查询过程中有另外一个事务插入数据造成的。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>不可重复读和幻读的区别：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>不可重复读重点在于update和delete，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>幻读的重点在于insert。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>在可重复读中，该sql第一次读取到数据后，就将这些数据加锁，其它事务无法修改这些数据，就可以实现可重复读了。但这种方法却无法锁住insert的数据，所以当事务A先前读取了数据，或者修改了全部数据，事务B还是可以insert数据提交，这时事务A就会发现莫名其妙多了一条之前没有的数据，这就是幻读，不能通过行锁来避免。需要Serializable隔离级别 ，读用读锁，写用写锁，读锁和写锁互斥，这么做可以有效的避免幻读、不可重复读、脏读等问题，但会极大的降低数据库的并发能力。&lt;/p>
+&lt;h2 id="事务隔离级别">事务隔离级别&lt;/h2>
+&lt;p>为了避免上面出现的几种情况，在标准SQL规范中，定义了4个事务隔离级别，不同的隔离级别对事务的处理不同。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>读未提交（Read Uncommitted）&lt;/strong>：在并发事务A,B中，事务A能读取到事务B的未提交修改操作数据；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>读提交（Read Committed）&lt;/strong>：在并发事务A,B中，事务A只能读取到事务B的已提交的数据；读提交解决了脏读的问题，但是无法解决可重复读、幻读。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>可重复读取（Repeatable Read）：处理更新丢失、脏读和不可重复读取。读取数据的事务将会禁止写事务，但允许读事务，写事务则禁止任何其他事务。可通过“共享读锁”和“排他写锁”实现。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>序列化（Serializable）：提供严格的事务隔离。要求失去序列化执行，事务只能一个接一个地执行，不能并发执行。仅仅通过“行级锁”是无法实现事务序列化的，必须通过其他机制保证新插入的数据不会被刚执行查询操作的事务访问到。&lt;/p>
+&lt;p>隔离级别越高，越能保证数据的完整性和统一性，但是对并发性能的影响也越大。对于多数应用程序，可以优先考虑把数据库系统的隔离级别设为Read Committed。它能够避免脏读，而且具有较好的并发性能。尽管它会导致不可重复读、幻读和第二类丢失更新这些并发问题，在可能出现这类问题的个别场合，可以由应用程序采用悲观锁或乐观锁来控制。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="隔离级别">隔离级别&lt;/h2>
+&lt;p>SQL 标准定义的四种隔离级别被 ANSI（美国国家标准学会）和 ISO/IEC（国际标准）采用，每种级别对事务的处理能力会有不同程度的影响。&lt;/p>
+&lt;p>mysql 有四级事务隔离级别 每个级别都有字符或数字编号&lt;/p>
+&lt;blockquote>
+&lt;p>读未提交 READ-UNCOMMITTED | 0：存在脏读，不可重复读，幻读的问题&lt;/p>
+&lt;/blockquote>
+&lt;blockquote>
+&lt;p>读已提交 READ-COMMITTED | 1：解决脏读的问题，存在不可重复读，幻读的问题&lt;/p>
+&lt;/blockquote>
+&lt;blockquote>
+&lt;p>可重复读 REPEATABLE-READ | 2：解决脏读，不可重复读的问题，存在幻读的问题，默认隔离级别，使用 MMVC机制 实现可重复读&lt;/p>
+&lt;/blockquote>
+&lt;blockquote>
+&lt;p>序列化 SERIALIZABLE | 3：解决脏读，不可重复读，幻读，可保证事务安全，但完全串行执行，性能最低&lt;/p>
+&lt;/blockquote>
+&lt;p>幻读会在 RU / RC / RR 级别下出现，SERIALIZABLE 则杜绝了幻读，但 RU / RC 下还会存在脏读，不可重复读，故我们就以 RR 级别来研究幻读，排除其他干扰。&lt;/p>
+&lt;h5 id="各个隔离级别下产生的一些问题">各个隔离级别下产生的一些问题&lt;/h5>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;strong>隔离级别&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>脏读&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>不可重复读&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>幻读&lt;/strong>&lt;/th>
+&lt;th>实现方式&lt;/th>
+&lt;th>性能&lt;/th>
+&lt;th>&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>读未提交(RU)&lt;/td>
+&lt;td>O&lt;/td>
+&lt;td>O&lt;/td>
+&lt;td>O&lt;/td>
+&lt;td>未加锁&lt;/td>
+&lt;td>最好&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>读提交(RC)&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>O&lt;/td>
+&lt;td>O&lt;/td>
+&lt;td>读不加锁，写入、修改和删除加锁&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>Oracle默认隔离级别&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>可重复读(RR)&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>O&lt;/td>
+&lt;td>MVCC&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>InnoDB默认隔离级别&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>串行化(Serialser)&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>读加共享锁，写加排它锁&lt;/td>
+&lt;td>最差&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>在MVCC并发控制中，读操作可以分成两类：快照读 (snapshot read)与当前读 (current read)。快照读，读取的是记录的可见版本 (有可能是历史版本)，不用加锁。当前读，读取的是记录的最新版本，并且，当前读返回的记录，都会加上锁，保证其他事务不会再并发修改这条记录。&lt;/p>
+&lt;h3 id="nextkey锁">NextKey锁&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>MySQL 通过行锁+间隙锁的方式 解决了RR级别下解决了幻读的问题;&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h4 id="快照读vs当前读">快照读VS当前读&lt;/h4>
+&lt;p>在一个支持MVCC并发控制的系统中，哪些读操作是快照读？哪些操作又是当前读呢？以MySQL InnoDB为例：&lt;/p>
+&lt;p>快照读：简单的select操作，属于快照读，不加锁。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-sql" data-lang="sql">&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>当前读：特殊的读操作，插入/更新/删除操作，属于当前读，需要加锁。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-sql" data-lang="sql">&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">lock&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">in&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">share&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mode&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">select&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">for&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">update&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">insert&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">into&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">values&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="err">…&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">update&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">set&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">delete&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">from&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">table&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>所有以上的语句，都属于当前读，读取记录的最新版本。并且，读取之后，还需要保证其他并发事务不能修改当前记录，对读取记录加锁。其中，除了第一条语句，对读取记录加S锁 (共享锁)外，其他的操作，都加的是X锁 (排它锁)。&lt;/p>
+&lt;h3 id="serializable">Serializable&lt;/h3>
+&lt;p>这个级别很简单，读加共享锁，写加排他锁，读写互斥。使用的悲观锁的理论，实现简单，数据更加安全，但是并发能力非常差。如果你的业务并发的特别少或者没有并发，同时又要求数据及时可靠的话，可以使用这种模式。&lt;/p>
+&lt;p>这里要吐槽一句，不要看到select就说不会加锁了，在Serializable这个级别，还是会加锁的！&lt;/p>
+&lt;h3 id="mvcc在mysql的innodb中的实现">MVCC在MySQL的InnoDB中的实现&lt;/h3>
+&lt;p>在InnoDB中，会在每行数据后添加两个额外的隐藏的值来实现MVCC，这两个值一个记录这行数据何时被创建，另外一个记录这行数据何时过期（或者被删除）。&lt;/p>
+&lt;p>在实际操作中，存储的并不是时间，而是事务的版本号，每开启一个新事务，事务的版本号就会递增。&lt;/p>
+&lt;p>在可重读Repeatable reads事务隔离级别下：&lt;/p>
+&lt;ul>
+&lt;li>SELECT时，读取创建版本号&amp;lt;=当前事务版本号，删除版本号为空或&amp;gt;当前事务版本号。&lt;/li>
+&lt;li>INSERT时，保存当前事务版本号为行的创建版本号&lt;/li>
+&lt;li>DELETE时，保存当前事务版本号为行的删除版本号&lt;/li>
+&lt;li>UPDATE时，插入一条新纪录，保存当前事务版本号为行创建版本号，同时保存当前事务版本号到原来删除的行&lt;/li>
+&lt;/ul>
+&lt;p>通过MVCC，虽然每行记录都需要额外的存储空间，更多的行检查工作以及一些额外的维护工作，但可以减少锁的使用，大多数读操作都不用加锁，读数据操作很简单，性能很好，并且也能保证只会读取到符合标准的行，也只锁住必要行。&lt;/p>
+&lt;p>&lt;strong>MVCC在mysql中的实现依赖的是undo log与read view&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>MVCC在mysql中的实现依赖的是undo log与read view&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>undo log :undo log 中记录某行数据的多个版本的数据。&lt;/li>
+&lt;li>read view :用来判断当前版本数据的可见性&lt;/li>
+&lt;/ul>
+&lt;p>前面讲的重做日志，回滚日志以及锁技术就是实现事务的基础。&lt;/p>
+&lt;ul>
+&lt;li>事务的原子性A是通过 undo log 来实现的;&lt;/li>
+&lt;li>事务的持久性D是通过 redo log 来实现的;&lt;/li>
+&lt;li>事务的隔离性I是通过 (读写锁+MVCC)来实现的;&lt;/li>
+&lt;li>而事务的终极大 boss &lt;strong>一致性&lt;/strong>是通过原子性，持久性，隔离性来实现的！！！&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://tech.meituan.com/2014/08/20/innodb-lock.html">Innodb中的事务隔离级别和锁的关系 - 美团技术团队&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://draveness.me/mysql-transaction/">『浅入深出』MySQL 中事务的实现 - 面向信仰编程&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.cnblogs.com/kismetv/p/10331633.html">深入学习MySQL事务：ACID特性的实现原理 - 编程迷思 - 博客园&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>Raft算法</title><link>https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/raft%E7%AE%97%E6%B3%95/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/raft%E7%AE%97%E6%B3%95/</guid><description>&lt;h1 id="raft算法">Raft算法&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>Raft&lt;/code>算法是2013年斯坦福大学的Diego Ongaro、John Ousterhout 两人发布的一致性算法，论文：《In Search of an Understandable Consensus Algorithm》；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>与&lt;code>Paxos&lt;/code>相比，Raft 易理解、易实现；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Raft 和 Paxos 一样, 只要保证超过半数的节点正常就能够提供服务；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="基本思想">基本思想&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>Raft将整个时间划分为一个个的小周期, 称为&lt;strong>任期&lt;/strong>(&lt;code>Term&lt;/code>)；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个任期又分为&lt;code>选举&lt;/code>和选举后&lt;code>正常操作&lt;/code>两个阶段；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>选举&lt;/code>阶段为每个周期开始的阶段，目的是通过投票选出一个&lt;code>Leader&lt;/code>;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>一个Term周期内只能有一个合法的&lt;code>Leader&lt;/code>;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>成功选举出&lt;code>Leader&lt;/code>后，进入&lt;code>正常操作&lt;/code>阶段；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>选举阶段，整个Raft集群不处理外界客户端的请求；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>正常操作阶段，只有&lt;code>Leader&lt;/code>节点能正常接收并处理客户端请求，其他节点如果接收客户端请求，只能缓存或转发给&lt;code>Leader&lt;/code>，由&lt;code>Leader&lt;/code>进行处理；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Leader&lt;/code>接收到客户端请求后，先将请求追加到本地日志中，然后将请求发送给各个&lt;code>Follower&lt;/code>节点；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Follower&lt;/code>接收到请求后，将请求写入本地日志，并给&lt;code>Leader&lt;/code>发送响应；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Leader&lt;/code>收到多数&lt;code>Follower&lt;/code>写入成功响应后，给客户端发送响应，告知状态机执行后结果；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-57-24-image-20190523192955386.png" alt="image-20190523192955386">&lt;/p>
+&lt;h2 id="关键概念">关键概念&lt;/h2>
+&lt;ul>
+&lt;li>&lt;strong>Log&lt;/strong>(日志)：&lt;/li>
+&lt;li>&lt;strong>Election&lt;/strong>(选举)：Raft 的选举由定时器来触发，每个节点的选举定时器时间都是不一样的，开始时状态都为 Follower 某个节点定时器触发选举后 Term 递增，状态由 Follower 转为 Candidate，向其他节点发起 RequestVote RPC 请求&lt;/li>
+&lt;li>&lt;strong>Term&lt;/strong>(任期)：在 Raft 中使用了一个可以理解为周期（第几届、任期）的概念，用 Term 作为一个周期，每个 Term 都是一个连续递增的编号，每一轮选举都是一个 Term 周期，在一个 Term 中只能产生一个 Leader&lt;/li>
+&lt;li>&lt;strong>Index&lt;/strong>(日志序号)：&lt;/li>
+&lt;/ul>
+&lt;h3 id="角色">角色&lt;/h3>
+&lt;p>基本的Raft 集群的节点分为以下三种角色：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>Candidate&lt;/strong>(候选者)：负责发起选举，发起投票及接收投票。Raft 刚启动时由一个节点从 Follower 转为 Candidate 发起选举，选举出 Leader 后从 Candidate 转为 Leader 状态；&lt;/li>
+&lt;li>&lt;strong>Leader&lt;/strong>(领导者)：负责日志的同步管理，处理来自客户端的请求，与 Follower 保持这 heartBeat 的联系；&lt;/li>
+&lt;li>&lt;strong>Follower&lt;/strong>(跟随者)：负责响应来自 Leader 或者 Candidate 的请求；&lt;/li>
+&lt;/ul>
+&lt;p>改进Raft集群另外提供如下几种角色：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>Learner&lt;/strong>(学习者)：只读节点，不参与选举投票及日志复制过程，只被动复制 follower 日志；&lt;/li>
+&lt;li>&lt;strong>PreCandidate&lt;/strong>(预选者)：&lt;/li>
+&lt;/ul>
+&lt;h3 id="状态机">状态机&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">graph LR
+Follower(Follower)
+Candidate(Candidae)
+Leader(Leader)
+PreCandidate(PreCandidate)
+S((START)) --&amp;gt; Follower
+Follower -- elect timeout --&amp;gt; Candidate
+Follower -- high term --&amp;gt; Follower
+Candidate --elect timeout--&amp;gt; Candidate
+Candidate --quorum --&amp;gt; Leader
+Candidate --high term/hb Event--&amp;gt; Follower
+Leader --high term--&amp;gt; Follower
+Follower -- elect_timeout preVote --&amp;gt; PreCandidate
+PreCandidate --elect quorum--&amp;gt; Candidate
+PreCandidate --elect timeout--&amp;gt; PreCandidate
+PreCandidate --high term--&amp;gt; Follower
+Candidate --elect timeout prevote--&amp;gt; PreCandidate
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-55-36-fb8549c8d081a00433750711486cd9844ecf6559.png" alt="image-20190523141929145">&lt;/p>
+&lt;ul>
+&lt;li>所有节点初始状态都是 Follower 角色；&lt;/li>
+&lt;li>选举计时器超时，转换为 Candidate 进行选举&lt;/li>
+&lt;li>Candidate 收到大多数节点的选票则转换为 Leader；发现 Leader 或者收到更高任期的请求则转换为 Follower&lt;/li>
+&lt;li>Leader 在收到更高任期的请求后转换为 Follower&lt;/li>
+&lt;/ul>
+&lt;h3 id="计时器">计时器&lt;/h3>
+&lt;p>raft 定义了两种计时器：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>选举计时器&lt;/strong>：Candidate 节点在进行选举时，如果在一个选举计时器周期内，任然没有获取多数投票，将重新发起选举。 默认值是 1000ms，最大值 50000ms。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>心跳计时器&lt;/strong>：Follower 节点在一个心跳计时器周期内没有收到 Leader 的心跳消息，该 Follower 将会转为 Candidate 状态，发起选举。默认值 100ms，&lt;/p>
+&lt;p>选举定时必须要大于 5 倍心跳定时，建议是 10 倍关系。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="关键数据结构">关键数据结构&lt;/h3>
+&lt;ul>
+&lt;li>Entry&lt;/li>
+&lt;li>Message&lt;/li>
+&lt;li>Peer&lt;/li>
+&lt;li>Snapshot：&lt;/li>
+&lt;li>HardState：持久化状态；&lt;/li>
+&lt;li>SoftState: 内存状态；&lt;/li>
+&lt;li>需要持久化的状态：
+&lt;ul>
+&lt;li>currentTerm: 当前任期；&lt;/li>
+&lt;li>votedFor：投给票的节点 ID；&lt;/li>
+&lt;li>log：日志序列&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>内存中的状态：
+&lt;ul>
+&lt;li>commitIndex：&lt;/li>
+&lt;li>lastApplied：&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>leader 内存状态：
+&lt;ul>
+&lt;li>nextIndex[]：&lt;/li>
+&lt;li>matchIndex[]：&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/12-20-57-38-image-20190523190540129.png" alt="image-20190523190540129">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>firstLogIndex：标识当前日志序列的起始位置，如果日志不做压缩处理，也就是没有快照模块的话，那么 firstLogIndex 就是零值。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>lastLogIndex：&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>commitIndex：表示当前已经提交的日志，也就是成功同步到 majority 的日志位置的最大值&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>applyIndex：是已经 apply 到状态机的日志索引，它的值必须小于等于 commitIndex，因为只有已经提交的日志才可以 apply 到状态机&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="角色-1">角色&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>共有持久存储的数据：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>id: raft 节点id;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>term：当前任期;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>log: raft日志序列，只能append和truncate, 无法insert()，update()；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>共有内存数据：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>peers: 其他节点；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>queued_reqs: 以缓存的req，用来缓存选举过程中收到的req；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>proxied_reqs: 已转发的req，用来记录follower转发到leader的req, 在一个新的选举期内被清空；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>node_tx: raft外部消息入口，通过该管道接收外界输入的消息；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>state_tx: 指令状态机指令入口，通过该管道向指令状态机发送指令；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="candidate">Candidate&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>私有数据：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>votes: 已经收到的投票总数(包括自己投自己的一票)，如果votes&amp;gt;半数，则当选为leader；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>election_ticks: 当前轮选举已过的ticks数, 每个tick来到时+1；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>election_timeout: 当前轮选举超时数， election_ticks&amp;gt;election_timeout时，发起新一轮选举(term++)；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="follower">Follower&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>follower内存状态：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>leader: 当前term的leader；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>voted_for: 当前term所投的leader；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>leader_seen_ticks: leader心跳计数tick, 每个tick +1, 收到leader hb msg， 重置为0；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>leader_seen_timeout: leader心跳timeount, &lt;code>leader_seen_ticks&lt;/code> &amp;gt; &lt;code>leader_seen_timeout&lt;/code>时, follower将转入candidate;&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="leader">Leader&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>leader内存状态：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>heartbeat_ticks&lt;/code>: 心跳tick计数;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>peers_next_index&lt;/code>: 将要发送到peers的下一个index.每个peer的&lt;code>peer_next_index&lt;/code>最开始置为leader启动时的最后一个log index+1。在复制过程中leader将发送以为起始的(term,peer_next_index-1)所有后续log给follower，follower检查该(term,peer_next_index-1)数据是否在log中存在，如果不存在, 则会发送拒绝复制的响应。leader接收到拒绝复制响应后，依次减小改值&lt;code>peer_next_index&lt;/code>，直到被接受；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>peers_last_index&lt;/code>: 已经发送到peers的最后一个index，&lt;code>peers_last_index[peerId] &amp;lt; peers_next_index[peerId]&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="快照">快照&lt;/h2>
+&lt;p>Raft日志会一直增长&lt;/p>
+&lt;h2 id="算法流程">算法流程&lt;/h2>
+&lt;p>Raft 算法流程分为以下几个步骤：&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>启动&lt;/strong>：系统启动阶段；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>选举&lt;/strong>：通过投票，产生leader的阶段；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>日志复制&lt;/strong>：当选举成功产生 Leader 后，系统进入日志复制阶段，Leader 持续将收到的客户端日志按顺序复制到 Follower：&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>变更&lt;/strong>：&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/09/04-10-58-18-raft-alg.gif" alt="">&lt;/p>
+&lt;h3 id="启动">启动&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>初始启动时，所有节点(Node)均为&lt;code>Follower&lt;/code>状态，任期&lt;code>term&lt;/code>置为 1；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果&lt;code>Follower&lt;/code>节点在&lt;code>选举超时时间&lt;/code>内未收到其他节点的 append/hearbeat/snapshot 消息，则状态变为&lt;code>Candidate&lt;/code>，进入选举状态；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>重启时，需load 以下状态：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>term；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="选举">选举&lt;/h3>
+&lt;p>选举阶段主要在&lt;code>Candidate&lt;/code>和&lt;code>Follower&lt;/code>节点之间进行：&lt;/p>
+&lt;ol>
+&lt;li>&lt;code>Follower&lt;/code>节点的心跳计时器如果超时，将转入&lt;code>Candidate&lt;/code>状态；&lt;/li>
+&lt;li>&lt;code>Candidate&lt;/code>节点先给自己投一票，然后给其他节点发送&lt;code>拉票请求SolictVoteReq&lt;/code>，该请求包含本节点最后一条log的(term,index)；&lt;/li>
+&lt;li>&lt;code>Leader&lt;/code>,&lt;code>Candidate&lt;/code>节点将忽略的&lt;code>拉票请求&lt;/code>;&lt;/li>
+&lt;li>&lt;code>Follower&lt;/code>节点收到&lt;code>SolictVoteReq(拉票请求)&lt;/code>后，按如下规则处理：
+&lt;ol>
+&lt;li>已投过票(voteFor!=0)，忽略该Req（一个任期内(term), 每个follower至多投一票）；&lt;/li>
+&lt;li>比较&lt;code>SolictVoteReq拉票请求&lt;/code>中的&lt;code>term&lt;/code>或&lt;code>index&lt;/code>和本节点最后一条日志的term和index；&lt;/li>
+&lt;li>如果&lt;code>req.term&amp;lt;self.log.last_term&lt;/code> || （ req.term==self.log.last_term&amp;amp;&amp;amp;req.index&amp;lt;self.log.last_index)，忽略请求(candidate的日志比当前节点的日志要旧)；&lt;/li>
+&lt;li>否则, 该节点发送&lt;code>GrantVoteAck(投票消息)&lt;/code>给&lt;code>拉票节点&lt;/code>，并记录投票信息到voteFor；&lt;/li>
+&lt;li>上述规则保证了新当选的leader一定拥有所有committed的log；&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;li>&lt;code>Candidate&lt;/code>节点收到&lt;code>GrantVoteAck(投票响应)&lt;/code>后：
+&lt;ol>
+&lt;li>计算获得票数，如果票数达到多数赞成票（&amp;gt;一半投票者），则自身当选为&lt;code>Leader&lt;/code>，转为领导人状态, 同时向其他节点发送&lt;code>心跳消息&lt;/code>, 并将缓存的&lt;code>客户端请求&lt;/code>立即执行；&lt;/li>
+&lt;li>如果收到其他节点的 Leader 心跳包，且该心跳包的任期要&amp;gt;=自身节点，则表明该其他节点已成功当选为 leader，自身节点将转为&lt;code>Follower&lt;/code>状态；&lt;/li>
+&lt;li>否则，选举计数器超时，表明该选举周期内没有任何节点当选，接下来将&lt;code>term&lt;/code>加 1 后，重新进行选举；&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="日志复制">日志复制&lt;/h3>
+&lt;p>每个&lt;strong>term&lt;/strong>在选举成功后，进入日志复制阶段。日志复制阶段中&lt;code>Leader&lt;/code>接收外部&lt;code>Client&lt;/code>的请求，将请求日志复制到各&lt;code>Follower&lt;/code>的过程。日志复制的流程如下：&lt;/p>
+&lt;ol>
+&lt;li>&lt;code>Leader&lt;/code>接收&lt;code>Client&lt;/code>消息；&lt;/li>
+&lt;li>&lt;code>Leader&lt;/code>将消息增加上(index, term)作为&lt;code>Log&lt;/code>，将&lt;code>Log&lt;/code>追加到日志存储中;&lt;/li>
+&lt;li>&lt;code>Leader&lt;/code>通过&lt;code>AppendEntries&lt;/code> RPC调用将日志&lt;code>复制&lt;/code>到所有&lt;code>Follower&lt;/code>，日志复制的范围是；&lt;/li>
+&lt;li>&lt;code>Follower&lt;/code>收到&lt;code>AppendEntries&lt;/code> RPC，记录Log并返回ACK给&lt;code>Leader&lt;/code>;&lt;/li>
+&lt;li>&lt;code>Leader&lt;/code> 收到大多数 &lt;code>Follower&lt;/code> 节点的Ack，就可以commit，则通过&lt;code>指令状态机&lt;/code>apply消息，并结果返回给 client；&lt;/li>
+&lt;li>&lt;code>Follower&lt;/code>上的所有已提交log被异步有序()的&lt;code>apply&lt;/code>到指令状态机中；&lt;/li>
+&lt;/ol>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/09/07-18-13-28-2021-09-07-18-13-23-image.png" alt="">&lt;/p>
+&lt;h3 id="log-commit">Log Commit&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>Raft 不会通过计算副本数目的方式去提交一个&lt;strong>之前任期内&lt;/strong>的日志条目;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>只有leader&lt;strong>当前任期里&lt;/strong>的日志条目通过计算副本数目可以被提交；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/03/23-17-14-07-2022-03-23-17-13-57-image.png" alt="">&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>为什么领导人无法决定对&lt;strong>老任期号&lt;/strong>的日志条目进行提交?&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>(a) , S1 是Leader，部分Follower(S2)复制了索引位置 2 的日志条目;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>(b) , S1 崩溃了, S5在Term 3 赢得选举(S5, S3, S4赞成)，然后从Client收了一条日志条目放在了索引 2 处;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>(c)，S5 崩溃了, S1 重新启动，选举(Term4)成功(S1,S2,S3,S4赞成)，后开始复制日志。在这时，来自任期 2 的那条日志已经被复制到了集群中的大多数机器上，但是还没有被提交。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>(d), S1 又崩溃了，S5 可以重新被选举(Term5)成功（S2，S3 和 S4 赞成），然后覆盖了他们在索引 2 处的日志。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>反之，如果S1在崩溃之前，把自己主导的新任期里产生的日志条目复制到了大多数机器上，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>(e) ，那么在后面任期里面这些新的日志条目就会被提交（因为 S5 就不可能选举成功）。 这样在同一时刻就同时保证了，之前的所有老的日志条目就会被提交。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="指令状态机的执行">指令状态机的执行&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>leader节点在收到client消息后，先将消息append到log中，并并行发送到所有的followers；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当leader收到多数节点成功ack后，提交消息(commitIndex)，并向本节点的指令状态机发送Apply指令，让指令状态机执行消息，执行成功后，向客户端返回；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>follower节点收到leader节点的hb, 会对比hb中的commitIndex和本节点的oldCommitIndex, 然后将所有在该范围内的[oldCommittedIndex+1, committedIndex]日志都apply到本节点的指令状态机中；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="配置改变">配置改变&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>配置变更包括节点数量的改变，配置参数的变更等。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最简单的方式是：停止集群、改变成员、启动集群。这种方式在执行时会导致集群整体不可用；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Raft集群成员配置作为一个特殊日志从 leader 节点同步到其它节点去；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Raft 使用一种两阶段方法平滑切换集群成员配置来避免遇到前一节描述的问题，具体流程如下：&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="安全性">安全性&lt;/h2>
+&lt;p>Raft 增加了如下两条限制以保证安全性：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>拥有最新的已提交的 log entry 的 Follower 才有资格成为 Leader。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Leader 只能推进 commit index 来提交当前 term 的已经复制到大多数服务器上的日志，旧 term 日志的提交要等到提交当前 term 的日志来间接提交（log index 小于 commit index 的日志被间接提交）。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="日志压缩">日志压缩&lt;/h3>
+&lt;p>在实际的系统中，不能让日志无限增长，否则系统重启时需要花很长的时间进行回放，从而影响可用性。Raft 采用对整个系统进行 snapshot 来解决，snapshot 之前的日志都可以丢弃。&lt;/p>
+&lt;p>每个副本独立的对自己的系统状态进行 snapshot，并且只能对已经提交的日志记录进行 snapshot。&lt;/p>
+&lt;p>当 Leader 要发给某个日志落后太多的 Follower 的 log entry 被丢弃，Leader 会将 snapshot 发给 Follower。或者当新加进一台机器时，也会发送 snapshot 给它。发送 snapshot 使用 InstalledSnapshot RPC（RPC 细节参见八、Raft 算法总结）。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/07-09-28-51-2021-10-07-09-28-04-image.png" alt="">&lt;/p>
+&lt;h3 id="成员变更">成员变更&lt;/h3>
+&lt;ul>
+&lt;li>成员变更是在集群运行过程中副本发生变化，如增加/减少副本数、节点替换等。&lt;/li>
+&lt;/ul>
+&lt;p>因为各个服务器提交成员变更日志的时刻可能不同，造成各个服务器从旧成员配置（Cold）切换到新成员配置（Cnew）的时刻不同。成员变更不能影响服务的可用性，但是成员变更过程的某一时刻，可能出现在 Cold 和 Cnew 中同时存在两个不相交的多数派，进而可能选出两个 Leader，形成不同的决议，破坏安全性。&lt;/p>
+&lt;p>为了解决这一问题，Raft 提出了两阶段的成员变更方法。&lt;/p>
+&lt;p>集群先从旧成员配置 Cold 切换到一个过渡成员配置，称为共同一致（joint consensus），共同一致是旧成员配置 Cold 和新成员配置 Cnew 的组合 Cold U Cnew，一旦共同一致 Cold U Cnew 被提交，系统再切换到新成员配置 Cnew。&lt;/p>
+&lt;h2 id="实现要点">实现要点&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>Batch and Pipeline&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>并行 Append Log&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>异步 Apply log&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Snapshot&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>异步 Lease Read&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ReadIndex&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="预投票prevote">预投票（PreVote）&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>问题：当一个 Follower 节点（A）与其他节点网络隔离时，由于心跳超时，将会变成候选人并发起选举，这时会递增 Term。由于网络隔离，其选举将无法成功，于是会持续选举，导致 Term 不断增大。当网络恢复后，该 A 节点会把其 Term 发送给其他节点，由于该 Term 很大概率大于其他节点 Term，从而引发其他节点进入选举流程。但此时，由于 A 节点的被隔离很久，日志不可能为最新的，所以其不会成为 Leader，导致集群一直在选举。Raft 论文中提出了&lt;strong>PreVote&lt;/strong>算法来解决该问题。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>主要思想：在发起正式投票前，先进行预投票(pre-vote)，预投票时自身 term 不变，但投票 tern+1。确认自己能获得集群大多数节点的投票时，才将自己的 term+1，然后正式进行投票。。由此就可以避免在网络分区的时孤立节点的 term 持续增大，导致后续选举的反复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>预投票是一个典型的 2PC 事务，&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>为此，需要增加一个新的 PreCandidate 状态。&lt;/p>
+&lt;h3 id="read">Read&lt;/h3>
+&lt;p>为保证 Read 操作的一致性，最简单的方法是将 Read 也走一遍 raft log，这样性能将很差。&lt;/p>
+&lt;p>因为 leader 节点能保证已经 committed 的 log 是最新的 log，所以可以直接从 leader 读取，为此需保证 leader 的有效性，有两种方式：&lt;/p>
+&lt;h4 id="readindex-read">&lt;strong>ReadIndex&lt;/strong> Read&lt;/h4>
+&lt;ol>
+&lt;li>Leader 将当前自己的 commit index 记录到一个 local 变量 ReadIndex 里面。&lt;/li>
+&lt;li>向其他节点发起一次 heartbeat，如果大多数节点返回了对应的 heartbeat response，那么 leader 就能够确定现在自己仍然是 leader。&lt;/li>
+&lt;li>Leader 等待自己的状态机执行，直到 apply index 超过了 ReadIndex，这样就能够安全的提供 linearizable read 了。&lt;/li>
+&lt;li>Leader 执行 read 请求，将结果返回给 client。&lt;/li>
+&lt;/ol>
+&lt;p>注意：&lt;/p>
+&lt;p>leader 刚通过选举成为 leader 的时候， commit index 并不能够保证是当前整个系统最新的 commit index，此时首先提交一个 no-op 的 entry，保证 leader 的 commit index 成为最新的。&lt;/p>
+&lt;p>&lt;a href="https://jin-yang.github.io/post/golang-raft-etcd-sourcode-consistent-reading.html">https://jin-yang.github.io/post/golang-raft-etcd-sourcode-consistent-reading.html&lt;/a>&lt;/p>
+&lt;h4 id="lease-read">Lease Read&lt;/h4>
+&lt;p>虽然 ReadIndex 比原来的 Raft log read 快了很多，但毕竟还是有 Heartbeat 的开销，在 Raft 论文里面，提到了一种通过 clock + heartbeat 的 lease read 优化方法。&lt;/p>
+&lt;p>也就是 leader 发送 heartbeat 的时候，会首先记录一个时间点 start，当系统大部分节点都回复了 heartbeat response，那么我们就可以认为 leader 的 lease 有效期可以到 &lt;code>start + election timeout / clock drift bound &lt;/code>这个时间点。&lt;/p>
+&lt;p>为什么能够这么认为呢？主要是在于 Raft 的选举机制，因为 follower 会在至少 election timeout 的时间之后，才会重新发生选举，所以下一个 leader 选出来的时间一定可以保证大于 &lt;code>start + election timeout / clock drift bound&lt;/code>。&lt;/p>
+&lt;p>虽然采用 lease 的做法很高效，但仍然会面临风险问题，也就是我们有了一个预设的前提，各个服务器的 CPU clock 的时间是准的，即使有误差，也会在一个非常小的 bound 范围里面，如果各个服务器之间 clock 走的频率不一样，有些太快，有些太慢，这套 lease 机制就可能出问题。&lt;/p>
+&lt;h3 id="follower-read">Follower Read&lt;/h3>
+&lt;ol>
+&lt;li>
+&lt;p>先去 Leader 查询最新的 committed index；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>然后拿着 committed Index 去 Follower read，从而保证能从 Follower 中读到最新的数据；&lt;/p>
+&lt;p>当前 etcd 就实现了 Follower read&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h3 id="幽灵复现">幽灵复现&lt;/h3>
+&lt;ol>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/47025699">https://zhuanlan.zhihu.com/p/47025699&lt;/a>&lt;/li>
+&lt;/ol>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/47117804">线性一致性和 Raft&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/35697913">Raft 的 PreVote 实现机制&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/50455478">Etcd 之 Lease read&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://juejin.im/post/5af066f1f265da0b715634b9">Raft 协议精解&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://mp.weixin.qq.com/s?__biz=MzI3NDIxNTQyOQ==&amp;amp;mid=2247484499&amp;amp;idx=1&amp;amp;sn=79acb9b4b2f8baa3296f2288c4a0a45b&amp;amp;scene=0#wechat_redirect">TiKV 源码解析系列 - Lease Read&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://blog.csdn.net/solotzg/article/details/80669924">Raft TLA+形式化验证&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://blog.wangjunfeng.com/post/raft/">分布式系统一致性协议 Raft 理解 - Jefferywang 的烂笔头&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zinglix.xyz/2020/06/25/raft/">「图解 Raft」让一致性算法变得更简单 - ZingLix Blog&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/maemual/raft-zh_cn/blob/master/raft-zh_cn.md">raft-zh_cn/raft-zh_cn.md at master · maemual/raft-zh_cn · GitHub&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://mp.weixin.qq.com/s/lUbVBVzvNVxhgbcHQBbkkQ">条分缕析 Raft 算法&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.cnblogs.com/mindwind/p/5231986.html">Raft 为什么是更易理解的分布式一致性算法 - mindwind - 博客园&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/125573685">全面理解Raft协议&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://juejin.cn/post/6902274909959880711">Raft 协议实战系列（五）—— 集群成员变更与日志压缩&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/114221938">浅谈分布式存储之raft&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://segmentfault.com/a/1190000022248118">https://segmentfault.com/a/1190000022248118&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.sofastack.tech/projects/sofa-jraft/raft-introduction/">https://www.sofastack.tech/projects/sofa-jraft/raft-introduction/&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>SQL 查询引擎</title><link>https://justice.bj.cn/post/30.architech/sql-%E6%9F%A5%E8%AF%A2%E6%A8%A1%E5%9E%8B/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/sql-%E6%9F%A5%E8%AF%A2%E6%A8%A1%E5%9E%8B/</guid><description>&lt;h1 id="sql-查询引擎">SQL 查询引擎&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-15-38-07-2021-06-18-15-38-04-image.png" alt="">&lt;/p>
+&lt;h3 id="select">select&lt;/h3>
+&lt;p>这才是完整的SELECT查询&lt;/p>
+&lt;p>&lt;code>SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*;&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>where&lt;/code> 和 &lt;code>having&lt;/code>区别&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>“Where” 是一个约束声明，使用Where来约束来之数据库的数据，Where是在结果返回之前起作用的，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Where中不能使用聚合函数&lt;/strong>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>“Having”是一个过滤声明，是在查询返回结果集以后对查询结果进行的过滤操作，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>在Having中可以使用聚合函数&lt;/strong>。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="sql逻辑计划优化">sql逻辑计划优化&lt;/h2>
+&lt;h3 id="常量折叠">常量折叠&lt;/h3>
+&lt;h3 id="谓词下推">谓词下推&lt;/h3>
+&lt;h3 id="投影消除">投影消除&lt;/h3>
+&lt;h3 id="列裁剪">列裁剪&lt;/h3>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="https://www.jianshu.com/p/e08dd77acfed">https://www.jianshu.com/p/e08dd77acfed&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://developer.aliyun.com/article/743505">SQL 查询的分布式执行与调度-阿里云开发者社区&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/48735419?spm=a2c6h.12873639.0.0.642b7af5uV9ysp">https://zhuanlan.zhihu.com/p/48735419?spm=a2c6h.12873639.0.0.642b7af5uV9ysp&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>ToyDB</title><link>https://justice.bj.cn/post/30.architech/toydb/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/toydb/</guid><description>&lt;h1 id="toydb">ToyDB&lt;/h1>
+&lt;hr>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;ul>
+&lt;li>&lt;code>toydb&lt;/code>是&lt;code>Erik Grinaker &lt;/code>为学习&lt;code>rust&lt;/code>语言而开发的分布式sql数据库，支持分布式事务模型;&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="架构">架构&lt;/h2>
+&lt;p>&lt;code>toydb&lt;/code>主要由两部分组成：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>toydb&lt;/code>: 多个节点组成的分布式存储引擎，通过raft保证多节点间数据一致性；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>toysql&lt;/code>: sql客户端，负责sql的解析、生成执行计划、执行；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/07-18-54-21-2021-10-07-18-54-16-image.png" alt="">&lt;/p>
+&lt;h2 id="分析">分析&lt;/h2>
+&lt;p>SQL语句 &amp;ndash;&amp;gt; 词法分析 &amp;mdash;-&amp;gt; 语法分析&amp;mdash;&amp;gt;生成执行计划&amp;mdash;&amp;gt;&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-16-00-47-2021-06-18-16-00-44-image.png" alt="">&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-15-38-36-2021-06-18-15-38-32-image.png" alt="">&lt;/p>
+&lt;h3 id="词法分析lexer">词法分析(Lexer)&lt;/h3>
+&lt;p>Lexer 也称为分词，从左向右扫描SQL，将其分割成一个个的toke(不可分割的，具有独立意义的单元，类似英语中的单词)。&lt;/p>
+&lt;p>Lexer的实现一般都是构造DFA(确定性有限状态自动机)来实现的。&lt;/p>
+&lt;p>状态转移图如下，这是一个能够识别标识符，数字和一般运算符的词法解析器。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-14-44-04-2021-06-18-14-44-00-image.png" alt="">&lt;/p>
+&lt;h3 id="语法分析parser">语法分析(Parser)&lt;/h3>
+&lt;p>Parser阶段有两种类型方法来实现:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>一种是自顶向下分析法，&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>另一种是自底向上分析法，&lt;/p>
+&lt;p>简单介绍一下两种类型分析法的处理思路。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="执行计划">执行计划&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">SQL String ---词法分析&amp;lt;Lexer&amp;gt;--&amp;gt; Token --&amp;lt;语法分析&amp;gt;--&amp;gt; AST Statement
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="sql-engine">Sql Engine&lt;/h2>
+&lt;h3 id="parser解释器">Parser(解释器)&lt;/h3>
+&lt;h3 id="planner">Planner&lt;/h3>
+&lt;h3 id="executor">Executor&lt;/h3>
+&lt;h2 id="storage存储">Storage(存储)&lt;/h2>
+&lt;h3 id="memory">Memory&lt;/h3>
+&lt;h2 id="mvcc">MVCC&lt;/h2>
+&lt;h2 id="raft-engine">Raft Engine&lt;/h2>
+&lt;p>&lt;code>toydb&lt;/code> 通过raft来实现各节点间数据的一致性，其自带的raft模块由rust语言提供的一个简单的实现。&lt;/p>
+&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/08-13-34-25-2021-10-08-13-34-19-image.png" alt="">&lt;/p>
+&lt;p>Raft内部有2个状态机：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>复制状态机(): 主要用于日志复制，保证各个副本日志的落盘及一致；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>指令状态机(&lt;code>State&lt;/code>): 主要作用是根据日志执行指令；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>由于复制状态机的Raft协议可以保证日志序列的唯一性，所以由日志驱动的不同副本的指令状态机将拥有相同的输入指令序列，在初始状态相同的情况下，指令状态机将会得到相同的输出，以此就保证了各个副本外部最终状态的一致性；&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>复制状态机是raft协议的核心；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>指令状态机由raft日志驱动来改变外界状态，是raft协议和外界交互的接口；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="evenloop">EvenLoop&lt;/h2>
+&lt;p>&lt;code>Raft&lt;/code> 的主驱动是&lt;code>EvenLoop&lt;/code>。节点启动时，会开启一个&lt;code>evenloop&lt;/code>后台异步任务，持续监听&lt;code>tick&lt;/code>, &lt;code>tcp_in_tx&lt;/code>, &lt;code>client_rx&lt;/code>, &lt;code>node_rx&lt;/code>这4个事件源上的消息&lt;code>Msg&lt;/code>，以此来驱动整个状态机的运行：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>tick&lt;/code>事件由定时器产生，转入相应rolenode的&lt;code>tick&lt;/code>处理；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>tcp_in_tx&lt;/code>事件由其他节点peer产生，交由&lt;code>raft&lt;/code> 状态机&lt;code>step&lt;/code>处理；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>node_rx&lt;/code>事件由节点&lt;RaftNode>内部产生，需根据事件消息的接收对象(&lt;code>to&lt;/code>)分别处理；&lt;/p>
+&lt;ul>
+&lt;li>发往副本（&lt;code>to&lt;/code>为&lt;code>Address::Peer&lt;/code>, &lt;code>Address::Peers&lt;/code>）的消息，放入&lt;code>tcp_tx&lt;/code>交由&lt;code>TcpSender&lt;/code>进行发送；&lt;/li>
+&lt;li>发往&lt;code>Client&lt;/code>（&lt;code>Address::Client&lt;/code>） 且事件类型为&lt;code>Event::ClientResponse&lt;/code>的消息, 根据&lt;code>id&lt;/code>从&lt;code>requests&lt;/code>表中找到该消息响应rx&lt;code>response_tx&lt;/code>，通过&lt;code>response_tx&lt;/code>将消息响应回复给&lt;code>Client&lt;/code>;&lt;/li>
+&lt;li>其他消息为非法消息, 报错并退出；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>client_rx&lt;/code>事件由客户端产生，处理如下：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>先为事件生成uuid作为唯一id；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>以id为key, 将消息响应rx&lt;code>request_rx&lt;/code>放入&lt;code>requests&lt;/code> 哈希表中，该表用于后续消息响应时处理消息返回；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>生成一个&lt;code>ClientRequest&lt;/code>类型的消息 ，交由&lt;code>Rolenode&lt;/code>的&lt;code>step&lt;/code>处理；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;code>Evenloop&lt;/code>接收到消息后，通过&lt;code>tick()&lt;/code>, &lt;code>step()&lt;/code>来驱动复制状态机执行日志复制操作。&lt;/p>
+&lt;p>各节点收到&lt;code>ClientRequest&lt;/code>后处理流程&lt;code>Step()&lt;/code>：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>Candidate&lt;/code>:&lt;/p>
+&lt;ul>
+&lt;li>将&lt;code>ClientRequest&lt;/code>消息放入&lt;code>queued_reqs&lt;/code>队列中进行缓存，等待变为&lt;code>Leader&lt;/code>后，再依次处理；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Follower&lt;/code>:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>如果没有&lt;code>Leader&lt;/code>， 则也将消息放入&lt;code>queued_reqs&lt;/code>中缓存；// queud_reqs 后续处理?&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果有&lt;code>Leader&lt;/code>, 则将消息(id, from)放入&lt;code>proxied_reqs&lt;/code>中记录下来，然后转发到&lt;code>Leader&lt;/code>，由&lt;code>Leader&lt;/code>处理；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Leader&lt;/code>:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>Request::Query&lt;/code>消息：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>通过&lt;code>state_tx&lt;/code>，向状态机发送&lt;code>Instruction::Query&lt;/code>指令，状态机将指令插入到&lt;code>queries&lt;/code>中；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过&lt;code>state_tx&lt;/code>, 向状态机发送&lt;code>Instruction::Vote&lt;/code>指令, 统计；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>若存在副本，则向副本发送&lt;code>Event::Heartbeat&lt;/code>消息，和&lt;code>Follower&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Request::Mutate&lt;/code>消息：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>将消息记录到本地log中;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>复制log到各个Follower；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>接收到多数&lt;code>Follower&lt;/code>的确认消息后，commit消息；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>给状态机发送&lt;code>Instruction::Notify&lt;/code>指令；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果&lt;code>peers&lt;/code>为空，提交；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Request::Status&lt;/code>消息：&lt;/p>
+&lt;ul>
+&lt;li>根据当前节点状态，生成&lt;code>Instruction::Status&lt;/code>，通过&lt;code>state_tx&lt;/code>交由状态机执行；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="指令状态机">指令状态机&lt;/h3>
+&lt;p>指令状态机由&lt;code>Driver::drive()&lt;/code>驱动。每个Raft Node新建时，会开启一个driver后台任务，该任务从&lt;code>state_rx&lt;/code>接收指令，交由&lt;code>execute&lt;/code>处理，各指令处理流程如下：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>Instruction::Abort&lt;/code>:&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Instruction::Apply&lt;/code>:&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Instruction::Notify&lt;/code>:&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>如果指令&lt;code>index&lt;/code>大于状态机已经&lt;code>applied_index&lt;/code>, 将(index, (address, id))插入到状态机&lt;code>notify&lt;/code>哈希表中；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>否则指令已被应用过，通过&lt;code>node_tx&lt;/code>给Raft Node 发送&lt;code>ClientResponse&lt;/code>消息，由Raft Node将错误消息返回给客户端；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Instruction::Query&lt;/code>:&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Instruction::Status&lt;/code>:&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Instruction::Vote&lt;/code>:&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="源码">源码&lt;/h2>
+&lt;ul>
+&lt;li>&lt;strong>Log&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;p>&lt;code>Log&lt;/code>(日志)是Raft状态机&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="sd">/// The replicated Raft log
+&lt;/span>&lt;span class="sd">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Log&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">store&lt;/span>: &lt;span class="nb">Box&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">dyn&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">log&lt;/span>::&lt;span class="n">Store&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">last_index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">last_term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">commit_index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">commit_term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ul>
+&lt;li>&lt;strong>Driver&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//状态机接口
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">State&lt;/span>: &lt;span class="nb">Send&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">applied_index&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">u64&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">mutate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">command&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//修改状态机状态
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">query&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">command&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//查询状态机
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//状态机驱动
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Driver&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">state_rx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedReceiver&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Instruction&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//状态机指令输入口
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">node_tx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedSender&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Message&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//raft协议消息输出口
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">applied_index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">notify&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//通知客户端更改被采用
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">queries&lt;/span>: &lt;span class="nc">BTreeMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">BTreeMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Query&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//等待处理的客户端查询指令，
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// 状态机指令
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">enum&lt;/span> &lt;span class="nc">Instruction&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Abort&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//取消
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Apply&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">entry&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//应用
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Notify&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span> &lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//通知
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Query&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">command&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">quorum&lt;/span>: &lt;span class="kt">u64&lt;/span> &lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//查询
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Status&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">status&lt;/span>: &lt;span class="nb">Box&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Status&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//状态机状态
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Vote&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//投票
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="raft角色">Raft角色&lt;/h3>
+&lt;h4 id="leader">Leader&lt;/h4>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// 节点共有属性
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">RoleNode&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">R&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//节点id
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">peers&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">log&lt;/span>: &lt;span class="nc">Log&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">pre_vote&lt;/span>: &lt;span class="kt">bool&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">node_tx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedSender&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Message&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//和node之间发送Msg通道
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">state_tx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedSender&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Instruction&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//节点往状态机驱动发送状态机指令通道
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">queued_reqs&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Event&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">proxied_reqs&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Address&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">role&lt;/span>: &lt;span class="nc">R&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// leader专有属性字段
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Leader&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">heartbeat_ticks&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//心跳计数
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">peer_next_index&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//复制到副本的下一个index
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">peer_last_index&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//已知复制到副本的最后index
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// follower专有字段
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Follower&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">leader&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">leader_seen_ticks&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">leader_seen_timeout&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">voted_for&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// candidate专有字段
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Candidate&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">election_ticks&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">election_timeout&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">votes&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="https://github.com/erikgrinaker/toydb">https://github.com/erikgrinaker/toydb&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://github.com/erikgrinaker/toydb/blob/master/docs/architecture.md">toydb/architecture.md at master · erikgrinaker/toydb · GitHub&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>子树中标签相同的节点数</title><link>https://justice.bj.cn/post/leetcode/doc/1518.%E5%AD%90%E6%A0%91%E4%B8%AD%E6%A0%87%E7%AD%BE%E7%9B%B8%E5%90%8C%E7%9A%84%E8%8A%82%E7%82%B9%E6%95%B0/</link><pubDate>Wed, 23 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/1518.%E5%AD%90%E6%A0%91%E4%B8%AD%E6%A0%87%E7%AD%BE%E7%9B%B8%E5%90%8C%E7%9A%84%E8%8A%82%E7%82%B9%E6%95%B0/</guid><description>&lt;h1 id="子树中标签相同的节点数httpsleetcode-cncomproblemsnumber-of-nodes-in-the-sub-tree-with-the-same-labeldescription-httpsleetcode-cncomproblemsnumber-of-nodes-in-the-sub-tree-with-the-same-labeldescription">&lt;a href="https://leetcode-cn.com/problems/number-of-nodes-in-the-sub-tree-with-the-same-label/description/" title="https://leetcode-cn.com/problems/number-of-nodes-in-the-sub-tree-with-the-same-label/description/">子树中标签相同的节点数&lt;/a>&lt;/h1>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Category&lt;/th>
+&lt;th>Difficulty&lt;/th>
+&lt;th>Likes&lt;/th>
+&lt;th>Dislikes&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>algorithms&lt;/td>
+&lt;td>Medium (30.38%)&lt;/td>
+&lt;td>55&lt;/td>
+&lt;td>-&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
+&lt;p>&lt;a href="https://leetcode.com/tag/Unknown" title="https://leetcode.com/tag/Unknown">&lt;code>Unknown&lt;/code>&lt;/a>&lt;/p>
+&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
+&lt;p>&lt;code>Unknown&lt;/code>&lt;/p>
+&lt;p>给你一棵树（即，一个连通的无环无向图），这棵树由编号从 &lt;code>0&lt;/code>  到 &lt;code>n - 1&lt;/code> 的 n 个节点组成，且恰好有 &lt;code>n - 1&lt;/code> 条 &lt;code>edges&lt;/code> 。树的根节点为节点 &lt;code>0&lt;/code> ，树上的每一个节点都有一个标签，也就是字符串 &lt;code>labels&lt;/code> 中的一个小写字符（编号为 &lt;code>i&lt;/code> 的 节点的标签就是 &lt;code>labels[i]&lt;/code> ）&lt;/p>
+&lt;p>边数组 &lt;code>edges&lt;/code> 以 &lt;code>edges[i] = [ai, bi]&lt;/code> 的形式给出，该格式表示节点 &lt;code>ai&lt;/code> 和 &lt;code>bi&lt;/code> 之间存在一条边。&lt;/p>
+&lt;p>返回一个大小为 &lt;em>&lt;code>n&lt;/code>&lt;/em> 的数组，其中 &lt;code>ans[i]&lt;/code> 表示第 &lt;code>i&lt;/code> 个节点的子树中与节点 &lt;code>i&lt;/code> 标签相同的节点数。&lt;/p>
+&lt;p>树 &lt;code>T&lt;/code> 中的子树是由 &lt;code>T&lt;/code> 中的某个节点及其所有后代节点组成的树。&lt;/p>
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2020/07/19/q3e1.jpg" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 7, edges = [[0,1],[0,2],[1,4],[1,5],[2,3],[2,6]], labels = &amp;#34;abaedcd&amp;#34;
+输出：[2,1,1,1,1,1,1]
+解释：节点 0 的标签为 &amp;#39;a&amp;#39; ，以 &amp;#39;a&amp;#39; 为根节点的子树中，节点 2 的标签也是 &amp;#39;a&amp;#39; ，因此答案为 2 。注意树中的每个节点都是这棵子树的一部分。
+节点 1 的标签为 &amp;#39;b&amp;#39; ，节点 1 的子树包含节点 1、4 和 5，但是节点 4、5 的标签与节点 1 不同，故而答案为 1（即，该节点本身）。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2020/07/19/q3e2.jpg" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 4, edges = [[0,1],[1,2],[0,3]], labels = &amp;#34;bbbb&amp;#34;
+输出：[4,2,1,1]
+解释：节点 2 的子树中只有节点 2 ，所以答案为 1 。
+节点 3 的子树中只有节点 3 ，所以答案为 1 。
+节点 1 的子树中包含节点 1 和 2 ，标签都是 &amp;#39;b&amp;#39; ，因此答案为 2 。
+节点 0 的子树中包含节点 0、1、2 和 3，标签都是 &amp;#39;b&amp;#39;，因此答案为 4 。
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;p>&lt;img src="https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2020/07/19/q3e3.jpg" alt="">&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 5, edges = [[0,1],[0,2],[1,3],[0,4]], labels = &amp;#34;aabab&amp;#34;
+输出：[3,2,1,1,1]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 4：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 6, edges = [[0,1],[0,2],[1,3],[3,4],[4,5]], labels = &amp;#34;cbabaa&amp;#34;
+输出：[1,2,1,1,2,1]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>示例 5：&lt;/strong>&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 7, edges = [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]], labels = &amp;#34;aaabaaa&amp;#34;
+输出：[6,5,4,1,3,2,1]
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>1 &amp;lt;= n &amp;lt;= 10^5&lt;/code>&lt;/li>
+&lt;li>&lt;code>edges.length == n - 1&lt;/code>&lt;/li>
+&lt;li>&lt;code>edges[i].length == 2&lt;/code>&lt;/li>
+&lt;li>&lt;code>0 &amp;lt;= ai, bi &amp;lt; n&lt;/code>&lt;/li>
+&lt;li>&lt;code>ai != bi&lt;/code>&lt;/li>
+&lt;li>&lt;code>labels.length == n&lt;/code>&lt;/li>
+&lt;li>&lt;code>labels&lt;/code> 仅由小写英文字母组成&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;p>&lt;a href="https://leetcode-cn.com/problems/number-of-nodes-in-the-sub-tree-with-the-same-label/comments/" title="https://leetcode-cn.com/problems/number-of-nodes-in-the-sub-tree-with-the-same-label/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/number-of-nodes-in-the-sub-tree-with-the-same-label/solution/" title="https://leetcode-cn.com/problems/number-of-nodes-in-the-sub-tree-with-the-same-label/solution/">Solution&lt;/a>&lt;/p>
+&lt;h2 id="解法">解法&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
 &lt;/div></description></item><item><title>apache arrow</title><link>https://justice.bj.cn/post/30.architech/arrow/</link><pubDate>Mon, 21 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/arrow/</guid><description>&lt;h2 id="apache-arrow">apache arrow&lt;/h2>
 &lt;h3 id="简介">简介&lt;/h3>
 &lt;ul>
@@ -604,1151 +2131,6 @@
 &lt;/li>
 &lt;li>
 &lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/227802946">https://zhuanlan.zhihu.com/p/227802946&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Rust错误处理</title><link>https://justice.bj.cn/post/14.language/rust/40.rust%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/</link><pubDate>Mon, 21 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/rust/40.rust%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/</guid><description>&lt;h1 id="rust错误处理">Rust错误处理&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Rust 将错误两个主要类别：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>可恢复错误（recoverable）&lt;/strong> ： 由 &lt;code>Result&amp;lt;T, E&amp;gt;&lt;/code> 表示，代表向用户报告错误和重试操作是合理的情况，比如未找到文件。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>不可恢复错误（unrecoverable）&lt;/strong>： 由&lt;code>panic！&lt;/code>处理，通常是 bug 的同义词，比如尝试访问超过数组结尾的位置。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>Rust 并没有异常。&lt;/p>
-&lt;h2 id="optiont">Option&lt;T>&lt;/h2>
-&lt;p>&lt;code>Option&amp;lt;T&amp;gt;&lt;/code>是 Rust 的系统类型，用来表示值不存在的可能&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;span class="lnt">33
-&lt;/span>&lt;span class="lnt">34
-&lt;/span>&lt;span class="lnt">35
-&lt;/span>&lt;span class="lnt">36
-&lt;/span>&lt;span class="lnt">37
-&lt;/span>&lt;span class="lnt">38
-&lt;/span>&lt;span class="lnt">39
-&lt;/span>&lt;span class="lnt">40
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// option
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">enum&lt;/span> &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">None&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//选项为空
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Some&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//选项不为空，存在一个T
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">impl&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">// unwrap: 当遇到None值时会panic
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">unwrap&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nc">T&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">match&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Option&lt;/span>::&lt;span class="nb">Some&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">val&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">val&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Option&lt;/span>::&lt;span class="nb">None&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">panic&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;unwrap option None&amp;#34;&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">unwrap_or&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">option&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">default&lt;/span>: &lt;span class="nc">T&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nc">T&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">match&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">option&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">None&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">default&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Some&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">and_then&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">F&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">option&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">f&lt;/span>: &lt;span class="nc">F&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">where&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">F&lt;/span>: &lt;span class="nb">FnOnce&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">match&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">option&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">None&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">None&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Some&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">f&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">ok_or&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">E&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">option&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">err&lt;/span>: &lt;span class="nc">E&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">E&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">match&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">option&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Some&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">val&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Ok&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">val&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">None&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Err&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">err&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="resultt-e">Result&amp;lt;T, E&amp;gt;&lt;/h2>
-&lt;p>&lt;code>Result&lt;/code>是&lt;code>Option&lt;/code>的更通用的版本，它解释了结果错误的原因.&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">enum&lt;/span> &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">E&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Ok&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">T&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Err&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">E&lt;/span>&lt;span class="p">),&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;code>Result&lt;/code> 枚举和其成员也被导入到了 prelude 中，所以就不需要 &lt;code>Ok&lt;/code> 和 &lt;code>Err&lt;/code> 之前指定 &lt;code>Result::&lt;/code>。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//unwrap: 如果 Result 值是 Ok，返回 Ok 中的值，如果是 Err会自动调用 panic!。
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">f&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">File&lt;/span>::&lt;span class="n">open&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;hello.txt&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="n">unwrap&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//expect: 可以在参数中自定义要显示的错误信息，并在自动调用 panic! 时，显示在错误信息中，有助于追踪 panic 的根源。
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">f&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">File&lt;/span>::&lt;span class="n">open&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;hello.txt&amp;#34;&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="n">expect&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Failed to open hello.txt&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="panic">panic!&lt;/h2>
-&lt;ul>
-&lt;li>&lt;code>panic!&lt;/code> 宏可用于产生一个 panic （恐慌），并开始回退（unwind）它的栈;&lt;/li>
-&lt;/ul>
-&lt;h2 id="heading">?&lt;/h2>
-&lt;p>&lt;code>?&lt;/code> 运算符用在返回值为 &lt;code>Result&lt;/code> 的表达式后面，它等同于这样一个匹配 表达式：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Err(err)&lt;/code> 分支展开成提前返回的 &lt;code>return Err(err)&lt;/code>;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Ok(ok)&lt;/code> 分支展开成 &lt;code>ok&lt;/code> 表达式;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>?&lt;/code> 之后直接使用链式方法调用来进一步缩短代码:&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">std&lt;/span>::&lt;span class="n">io&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">std&lt;/span>::&lt;span class="n">io&lt;/span>::&lt;span class="n">Read&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">std&lt;/span>::&lt;span class="n">fs&lt;/span>::&lt;span class="n">File&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">read_username_from_file&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">io&lt;/span>::&lt;span class="n">Error&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">String&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">File&lt;/span>::&lt;span class="n">open&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;hello.txt&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">read_to_string&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">?&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//? 只能用于返回值类型为 Result 的函数。
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Ok&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>SQL 查询引擎</title><link>https://justice.bj.cn/post/30.architech/sql-%E6%9F%A5%E8%AF%A2%E6%A8%A1%E5%9E%8B/</link><pubDate>Mon, 21 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/sql-%E6%9F%A5%E8%AF%A2%E6%A8%A1%E5%9E%8B/</guid><description>&lt;h1 id="sql-查询引擎">SQL 查询引擎&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-15-38-07-2021-06-18-15-38-04-image.png" alt="">&lt;/p>
-&lt;h3 id="select">select&lt;/h3>
-&lt;p>这才是完整的SELECT查询&lt;/p>
-&lt;p>&lt;code>SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*;&lt;/code>&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>where&lt;/code> 和 &lt;code>having&lt;/code>区别&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>“Where” 是一个约束声明，使用Where来约束来之数据库的数据，Where是在结果返回之前起作用的，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>Where中不能使用聚合函数&lt;/strong>。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>“Having”是一个过滤声明，是在查询返回结果集以后对查询结果进行的过滤操作，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>在Having中可以使用聚合函数&lt;/strong>。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="sql逻辑计划优化">sql逻辑计划优化&lt;/h2>
-&lt;h3 id="常量折叠">常量折叠&lt;/h3>
-&lt;h3 id="谓词下推">谓词下推&lt;/h3>
-&lt;h3 id="投影消除">投影消除&lt;/h3>
-&lt;h3 id="列裁剪">列裁剪&lt;/h3>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://www.jianshu.com/p/e08dd77acfed">https://www.jianshu.com/p/e08dd77acfed&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://developer.aliyun.com/article/743505">SQL 查询的分布式执行与调度-阿里云开发者社区&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/48735419?spm=a2c6h.12873639.0.0.642b7af5uV9ysp">https://zhuanlan.zhihu.com/p/48735419?spm=a2c6h.12873639.0.0.642b7af5uV9ysp&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>ToyDB</title><link>https://justice.bj.cn/post/30.architech/toydb/</link><pubDate>Mon, 21 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/toydb/</guid><description>&lt;h1 id="toydb">ToyDB&lt;/h1>
-&lt;hr>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>&lt;code>toydb&lt;/code>是&lt;code>Erik Grinaker &lt;/code>为学习&lt;code>rust&lt;/code>语言而开发的分布式sql数据库，支持分布式事务模型;&lt;/li>
-&lt;/ul>
-&lt;hr>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>&lt;code>toydb&lt;/code>主要由两部分组成：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>toydb&lt;/code>: 多个节点组成的分布式存储引擎，通过raft保证多节点间数据一致性；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>toysql&lt;/code>: sql客户端，负责sql的解析、生成执行计划、执行；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/07-18-54-21-2021-10-07-18-54-16-image.png" alt="">&lt;/p>
-&lt;h2 id="分析">分析&lt;/h2>
-&lt;p>SQL语句 &amp;ndash;&amp;gt; 词法分析 &amp;mdash;-&amp;gt; 语法分析&amp;mdash;&amp;gt;生成执行计划&amp;mdash;&amp;gt;&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-16-00-47-2021-06-18-16-00-44-image.png" alt="">&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-15-38-36-2021-06-18-15-38-32-image.png" alt="">&lt;/p>
-&lt;h3 id="词法分析lexer">词法分析(Lexer)&lt;/h3>
-&lt;p>Lexer 也称为分词，从左向右扫描SQL，将其分割成一个个的toke(不可分割的，具有独立意义的单元，类似英语中的单词)。&lt;/p>
-&lt;p>Lexer的实现一般都是构造DFA(确定性有限状态自动机)来实现的。&lt;/p>
-&lt;p>状态转移图如下，这是一个能够识别标识符，数字和一般运算符的词法解析器。&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/06/18-14-44-04-2021-06-18-14-44-00-image.png" alt="">&lt;/p>
-&lt;h3 id="语法分析parser">语法分析(Parser)&lt;/h3>
-&lt;p>Parser阶段有两种类型方法来实现:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>一种是自顶向下分析法，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>另一种是自底向上分析法，&lt;/p>
-&lt;p>简单介绍一下两种类型分析法的处理思路。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="执行计划">执行计划&lt;/h3>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">SQL String ---词法分析&amp;lt;Lexer&amp;gt;--&amp;gt; Token --&amp;lt;语法分析&amp;gt;--&amp;gt; AST Statement
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="sql-engine">Sql Engine&lt;/h2>
-&lt;h3 id="parser解释器">Parser(解释器)&lt;/h3>
-&lt;h3 id="planner">Planner&lt;/h3>
-&lt;h3 id="executor">Executor&lt;/h3>
-&lt;h2 id="storage存储">Storage(存储)&lt;/h2>
-&lt;h3 id="memory">Memory&lt;/h3>
-&lt;h2 id="mvcc">MVCC&lt;/h2>
-&lt;h2 id="raft-engine">Raft Engine&lt;/h2>
-&lt;p>&lt;code>toydb&lt;/code> 通过raft来实现各节点间数据的一致性，其自带的raft模块由rust语言提供的一个简单的实现。&lt;/p>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/10/08-13-34-25-2021-10-08-13-34-19-image.png" alt="">&lt;/p>
-&lt;p>Raft内部有2个状态机：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>复制状态机(): 主要用于日志复制，保证各个副本日志的落盘及一致；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>指令状态机(&lt;code>State&lt;/code>): 主要作用是根据日志执行指令；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>由于复制状态机的Raft协议可以保证日志序列的唯一性，所以由日志驱动的不同副本的指令状态机将拥有相同的输入指令序列，在初始状态相同的情况下，指令状态机将会得到相同的输出，以此就保证了各个副本外部最终状态的一致性；&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>复制状态机是raft协议的核心；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>指令状态机由raft日志驱动来改变外界状态，是raft协议和外界交互的接口；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="evenloop">EvenLoop&lt;/h2>
-&lt;p>&lt;code>Raft&lt;/code> 的主驱动是&lt;code>EvenLoop&lt;/code>。节点启动时，会开启一个&lt;code>evenloop&lt;/code>后台异步任务，持续监听&lt;code>tick&lt;/code>, &lt;code>tcp_in_tx&lt;/code>, &lt;code>client_rx&lt;/code>, &lt;code>node_rx&lt;/code>这4个事件源上的消息&lt;code>Msg&lt;/code>，以此来驱动整个状态机的运行：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>tick&lt;/code>事件由定时器产生，转入相应rolenode的&lt;code>tick&lt;/code>处理；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>tcp_in_tx&lt;/code>事件由其他节点peer产生，交由&lt;code>raft&lt;/code> 状态机&lt;code>step&lt;/code>处理；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>node_rx&lt;/code>事件由节点&lt;RaftNode>内部产生，需根据事件消息的接收对象(&lt;code>to&lt;/code>)分别处理；&lt;/p>
-&lt;ul>
-&lt;li>发往副本（&lt;code>to&lt;/code>为&lt;code>Address::Peer&lt;/code>, &lt;code>Address::Peers&lt;/code>）的消息，放入&lt;code>tcp_tx&lt;/code>交由&lt;code>TcpSender&lt;/code>进行发送；&lt;/li>
-&lt;li>发往&lt;code>Client&lt;/code>（&lt;code>Address::Client&lt;/code>） 且事件类型为&lt;code>Event::ClientResponse&lt;/code>的消息, 根据&lt;code>id&lt;/code>从&lt;code>requests&lt;/code>表中找到该消息响应rx&lt;code>response_tx&lt;/code>，通过&lt;code>response_tx&lt;/code>将消息响应回复给&lt;code>Client&lt;/code>;&lt;/li>
-&lt;li>其他消息为非法消息, 报错并退出；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>client_rx&lt;/code>事件由客户端产生，处理如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>先为事件生成uuid作为唯一id；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>以id为key, 将消息响应rx&lt;code>request_rx&lt;/code>放入&lt;code>requests&lt;/code> 哈希表中，该表用于后续消息响应时处理消息返回；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>生成一个&lt;code>ClientRequest&lt;/code>类型的消息 ，交由&lt;code>Rolenode&lt;/code>的&lt;code>step&lt;/code>处理；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;code>Evenloop&lt;/code>接收到消息后，通过&lt;code>tick()&lt;/code>, &lt;code>step()&lt;/code>来驱动复制状态机执行日志复制操作。&lt;/p>
-&lt;p>各节点收到&lt;code>ClientRequest&lt;/code>后处理流程&lt;code>Step()&lt;/code>：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Candidate&lt;/code>:&lt;/p>
-&lt;ul>
-&lt;li>将&lt;code>ClientRequest&lt;/code>消息放入&lt;code>queued_reqs&lt;/code>队列中进行缓存，等待变为&lt;code>Leader&lt;/code>后，再依次处理；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Follower&lt;/code>:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>如果没有&lt;code>Leader&lt;/code>， 则也将消息放入&lt;code>queued_reqs&lt;/code>中缓存；// queud_reqs 后续处理?&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果有&lt;code>Leader&lt;/code>, 则将消息(id, from)放入&lt;code>proxied_reqs&lt;/code>中记录下来，然后转发到&lt;code>Leader&lt;/code>，由&lt;code>Leader&lt;/code>处理；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Leader&lt;/code>:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Request::Query&lt;/code>消息：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>通过&lt;code>state_tx&lt;/code>，向状态机发送&lt;code>Instruction::Query&lt;/code>指令，状态机将指令插入到&lt;code>queries&lt;/code>中；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>通过&lt;code>state_tx&lt;/code>, 向状态机发送&lt;code>Instruction::Vote&lt;/code>指令, 统计；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>若存在副本，则向副本发送&lt;code>Event::Heartbeat&lt;/code>消息，和&lt;code>Follower&lt;/code>；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Request::Mutate&lt;/code>消息：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>将消息记录到本地log中;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>复制log到各个Follower；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>接收到多数&lt;code>Follower&lt;/code>的确认消息后，commit消息；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>给状态机发送&lt;code>Instruction::Notify&lt;/code>指令；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果&lt;code>peers&lt;/code>为空，提交；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Request::Status&lt;/code>消息：&lt;/p>
-&lt;ul>
-&lt;li>根据当前节点状态，生成&lt;code>Instruction::Status&lt;/code>，通过&lt;code>state_tx&lt;/code>交由状态机执行；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="指令状态机">指令状态机&lt;/h3>
-&lt;p>指令状态机由&lt;code>Driver::drive()&lt;/code>驱动。每个Raft Node新建时，会开启一个driver后台任务，该任务从&lt;code>state_rx&lt;/code>接收指令，交由&lt;code>execute&lt;/code>处理，各指令处理流程如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Instruction::Abort&lt;/code>:&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Instruction::Apply&lt;/code>:&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Instruction::Notify&lt;/code>:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>如果指令&lt;code>index&lt;/code>大于状态机已经&lt;code>applied_index&lt;/code>, 将(index, (address, id))插入到状态机&lt;code>notify&lt;/code>哈希表中；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>否则指令已被应用过，通过&lt;code>node_tx&lt;/code>给Raft Node 发送&lt;code>ClientResponse&lt;/code>消息，由Raft Node将错误消息返回给客户端；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Instruction::Query&lt;/code>:&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Instruction::Status&lt;/code>:&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>Instruction::Vote&lt;/code>:&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="源码">源码&lt;/h2>
-&lt;ul>
-&lt;li>&lt;strong>Log&lt;/strong>&lt;/li>
-&lt;/ul>
-&lt;p>&lt;code>Log&lt;/code>(日志)是Raft状态机&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="sd">/// The replicated Raft log
-&lt;/span>&lt;span class="sd">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Log&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">store&lt;/span>: &lt;span class="nb">Box&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">dyn&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">log&lt;/span>::&lt;span class="n">Store&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">last_index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">last_term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">commit_index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">super&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">commit_term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;ul>
-&lt;li>&lt;strong>Driver&lt;/strong>&lt;/li>
-&lt;/ul>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">//状态机接口
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">trait&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">State&lt;/span>: &lt;span class="nb">Send&lt;/span> &lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">applied_index&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="kt">u64&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">mutate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">command&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//修改状态机状态
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">query&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">command&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>-&amp;gt; &lt;span class="nb">Result&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//查询状态机
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">//状态机驱动
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Driver&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">state_rx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedReceiver&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Instruction&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//状态机指令输入口
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">node_tx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedSender&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Message&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//raft协议消息输出口
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">applied_index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">notify&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//通知客户端更改被采用
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">queries&lt;/span>: &lt;span class="nc">BTreeMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">BTreeMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Query&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//等待处理的客户端查询指令，
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// 状态机指令
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">enum&lt;/span> &lt;span class="nc">Instruction&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Abort&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//取消
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Apply&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">entry&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//应用
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Notify&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span> &lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//通知
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Query&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">command&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">quorum&lt;/span>: &lt;span class="kt">u64&lt;/span> &lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//查询
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Status&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">status&lt;/span>: &lt;span class="nb">Box&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Status&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//状态机状态
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Vote&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">index&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">address&lt;/span>: &lt;span class="nc">Address&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">},&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//投票
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h3 id="raft角色">Raft角色&lt;/h3>
-&lt;h4 id="leader">Leader&lt;/h4>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// 节点共有属性
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">RoleNode&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">R&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">id&lt;/span>: &lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//节点id
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">peers&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">term&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">log&lt;/span>: &lt;span class="nc">Log&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">pre_vote&lt;/span>: &lt;span class="kt">bool&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">node_tx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedSender&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Message&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//和node之间发送Msg通道
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">state_tx&lt;/span>: &lt;span class="nc">mpsc&lt;/span>::&lt;span class="n">UnboundedSender&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">Instruction&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//节点往状态机驱动发送状态机指令通道
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">queued_reqs&lt;/span>: &lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Address&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Event&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">proxied_reqs&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">Vec&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="kt">u8&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">Address&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">role&lt;/span>: &lt;span class="nc">R&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// leader专有属性字段
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Leader&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">heartbeat_ticks&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//心跳计数
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">peer_next_index&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//复制到副本的下一个index
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">peer_last_index&lt;/span>: &lt;span class="nc">HashMap&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kt">u64&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">//已知复制到副本的最后index
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// follower专有字段
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Follower&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">leader&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">leader_seen_ticks&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">leader_seen_timeout&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">voted_for&lt;/span>: &lt;span class="nb">Option&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nb">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// candidate专有字段
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">Candidate&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">election_ticks&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">election_timeout&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">votes&lt;/span>: &lt;span class="kt">u64&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://github.com/erikgrinaker/toydb">https://github.com/erikgrinaker/toydb&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://github.com/erikgrinaker/toydb/blob/master/docs/architecture.md">toydb/architecture.md at master · erikgrinaker/toydb · GitHub&lt;/a>&lt;/li>
-&lt;/ol></description></item><item><title>红黑树(RB-Tree)</title><link>https://justice.bj.cn/post/12.data_struct/tree/rb-tree/</link><pubDate>Mon, 21 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/12.data_struct/tree/rb-tree/</guid><description>&lt;h1 id="红黑树rb-tree">红黑树(RB-Tree)&lt;/h1>
-&lt;h2 id="定义">定义&lt;/h2>
-&lt;p>红黑树是一种二叉平衡树。&lt;/p>
-&lt;h2 id="性质">性质&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>每个节点要么是黑色，要么是红色；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>Root 节点是黑色；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>每个叶子节点（NIL）是黑色；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>每个红色结点的两个子结点一定都是黑色；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>任意一结点到每个叶子结点的路径都包含数量相同的黑结点；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="旋转">旋转&lt;/h2>
-&lt;ul>
-&lt;li>右旋&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/21-09-57-07-rbtree-right-rotate.webp" alt="">&lt;/p>
-&lt;ul>
-&lt;li>左旋&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/21-09-57-29-rbtree-left-rotate.webp" alt="loading-ag-18088">&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/63272157">https://zhuanlan.zhihu.com/p/63272157&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://zhuanlan.zhihu.com/p/92761639">https://zhuanlan.zhihu.com/p/92761639&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://mp.weixin.qq.com/s/pwBnKfgivdE5EzBCXubZww">https://mp.weixin.qq.com/s/pwBnKfgivdE5EzBCXubZww&lt;/a>&lt;/p>
-&lt;/li>
-&lt;/ol></description></item><item><title>CubeFS Bcache</title><link>https://justice.bj.cn/post/40.storage/chubaofs/cubefs-bcache/</link><pubDate>Thu, 17 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/40.storage/chubaofs/cubefs-bcache/</guid><description>&lt;h1 id="cubefs-bcache">CubeFS Bcache&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>CubeFS 3.0.0-beta增加了bcache功能，&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>新增blockcache节点，提供本地缓存能力；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>新增preload模块，用于预加载；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>增加&lt;code>sdk/data/blobstore&lt;/code> sdk接口，提供了blobstore接入能力；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>metanode中的&lt;code>Inode&lt;/code>增加&lt;code>ObjExtents&lt;/code>字段，用于记录blobstore类型数据；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>fuseclient的&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>Super&lt;/code>中增加&lt;code>volType&lt;/code>, &lt;code>esbEndpoint&lt;/code>等字段，用于处理ec 和bcache；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>File&lt;/code>中增加&lt;code>fReader *blobstore.Reader&lt;/code>,&lt;code>fWriter *blobstore.Writer&lt;/code>两个字段，用于处理ec数据；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>bcache&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="blockcache">blockcache&lt;/h2>
-&lt;ul>
-&lt;li>blockcache 为本节点的client，提供基于本地磁盘的缓存；&lt;/li>
-&lt;li>blockcache 提供lrucache策略，通过定期(1 min)检测store使用率和文件数，删除过期文件；&lt;/li>
-&lt;li>主要提供如下接口：
-&lt;ul>
-&lt;li>Put：根据key，将data写入到缓存文件中, 每次put都会 写入到一个缓存文件中，文件名为key的值，disk为 key%len(disks)，写入的key将记录在内存中；&lt;/li>
-&lt;li>Get：根据key，offset，获取data；&lt;/li>
-&lt;li>Evict：移除失效的kv；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="preload">Preload&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>将blobstore中的volume数据提前加载到datanode中；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>在read时，如果datanode中存在dp，则从datanode中read；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="blobstore">blobstore&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>client Super中增加&lt;code>volType, ebsEndpoint, cache&lt;/code>等字段；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>client File中增加&lt;code>blobstore.Reader，blobstore.Writer&lt;/code>来代表blobstore的读写接口；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>client read/write时，根据&lt;code>volType&lt;/code>判断来分别调用ec或esObj来分别调用datanode/blobstore来处理请求；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>create vol, 增加&lt;code>volType,coldArgs&lt;/code>相关字段表示冷vol；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>streamer(hot) read()时，如果&lt;code>bcacheEnable&lt;/code>,&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>先从bcache load；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>否则，Read data后，再通过&lt;code>cacheBcache()&lt;/code>将数据放入bcache缓存中；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>cold vol可以有两级cache:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>L1: bcache&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>L2: datanode&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://github.com/cubeFS/cubefs/tree/release-3.0.0-beta">https://github.com/cubeFS/cubefs/tree/release-3.0.0-beta&lt;/a>&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Golang Channel</title><link>https://justice.bj.cn/post/14.language/golang/golang-channel/</link><pubDate>Thu, 17 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang-channel/</guid><description>&lt;h1 id="golang-channel">Golang Channel&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>Go语言channel是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>channel分为有缓存channel和无缓冲channel两种；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>close当 Channel 是一个空指针或者已经被关闭时，Go 语言运行时都会直接崩溃并抛出异常;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>从一个nil channel中接收数据会一直被block;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>从一个被closed的channel中接收数据会立即返回；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="定义">定义&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2021/01/26-12-35-27-2021-01-26-12-35-23-image.png" alt="">&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">struct&lt;/span> &lt;span class="nc">Hchan&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="n">uintgo&lt;/span> &lt;span class="n">qcount&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 队列q中的总数据数量
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uintgo&lt;/span> &lt;span class="n">dataqsiz&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 环形队列q的数据大小
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uint16&lt;/span> &lt;span class="n">elemsize&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//队列的当前使用量
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="kt">bool&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">uint8&lt;/span> &lt;span class="n">elemalign&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">Alg&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">elemalg&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// interface for element type
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uintgo&lt;/span> &lt;span class="n">sendx&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 发送index
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uintgo&lt;/span> &lt;span class="n">recvx&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 接收index
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">WaitQ&lt;/span> &lt;span class="n">recvq&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 因recv而阻塞的等待队列
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">WaitQ&lt;/span> &lt;span class="n">sendq&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 因send而阻塞的等待队列
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">Lock&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>带缓冲区的chan，则缓冲区数据实际上是紧接着Hchan结构体中分配的&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="n">c&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">Hchan&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">runtime&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">mal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">n&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">hint&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">elem&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">size&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="k">struct&lt;/span> &lt;span class="n">WaitQ&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="n">SudoG&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">first&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">SudoG&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">last&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">SudoG&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="n">G&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">g&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// g and selgen constitute
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uint32&lt;/span> &lt;span class="n">selgen&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// a weak pointer to g
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">SudoG&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">link&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">int64&lt;/span> &lt;span class="n">releasetime&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">byte&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">elem&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// data element
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="读写channel操作">读写channel操作&lt;/h2>
-&lt;p>写channel操作，在底层运行时库中对应的是一个runtime.chansend函数。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="c1">//c &amp;lt;- v
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="n">runtime&lt;/span>&lt;span class="err">·&lt;/span>&lt;span class="n">chansend&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">ChanType&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">Hchan&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">byte&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ep&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">bool&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">pres&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">pc&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="select的实现">select的实现&lt;/h2>
-&lt;p>select-case中的chan操作编译成了if-else。比如：&lt;/p>
-&lt;p>每个select都对应一个Select结构体&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="k">select&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">case&lt;/span> &lt;span class="nx">v&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="o">&amp;lt;-&lt;/span>&lt;span class="nx">c&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">foo&lt;/span>
-&lt;span class="k">default&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">bar&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 编译如下：
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">if&lt;/span> &lt;span class="nf">selectnbrecv&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">v&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">c&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">foo&lt;/span>
-&lt;span class="p">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">bar&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>select和case关键字使用了下面的结构体：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kd">struct&lt;/span> &lt;span class="nx">Scase&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="nx">SudoG&lt;/span> &lt;span class="nx">sg&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// must be first member (cast to Scase)
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">Hchan&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="kd">chan&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// chan
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">byte&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="nx">pc&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// return pc
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">uint16&lt;/span> &lt;span class="nx">kind&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="kt">uint16&lt;/span> &lt;span class="nx">so&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// vararg of selected bool
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">bool&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="nx">receivedp&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// pointer to received bool (recv2)
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
-&lt;span class="kd">struct&lt;/span> &lt;span class="nx">Select&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="kt">uint16&lt;/span> &lt;span class="nx">tcase&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 总的scase[]数量
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">uint16&lt;/span> &lt;span class="nx">ncase&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 当前填充了的scase[]数量
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">uint16&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="nx">pollorder&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// case的poll次序
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">Hchan&lt;/span>&lt;span class="o">**&lt;/span> &lt;span class="nx">lockorder&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// channel的锁住的次序
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">Scase&lt;/span> &lt;span class="nx">scase&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">];&lt;/span> &lt;span class="c1">// 每个case会在结构体里有一个Scase，顺序是按出现的次序
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://www.bookstack.cn/read/go-internals/zh-07.1.md">高级数据结构的实现 - channel - 《深入解析Go》 - 书栈网 · BookStack&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>LRU缓存机制</title><link>https://justice.bj.cn/post/leetcode/doc/146.lru%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6/</link><pubDate>Thu, 17 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/146.lru%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6/</guid><description>&lt;h1 id="lru缓存机制httpsleetcode-cncomproblemslru-cachedescription-httpsleetcode-cncomproblemslru-cachedescription">&lt;a href="https://leetcode-cn.com/problems/lru-cache/description/" title="https://leetcode-cn.com/problems/lru-cache/description/">LRU缓存机制&lt;/a>&lt;/h1>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Category&lt;/th>
-&lt;th>Difficulty&lt;/th>
-&lt;th>Likes&lt;/th>
-&lt;th>Dislikes&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>algorithms&lt;/td>
-&lt;td>Medium (44.70%)&lt;/td>
-&lt;td>332&lt;/td>
-&lt;td>-&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
-&lt;p>&lt;a href="https://leetcode.com/tag/design" title="https://leetcode.com/tag/design">&lt;code>design&lt;/code>&lt;/a>&lt;/p>
-&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
-&lt;p>&lt;code>amazon&lt;/code> | &lt;code>bloomberg&lt;/code> | &lt;code>facebook&lt;/code> | &lt;code>google&lt;/code> | &lt;code>microsoft&lt;/code> | &lt;code>palantir&lt;/code> | &lt;code>snapchat&lt;/code> | &lt;code>twitter&lt;/code> | &lt;code>uber&lt;/code> | &lt;code>yahoo&lt;/code> | &lt;code>zenefits&lt;/code>&lt;/p>
-&lt;p>运用你所掌握的数据结构，设计和实现一个  &lt;a href="https://baike.baidu.com/item/LRU" title="https://baike.baidu.com/item/LRU">LRU (最近最少使用) 缓存机制&lt;/a>。它应该支持以下操作： 获取数据 &lt;code>get&lt;/code> 和 写入数据 &lt;code>put&lt;/code> 。&lt;/p>
-&lt;p>获取数据 &lt;code>get(key)&lt;/code> - 如果密钥 (key) 存在于缓存中，则获取密钥的值（总是正数），否则返回 -1。&lt;br>
-写入数据 &lt;code>put(key, value)&lt;/code> - 如果密钥不存在，则写入其数据值。当缓存容量达到上限时，它应该在写入新数据之前删除最近最少使用的数据值，从而为新的数据值留出空间。&lt;/p>
-&lt;p>&lt;strong>进阶:&lt;/strong>&lt;/p>
-&lt;p>你是否可以在 &lt;strong>O(1)&lt;/strong> 时间复杂度内完成这两种操作？&lt;/p>
-&lt;p>&lt;strong>示例:&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">LRUCache cache = new LRUCache( 2 /* 缓存容量 */ );
-cache.put(1, 1);
-cache.put(2, 2);
-cache.get(1); // 返回 1
-cache.put(3, 3); // 该操作会使得密钥 2 作废
-cache.get(2); // 返回 -1 (未找到)
-cache.put(4, 4); // 该操作会使得密钥 1 作废
-cache.get(1); // 返回 -1 (未找到)
-cache.get(3); // 返回 3
-cache.get(4); // 返回 4
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;hr>
-&lt;p>&lt;a href="https://leetcode-cn.com/problems/lru-cache/comments/" title="https://leetcode-cn.com/problems/lru-cache/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/lru-cache/solution/" title="https://leetcode-cn.com/problems/lru-cache/solution/">Solution&lt;/a>&lt;/p>
-&lt;h2 id="解法">解法&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="k">class&lt;/span> &lt;span class="nc">LRUCache&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="s1">&amp;#39;&amp;#39;&amp;#39;
-&lt;/span>&lt;span class="s1"> ## 解题思路
-&lt;/span>&lt;span class="s1"> &amp;#39;&amp;#39;&amp;#39;&lt;/span>
-&lt;span class="k">def&lt;/span> &lt;span class="fm">__init__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">):&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[]&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">maps&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{}&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">capacity&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">capacity&lt;/span>
-&lt;span class="k">def&lt;/span> &lt;span class="nf">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">key&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">-&amp;gt;&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="n">v&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">maps&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kc">None&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="k">if&lt;/span> &lt;span class="n">v&lt;/span> &lt;span class="ow">is&lt;/span> &lt;span class="kc">None&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>
-&lt;span class="k">else&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span> &lt;span class="n">key&lt;/span> &lt;span class="p">]&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="p">[&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">key&lt;/span>&lt;span class="p">]&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="n">v&lt;/span>
-&lt;span class="k">def&lt;/span> &lt;span class="nf">put&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">key&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">-&amp;gt;&lt;/span> &lt;span class="kc">None&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="n">v&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">maps&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">get&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="k">if&lt;/span> &lt;span class="n">v&lt;/span> &lt;span class="ow">is&lt;/span> &lt;span class="ow">not&lt;/span> &lt;span class="kc">None&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">[&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="p">[&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="ow">in&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">key&lt;/span>&lt;span class="p">]&lt;/span>
-&lt;span class="k">elif&lt;/span> &lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">&amp;gt;=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">capacity&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="n">k&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">pop&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">insert&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">key&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">maps&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">pop&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">k&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="k">else&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">keys&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">insert&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">key&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="bp">self&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">maps&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">value&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div></description></item><item><title>Redis基础</title><link>https://justice.bj.cn/post/30.architech/redis/redis%E5%9F%BA%E7%A1%80/</link><pubDate>Thu, 17 Mar 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/30.architech/redis/redis%E5%9F%BA%E7%A1%80/</guid><description>&lt;h1 id="redis基础">Redis基础&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>Redis（Remote Dictionary Server，远程数据服务）是一款用C语言编写的内存高速缓存key-value存储系统；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>支持丰富的数据类型，如：String、list、set、zset、hash；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>可用于缓存，事件发布或订阅，高速队列等场景；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>支持网络，提供字符串，哈希，列表，队列，集合结构直接存取；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>基于内存，可持久化；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/06-21-28-48-2022-01-06-21-28-45-image.png" alt="">&lt;/p>
-&lt;h2 id="特性">特性&lt;/h2>
-&lt;ul>
-&lt;li>&lt;strong>性能优异&lt;/strong>： 读110000次/s,写81000次/s ；&lt;/li>
-&lt;li>&lt;strong>数据类型丰富&lt;/strong>：支持Strings, Lists, Hashes, Sets 及 Ordered Sets 数据类型操作。&lt;/li>
-&lt;li>&lt;strong>原子性&lt;/strong>：Redis的所有操作都是原子性的，同时Redis还支持对几个操作全并后的原子性执行。&lt;/li>
-&lt;li>&lt;strong>丰富的特性&lt;/strong>：Redis支持 publish/subscribe, 通知, key 过期等特性。&lt;/li>
-&lt;li>&lt;strong>持久化&lt;/strong>：Redis支持RDB, AOF等持久化方式&lt;/li>
-&lt;li>&lt;strong>发布订阅&lt;/strong>：Redis支持发布/订阅模式&lt;/li>
-&lt;li>&lt;strong>分布式&lt;/strong>：Redis Cluster&lt;/li>
-&lt;/ul>
-&lt;h2 id="数据类型">数据类型&lt;/h2>
-&lt;ul>
-&lt;li>所有的key（键）都是字符串；&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>结构类型&lt;/th>
-&lt;th>结构存储的值&lt;/th>
-&lt;th>结构的读写能力&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;strong>String字符串&lt;/strong>&lt;/td>
-&lt;td>可以是字符串、整数或浮点数&lt;/td>
-&lt;td>对整个字符串或字符串的一部分进行操作；对整数或浮点数进行自增或自减操作；&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;strong>List&lt;/strong>&lt;/td>
-&lt;td>一个链表，链表上的每个节点都包含一个字符串&lt;/td>
-&lt;td>对链表的两端进行push和pop操作，读取单个或多个元素；根据值查找或删除元素；&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;strong>Set&lt;/strong>&lt;/td>
-&lt;td>包含字符串的无序集合&lt;/td>
-&lt;td>字符串的集合，包含基础的方法有看是否存在添加、获取、删除；还包含计算交集、并集、差集等&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;strong>Hash&lt;/strong>&lt;/td>
-&lt;td>包含键值对的无序散列表&lt;/td>
-&lt;td>包含方法有添加、获取、删除单个元素&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;strong>Zset有序集合&lt;/strong>&lt;/td>
-&lt;td>和散列一样，用于存储键值对&lt;/td>
-&lt;td>字符串成员与浮点数分数之间的有序映射；元素的排列顺序由分数的大小决定；包含方法有添加、获取、删除单个元素以及根据分值范围或成员来获取元素&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>&lt;img src="https://gitee.com/justice/gitnote-img-bed/raw/master/2022/01/08-00-52-53-2022-01-08-00-52-49-image.png" alt="">&lt;/p>
-&lt;p> Redis 发起请求命令的工作原理：&lt;/p>
-&lt;ol>
-&lt;li>Redis 服务器启动，开启主线程事件循环（Event Loop），注册 &lt;code>acceptTcpHandler&lt;/code> 连接应答处理器到用户配置的监听端口对应的文件描述符，等待新连接到来；&lt;/li>
-&lt;li>客户端和服务端建立网络连接；&lt;/li>
-&lt;li>&lt;code>acceptTcpHandler&lt;/code> 被调用，主线程使用 AE 的 API 将 &lt;code>readQueryFromClient&lt;/code> 命令读取处理器绑定到新连接对应的文件描述符上，并初始化一个 &lt;code>client&lt;/code> 绑定这个客户端连接；&lt;/li>
-&lt;li>客户端发送请求命令，触发读就绪事件，主线程调用 &lt;code>readQueryFromClient&lt;/code> 通过 socket 读取客户端发送过来的命令存入 &lt;code>client-&amp;gt;querybuf&lt;/code> 读入缓冲区；&lt;/li>
-&lt;li>接着调用 &lt;code>processInputBuffer&lt;/code>，在其中使用 &lt;code>processInlineBuffer&lt;/code> 或者 &lt;code>processMultibulkBuffer&lt;/code> 根据 Redis 协议解析命令，最后调用 &lt;code>processCommand&lt;/code> 执行命令；&lt;/li>
-&lt;li>根据请求命令的类型（SET, GET, DEL, EXEC 等），分配相应的命令执行器去执行，最后调用 &lt;code>addReply&lt;/code> 函数族的一系列函数将响应数据写入到对应 &lt;code>client&lt;/code> 的写出缓冲区：&lt;code>client-&amp;gt;buf&lt;/code> 或者 &lt;code>client-&amp;gt;reply&lt;/code> ，&lt;code>client-&amp;gt;buf&lt;/code> 是首选的写出缓冲区，固定大小 16KB，一般来说可以缓冲足够多的响应数据，但是如果客户端在时间窗口内需要响应的数据非常大，那么则会自动切换到 &lt;code>client-&amp;gt;reply&lt;/code> 链表上去，使用链表理论上能够保存无限大的数据（受限于机器的物理内存），最后把 &lt;code>client&lt;/code> 添加进一个 LIFO 队列 &lt;code>clients_pending_write&lt;/code>；&lt;/li>
-&lt;li>在事件循环（Event Loop）中，主线程执行 &lt;code>beforeSleep&lt;/code> &amp;ndash;&amp;gt; &lt;code>handleClientsWithPendingWrites&lt;/code>，遍历 &lt;code>clients_pending_write&lt;/code> 队列，调用 &lt;code>writeToClient&lt;/code> 把 &lt;code>client&lt;/code> 的写出缓冲区里的数据回写到客户端，如果写出缓冲区还有数据遗留，则注册 &lt;code>sendReplyToClient&lt;/code> 命令回复处理器到该连接的写就绪事件，等待客户端可写时在事件循环中再继续回写残余的响应数据。&lt;/li>
-&lt;/ol>
-&lt;p>&lt;a href="https://segmentfault.com/img/remote/1460000039223698/view">https://segmentfault.com/img/remote/1460000039223698/view&lt;/a>&lt;/p>
-&lt;h2 id="配置">配置&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## 设置用户&lt;/span>
-&amp;gt; acl setuser user01 on &amp;gt;passwd01 allcommands allkeys
-&lt;span class="c1">## 用户认证&lt;/span>
-&amp;gt; auth user01 passwd01
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://pdai.tech/md/db/nosql-redis/db-redis-overview.html">♥Redis教程 - Redis知识体系详解♥ | Java 全栈知识体系&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://segmentfault.com/a/1190000039223696">https://segmentfault.com/a/1190000039223696&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://redis.io/topics/acl">ACL – Redis&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li>&lt;/li>
 &lt;/ol></description></item></channel></rss>

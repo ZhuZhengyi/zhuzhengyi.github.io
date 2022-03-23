@@ -24,12 +24,12 @@
 <meta property="og:description" content="MySQL事务 定义 数据库事务是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。 事务的使用是数据库管理系统区别文件系统">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/mysql/mysql%E4%BA%8B%E5%8A%A1/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2021-12-30T00:00:00+00:00">
-<meta property="article:modified_time" content="2021-12-30T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-03-23T00:00:00+00:00">
+<meta property="article:modified_time" content="2022-03-23T00:00:00+00:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="MySQL事务">
-<meta itemprop=description content="MySQL事务 定义 数据库事务是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。 事务的使用是数据库管理系统区别文件系统"><meta itemprop=datePublished content="2021-12-30T00:00:00+00:00">
-<meta itemprop=dateModified content="2021-12-30T00:00:00+00:00">
-<meta itemprop=wordCount content="4025">
+<meta itemprop=description content="MySQL事务 定义 数据库事务是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。 事务的使用是数据库管理系统区别文件系统"><meta itemprop=datePublished content="2022-03-23T00:00:00+00:00">
+<meta itemprop=dateModified content="2022-03-23T00:00:00+00:00">
+<meta itemprop=wordCount content="4287">
 <meta itemprop=keywords content="architech,mysql,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="MySQL事务">
 <meta name=twitter:description content="MySQL事务 定义 数据库事务是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成。 事务的使用是数据库管理系统区别文件系统"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -165,8 +165,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>MySQL事务</h1>
 <div class=post-meta>
-<time datetime=2021-12-30 class=post-time>
-2021-12-30
+<time datetime=2022-03-23 class=post-time>
+2022-03-23
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
@@ -401,7 +401,9 @@ Justice's Blog
 <p>这个级别很简单，读加共享锁，写加排他锁，读写互斥。使用的悲观锁的理论，实现简单，数据更加安全，但是并发能力非常差。如果你的业务并发的特别少或者没有并发，同时又要求数据及时可靠的话，可以使用这种模式。</p>
 <p>这里要吐槽一句，不要看到select就说不会加锁了，在Serializable这个级别，还是会加锁的！</p>
 <h3 id=mvcc在mysql的innodb中的实现>MVCC在MySQL的InnoDB中的实现</h3>
-<p>在InnoDB中，会在每行数据后添加两个额外的隐藏的值来实现MVCC，这两个值一个记录这行数据何时被创建，另外一个记录这行数据何时过期（或者被删除）。 在实际操作中，存储的并不是时间，而是事务的版本号，每开启一个新事务，事务的版本号就会递增。 在可重读Repeatable reads事务隔离级别下：</p>
+<p>在InnoDB中，会在每行数据后添加两个额外的隐藏的值来实现MVCC，这两个值一个记录这行数据何时被创建，另外一个记录这行数据何时过期（或者被删除）。</p>
+<p>在实际操作中，存储的并不是时间，而是事务的版本号，每开启一个新事务，事务的版本号就会递增。</p>
+<p>在可重读Repeatable reads事务隔离级别下：</p>
 <ul>
 <li>SELECT时，读取创建版本号&lt;=当前事务版本号，删除版本号为空或>当前事务版本号。</li>
 <li>INSERT时，保存当前事务版本号为行的创建版本号</li>
@@ -409,13 +411,29 @@ Justice's Blog
 <li>UPDATE时，插入一条新纪录，保存当前事务版本号为行创建版本号，同时保存当前事务版本号到原来删除的行</li>
 </ul>
 <p>通过MVCC，虽然每行记录都需要额外的存储空间，更多的行检查工作以及一些额外的维护工作，但可以减少锁的使用，大多数读操作都不用加锁，读数据操作很简单，性能很好，并且也能保证只会读取到符合标准的行，也只锁住必要行。</p>
+<p><strong>MVCC在mysql中的实现依赖的是undo log与read view</strong></p>
+<p><strong>MVCC在mysql中的实现依赖的是undo log与read view</strong></p>
+<ul>
+<li>undo log :undo log 中记录某行数据的多个版本的数据。</li>
+<li>read view :用来判断当前版本数据的可见性</li>
+</ul>
+<p>前面讲的重做日志，回滚日志以及锁技术就是实现事务的基础。</p>
+<ul>
+<li>事务的原子性A是通过 undo log 来实现的;</li>
+<li>事务的持久性D是通过 redo log 来实现的;</li>
+<li>事务的隔离性I是通过 (读写锁+MVCC)来实现的;</li>
+<li>而事务的终极大 boss <strong>一致性</strong>是通过原子性，持久性，隔离性来实现的！！！</li>
+</ul>
 <h2 id=参考>参考</h2>
 <ol>
 <li>
-<p><a href=https://developer.ibm.com/zh/articles/os-mysql-transaction-isolation-levels-and-locks/>MySQL 事务隔离级别和锁 – IBM Developer</a></p>
+<p><a href=https://tech.meituan.com/2014/08/20/innodb-lock.html>Innodb中的事务隔离级别和锁的关系 - 美团技术团队</a></p>
 </li>
 <li>
-<p><a href=https://tech.meituan.com/2014/08/20/innodb-lock.html>Innodb中的事务隔离级别和锁的关系 - 美团技术团队</a></p>
+<p><a href=https://draveness.me/mysql-transaction/>『浅入深出』MySQL 中事务的实现 - 面向信仰编程</a></p>
+</li>
+<li>
+<p><a href=https://www.cnblogs.com/kismetv/p/10331633.html>深入学习MySQL事务：ACID特性的实现原理 - 编程迷思 - 博客园</a></p>
 </li>
 <li></li>
 </ol>
@@ -428,7 +446,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2021-12-30
+2022-03-23
 </span>
 </p>
 <p class=copyright-item>
@@ -448,10 +466,10 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/mysql/>mysql</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/70.tool/jq/>
+<a class=prev href=/post/30.architech/mysql/mysql%E6%97%A5%E5%BF%97/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">JQ</span>
+<span class="prev-text nav-default">MySQL 日志</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
 <a class=next href=/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/raft%E7%AE%97%E6%B3%95/>
