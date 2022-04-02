@@ -89,7 +89,6 @@ impl Solution {
             tail.as_mut().unwrap().next = Some(Box::new(ListNode::new(sum)));
             tail = &mut tail.as_mut().unwrap().next;
         }
-        
     }
 }
 // @lc code=end

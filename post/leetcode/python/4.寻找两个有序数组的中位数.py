@@ -41,16 +41,21 @@
 
 # @lc code=start
 class Solution:
+    '''
+    ## 解题思路
+    * 
+    '''
     def findMedianSortedArrays(self, nums1: List[int], nums2: List[int]) -> float:
         a, b = sorted((nums1, nums2), key=len)
         m, n = len(a), len(b)
-        l, h = 0, m
+        l, h = 0, m  
         mid = int((m + n - 1) / 2)  # mid for total nums1 and nums2
         while l < h:
             i = int((l + h) / 2)  # mid of nums1
             if i > mid - 1 or a[i] >= b[mid - 1 - i]:  # nums1 当前
                 h = i  #
-            else: l = i + 1  #
+            else: 
+                l = i + 1  #
         i = l
         nextfew = sorted(a[i:i+2] + b [mid-i: mid-i+2])
         return (nextfew[0] + nextfew[1-(m+n)%2]) / 2.0

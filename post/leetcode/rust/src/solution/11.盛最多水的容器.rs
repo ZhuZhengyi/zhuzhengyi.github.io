@@ -46,7 +46,6 @@ impl Solution {
                 res = cmp::max(res, height[r] * ((r-l) as i32) );
                 r -= 1
             }
-
         }
 
         res

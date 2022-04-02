@@ -41,18 +41,24 @@
 
 # @lc code=start
 class Solution:
+    '''
+    ## 解题思路
+    * 双指针法
+    * 1. 按序遍历字符串；
+    * 2. 
+    '''
     def lengthOfLongestSubstring(self, s: str) -> int:
-        recorded = {}  #
-        l, r = 0, 0
-        m = r - l  #max len for tmp substring
-        for c in s:
-            # char is recorded
-            if c in recorded and l <= recorded[c]:
-                l = recorded[c] + 1
-            else:
-                m = max(m, r-l+1)
-            recorded[c] = r
-            r += 1
+        recorded = {}  # 已经出现的字符的最后一次出现的index
+        l, r = 0, 0    # 
+        m = r - l      # max len for tmp substring
+        for c in s:  #遍历字符串字符
+            # 如果当前字符出现过，并且在窗口内(>=l)
+            if c in recorded and recorded[c] >= l:
+                l = recorded[c] + 1 #则收缩左指针，从而维持窗口内没有重复的字符 
+            else:  # 否则，之前的窗口不包含当前字符
+                m = max(m, r-l+1)   #则通过计算当前窗口值获得当前最大不重复字符串的值
+            recorded[c] = r   #更新当前字符最新的index
+            r += 1              #扩大窗口右边界
 
         return m
 # @lc code=end
