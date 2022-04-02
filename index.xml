@@ -1207,10 +1207,10 @@ offset ^newoffset
 &lt;p>最后由&lt;code>repair()&lt;/code>函数执行修复任务；&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="主从复制协议">主从复制协议&lt;/h2>
+&lt;h2 id="复制协议">复制协议&lt;/h2>
 &lt;ul>
 &lt;li>
-&lt;p>每个datanode在接受每个客户端tcp连接时，会为该连接新建一个主从复制服务(ReplProtocol)；&lt;/p>
+&lt;p>每个datanode在接受每个客户端tcp连接时，会为该连接新建一个复制服务(ReplProtocol)；&lt;/p>
 &lt;/li>
 &lt;li>
 &lt;p>主从复制服务会启动3个后台协程：&lt;/p>
@@ -1230,9 +1230,40 @@ offset ^newoffset
 &lt;/div>
 &lt;/div>&lt;/li>
 &lt;li>
-&lt;p>最后通过&lt;code>readPkgAndPrepare()&lt;/code>持续读取client 发送的packet，并交由上面3各协程依次处理；&lt;/p>
+&lt;p>最后通过&lt;code>readPkgAndPrepare()&lt;/code>持续接收client conn发送的packet，先经过Prepare()对Packet做一下检查设置，然后将packet放入toBetProcessCh，交由OperatorAndForwardPktGoRoutine()协程处理；&lt;/p>
 &lt;/li>
-&lt;/ul></description></item><item><title>ChubaoFS MetaNode</title><link>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-metanode/</link><pubDate>Sat, 02 Apr 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-metanode/</guid><description>&lt;h1 id="chubaofs-metanode">ChubaoFS MetaNode&lt;/h1>
+&lt;li>
+&lt;p>&lt;code>Prepare()&lt;/code>在检查packet有效性后，最后会根据packet类型，增加extent info：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>leader上的tinyExtent的Write请求，通过&lt;code>store.GetAvailableTinyExtent()&lt;/code>选择一个有效的tinyExtent ID；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>createExtent请求，通过&lt;code>store.NextExtentID()&lt;/code>设置下一个extentID作为新extentID；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后将packet.Data复制到packet.OrgBuf上；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul></description></item><item><title>Chubaofs Fuse Client</title><link>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-client/</link><pubDate>Sat, 02 Apr 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-client/</guid><description>&lt;h1 id="chubaofs-fuse-client">Chubaofs Fuse Client&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;h2 id="源码">源码&lt;/h2>
+&lt;h3 id="初始化">初始化&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kd">type&lt;/span> &lt;span class="nx">Super&lt;/span> &lt;span class="kd">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="write">write&lt;/h3>
+&lt;h2 id="参考">参考&lt;/h2></description></item><item><title>ChubaoFS MetaNode</title><link>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-metanode/</link><pubDate>Sat, 02 Apr 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-metanode/</guid><description>&lt;h1 id="chubaofs-metanode">ChubaoFS MetaNode&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;h2 id="源码分析">源码分析&lt;/h2>
 &lt;hr>
@@ -1679,6 +1710,26 @@ doStart-&amp;gt;parseConfig
 &lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
 &lt;/div>
 &lt;/div>&lt;h3 id="streamer处理追加写请求">streamer处理追加写请求&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>追加写入口在&lt;code>(streamer)doWrite()&lt;/code>;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>首先根据写入请求在文件中的最大偏移(offset+size)来决定了extent类型：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>&amp;lt;= 1MB, 使用TinyExtent；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>&amp;gt;&lt;/code>1MB, 使用NormalExtent;&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>再获取extentHandler, 通过extentHandler将数据发送；&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
 &lt;p>//doWrite: 处理追加写请求
 // 1. 根据offset+size确定extent类型;
 // * &amp;lt;= 1MB，为tinyExtent;
@@ -1688,12 +1739,14 @@ doStart-&amp;gt;parseConfig
 // 4. 返回写入的size;
 // 5. 上面步骤中出错时，中断流程，返回错误；&lt;/p>
 &lt;h3 id="streamer处理覆盖写请求streamerdooverwrite">streamer处理覆盖写请求(streamer.doOverwrite())&lt;/h3>
-&lt;p>// 1. flush dirtylist;
+&lt;p>// 处理覆盖写请求
+// 1. flush dirtylist;
 // 2. 根据 file offset 从 extents 缓存中查找extentKey，如果为nil, 返回错误;
 // 3. 根据extentKey从缓存partitions中获取dp;
 // 4. 获取一个到主dp副本的conn;
 // 5. 根据size发送OverWrite请求到conn，并获取结果;
-func (s *Streamer) doOverwrite(req *ExtentRequest, direct bool) (total int, err error) {&lt;/p></description></item><item><title>Golang Runtime</title><link>https://justice.bj.cn/post/14.language/golang/golang-runtime/</link><pubDate>Sat, 02 Apr 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang-runtime/</guid><description>&lt;h1 id="golang-runtime">Golang Runtime&lt;/h1>
+// 6. 发送时，先试着往主副本发送, 如果失败，会依次重试往其他从副本发送，直到有一个返回成功；
+// 7. 接收到OverWriteReq的datanode如果是leader，则直接通过raft 将该指令执行，如果是从副本dn，则转发到leader上，由leader执行；&lt;/p></description></item><item><title>Golang Runtime</title><link>https://justice.bj.cn/post/14.language/golang/golang-runtime/</link><pubDate>Sat, 02 Apr 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang-runtime/</guid><description>&lt;h1 id="golang-runtime">Golang Runtime&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;h2 id="go调度器的演化">Go调度器的演化&lt;/h2>
 &lt;h2 id="源码分析">源码分析&lt;/h2>
@@ -4545,85 +4598,6 @@ Candidate --elect timeout prevote--&amp;gt; PreCandidate
 &lt;/ul>
 &lt;hr>
 &lt;p>&lt;a href="https://leetcode-cn.com/problems/minimum-operations-to-reduce-x-to-zero/comments/" title="https://leetcode-cn.com/problems/minimum-operations-to-reduce-x-to-zero/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/minimum-operations-to-reduce-x-to-zero/solution/" title="https://leetcode-cn.com/problems/minimum-operations-to-reduce-x-to-zero/solution/">Solution&lt;/a>&lt;/p>
-&lt;h2 id="解法">解法&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div></description></item><item><title>掷骰子模拟</title><link>https://justice.bj.cn/post/leetcode/doc/1223.%E6%8E%B7%E9%AA%B0%E5%AD%90%E6%A8%A1%E6%8B%9F/</link><pubDate>Sat, 02 Apr 2022 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/post/leetcode/doc/1223.%E6%8E%B7%E9%AA%B0%E5%AD%90%E6%A8%A1%E6%8B%9F/</guid><description>&lt;h1 id="掷骰子模拟httpsleetcode-cncomproblemsdice-roll-simulationdescription-httpsleetcode-cncomproblemsdice-roll-simulationdescription">&lt;a href="https://leetcode-cn.com/problems/dice-roll-simulation/description/" title="https://leetcode-cn.com/problems/dice-roll-simulation/description/">掷骰子模拟&lt;/a>&lt;/h1>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Category&lt;/th>
-&lt;th>Difficulty&lt;/th>
-&lt;th>Likes&lt;/th>
-&lt;th>Dislikes&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>algorithms&lt;/td>
-&lt;td>Hard (47.73%)&lt;/td>
-&lt;td>88&lt;/td>
-&lt;td>-&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>&lt;strong>Tags&lt;/strong>&lt;/p>
-&lt;p>&lt;a href="https://leetcode.com/tag/Unknown" title="https://leetcode.com/tag/Unknown">&lt;code>Unknown&lt;/code>&lt;/a>&lt;/p>
-&lt;p>&lt;strong>Companies&lt;/strong>&lt;/p>
-&lt;p>&lt;code>Unknown&lt;/code>&lt;/p>
-&lt;p>有一个骰子模拟器会每次投掷的时候生成一个 1 到 6 的随机数。&lt;/p>
-&lt;p>不过我们在使用它时有个约束，就是使得投掷骰子时，&lt;strong>连续&lt;/strong> 掷出数字 &lt;code>i&lt;/code> 的次数不能超过 &lt;code>rollMax[i]&lt;/code>（&lt;code>i&lt;/code> 从 1 开始编号）。&lt;/p>
-&lt;p>现在，给你一个整数数组 &lt;code>rollMax&lt;/code> 和一个整数 &lt;code>n&lt;/code>，请你来计算掷 &lt;code>n&lt;/code> 次骰子可得到的不同点数序列的数量。&lt;/p>
-&lt;p>假如两个序列中至少存在一个元素不同，就认为这两个序列是不同的。由于答案可能很大，所以请返回 &lt;strong>模 &lt;code>10^9 + 7&lt;/code>&lt;/strong> 之后的结果。&lt;/p>
-&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 2, rollMax = [1,1,2,2,2,3]
-输出：34
-解释：我们掷 2 次骰子，如果没有约束的话，共有 6 * 6 = 36 种可能的组合。但是根据 rollMax 数组，数字 1 和 2 最多连续出现一次，所以不会出现序列 (1,1) 和 (2,2)。因此，最终答案是 36-2 = 34。
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 2, rollMax = [1,1,1,1,1,1]
-输出：30
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">输入：n = 3, rollMax = [1,1,1,2,2,3]
-输出：181
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>&lt;code>1 &amp;lt;= n &amp;lt;= 5000&lt;/code>&lt;/li>
-&lt;li>&lt;code>rollMax.length == 6&lt;/code>&lt;/li>
-&lt;li>&lt;code>1 &amp;lt;= rollMax[i] &amp;lt;= 15&lt;/code>&lt;/li>
-&lt;/ul>
-&lt;hr>
-&lt;p>&lt;a href="https://leetcode-cn.com/problems/dice-roll-simulation/comments/" title="https://leetcode-cn.com/problems/dice-roll-simulation/comments/">Discussion&lt;/a> | &lt;a href="https://leetcode-cn.com/problems/dice-roll-simulation/solution/" title="https://leetcode-cn.com/problems/dice-roll-simulation/solution/">Solution&lt;/a>&lt;/p>
 &lt;h2 id="解法">解法&lt;/h2>
 &lt;div class="highlight">&lt;div class="chroma">
 &lt;table class="lntable">&lt;tr>&lt;td class="lntd">

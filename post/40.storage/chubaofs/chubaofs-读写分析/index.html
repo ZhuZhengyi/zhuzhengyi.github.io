@@ -29,7 +29,7 @@
 <meta itemprop=name content="ChubaoFS 读写分析">
 <meta itemprop=description content="ChubaoFS 读写分析 简介 ExtentClient ExtentHandler sdk 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 // type ExtentClient struct { streamers map[uint64]*Streamer dataWrapper *Wrapper //... } type Streamer struct { extents *ExtentCache handler *ExtentHandler dirtylist *DirtyExtentList } type ExtentHandler struct { } Write chubaofs 客户端写操作由 1 2 3 4 5 6 7 8"><meta itemprop=datePublished content="2022-04-02T00:00:00+00:00">
 <meta itemprop=dateModified content="2022-04-02T00:00:00+00:00">
-<meta itemprop=wordCount content="806">
+<meta itemprop=wordCount content="1068">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ChubaoFS 读写分析">
 <meta name=twitter:description content="ChubaoFS 读写分析 简介 ExtentClient ExtentHandler sdk 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 // type ExtentClient struct { streamers map[uint64]*Streamer dataWrapper *Wrapper //... } type Streamer struct { extents *ExtentCache handler *ExtentHandler dirtylist *DirtyExtentList } type ExtentHandler struct { } Write chubaofs 客户端写操作由 1 2 3 4 5 6 7 8"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -389,6 +389,26 @@ Justice's Blog
 </code></pre></td></tr></table>
 </div>
 </div><h3 id=streamer处理追加写请求>streamer处理追加写请求</h3>
+<ul>
+<li>
+<p>追加写入口在<code>(streamer)doWrite()</code>;</p>
+</li>
+<li>
+<p>首先根据写入请求在文件中的最大偏移(offset+size)来决定了extent类型：</p>
+<ul>
+<li>
+<p>&lt;= 1MB, 使用TinyExtent；</p>
+</li>
+<li>
+<p><code>></code>1MB, 使用NormalExtent;</p>
+</li>
+</ul>
+</li>
+<li>
+<p>再获取extentHandler, 通过extentHandler将数据发送；</p>
+</li>
+<li></li>
+</ul>
 <p>//doWrite: 处理追加写请求
 // 1. 根据offset+size确定extent类型;
 // * &lt;= 1MB，为tinyExtent;
@@ -398,12 +418,14 @@ Justice's Blog
 // 4. 返回写入的size;
 // 5. 上面步骤中出错时，中断流程，返回错误；</p>
 <h3 id=streamer处理覆盖写请求streamerdooverwrite>streamer处理覆盖写请求(streamer.doOverwrite())</h3>
-<p>// 1. flush dirtylist;
+<p>// 处理覆盖写请求
+// 1. flush dirtylist;
 // 2. 根据 file offset 从 extents 缓存中查找extentKey，如果为nil, 返回错误;
 // 3. 根据extentKey从缓存partitions中获取dp;
 // 4. 获取一个到主dp副本的conn;
 // 5. 根据size发送OverWrite请求到conn，并获取结果;
-func (s *Streamer) doOverwrite(req *ExtentRequest, direct bool) (total int, err error) {</p>
+// 6. 发送时，先试着往主副本发送, 如果失败，会依次重试往其他从副本发送，直到有一个返回成功；
+// 7. 接收到OverWriteReq的datanode如果是leader，则直接通过raft 将该指令执行，如果是从副本dn，则转发到leader上，由leader执行；</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>
