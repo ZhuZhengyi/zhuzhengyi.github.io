@@ -71,16 +71,19 @@
 // @lc code=start
 /*
 ## 解题思路
-1. 包含get(), put()两个方法；
-2. cache有一定的capacity;
-3. 使用map来存储key到value，以满足get()的常数需求；
-4. 使用list来存储按访问顺序排列的；
-5. get(), put()操作通过调整list，来满足least recently需求；
+1. 主要用到了两个数据结构：
+    * map： key -> (val, list_node_ptr)
+    * list: (key) -> 
+3. get()时，先在map中通过key找到(val, list_node_ptr), 再调整list顺序；
+4. put() full evict时，先从list取出tail node淘汰，
 */
 class LRUCache {
     int capacity;   //缓存容量
-    unordered_map<int, list<pair<int, int>>::iterator> keys; //keys
-    list<pair<int,int>> sorted_datas;  //sorted data
+
+    //unordered_map<int, list<pair<int, int>>::iterator> keys; //key->(val, list_node::iter)
+    //list<pair<int,int>> sorted_datas;  //sorted data  //(key1)->(key2)
+    list<int> ordered_keys;
+    unordered_map<int, pair<int, list<int>::iterator>> kv;
 
 public:
     LRUCache(int capacity): 
@@ -89,34 +92,36 @@ public:
     
     int get(int key) {
         // keys中不存在，则返回-1
-        if (keys.find(key) == keys.end()) {
+        auto v = kv.find(key);
+        if (v == kv.end()) {
             return -1;
         }
         
         // 将keys[key]指向的元素移动到list最前面
-        sorted_datas.splice(sorted_datas.begin(), sorted_datas, keys[key]);
+        ordered_keys.splice(ordered_keys.begin(), ordered_keys, v->second);
 
-        return keys[key]->second;
+        return v->first;
     }
     
     //
     void put(int key, int value) {
         // 已存在的key
-        if (keys.find(key) != keys.end()) {
-            keys[key]->second = value;
-            sorted_datas.splice(sorted_datas.begin(), sorted_datas, keys[key]);
+        auto v = kv.find(key);
+        if (v != kv.end()) {
+            v->first = value;
+            ordered_keys.splice(ordered_keys.begin(), ordered_keys, v->second);
             return;
-        } else if (sorted_datas.size() == capacity) { //容量满了
+        } else if (ordered_keys.size() == capacity) { //容量满了
             // 移除list中尾部的key和map中对应的;
-            keys.erase(sorted_datas.back().first);
+            kv.erase(ordered_keys.back());
             //
-            sorted_datas.pop_back();
+            ordered_keys.pop_back();
         }
 
         // 将k-v插入到list头
-        sorted_datas.push_front({key, value});
+        ordered_keys.push_front(key);
         // 然后将头部指针放入到map中
-        keys[key] = sorted_datas.begin();
+        kv[key] = make_pair(val, ordered_keys.begin());
     }
 };
 
