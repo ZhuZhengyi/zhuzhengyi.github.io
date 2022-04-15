@@ -81,16 +81,34 @@
 // @lc code=start
 /*
 ## 解题思路
-
+使用2个数据结构:
+* map:   key->(val, list_node_ptr)
+* list: (key, freqs)
 */
+
+typedef 
 class LFUCache {
-    int capacity;
-    unordered_map<int, pair<int, list<int,int>::iter, >> kv; // key->(val, kt::iter, kf::iter)
-    list<int, int> kt;   //key time order
-    list<int, list<int, int>::iter> kf;   //key freq order
+    int capacity;   // cache size
+    unordered_map<int, pair<int, list<pair<int, int>>::iterator>> kv; // key->(val, (key, freq)::iter)
+    list<pair<int, int>> kf;   //(key, freq) order
 
 public:
     LFUCache(int capacity): capacity(capacity) {
+    }
+
+    /**
+     * @brief adjust kf iter by freq 
+     * 
+     */
+    void adjust(list<pair<int, int>>::iterator iter) {
+
+        auto i = iter;
+        i++;
+        for(; i!=kf.end(); i++ ) {
+            if(i->second < iter->second) {
+                swap(*iter, *i);
+            }
+        }
     }
     
     /*
@@ -98,26 +116,48 @@ public:
     2. 调整kt
     */
     int get(int key) {
+        // key在kv中不存在， 则返回-1
         if (kv.find(key) == kv.end()) {
             return -1;
         }
-        auto v = kv[key];
-        v.second++;
+        //
+        auto v_iter = kv[key];
+        int res = v_iter.first;
+        //调整kf顺序
+        auto kf_iter = v_iter.second;
+        (kf_iter->second)++;
+        //
+        adjust(kf_iter);
 
-        return v.first();
+        return res;
     }
     
     void put(int key, int value) {
+        //
         if (kv.find(key) != kv.end()) {
-            kf[key]+=1;
-            kv[key] = value;
+            kv[key].first = value;
+
+            auto kf_iter = kv[key].second;
+
+            //freq reset 1
+            kf_iter->second = 1;
+
+            //
+            adjust(kf_iter);
+
             return;
         }
 
+        // full, evict
         if (kv.size() == capacity) {
-
+            kv.erase(kf.front().first);
+            kf.pop_front();
         }
 
+        // insert
+        kf.push_front(make_pair(key, 1));
+
+        kv[key] = make_pair(value, kf.begin());
     }
 };
 
