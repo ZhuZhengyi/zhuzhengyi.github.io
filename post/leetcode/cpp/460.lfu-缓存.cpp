@@ -86,31 +86,59 @@
 * list: (key, freqs)
 */
 
-typedef 
+struct Item{
+    int key;
+    int val;
+    int freq;
+
+    Item* prev;
+    Item* next;
+
+    Item()
+        :key(-1), val(-1), freq(1), prev(nullptr), next(nullptr) 
+        {}
+
+    Item(int freq)
+        :key(-1), val(-1), freq(freq), prev(nullptr), next(nullptr) 
+        {}
+
+    Item(int key, int val)
+        :key(key), val(val), freq(1), prev(nullptr), next(nullptr)
+        {}
+};
+
+struct ItemList {
+    int freq;
+    Item* head;
+    Item* tail;
+
+    ItemList(int freq)
+        :freq(freq), head(new Item(freq)),tail(new Item(freq)) {
+        head->next = tail;
+        tail->prev = head;
+    }
+
+    void eraseItem(Item* item) {
+        if (item->next != nullptr) {
+            item->key = item->next->key;
+            item->next = item->next->next;
+        }
+
+    }
+};
+
 class LFUCache {
     int capacity;   // cache size
-    unordered_map<int, pair<int, list<pair<int, int>>::iterator>> kv; // key->(val, (key, freq)::iter)
-    list<pair<int, int>> kf;   //(key, freq) order
+    int minFreq;    // min freq;
+    // key -> (key, val, freq)::iter
+    unordered_map<int, Item*> kv; 
+    // freq -> list((key, val, freq)); 
+    unordered_map<int, ItemList*> flist;  
 
 public:
     LFUCache(int capacity): capacity(capacity) {
     }
 
-    /**
-     * @brief adjust kf iter by freq 
-     * 
-     */
-    void adjust(list<pair<int, int>>::iterator iter) {
-
-        auto i = iter;
-        i++;
-        for(; i!=kf.end(); i++ ) {
-            if(i->second < iter->second) {
-                swap(*iter, *i);
-            }
-        }
-    }
-    
     /*
     1. 根据key，从kv中得到val；
     2. 调整kt
@@ -120,44 +148,40 @@ public:
         if (kv.find(key) == kv.end()) {
             return -1;
         }
-        //
-        auto v_iter = kv[key];
-        int res = v_iter.first;
-        //调整kf顺序
-        auto kf_iter = v_iter.second;
-        (kf_iter->second)++;
-        //
-        adjust(kf_iter);
 
-        return res;
+        auto node_iter = kv[key];
+        int val = node_iter->val;
+        int freq = node_iter->freq;
+
+        flist[freq].erase();
+        if (flist[freq].size() == 0 ) {
+            minFreq++;
+        }
+        node_iter->freq++;
+        flist[node_iter->freq].push_front(*node_iter);
+
+        return val;
     }
     
     void put(int key, int value) {
         //
         if (kv.find(key) != kv.end()) {
-            kv[key].first = value;
-
-            auto kf_iter = kv[key].second;
-
-            //freq reset 1
-            kf_iter->second = 1;
-
-            //
-            adjust(kf_iter);
-
+            kv[key]->val=value;
+            get(key);
             return;
         }
 
         // full, evict
         if (kv.size() == capacity) {
-            kv.erase(kf.front().first);
-            kf.pop_front();
+            kv.erase(flist[minFreq].back().key);
+            flist[minFreq].pop_back();
         }
 
-        // insert
-        kf.push_front(make_pair(key, 1));
-
-        kv[key] = make_pair(value, kf.begin());
+        // push item
+        Item node{key, value, 1};
+        flist[1].push_front(node);
+        kv[key] = flist[1].begin();
+        minFreq = 1;
     }
 };
 
