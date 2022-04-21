@@ -66,16 +66,17 @@ public:
     /**
      * @brief 解题思路
      * @param 递归法
-     * 
+     * 1. 经过一个节点的同值路径分为左右两个部分：左路径长度 + 右路径长度；
+     * 2. 左路径长度 = 0            左子节点与当前节点不同值
+     *             = 左子节点路径长度 + 1 (左子节点与当前节点同值)
+     *    右路径长度 = 0            右子节点与当前节点不同值
+     *             = 左子节点路径长度 + 1 (右子节点与当前节点同值)
+     *  3. 最长同值路径 = max(左路径长度+右路径长度)
      */
     int longestUnivaluePath(TreeNode* root) {
-        //TODO
         int longestPath = 0;
-        if (!root) {
-            return 0;
-        }
 
-        dfs(root, -1, longestPath);
+        getUnivalPathWithParent(root, -2000, longestPath);
 
         return longestPath;
     }
@@ -87,21 +88,20 @@ public:
      * @param[context] longestPath: 
      * @param[out] 
      */
-    int dfs(TreeNode* node, int parentVal, int& longestPath) {
+    int getUnivalPathWithParent(TreeNode* node, int parentVal, int& longestPath) {
         if (!node) {
             return 0;
         }
 
-        // 分别计算与当前节点同值的左子树和右子树最长路径长度
-
         // 以当前节点为端点的左子树的同值路径长度
-        int leftPath = dfs(node->left, node->val, longestPath);
+        int leftPath = getUnivalPathWithParent(node->left, node->val, longestPath);
         // 以当前节点为端点的右子树的同值路径长度
-        int rightPath = dfs(node->right, node->val, longestPath);
+        int rightPath = getUnivalPathWithParent(node->right, node->val, longestPath);
 
+        int curNodeUnivalPath = leftPath + rightPath;
         // 经过当前节点的最长路径长度
-        if (leftPath + rightPath > longestPath) {
-            longestPath = leftPath + rightPath;
+        if (curNodeUnivalPath > longestPath) {
+            longestPath = curNodeUnivalPath; 
         }
         // 如果当前节点和父节点同值，则到父节点的同值长度为：
         // 左右子树最长同值路径中更长的一个 +1
