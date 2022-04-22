@@ -63,12 +63,17 @@ public:
         int longest = res;
         for(int i = 0; i < n; i++) {
             for(int j=i; j <n; j++) {
-                if (s[i] == s[j] && dp[i+1][j-1]) {
+                if (s[i] == s[j] && (j-i==1 || dp[i+1][j-1])) {
                     dp[i][j] = true;
+                    if (j-i>longest) {
+                        longest = j-i;
+                        res = i;
+                    }
                 }
             }
         }
 
+        return s.substr(res, res+longest);
     }
 };
 // @lc code=end
