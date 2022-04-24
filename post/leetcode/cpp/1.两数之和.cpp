@@ -58,20 +58,28 @@
  * 
  */
 
+#include<vector>
+#include<unordered_map>
+using namespace std;
+
 // @lc code=start
 class Solution {
 public:
     /*
-    * ## 解题思路
+    * @brief 解题思路
+    * - 遍历nums，使用map记录
+    * @param[in] nums: 
+    * @param[in] targets:
+    * @return
     */
     vector<int> twoSum(vector<int>& nums, int target) {
         unordered_map<int, int> map;
 
         for(int i=0; i<nums.size(); i++) {
             if (map.find(target - nums[i]) != map.end()) {
-                return {map[target-nums[i]], i};
+                return { map[target-nums[i]], i};
             } else {
-                map[nums[i] = i;
+                map[nums[i]] = i;
             }
         }
 

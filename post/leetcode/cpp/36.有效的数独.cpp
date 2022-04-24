@@ -77,6 +77,10 @@
  * 
  * 
  */
+#include <vector>
+#include <map>
+
+using namespace std;
 
 // @lc code=start
 class Solution {
@@ -88,11 +92,14 @@ public:
     * 3. 没有重复，则retrun true;
     */
     bool isValidSudoku(vector<vector<char>>& board) {
-        map<char, int> row[9], col[9], blk[9];
-        char c;
+        map<char, int> row[9]; //9行每个字符出现的次数 
+        map<char, int> col[9]; //9列每个字符出现的次数
+        map<char, int> blk[9]; //9个子cell每个字符出现的次数，cell要将二维3x3转化为1x9来表示
+        char c; //i,j坐标所在的字符
         for(int i=0; i<9; i++) {
             for(int j=0; j<9; j++) {
                 c = board[i][j];
+                //如果当前字符不是空的，且所在行i或列j或者小单元格[i/3, j/3]是已经出现过(>0)，则返回false；
                 if( (c!='.') && ( row[i][c]++ > 0 || col[j][c]++ > 0 || blk[i/3*3+j/3][c]++ > 0 ) ) {
                     return false;
                 }

@@ -59,14 +59,19 @@
  * 
  * 
  */
+#include <string>
+#include <unordered_map>
+using namespace std;
 
 // @lc code=start
 class Solution {
 public:
-    /*******
-    /* ## 解题思路
-    /* * 滑动窗口 + map
-    ***********/
+    /*
+    * @brief 解题思路
+    * @param
+    * 
+    * * 滑动窗口 + map
+    */
     int lengthOfLongestSubstring(string s) {
         unordered_map<char, int> charIndexMap;  //已经遍历过的字符的最右下标；
         int left = -1;       //滑动窗口左指针，初始是在第一个字符左边

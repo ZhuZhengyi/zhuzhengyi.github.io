@@ -74,9 +74,9 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 
+    /// 1. 先根据两个数组的长度，
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
-        
+        //
         let (nums1, nums2) = if nums1.len() < nums2.len() {
             (nums1, nums2) 
         } else { 
