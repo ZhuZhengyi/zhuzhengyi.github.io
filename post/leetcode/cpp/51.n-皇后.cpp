@@ -67,31 +67,38 @@ public:
     * 2. 当`r>n-1`时，结束；
     **/
     vector<vector<string> > solveNQueens(int n) {
+        // 初始化棋盘
         vector<string> chessBoard(n, string(n, '.'));
-
-        trySetQueens(chessBoard, n, 0);
-
+        trySetQueens(chessBoard, 0);
         return result;
     }
 
-    void trySetQueens(vector<string>& chessBoard, int n, int r) {
-        if (r > n-1) {
-            result.push_back(chessBoard);
+    // 尝试往第r行放置'Q'
+    void trySetQueens(vector<string>& chessBoard, int r) {
+        int n = chessBoard.size();
+        if (r > n-1) { //放置到最后一行后了，表示所有行已放置完，且都是合法的
+            result.push_back(chessBoard);   //则记录当前的棋盘
             return;
         }
+        //未放置完
+        //依次尝试往r行各个cow放置'Q'
         for(int c=0; c<n; c++) {
-            if (!isValid(chessBoard, n, r, c)) {
-                continue;
+            //如果当前格子不能放置
+            if (!isValid(chessBoard, r, c)) {
+                continue;   //跳过当前格子，继续下一个格子
             }
-
-            chessBoard[r][c] = 'Q';
-            trySetQueens(chessBoard, n, r+1);
-            chessBoard[r][c] = '.';
+            //当前格子可以放
+            chessBoard[r][c] = 'Q';         //当前格子放'Q'
+            trySetQueens(chessBoard, r+1);  //接着处理下一行
+            chessBoard[r][c] = '.';         //撤销当前格子放置的'Q'
+            
+            //继续尝试往当前行下一个格子
         }
     }
 
     // 检测在(r,c)是否能合法放置'Q'
-    bool isValid(vector<string>& chessBoard, int n, int r, int c) {
+    bool isValid(vector<string>& chessBoard, int r, int c) {
+        int n = chessBoard.size();
         for(int i=0; i<n; i++) {
             for(int j=0; j<n; j++) {
                 if (chessBoard[i][j] == 'Q' && (i==r || j==c || (i-j)==(r-c) || (i+j)==(r+c)) ) {
