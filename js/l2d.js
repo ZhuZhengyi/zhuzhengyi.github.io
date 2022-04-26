@@ -8,7 +8,7 @@ L2Dwidget.init({
         "width": 100,
         "height": 200,
         "hOffset": 10,
-        "vOffset": -20
+        "vOffset": 10
     },
     "mobile": {
         "show": true,
