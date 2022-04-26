@@ -6,7 +6,7 @@ L2Dwidget.init({
         scale: 1
     },
     "display": {
-        //"superSample": 9,
+        "superSample": 1,
         "position": "left",
         "width": 100,
         "height": 200,
