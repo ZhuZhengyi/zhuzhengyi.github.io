@@ -1,9 +1,12 @@
 L2Dwidget.init({
     "model": {
         jsonPath: "https://unpkg.com/live2d-widget-model-shizuku@1.0.5/assets/shizuku.model.json",
-        "scale": 1
+        hHeadPos: 0.5,
+        vHeadPos: 0.618,
+        scale: 1
     },
     "display": {
+        "superSample": 9,
         "position": "left",
         "width": 100,
         "height": 200,
@@ -11,6 +14,7 @@ L2Dwidget.init({
         "vOffset": 10
     },
     "mobile": {
+        "motion": true,
         "show": true,
         "scale": 0.5
     },
