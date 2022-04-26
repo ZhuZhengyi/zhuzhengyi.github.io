@@ -15,7 +15,7 @@ L2Dwidget.init({
     },
     "mobile": {
         "motion": true,
-        "show": true,
+        "show": false,
         "scale": 0.5
     },
     "react": {
