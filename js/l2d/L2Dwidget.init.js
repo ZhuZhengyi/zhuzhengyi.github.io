@@ -7,7 +7,7 @@ L2Dwidget.init({
     },
     display: {
         position: "right",
-        superSample: 1,
+        superSample: 2,
         width: 100,
         height: 200,
         hOffset: 10,
