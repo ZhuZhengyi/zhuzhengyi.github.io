@@ -6,8 +6,8 @@ L2Dwidget.init({
         scale: 1
     },
     "display": {
-        "position": "left",
-        "superSample": 2,
+        "position": "right",
+        //"superSample": 2,
         "width": 100,
         "height": 200,
         "hOffset": 10,
