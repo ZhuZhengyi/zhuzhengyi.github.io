@@ -55,11 +55,43 @@
  * 
  */
 
+#include "include/solution.h"
+
 // @lc code=start
 class Solution {
+    vector<vector<int>> result;
 public:
+    /**
+    * ## 解题思路
+    * * 回溯法，在第39的基础上，改变递归时的判断条件
+    */
     vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
 
+        vector<int> tmp;
+        sort(candidates.begin(), candidates.end());
+        dfs(candidates, tmp, target, 0);
+        return result;
+    }
+
+    void dfs(vector<int>& candidates, vector<int>& tmp, int target, int s) {
+        if (target < 0) {
+            return;
+        }
+        if (target==0) {
+            result.push_back(tmp);
+        }
+        for (int i=s; i<candidates.size(); i++) {
+            // 当前元素大于剩余target, 或
+            // 当前相等元素已经去过，则跳过
+            if (candidates[i]>target || (i>s && candidates[i] == candidates[i-1])) {
+                continue;
+            }
+            //
+            tmp.push_back(candidates[i]);
+            //当前元素只取一次，下次取后一个
+            dfs(candidates, tmp, target-candidates[i], i+1);
+            tmp.pop_back();
+        }
     }
 };
 // @lc code=end

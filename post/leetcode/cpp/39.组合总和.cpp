@@ -58,10 +58,40 @@
  * 
  */
 
+#include "include/solution.h"
+
 // @lc code=start
 class Solution {
+    vector<vector<int>> result;
 public:
+    /*
+    * ## 解题思路
+    * * 深度优先搜索
+    */
     vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+        vector<int> tmp;
+        dfs(candidates, tmp, target, 0);
+        return result;
+    }
+
+    void dfs(vector<int>& candidates, vector<int>& tmp, int target, int s) {
+        if (target < 0) {
+            return;
+        }
+        if (target==0) {
+            result.push_back(tmp);
+        }
+        for (int i=s; i<candidates.size(); i++) {
+            // 当前元素大于剩余target, 剪支 
+            if (candidates[i]>target) {
+                continue;
+            }
+            //
+            tmp.push_back(candidates[i]);
+            // 允许重复取当前元素
+            dfs(candidates, tmp, target-candidates[i], i);
+            tmp.pop_back();
+        }
 
     }
 };
