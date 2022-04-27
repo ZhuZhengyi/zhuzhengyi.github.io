@@ -70,12 +70,12 @@ using namespace std;
 // @lc code=start
 class Solution {
 public:
-    /*
-    * @brief 解题思路
+    /**
+    * ## 解题思路
     * 1. 先反转整个数组
     * 2. 再反转[:k]
     * 3. 最后翻转[k:]
-    */
+    **/
     void rotate(vector<int>& nums, int k) {
         k %= nums.size();
         reverse(nums.begin(), nums.end());

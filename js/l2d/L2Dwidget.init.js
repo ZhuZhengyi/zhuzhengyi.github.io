@@ -8,8 +8,8 @@ L2Dwidget.init({
     display: {
         position: "right",
         superSample: 2,
-        width: 100,
-        height: 200,
+        width: 80,
+        height: 160,
         hOffset: 10,
         vOffset: 10
     },
