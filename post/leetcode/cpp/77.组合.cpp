@@ -67,21 +67,21 @@ public:
         return result;
     }
 
-    void dfs(vector<int>& tmp, int total, int left, int c) {
+    void dfs(vector<int>& tmp, int total, int left, int start) {
         if (left == 0 ) {
             result.push_back(tmp);
             return;
         }
 
         // 如果当前数字小于tmp中已存在的最大值，则跳过，继续下一个字符
-        if (c<=total-left) {
-            dfs(tmp, total, left, c+1);
+        for(int i=start; i<=total; i++) {
+            // 将当前数字加入tmp
+            tmp.push_back(i);
+            // 从下一个数开始，深度遍历下一个
+            dfs(tmp, total, left-1, i+1);
+            // 回退当前所选数
+            tmp.pop_back();
         }
-        // 否则将当前数字加入tmp
-        tmp.push_back(c);
-        // 深度遍历下一个
-        dfs(tmp, total, left-1, c+1);
-        tmp.pop_back();
     }
 };
 // @lc code=end
