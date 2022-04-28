@@ -74,9 +74,10 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 1. 先根据两个数组的长度，
+    /// 1. 先按两个数组的长度对数组进行区分，明确；
+    /// 2. 
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
-        //
+        // 按长度区分数组
         let (nums1, nums2) = if nums1.len() < nums2.len() {
             (nums1, nums2) 
         } else { 
@@ -86,8 +87,9 @@ impl Solution {
         let (l1, l2) = (nums1.len(), nums2.len());
         let (mut l, mut h) = (0, l1);
 
-        let mid = (l1+l2-1)/2;
-        let mut i = (l + h) / 2;
+        //
+        let mid = (l1+l2-1)/2;     //总数组中点
+        let mut i = (l + h) / 2;    //短数组中点
         while l < h {
             i = (l + h) / 2;
             if i > mid-1 || nums1[i] >= nums2[mid-i-1] {
@@ -102,6 +104,7 @@ impl Solution {
         let s2 = &nums2[(mid-i)..(mid-i+2)];
         let mut newfew = vec![s1, s2].concat();
         newfew.sort();
+        
         let x = (l1+l2) % 2 ;
         let mut res = newfew[0] as f64;
         if x == 1 {

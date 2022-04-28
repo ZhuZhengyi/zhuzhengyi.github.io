@@ -42,8 +42,25 @@
 // @lc code=start
 class Solution {
 public:
+    /**
+    * ## 解题思路
+    * * 动态规划
+    * 1. 令f(n): 爬到第n级台阶的方法数；
+    * 2. f(n) = f(n-1) + f(n-2)
+    */
     int climbStairs(int n) {
+        if (n<3) {
+            return n;
+        }
+        int f0 = 1;
+        int f1 = 1;
+        for (int i=1; i<n; i++) {
+            int tmp = f1;
+            f1 = f0 + f1;
+            f0 = tmp;
+        }
 
+        return f1;
     }
 };
 // @lc code=end
