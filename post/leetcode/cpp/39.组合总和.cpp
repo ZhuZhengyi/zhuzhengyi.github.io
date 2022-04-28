@@ -58,7 +58,9 @@
  * 
  */
 
-#include "include/solution.h"
+#include <vector>
+
+using namespace std;
 
 // @lc code=start
 class Solution {
