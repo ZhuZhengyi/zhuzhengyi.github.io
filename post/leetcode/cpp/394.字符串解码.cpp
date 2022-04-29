@@ -71,21 +71,33 @@ using namespace std;
 // @lc code=start
 class Solution {
 public:
+    /**
+     * ## 解题思路
+     * * 深度遍历
+     * 
+    */
     string decodeString(string s) {
-        return dfs(s, 0);
+        int i=0;
+        return dfs(s, i);
     }
 
-    string dfs(string s, int i) {
+    /*
+    * 递归decode
+    * s: 待decode的字符串， 使用引用可避免多余的拷贝；
+    * i: 当前decode的起始字符下标，需要将i值返回到调用上级，所以使用引用；
+    * 返回：从i开始的decode字符串；
+    */
+    string dfs(string& s, int& i) {
         string res;
         int repeat = 0;
         while (i < s.length()) {
-            char c = s[i];
-            if (c>='0' && c <= '9') {
+            char c = s[i++];
+            if (c>='0' && c<='9') {
                 repeat = 10*repeat + c-'0';
             } else if ( c == '[') {
-                string tmp = dfs(s, i+1);
+                string subs = dfs(s, i);
                 while (repeat>0) {
-                    res += tmp;
+                    res += subs;
                     repeat--;
                 }
             } else if ( c == ']' ) {
@@ -93,11 +105,9 @@ public:
             } else {
                 res += c;
             }
-            i++;
         }
 
         return res;
-
     }
 };
 // @lc code=end
