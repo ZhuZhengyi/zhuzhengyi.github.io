@@ -64,10 +64,39 @@
  * 
  */
 
+#include <string>
+
+using namespace std;
+
 // @lc code=start
 class Solution {
 public:
     string decodeString(string s) {
+        return dfs(s, 0);
+    }
+
+    string dfs(string s, int i) {
+        string res;
+        int repeat = 0;
+        while (i < s.length()) {
+            char c = s[i];
+            if (c>='0' && c <= '9') {
+                repeat = 10*repeat + c-'0';
+            } else if ( c == '[') {
+                string tmp = dfs(s, i+1);
+                while (repeat>0) {
+                    res += tmp;
+                    repeat--;
+                }
+            } else if ( c == ']' ) {
+                return res;
+            } else {
+                res += c;
+            }
+            i++;
+        }
+
+        return res;
 
     }
 };
