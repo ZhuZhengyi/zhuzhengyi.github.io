@@ -43,37 +43,45 @@
  * 
  */
 
+#include <string>
+#include <vector>
+
+using namespace std;
+
 // @lc code=start
 class Solution {
 public:
-    /*
-    ## 解题思路
+    /**
+    * ## 解题思路
     * 动态规划
     1. 定义 dp[i][j]: s[i:j]是否为回文子串；
     2. 递推公式：
         dp[i][j] = (s[i]==s[j] && dp[i+1][j-1])
     3. 初始条件：
         dp[i][i] = true
+    4. 注意遍历秩序
     */
     string longestPalindrome(string s) {
         int n = s.size();
         vector<vector<bool> > dp(n, vector<bool>(n, false));
-        dp[0][0] = true;
-        int res = 1;
-        int longest = res;
-        for(int i = 0; i < n; i++) {
-            for(int j=i; j <n; j++) {
-                if (s[i] == s[j] && (j-i==1 || dp[i+1][j-1])) {
-                    dp[i][j] = true;
-                    if (j-i>longest) {
-                        longest = j-i;
-                        res = i;
+        int start = 0;
+        int longest = 1;
+        //双指针依次遍历
+        for(int r=1; r<n; r++) {
+            dp[r][r] = true;
+            for(int l=0; l<r; l++) {
+                dp[l][l] = true;
+                if (s[l] == s[r] && (r-l<=2 || dp[l+1][r-1])) {
+                    dp[l][r] = true;
+                    if (r-l+1>longest) {
+                        longest = r-l+1;
+                        start = l;
                     }
                 }
             }
         }
 
-        return s.substr(res, res+longest);
+        return s.substr(start, longest);
     }
 };
 // @lc code=end
