@@ -1,0 +1,643 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>BlobStore - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="BlobStore 简介 SPDK bdev层类似于内核中的通用块设备层，是对底层不同类型设备（如NVMe bdev、Malloc bdev、AIO bdev等）的统一抽象管">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/40.storage/spdk/blobstore/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="BlobStore">
+<meta property="og:description" content="BlobStore 简介 SPDK bdev层类似于内核中的通用块设备层，是对底层不同类型设备（如NVMe bdev、Malloc bdev、AIO bdev等）的统一抽象管">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/40.storage/spdk/blobstore/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2021-10-10T14:35:02+00:00">
+<meta property="article:modified_time" content="2021-10-10T14:35:02+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="BlobStore">
+<meta itemprop=description content="BlobStore 简介 SPDK bdev层类似于内核中的通用块设备层，是对底层不同类型设备（如NVMe bdev、Malloc bdev、AIO bdev等）的统一抽象管"><meta itemprop=datePublished content="2021-10-10T14:35:02+00:00">
+<meta itemprop=dateModified content="2021-10-10T14:35:02+00:00">
+<meta itemprop=wordCount content="4173">
+<meta itemprop=keywords content="storage,spdk,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="BlobStore">
+<meta name=twitter:description content="BlobStore 简介 SPDK bdev层类似于内核中的通用块设备层，是对底层不同类型设备（如NVMe bdev、Malloc bdev、AIO bdev等）的统一抽象管"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>BlobStore</h1>
+<div class=post-meta>
+<time datetime=2021-10-10 class=post-time>
+2021-10-10 14:35:02
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/storage/> storage </a>
+<a href=https://justice.bj.cn/categories/spdk/> spdk </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#blobstore-1>BlobStore</a>
+<ul>
+<li><a href=#数据块管理>数据块管理</a></li>
+</ul>
+</li>
+<li><a href=#数据块管理-1>数据块管理</a>
+<ul>
+<li><a href=#元数据>元数据</a></li>
+</ul>
+</li>
+<li><a href=#blobfs>BlobFS</a>
+<ul>
+<li><a href=#blobfs-文件接口>BlobFS 文件接口</a></li>
+<li><a href=#缓存>缓存</a></li>
+<li><a href=#写>写</a></li>
+<li><a href=#读流程>读流程</a></li>
+<li><a href=#blobfs-fuse>BlobFS FUSE</a></li>
+</ul>
+</li>
+<li><a href=#blobfs当前限制>BlobFS当前限制</a></li>
+<li><a href=#总结>总结</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=blobstore>BlobStore</h1>
+<hr>
+<h2 id=简介>简介</h2>
+<p>SPDK bdev层类似于内核中的通用块设备层，是对底层不同类型设备（如NVMe bdev、Malloc bdev、AIO bdev等）的统一抽象管理。</p>
+<p>BlobStore是位于SPDK bdev之上，通过不同层级的抽象，实现对磁盘块(LBA)的管理，实现了对Blob的管理，包括Blob的分配、删除、读取、写入、元数据的管理等；</p>
+<p>BlobFS是在Blobstore的基础上进行封装的一个轻量级文件系统，用于提供部分对于文件操作的接口，并将对文件的操作转换为对Blob的操作，</p>
+<p>用于与用户态文件系统Blobstore Filesystem （BlobFS）集成，从而代替传统的文件系统，支持更上层的服务，如数据库MySQL、K-V存储引擎Rocksdb以及分布式存储系统Ceph、Cassandra等。</p>
+<hr>
+<h2 id=blobstore-1>BlobStore</h2>
+<h3 id=数据块管理>数据块管理</h3>
+<p>在blobstore中，将SSD中的块划分为多个抽象层：</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/09-10-54-17-2020-11-09-10-54-11-image.png alt></p>
+<hr>
+<ul>
+<li>
+<p><strong>Logical Block</strong>：与块设备中所提供的逻辑块相对应，通常为512B或4KiB。</p>
+</li>
+<li>
+<p><strong>Page</strong>：由多个连续的Logical Block构成，通常一个page的大小为4KiB，因此一个Page由八个或一个Logical Block构成，取决于Logical Block的大小。</p>
+<ul>
+<li>在Blobstore中，Page是连续的，即从SSD的LBA 0开始，多个或一个块构成Page 0,接下来是Page 1，依次类推。</li>
+</ul>
+</li>
+<li>
+<p><strong>Cluster</strong>：由多个连续的Page构成，通常一个Cluster的大小默认为1MiB，因此一个Cluster由256个Page构成。</p>
+<ul>
+<li>Cluster与Page一样，是连续的，即从SSD的LBA 0开始的位置依次为Cluster 0到Cluster N。</li>
+</ul>
+</li>
+<li>
+<p><strong>Blob</strong>：Blobstore中主要的操作对象为Blob，与BlobFS中的文件相对应，提供read、write、create、delete等操作。</p>
+<ul>
+<li>一个Blob由多个Cluster构成，但构成Blob中的Cluster并不一定是连续的。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id=数据块管理-1>数据块管理</h2>
+<p>在Blobstore中，会将cluster 0作为一个特殊的cluster。</p>
+<p>该cluster用于存放Blobtore的所有信息以及元数据，对每个blob数据块的查找、分配都是依赖cluster 0中所记录的元数据所进行的。</p>
+<p>Cluster 0的结构如下：</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/09-10-54-53-2020-11-09-10-54-48-image.png alt></p>
+<p>Cluster 0中的第一个page作为super block，Blobstore初始化后的一些基本信息都存放在super block中，例如cluster的大小、已使用page的起始位置、已使用page的个数、已使用cluster的起始位置、已使用cluster的个数、Blobstore的大小等信息。</p>
+<hr>
+<h3 id=元数据>元数据</h3>
+<p>Cluster 0中的其它page将组成元数据域（metadata region）。元数据域主要由以下几部分组成：</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/09-14-10-48-2020-11-09-14-10-36-image.png alt></p>
+<ul>
+<li>
+<p>Metadata Page Allocation：用于记录所有元数据page的分配情况。在分配或释放元数据页后，将会对metadata page allocation中的数据做相应的修改。</p>
+</li>
+<li>
+<p>Cluster Allocation：用于记录所有cluster的分配情况。在分配新的cluster或释放cluster后会对cluster allocation中的数据做相应的修改。</p>
+</li>
+<li>
+<p>Blob Id Allocation：用于记录blob id的分配情况。对于blobstore中的所有blob，都是通过唯一的标识符blob id将其对应起来。在元数据域中，将会在blob allocation中记录所有的blob id分配情况。</p>
+</li>
+<li>
+<p>Metadata Pages Region：元数据页区域中存放着每个blob的元数据页。每个blob中所分配的cluster都会记录在该blob的元数据页中，在读写blob时，首先会通过blob id定位到该blob的元数据页，其次根据元数据页中所记录的信息，检索到对应的cluster。对于每个blob的元数据页，并不是连续的。</p>
+</li>
+</ul>
+<hr>
+<p>对于一个blob来说，metadata page记录了该blob的所有信息，数据存放于分配给该blob的cluster中。</p>
+<ul>
+<li>
+<p>在创建blob时，首先会为其分配blob id以及metadata page，其次更新metadata region。</p>
+</li>
+<li>
+<p>当对blob进行写入时，首先会为其分配cluster，其次更新该blob的metadata page，最后将数据写入，并持久化到磁盘中。</p>
+</li>
+</ul>
+<p>为了实现对磁盘空间的动态分配管理，Blobstore中为每个blob分配的cluster并不是连续的。</p>
+<p>对于每个blob，通过相应的结构维护当前使用的cluster以及metadata page的信息：clusters与pages。</p>
+<ul>
+<li>
+<p>Cluster: 记录了当前该blob所有cluster的LBA起始地址，</p>
+</li>
+<li>
+<p>pages: 记录了当前该blob所有metadata page的LBA起始地址。</p>
+</li>
+</ul>
+<p>Blobstore实现了对磁盘空间分配的动态管理，并保证断电不丢失数据，具有persistent特性。</p>
+<p>Blobstore中的配置信息与数据信息均在super block与metadata region中管理，在重启后，若要保持persistent，可以通过Blobstore中所提供的load操作。</p>
+<p><strong>注意</strong>：</p>
+<blockquote>
+<p>Blob的persistent主要是针对NVMe这类bdev。对于Malloc bdev，由于其本身的性质，是无法保证Blob的persistent，需要重启后进行重新配置。</p>
+</blockquote>
+<hr>
+<h2 id=blobfs>BlobFS</h2>
+<h3 id=blobfs-文件接口>BlobFS 文件接口</h3>
+<p>blobfs文件系统接口实现了基本的文件操作，</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>同步API</th>
+<th>异步API</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>打开文件</td>
+<td>spdk_fs_open_file</td>
+<td>spdk_fs_open_file_async</td>
+<td></td>
+</tr>
+<tr>
+<td>创建文件</td>
+<td>spdk_fs_create_file</td>
+<td>spdk_fs_create_file_async</td>
+<td></td>
+</tr>
+<tr>
+<td>删除文件</td>
+<td>spdk_fs_delete_file</td>
+<td>spdk_fs_delete_file_async</td>
+<td></td>
+</tr>
+<tr>
+<td>重命名文件</td>
+<td>spdk_fs_rename_file</td>
+<td>spdk_fs_rename_file_async</td>
+<td></td>
+</tr>
+<tr>
+<td>文件状态</td>
+<td>spdk_fs_file_stat</td>
+<td>spdk_fs_file_stat_async</td>
+<td></td>
+</tr>
+<tr>
+<td>写</td>
+<td>spdk_file_write</td>
+<td>spdk_file_write_async/sspdkfile_writev_async</td>
+<td></td>
+</tr>
+<tr>
+<td>读</td>
+<td>spdk_file_read</td>
+<td>spdk_file_read_async/sspdkfile_readv_async</td>
+<td></td>
+</tr>
+<tr>
+<td>truncate</td>
+<td>spdk_file_truncate</td>
+<td>spdk_file_truncate_async</td>
+<td></td>
+</tr>
+<tr>
+<td>sync</td>
+<td>spdk_file_sync</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>关闭</td>
+<td>spdk_file_close</td>
+<td>spdk_file_close_async</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3 id=缓存>缓存</h3>
+<p>为了提高文件的读取效率，BlobFS在内存中提供了cache buffer，由多层树结构组成，其结构如下所示：</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/09-10-58-02-2020-11-09-10-56-44-image.png alt></p>
+<ul>
+<li>
+<p>最底层Level 0叶子节点为buffer node，是用于存放数据的buffer。</p>
+</li>
+<li>
+<p>Level 0以上的其它层中，均为tree node，用于构建树的索引结构。</p>
+</li>
+<li>
+<p>在文件读写的时候，根据文件结构中的根节点以及读取位置的offset信息，在树结构中通过索引查找buffer node的位置，即从Level N，逐步定位到对应的Level 0的叶子节点。</p>
+</li>
+</ul>
+<hr>
+<h3 id=写>写</h3>
+<p>BlobFS目前用于支持上层的Rocksdb，在Rocksdb的抽象环境层中提供文件的接口，目前仅支持append类型的写操作。</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/09-10-57-32-2020-11-09-10-57-04-image.png alt></p>
+<hr>
+<p>在进行文件写入：</p>
+<ul>
+<li>
+<p>首先会根据文件当前的写入位置检查是否符合cache buffer写入需求，若满足，则直接将数据写入到cache buffer中，同时触发异步的flush操作。</p>
+</li>
+<li>
+<p>在flush的过程中，BlobFS触发Blob的写操作，将cache buffer中的数据，写入到文件对应blob的相应位置。若不满足cache buffer的写入需求，BlobFS则直接触发文件对应的blob的写操作。</p>
+</li>
+<li>
+<p>Blobstore首先为该blob分配cluster，根据计算得到的写入LBA信息，向SPDK bdev层发送异步的写请求，将数据写入，并更新相应的元数据。</p>
+</li>
+<li>
+<p>对于元数据的更新，出于性能考虑，当前对元数据的更新都在内存中操作，当用户使用强制同步或卸载Blobstore时，更新后的元数据信息才会同步到磁盘中。</p>
+</li>
+<li>
+<p>此外，blob结构中维护了两份可变信息（指cluster与metadata page）的元数据，分别为clean与active。</p>
+<ul>
+<li>
+<p>Clean中记录的是当前磁盘的元数据信息，</p>
+</li>
+<li>
+<p>而active中记录的是当前在内存中更新后的元数据信息。同步操作会将clean中记录的信息与active记录的信息相匹配。</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id=读流程>读流程</h3>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/09-10-47-19-2020-11-04-09-45-33-image.png alt></p>
+<hr>
+<p>在文件读写时：</p>
+<ul>
+<li>
+<p>首先会进行read ahead操作，将一部分数据从磁盘预先读取到内存的buffer中；</p>
+</li>
+<li>
+<p>其后，根据cache buffer的大小，对文件的I/O进行切分，使每个I/O的最大长度不超过一个cache buffer的大小；</p>
+</li>
+<li>
+<p>对于拆分后的文件I/O，会根据其offset在cache buffer tree中查找相应的buffer；</p>
+</li>
+<li>
+<p>若存在，则直接从cache buffer中读取数据，进行memcpy；</p>
+</li>
+<li>
+<p>而对于没有缓存到cache buffer中的数据，将会对该文件的读取，转换到该文件对应的Blob进行读取。</p>
+</li>
+<li>
+<p>对Blob读取时候，根据已打开的blob结构中记录的信息，可以获取该blob所有cluster的LBA起始位置，并根据读取位置的offset信息，计算相应的LBA地址。</p>
+</li>
+<li>
+<p>最后向SPDK bdev层发送异步的读请求，并等待I/O完成。</p>
+</li>
+<li>
+<p>BlobFS所提供的读操作为同步读，I/O完成后会在callback函数中，通过信号量通知BlobFS完成信号，至此文件读取结束。</p>
+</li>
+</ul>
+<hr>
+<h3 id=blobfs-fuse>BlobFS FUSE</h3>
+<p>BlobFS提供了一个FUSE插件，用于将SPDK BlobFS作为内核文件系统安装，以便进行检查或调试。FUSE插件需要fuse3，并在系统上检测到fuse3时自动构建。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>test/blobfs/fuse/fuse /usr/local/etc/spdk/rocksdb.conf Nvme0n1 /mnt/fuse
+</code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>static</span> <span class=k>struct</span> <span class=n>fuse_operations</span> <span class=n>spdk_fuse_oper</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=p>.</span><span class=n>getattr</span>    <span class=o>=</span> <span class=n>fuse_getattr</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>readdir</span>    <span class=o>=</span> <span class=n>fuse_readdir</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>mknod</span>        <span class=o>=</span> <span class=n>fuse_mknod</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>unlink</span>        <span class=o>=</span> <span class=n>fuse_unlink</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>truncate</span>    <span class=o>=</span> <span class=n>fuse_truncate</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>utimens</span>    <span class=o>=</span> <span class=n>fuse_utimens</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>open</span>        <span class=o>=</span> <span class=n>fuse_open</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>release</span>    <span class=o>=</span> <span class=n>fuse_release</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>read</span>        <span class=o>=</span> <span class=n>fuse_read</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>write</span>        <span class=o>=</span> <span class=n>fuse_write</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>flush</span>        <span class=o>=</span> <span class=n>fuse_flush</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>fsync</span>        <span class=o>=</span> <span class=n>fuse_fsync</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>rename</span>        <span class=o>=</span> <span class=n>fuse_rename</span><span class=p>,</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=blobfs当前限制>BlobFS当前限制</h2>
+<ul>
+<li>
+<p>现有BlobFS只在RocksDB上进行了测试，其他不同于RocksDB的文件系统使用场合可能会有问题，以后会进行更严格的测试；</p>
+</li>
+<li>
+<p>现在只支持同步操作API。异步API开发中，未经过严格测试，将于以后版本中完成；</p>
+</li>
+<li>
+<p>文件<code>rename</code>API不是原子操作。将于未来版本修复；</p>
+</li>
+<li>
+<p>当前不支持目录，只支持扁平的文件命名空间。文件名作为xattrs存储于blob中，文件名<code>lookup</code>为<code>O(n)</code>级。<code>btree</code>版本目录支持实现将于未来版本支持；</p>
+</li>
+<li>
+<p>当前<code>write</code>操作仅支持append到文件末尾。任意位置写操作将在未来版本实现；</p>
+</li>
+</ul>
+<h2 id=总结>总结</h2>
+<p>Blobstore实现对Blob管理，Blob类似与文件的概念，但又不完全等同于文件，Blob没有完全遵循文件的POSIX接口，因此避免与文件混淆，在SPDK中称之为Blob而不是File。</p>
+<p>Blobstore Filesystem （BlobFS）是基于Blobstore实现的轻量级文件系统，对Blobstore进行封装，提供一些文件的常用接口，如read、write、open、sync等，其目的在于作为文件系统支持更上层的应用，例如Rocksdb。但其本质仍然是Blobstore，因此命名为BlobFS。</p>
+<p>目前SPDK基于维护了Rocksdb的一个分支，该分支下的Rocksdb在环境抽象层主要通过BlobFS进行对接，I/O可以经由BlobFS绕过内核I/O栈。</p>
+<hr>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://spdk.io/doc/blobfs.html>SPDK: BlobFS (Blobstore Filesystem)</a></p>
+</li>
+<li>
+<p><a href=https://www.sdnlab.com/22880.html>https://www.sdnlab.com/22880.html</a></p>
+</li>
+<li>
+<p><a href=https://www.atzlinux.com/atzlinux/doc/os2atc2019/SPDK-bytedance-miaoyu.pdf>SPDK在字节跳动存储业务中的应⽤</a></p>
+</li>
+<li></li>
+</ol>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2021-10-10 14:35:02
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/storage/>storage</a>
+<a href=https://justice.bj.cn/tags/spdk/>spdk</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/40.storage/spdk/blobfs%E6%BA%90%E7%A0%81/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">BlobFS</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/40.storage/ceph/ceph-bluestore/>
+<span class="next-text nav-default">BlueStore</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>

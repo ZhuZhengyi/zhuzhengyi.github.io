@@ -1,0 +1,1043 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>Hadoop-aws - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/aws-s3/hadoop-aws/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="Hadoop-aws">
+<meta property="og:description" content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/aws-s3/hadoop-aws/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2020-12-25T10:57:29+00:00">
+<meta property="article:modified_time" content="2020-12-25T10:57:29+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="Hadoop-aws">
+<meta itemprop=description content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://"><meta itemprop=datePublished content="2020-12-25T10:57:29+00:00">
+<meta itemprop=dateModified content="2020-12-25T10:57:29+00:00">
+<meta itemprop=wordCount content="2964">
+<meta itemprop=keywords content="architech,aws-s3,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="Hadoop-aws">
+<meta name=twitter:description content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>Hadoop-aws</h1>
+<div class=post-meta>
+<time datetime=2020-12-25 class=post-time>
+2020-12-25 10:57:29
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/architech/> architech </a>
+<a href=https://justice.bj.cn/categories/aws-s3/> aws-s3 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#hadoop-s3a-client>Hadoop S3A client</a>
+<ul>
+<li><a href=#其他s3-connectors>其他S3 connectors</a></li>
+</ul>
+</li>
+<li><a href=#起步>起步</a></li>
+<li><a href=#注意事项>注意事项</a>
+<ul>
+<li><a href=#事项1s3一致性模型>事项1：S3一致性模型</a></li>
+<li><a href=#事项2目录虚拟>事项2：目录虚拟</a></li>
+<li><a href=#事项3对象存储不同的认证模型>事项3：对象存储不同的认证模型</a></li>
+<li><a href=#事项4aws-credentials-很重要>事项4：AWS credentials 很重要</a></li>
+</ul>
+</li>
+<li><a href=#保护aws凭证>保护AWS凭证</a></li>
+<li><a href=#s3a-客户端配置>S3A 客户端配置</a>
+<ul>
+<li><a href=#重试和恢复>重试和恢复</a></li>
+<li><a href=#处理read-during-overwrite>处理Read-During-Overwrite</a></li>
+</ul>
+</li>
+<li><a href=#s3a如何写数据到s3>S3A如何写数据到S3</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=hadoop-aws>Hadoop-aws</h1>
+<h2 id=简介>简介</h2>
+<h2 id=hadoop-s3a-client>Hadoop S3A client</h2>
+<p>Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。</p>
+<ul>
+<li>
+<p>直接读写S3对象；</p>
+</li>
+<li>
+<p>兼容标准S3客户端；</p>
+</li>
+<li>
+<p>兼容老版的<code>s3n://</code>和Amazon EMR的<code>s3://</code>客户端文件创建；</p>
+</li>
+<li>
+<p>支持大文件(GB)分块上传；</p>
+</li>
+<li>
+<p>提供列式数据文件（如<code>Apache ORC</code>和<code>Apache Parquet</code>）高性能随机IO模型；</p>
+</li>
+<li>
+<p>使用Amazon Java S3 SDK，支持最新S3特性和认证规范；</p>
+</li>
+<li>
+<p>支持如下认证格式：环境变量、Hadoop配置属性、Hadoop key manager 和IAM 角色；</p>
+</li>
+<li>
+<p>支持单独bucket配置；</p>
+</li>
+<li>
+<p>结合<code>S3Guard</code>, 提供高性能一致性的metadata目录读操作，兼顾速度和一致性；</p>
+</li>
+<li>
+<p>支持S3服务端读写加密，包括<code>SSE-S3</code>、<code>SSE-KMS</code>和<code>SSE-C</code>;</p>
+</li>
+<li>
+<p>集成Hadoop 指标；</p>
+</li>
+<li>
+<p>完全由开源组织维护；</p>
+</li>
+</ul>
+<h3 id=其他s3-connectors>其他S3 connectors</h3>
+<p>如下有一些其他的Hadoop S3 connector，现在只有<code>S3A</code>由hadoop 项目有效维护。</p>
+<ul>
+<li>
+<p>Apache Hadoop 原有<code>s3://</code> client. 不再包含咋hadoop中；</p>
+</li>
+<li>
+<p>Amazon EMR的<code>s3://</code>client。由Amazon EMR项目组维护；</p>
+</li>
+<li>
+<p>Apache Hadoop <code>s3n://</code>client。不再有效，可迁移至最新的<code>s3a://</code>;</p>
+</li>
+</ul>
+<h2 id=起步>起步</h2>
+<p><code>S3A</code>依赖两个JAR包，和<code>hadoop-common</code>一致：</p>
+<ul>
+<li>
+<p><code>hadoop-aws</code>；</p>
+</li>
+<li>
+<p><code>aws-java-sdk-bundle</code>；</p>
+</li>
+</ul>
+<p>其中<code>hadoop-common</code>和<code>hadoop-aws</code>版本必须一致；</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;properties&gt;</span>
+ <span class=c>&lt;!-- Your exact Hadoop version here--&gt;</span>
+  <span class=nt>&lt;hadoop.version&gt;</span>3.0.0<span class=nt>&lt;/hadoop.version&gt;</span>
+<span class=nt>&lt;/properties&gt;</span>
+
+<span class=nt>&lt;dependencies&gt;</span>
+  <span class=nt>&lt;dependency&gt;</span>
+    <span class=nt>&lt;groupId&gt;</span>org.apache.hadoop<span class=nt>&lt;/groupId&gt;</span>
+    <span class=nt>&lt;artifactId&gt;</span>hadoop-client<span class=nt>&lt;/artifactId&gt;</span>
+    <span class=nt>&lt;version&gt;</span>${hadoop.version}<span class=nt>&lt;/version&gt;</span>
+  <span class=nt>&lt;/dependency&gt;</span>
+  <span class=nt>&lt;dependency&gt;</span>
+    <span class=nt>&lt;groupId&gt;</span>org.apache.hadoop<span class=nt>&lt;/groupId&gt;</span>
+    <span class=nt>&lt;artifactId&gt;</span>hadoop-aws<span class=nt>&lt;/artifactId&gt;</span>
+    <span class=nt>&lt;version&gt;</span>${hadoop.version}<span class=nt>&lt;/version&gt;</span>
+  <span class=nt>&lt;/dependency&gt;</span>
+<span class=nt>&lt;/dependencies&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=注意事项>注意事项</h2>
+<p>Amazon S3昨晚对象存储，为了实现可扩展、便宜、高可靠等特性，像其他的云对象存储一样，放松了对经典<code>POSIX</code>文件系统的一些约束。</p>
+<p><code>S3Guard</code>尝试为S3部分实现这些缺失的特性。</p>
+<h3 id=事项1s3一致性模型>事项1：S3一致性模型</h3>
+<ul>
+<li>
+<p>由<code>Hadoop Filesystem API</code>创建的最新文件不会立即可访问；</p>
+</li>
+<li>
+<p>文件<code>detele</code>和<code>update</code>操作不会立即同步，文件旧的副本可能存在不定时间；</p>
+</li>
+<li>
+<p>目录的<code>delete</code>和<code>rename</code>操作通过文件操作递归实现。这些操作最小耗时和文件数相关，在这些操作中部分更新可能还可访问。如果操作被中的，则文件系统保持在中间状态；</p>
+</li>
+</ul>
+<h3 id=事项2目录虚拟>事项2：目录虚拟</h3>
+<p><code>S3A</code>客户端的目录是虚拟的：</p>
+<ul>
+<li>
+<p>执行<code>mkdirs</code>调用时，先创建一个stub entry，当向目录增加一个文件时删除该entry；</p>
+</li>
+<li>
+<p><code>list</code>目录时，查找所有以该目录开头的路径作为列表返回；</p>
+</li>
+<li>
+<p><code>rename</code>单个目录时，先通过list获取相关对象，并通过s3将对象复制到新的目标对象中；</p>
+</li>
+<li>
+<p><code>delete</code>单个目录时，先list后，批量删除所有相关对象；</p>
+</li>
+<li>
+<p><code>rename</code>和<code>delete</code>多个目录时，list所有相关目录对象后，对每个对象单独进行相关操作；</p>
+</li>
+</ul>
+<p>虚拟目录带来的一些后果：</p>
+<ul>
+<li>
+<p>目录可能缺少修改时间。部分依赖的Hadoop操作可能会引发不可预料行为；</p>
+</li>
+<li>
+<p>目录<code>list</code>操作很慢。尽量使用<code>listFiles(path, recursive)</code>进行高效的递归list；</p>
+</li>
+<li>
+<p>如果调用者尝试，可能在文件下创建文件；</p>
+</li>
+<li>
+<p>目录<code>rename</code>操作和目录下的文件个数和大小相关。</p>
+</li>
+<li>
+<p>目录<code>rename</code>操作不是原子的。可能部分失效，调用者无法安全</p>
+</li>
+<li>
+<p>目录<code>delete</code>操作不是原子的，可能部分失效；</p>
+</li>
+</ul>
+<h3 id=事项3对象存储不同的认证模型>事项3：对象存储不同的认证模型</h3>
+<p>S3对象认证模型和HDFS及传统文件系统的认证模型有很大不同，<code>S3A</code>client在API查询metadata时简单汇报一些相关信息：</p>
+<ul>
+<li>
+<p>文件owner是当前用户；</p>
+</li>
+<li>
+<p>文件group也为当前用户（hadoop 2.8.0之前为空）</p>
+</li>
+<li>
+<p>目录权限为<code>777</code>;</p>
+</li>
+<li>
+<p>文件权限为<code>666</code>;</p>
+</li>
+</ul>
+<h3 id=事项4aws-credentials-很重要>事项4：AWS credentials 很重要</h3>
+<p><code>AWS credentials</code>不仅是服务的支付凭证，也提供数据的读写访问权限，任何拥有credentials的用户将不仅能读取数据，而且也能删除数据。</p>
+<p>避免通过以下方式在无意中泄露credentials：</p>
+<ul>
+<li>
+<p>SCM 配置文件中要包含secrets；</p>
+</li>
+<li>
+<p>在终端中记录；</p>
+</li>
+<li>
+<p>bug 包括中包括secret；</p>
+</li>
+<li>
+<p>AWS_开头的环境变量；</p>
+</li>
+</ul>
+<h2 id=保护aws凭证>保护AWS凭证</h2>
+<h2 id=s3a-客户端配置>S3A 客户端配置</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span><span class=lnt>156
+</span><span class=lnt>157
+</span><span class=lnt>158
+</span><span class=lnt>159
+</span><span class=lnt>160
+</span><span class=lnt>161
+</span><span class=lnt>162
+</span><span class=lnt>163
+</span><span class=lnt>164
+</span><span class=lnt>165
+</span><span class=lnt>166
+</span><span class=lnt>167
+</span><span class=lnt>168
+</span><span class=lnt>169
+</span><span class=lnt>170
+</span><span class=lnt>171
+</span><span class=lnt>172
+</span><span class=lnt>173
+</span><span class=lnt>174
+</span><span class=lnt>175
+</span><span class=lnt>176
+</span><span class=lnt>177
+</span><span class=lnt>178
+</span><span class=lnt>179
+</span><span class=lnt>180
+</span><span class=lnt>181
+</span><span class=lnt>182
+</span><span class=lnt>183
+</span><span class=lnt>184
+</span><span class=lnt>185
+</span><span class=lnt>186
+</span><span class=lnt>187
+</span><span class=lnt>188
+</span><span class=lnt>189
+</span><span class=lnt>190
+</span><span class=lnt>191
+</span><span class=lnt>192
+</span><span class=lnt>193
+</span><span class=lnt>194
+</span><span class=lnt>195
+</span><span class=lnt>196
+</span><span class=lnt>197
+</span><span class=lnt>198
+</span><span class=lnt>199
+</span><span class=lnt>200
+</span><span class=lnt>201
+</span><span class=lnt>202
+</span><span class=lnt>203
+</span><span class=lnt>204
+</span><span class=lnt>205
+</span><span class=lnt>206
+</span><span class=lnt>207
+</span><span class=lnt>208
+</span><span class=lnt>209
+</span><span class=lnt>210
+</span><span class=lnt>211
+</span><span class=lnt>212
+</span><span class=lnt>213
+</span><span class=lnt>214
+</span><span class=lnt>215
+</span><span class=lnt>216
+</span><span class=lnt>217
+</span><span class=lnt>218
+</span><span class=lnt>219
+</span><span class=lnt>220
+</span><span class=lnt>221
+</span><span class=lnt>222
+</span><span class=lnt>223
+</span><span class=lnt>224
+</span><span class=lnt>225
+</span><span class=lnt>226
+</span><span class=lnt>227
+</span><span class=lnt>228
+</span><span class=lnt>229
+</span><span class=lnt>230
+</span><span class=lnt>231
+</span><span class=lnt>232
+</span><span class=lnt>233
+</span><span class=lnt>234
+</span><span class=lnt>235
+</span><span class=lnt>236
+</span><span class=lnt>237
+</span><span class=lnt>238
+</span><span class=lnt>239
+</span><span class=lnt>240
+</span><span class=lnt>241
+</span><span class=lnt>242
+</span><span class=lnt>243
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.maximum<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>15<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Controls the maximum number of simultaneous connections to S3.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.ssl.enabled<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>true<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Enables or disables SSL connections to S3.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.endpoint<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>AWS S3 endpoint to connect to. An up-to-date list is
+    provided in the AWS Documentation: regions and endpoints. Without this
+    property, the standard region (s3.amazonaws.com) is assumed.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.path.style.access<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>false<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Enable S3 path style access ie disabling the default virtual hosting behaviour.
+    Useful for S3A-compliant storage providers as it removes the need to set up DNS for virtual hosting.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.host<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Hostname of the (optional) proxy server for S3 connections.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.port<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Proxy server port. If this property is not set
+    but fs.s3a.proxy.host is, port 80 or 443 is assumed (consistent with
+    the value of fs.s3a.connection.ssl.enabled).<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.username<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Username for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.password<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Password for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.domain<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Domain for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.workstation<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Workstation for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.attempts.maximum<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>20<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How many times we should retry commands on transient errors.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.establish.timeout<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>5000<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket connection setup timeout in milliseconds.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.timeout<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>200000<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket connection timeout in milliseconds.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.paging.maximum<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>5000<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How many keys to request from S3 when doing
+     directory listings at a time.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.threads.max<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>10<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span> Maximum number of concurrent active (part)uploads,
+  which each use a thread from the threadpool.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.socket.send.buffer<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>8192<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket send buffer hint to amazon connector. Represented in bytes.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.socket.recv.buffer<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>8192<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket receive buffer hint to amazon connector. Represented in bytes.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.threads.keepalivetime<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>60<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Number of seconds a thread can be idle before being
+    terminated.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.max.total.tasks<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>5<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Number of (part)uploads allowed to the queue before
+  blocking additional uploads.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.size<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>100M<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How big (in bytes) to split upload or copy operations up into.
+    A suffix from the set {K,M,G,T,P} may be used to scale the numeric value.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.threshold<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>2147483647<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How big (in bytes) to split upload or copy operations up into.
+    This also controls the partition size in renamed files, as rename() involves
+    copying the source file(s).
+    A suffix from the set {K,M,G,T,P} may be used to scale the numeric value.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multiobjectdelete.enable<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>true<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>When enabled, multiple single-object delete requests are replaced by
+    a single &#39;delete multiple objects&#39;-request, reducing the number of requests.
+    Beware: legacy S3-compatible object stores might not support this request.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.acl.default<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Set a canned ACL for newly created and copied objects. Value may be Private,
+    PublicRead, PublicReadWrite, AuthenticatedRead, LogDeliveryWrite, BucketOwnerRead,
+    or BucketOwnerFullControl.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.purge<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>false<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>True if you want to purge existing multipart uploads that may not have been
+     completed/aborted correctly<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.purge.age<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>86400<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Minimum age in seconds of multipart uploads to purge<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.signing-algorithm<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Override the default signing algorithm so legacy
+    implementations can still be used<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.server-side-encryption-algorithm<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Specify a server-side encryption algorithm for s3a: file system.
+    Unset by default. It supports the following values: &#39;AES256&#39; (for SSE-S3), &#39;SSE-KMS&#39;
+     and &#39;SSE-C&#39;
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+    <span class=nt>&lt;name&gt;</span>fs.s3a.server-side-encryption.key<span class=nt>&lt;/name&gt;</span>
+    <span class=nt>&lt;description&gt;</span>Specific encryption key to use if fs.s3a.server-side-encryption-algorithm
+    has been set to &#39;SSE-KMS&#39; or &#39;SSE-C&#39;. In the case of SSE-C, the value of this property
+    should be the Base64 encoded key. If you are using SSE-KMS and leave this property empty,
+    you&#39;ll be using your default&#39;s S3 KMS key, otherwise you should set this property to
+    the specific KMS key id.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.buffer.dir<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>${hadoop.tmp.dir}/s3a<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Comma separated list of directories that will be used to buffer file
+    uploads to.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.block.size<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>32M<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Block size to use when reading files using s3a: file system.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.user.agent.prefix<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>
+    Sets a custom value that will be prepended to the User-Agent header sent in
+    HTTP requests to the S3 back-end by S3AFileSystem.  The User-Agent header
+    always includes the Hadoop version number followed by a string generated by
+    the AWS SDK.  An example is &#34;User-Agent: Hadoop 2.8.0, aws-sdk-java/1.10.6&#34;.
+    If this optional property is set, then its value is prepended to create a
+    customized User-Agent.  For example, if this configuration property was set
+    to &#34;MyApp&#34;, then an example of the resulting User-Agent would be
+    &#34;User-Agent: MyApp, Hadoop 2.8.0, aws-sdk-java/1.10.6&#34;.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.impl<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>org.apache.hadoop.fs.s3a.S3AFileSystem<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>The implementation class of the S3A Filesystem<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.AbstractFileSystem.s3a.impl<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>org.apache.hadoop.fs.s3a.S3A<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>The implementation class of the S3A AbstractFileSystem.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.readahead.range<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>64K<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Bytes to read ahead during a seek() before closing and
+  re-opening the S3 HTTP connection. This option will be overridden if
+  any call to setReadahead() is made to an open stream.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.list.version<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>2<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Select which version of the S3 SDK&#39;s List Objects API to use.
+  Currently support 2 (default) and 1 (older API).<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=重试和恢复>重试和恢复</h3>
+<h3 id=处理read-during-overwrite>处理Read-During-Overwrite</h3>
+<h2 id=s3a如何写数据到s3>S3A如何写数据到S3</h2>
+<p>原<code>S3A</code>客户端实现写文件是通过将所有写入的<code>OutputStream</code>数据缓存到磁盘中，只有当stream close时，才开始启动上传操作。这导致输出很慢，尤其在大文件时可能占满磁盘空间。</p>
+<p>Hadoop 2.7 增加了 <code>S3AFastOutputStream</code>代替原有的<code>S3AOutputStream</code>(以后将从hadoop中移除)。</p>
+<p>FastOutputStream 主要如下实现：</p>
+<ul>
+<li>
+<p>大文件分为多个定长<code>block</code>来上传。通过<code>fs.s3a.multipart.size</code>配置指定；</p>
+</li>
+<li>
+<p>缓存<code>block</code>到磁盘(默认)或堆/非堆内存中；</p>
+</li>
+<li>
+<p>通过后台线程并行上传<code>block</code>;</p>
+</li>
+<li>
+<p>缓存<code>block</code>大小已达到长度及开始上传；</p>
+</li>
+<li>
+<p>缓存到磁盘时，使用<code>fs.s3a.buffer.dir</code>指定的目录；</p>
+</li>
+<li></li>
+</ul>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#How_S3A_writes_data_t>Apache Hadoop Amazon Web Services support – Hadoop-AWS module: Integration with Amazon Web Services</a></p>
+</li>
+<li>
+<p><a href=https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/s3guard.html>Apache Hadoop Amazon Web Services support – S3Guard: Consistency and Metadata Caching for S3A</a></p>
+</li>
+<li></li>
+</ol>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2020-12-25 10:57:29
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/architech/>architech</a>
+<a href=https://justice.bj.cn/tags/aws-s3/>aws-s3</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/hadoop/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">Hadoop</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/30.architech/hazelcast/>
+<span class="next-text nav-default">Hazelcast</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>

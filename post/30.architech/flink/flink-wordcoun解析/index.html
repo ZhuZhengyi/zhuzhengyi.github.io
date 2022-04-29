@@ -1,0 +1,607 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>Flink_WordCount程序背后的万字深度解析 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="Flink WordCount程序背后的万字深度解析 1 Flink数据流图简介 1.1 Flink样例程序 我们开始对数据流做处理，计算数据流中单词出现的频次。从">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/flink/flink-wordcoun%E8%A7%A3%E6%9E%90/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="Flink_WordCount程序背后的万字深度解析">
+<meta property="og:description" content="Flink WordCount程序背后的万字深度解析 1 Flink数据流图简介 1.1 Flink样例程序 我们开始对数据流做处理，计算数据流中单词出现的频次。从">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/flink/flink-wordcoun%E8%A7%A3%E6%9E%90/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2022-01-08T12:19:20+00:00">
+<meta property="article:modified_time" content="2022-01-08T12:19:20+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="Flink_WordCount程序背后的万字深度解析">
+<meta itemprop=description content="Flink WordCount程序背后的万字深度解析 1 Flink数据流图简介 1.1 Flink样例程序 我们开始对数据流做处理，计算数据流中单词出现的频次。从"><meta itemprop=datePublished content="2022-01-08T12:19:20+00:00">
+<meta itemprop=dateModified content="2022-01-08T12:19:20+00:00">
+<meta itemprop=wordCount content="13394">
+<meta itemprop=keywords content="architech,flink,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="Flink_WordCount程序背后的万字深度解析">
+<meta name=twitter:description content="Flink WordCount程序背后的万字深度解析 1 Flink数据流图简介 1.1 Flink样例程序 我们开始对数据流做处理，计算数据流中单词出现的频次。从"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>Flink_WordCount程序背后的万字深度解析</h1>
+<div class=post-meta>
+<time datetime=2022-01-08 class=post-time>
+2022-01-08 12:19:20
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/architech/> architech </a>
+<a href=https://justice.bj.cn/categories/flink/> flink </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#1-flink数据流图简介>1 Flink数据流图简介</a>
+<ul>
+<li><a href=#11-flink样例程序>1.1 Flink样例程序</a></li>
+</ul>
+</li>
+<li><a href=#算子>算子</a>
+<ul>
+<li><a href=#12-从逻辑视图到物理执行>1.2 从逻辑视图到物理执行</a></li>
+<li><a href=#13-数据交换策略>1.3 数据交换策略</a></li>
+</ul>
+</li>
+<li><a href=#2-flink架构与核心组件>2 Flink架构与核心组件</a>
+<ul>
+<li><a href=#21-flink作业执行过程>2.1 Flink作业执行过程</a></li>
+<li><a href=#client>Client</a></li>
+<li><a href=#jobmanager>JobManager</a></li>
+<li><a href=#taskmanager>TaskManager</a></li>
+<li><a href=#22-逻辑视图到物理执行图>2.2 逻辑视图到物理执行图</a></li>
+<li><a href=#23-任务算子子任务与算子链>2.3 任务、算子子任务与算子链</a></li>
+<li><a href=#24-任务槽位与计算资源>2.4 任务槽位与计算资源</a></li>
+<li><a href=#任务槽位的概念>任务槽位的概念</a></li>
+<li><a href=#槽位共享>槽位共享</a></li>
+<li><a href=#并行度与槽位数目>并行度与槽位数目</a></li>
+<li><a href=#25-flink-api结构>2.5 Flink API结构</a></li>
+<li><a href=#26-flink组件栈>2.6 Flink组件栈</a></li>
+<li><a href=#部署层>部署层</a></li>
+<li><a href=#运行时层>运行时层</a></li>
+<li><a href=#api层>API层</a></li>
+</ul>
+</li>
+<li><a href=#3-flink时间处理机制>3 Flink时间处理机制</a>
+<ul>
+<li><a href=#31-时间窗口>3.1 时间窗口</a></li>
+<li><a href=#滚动窗口>滚动窗口</a></li>
+<li><a href=#滑动窗口>滑动窗口</a></li>
+<li><a href=#会话窗口>会话窗口</a></li>
+<li><a href=#32-flink三种时间语义>3.2 Flink三种时间语义</a></li>
+<li><a href=#33-水位线>3.3 水位线</a></li>
+<li><a href=#生成watermark>生成Watermark</a></li>
+<li><a href=#延迟数据>延迟数据</a></li>
+</ul>
+</li>
+<li><a href=#4-flink的状态和检查点>4 Flink的状态和检查点</a>
+<ul>
+<li><a href=#41-状态>4.1 状态</a></li>
+<li><a href=#42-检查点>4.2 检查点</a></li>
+<li><a href=#一致性检查点>一致性检查点</a></li>
+<li><a href=#状态后端>状态后端</a></li>
+<li><a href=#savepoint>Savepoint</a></li>
+</ul>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=flink-wordcount程序背后的万字深度解析>Flink WordCount程序背后的万字深度解析</h1>
+<h2 id=1-flink数据流图简介>1 Flink数据流图简介</h2>
+<h3 id=11-flink样例程序>1.1 Flink样例程序</h3>
+<p>我们开始对数据流做处理，计算数据流中单词出现的频次。从这个样例中，我们可以一窥Flink设计和运行原理。</p>
+<p><img src=https://pic3.zhimg.com/80/v2-e1b66eda2016d10813d481b7182a461a_1440w.jpg alt></p>
+<p>图 1 Flink样例程序示意图</p>
+<p>程序分为三大部分：</p>
+<ul>
+<li>
+<p>第一部分读取数据源（Source），</p>
+</li>
+<li>
+<p>第二部分对数据做转换操作（Transformation），</p>
+</li>
+<li>
+<p>最后将转换结果输出到一个目的地（Sink）。</p>
+<p>代码中的函数被称为算子（Operator），是Flink提供给程序员的接口，程序员需要通过这些算子对数据做操作。</p>
+</li>
+</ul>
+<h2 id=算子>算子</h2>
+<p>我们可以把算子理解为1 + 2 运算中的加号，加号（+）是这个算子的一个符号表示，它表示对数字1和数字2做加法运算。</p>
+<p>同样，在Flink或Spark这样的大数据引擎中，算子对数据进行某种操作，程序员可以根据自己的需求调用合适的算子，完成所需计算任务。</p>
+<p>常用的算子有map、flatMap、keyBy、timeWindow等，它们分别对数据流执行不同类型的操作。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-b5bed65bb0ad05515e95c7b9686e0f1b_1440w.jpg alt></p>
+<p>图 2 WordCont程序的逻辑视图</p>
+<p>图 2展示了WordCount程序中数据从不同算子间流动的情况。</p>
+<p>图中，圆圈代表算子，圆圈间的箭头代表数据流，数据流在Flink程序中经过不同算子的计算，最终生成为目标数据。</p>
+<p>按照算子对数据的操作内容，一般将算子分为Source算子、Transformation算子和Sink算子。</p>
+<p>Source算子读取数据源中的数据，数据源可以是数据流、也可以存储在文件系统中的文件。</p>
+<p>Transformation算子对数据进行必要的计算处理。</p>
+<p>Sink算子将处理结果输出，数据一般被输出到数据库、文件系统或下一个数据流程序。</p>
+<p>我们先对这个样例程序中各个算子做一个简单的介绍：</p>
+<ul>
+<li>map</li>
+</ul>
+<p>map函数对数据流中每一条数据做一个操作，生成一条新的数据。本例中<code>map(word => (word, 1))</code>表示取输入的每个单词，用变量word表示，然后生成一个二元对（word, 1），1是表示出现了一次。注意，map的一条输入数据对应一条输出数据。</p>
+<ul>
+<li>flatMap</li>
+</ul>
+<p>在解释flatMap前，我们先对<code>split</code>函数做一个简单介绍。<code>split(“\\s”)</code>函数以空白字符为分隔符，将文本切分成单词列表。如果输入为“Hello Flink“，那么经过这个函数切分后，得到结果为[“Hello”,”Flink”]组成的单词列表。</p>
+<p>本例中<code>flatMap(line => line.split(“\\s”))</code>表示取出输入的每一行文本，用变量line表示，将文本中以空格做切分，生成一个单词列表，到这里仍然列表，flatMap接着对列表打平，输出单个单词。<code>flatMap</code>先做<code>map</code>所做的操作，然后对输出的各个列表打平，因此，<code>flatMap</code>的一条输入数据可能有多条输出。</p>
+<ul>
+<li>keyBy</li>
+</ul>
+<p><code>keyBy</code>根据某个Key做数据重分布，将所有数据中包含该Key的数据都发送到同一个分区上。本例中是将二元组中第一项作为Key，即以单词为Key，包含同样单词的二元对都发送到同一分区上。</p>
+<ul>
+<li>timeWindow</li>
+</ul>
+<p><code>timeWindow</code>是时间窗口函数，以界定对多长时间之内的数据做统计。</p>
+<ul>
+<li>sum</li>
+</ul>
+<p><code>sum</code>为求和函数。<code>sum(1)</code>表示对二元组中第二个元素求和，因为经过前面的<code>keyBy</code>，所有单词都被发送到了同一个分区，因此，在这一个分区上，将单词出现次数做加和，就得到出现的总次数。</p>
+<p>对于词频统计这个案例，逻辑上来讲无非是对数据流中的单词做提取，然后使用一个Key-Value结构对单词做词频计数，最后输出结果即可，这样的逻辑本可以用几行代码完成，改成这样的算子形式，反而让新人看着一头雾水，为什么一定要用算子的形式来写程序呢？实际上，算子进化成当前这个形态，就像人类从石块计数，到手指计数，到算盘计数，再到计算器计数这样的进化过程一样，尽管更低级的方式可以完成一定的计算任务，但是随着计算规模的增长，古老的计数方式存在着低效的弊端，无法完成更高级别和更大规模的计算需求。试想，如果我们不使用大数据引擎提供的算子，而是自己实现一套上述的计算逻辑，尽管我们可以快速完成当前的词频统计的任务，但是当面临一个新计算任务时，我们需要再次重新编写程序，完成一整套计算任务。我们自己编写代码的横向扩展性可能很低，当输入数据暴增时，我们需要做很大改动，以部署在更多机器上。</p>
+<p>大数据引擎的算子对计算做了一些抽象，对于新人来说有一定学习成本，而一旦掌握这门技术，人们所能处理的数据规模将成倍增加。大数据引擎的算子出现，正是针对数据分布在多个分区的大数据场景需要一种统一的计算描述语言来对数据做计算而进化出的新计算形态。基于大数据引擎的算子，我们可以定义一个数据流的逻辑视图，以此完成对大数据的计算。剩下那些数据交换、横向扩展、故障恢复等问题全交由大数据引擎来解决。</p>
+<h3 id=12-从逻辑视图到物理执行>1.2 从逻辑视图到物理执行</h3>
+<p>在绝大多数的大数据处理场景下，一台机器节点无法处理所有数据，数据被切分到多台节点上。</p>
+<p>在大数据领域，当数据量大到超过单台机器处理能力时，就将一份数据切分到多个分区（Partition）上，每个分区分布在一台虚拟机或物理机上。</p>
+<p>前一小节已经提到，大数据引擎的算子提供了编程接口，使用算子我们可以构建数据流的逻辑视图。</p>
+<p>考虑到数据分布在多个节点的情况，逻辑视图只是一种抽象，需要将逻辑视图转化为物理执行图，才能在分布式环境下执行。</p>
+<p><img src=https://pic2.zhimg.com/80/v2-aa0776d3be9a46cdd945aab42a12346d_1440w.jpg alt></p>
+<p>图 3 样例程序物理执行示意图</p>
+<p>图 3为1.1中的样例程序的物理执行图，这里数据流分布在2个分区上。箭头部分表示数据流分区，圆圈部分表示算子在分区上的算子子任务（Operator Subtask）。</p>
+<p>从逻辑视图变为物理执行图后，</p>
+<p>map算子在每个分区都有一个算子子任务，以处理该分区上的数据：map[1/2]算子子任务处理第一个数据流分区上的数据，map[2/2]算子子任务处理第二个数据流分区上的数据。</p>
+<p>keyBy算子会将数据按照某个key做数据重分布，在词频统计的例子中是以单词为key，例如，输入数据为“Hello Flink Hello World”，keyBy算子会将所有的”Hello”归结到一个分区上。</p>
+<p>算子子任务是物理执行的基本单元，算子子任务之间是相互独立的，某个算子子任务有自己的线程，不同算子子任务可能分布在不同的节点上。后文在Flink的资源分配部分我们还会重点介绍算子子任务。</p>
+<p>从图 3中可以看到，除去Sink外的算子都被分成了2个算子子任务，这样配置的并行度（Parallelism）为2，Sink算子的并行度为1。并行度是可以被设置的，实际应用中一般根据数据量的大小，计算资源的多少等多方面的因素来设置并行度。</p>
+<h3 id=13-数据交换策略>1.3 数据交换策略</h3>
+<p>图 3中keyBy算子子任务将数据做了重新分配，即数据在不同分区上进行着数据交换，产生了数据流动的现象。无论是Hadoop、Spark还是Flink，当涉及数据分布在多个分区时，对数据的处理都会涉及到数据交换策略。在Flink中，数据交换策略包括图 4中涉及到的四种策略：</p>
+<p><img src=https://pic2.zhimg.com/80/v2-f4e055bfad75c037ea5c07acc26481bd_1440w.jpg alt></p>
+<p>图 4 Flink数据交换策略</p>
+<ol>
+<li>前向传播（Forward）：前一个算子子任务将数据直接传递给后一个算子子任务，数据不存在跨分区的交换，也避免了因数据交换产生的各类开销，图 3中Source和和flatMap之间就是这样的情形。</li>
+<li>全局广播（Broadcast）:将某份数据发送到所有分区上，这种策略涉及到了数据拷贝和网络通信，因此非常消耗资源。</li>
+<li>基于Key的数据重分布：数据以(Key, Value)形式存在，该策略将所有数据做一次重新分布，并保证相同Key的数据被发送到同一个分区上。图 3中keyBy算子将单词作为Key，把某个单词都发送到同一分区，以方便后续算子来统计这个单词出现的频次。</li>
+<li>随机策略（Random）：该策略将所有数据随机均匀地发送到多个分区上，以保证数据平均分配到不同分区上。该策略通常为了防止数据倾斜到某些分区，导致部分分区数据稀疏，部分分区数据拥堵，甚至超过该分区上算子的处理能力。</li>
+</ol>
+<h2 id=2-flink架构与核心组件>2 Flink架构与核心组件</h2>
+<p>为了实现支持分布式运行，Flink跟其他大数据引擎一样，采用了主从（Master-Worker）架构，运行时主要包括两个组件：</p>
+<p>• JobManager，又被称为Master，是一个Flink应用的主节点。</p>
+<p>• TaskManager，又被称为Worker，执行计算任务的节点。</p>
+<p>一个Flink应用一般含有至少一个JobManager，一个或多个TaskManager。</p>
+<h3 id=21-flink作业执行过程>2.1 Flink作业执行过程</h3>
+<p><img src=https://pic3.zhimg.com/80/v2-14d66043dde3ab8abf2af3845c4b4ffe_1440w.jpg alt></p>
+<p>图 5 Flink作业提交流程</p>
+<p>用户编写Flink程序并提交任务的具体流程为：</p>
+<ol>
+<li>用户编写应用程序代码，并通过Flink客户端（Client）提交作业。程序一般为Java或Scala语言，调用Flink API，构建基于逻辑视角的数据流图，代码和相关配置文件被编译打包，并被提交到JobManager上，形成一个应用作业（Application）。</li>
+<li>JobManager接受到作业后，将逻辑视图转化成可并行的物理执行图。</li>
+<li>JobManager将物理执行图发送给各TaskManager。</li>
+<li>TaskManager接收到物理执行图后，会初始化并开始执行被分配的任务。</li>
+<li>TaskManager在执行任务过程中可能会与其他TaskManager交换数据，会使用图 4提到的一些数据交换策略。</li>
+<li>TaskManager将任务启动、运行、性能指标、结束或终止等状态信息会反馈给JobManager。</li>
+<li>用户可以使用Flink Web仪表盘来监控提交的作业。</li>
+</ol>
+<p><img src=https://pic1.zhimg.com/80/v2-4cd8011a2888f0349716e74ef402157c_1440w.jpg alt></p>
+<p>图 6 Flink主从架构架构图</p>
+<p>图 6对Flink的各个组件描述得更为详细，我们再对涉及到的各个组件进行更为详细的介绍。</p>
+<h3 id=client>Client</h3>
+<p>当用户提交一个Flink程序时，会首先创建一个客户端（Client）。该Client会对用户提交的Flink程序进行预处理，并把作业提交到Flink集群中处理。Client需要从用户提交的Flink程序配置中获取JobManager的地址，并建立到JobManager的连接，将Flink作业提交给JobManager。Client会将用户提交的Flink程序组装一个JobGraph。</p>
+<h3 id=jobmanager>JobManager</h3>
+<p>JobManager是Flink的协调者，它负责接收Flink作业，调度任务。同时，JobManager还负责管理TaskManager，收集作业的状态信息，生成检查点和故障恢复等问题。JobManager会将Client提交的JobGraph转化为ExceutionGraph，ExecutionGraph是JobGraph的并行版本，但还不是最终的物理执行图。</p>
+<h3 id=taskmanager>TaskManager</h3>
+<p>TaskManager是实际负责执行计算的节点，在其上执行物理执行图。同时，TaskManager还要处理必要的数据缓存和交换。每个TaskManager负责管理其所在节点上的资源信息，包括内存、磁盘、网络，TaskManager启动的时候会将资源的状态向JobManager汇报。</p>
+<h3 id=22-逻辑视图到物理执行图>2.2 逻辑视图到物理执行图</h3>
+<p>逻辑视图转化为物理执行图过程，该过程可以分成四层：StreamGraph -> JobGraph -> ExecutionGraph -> 物理执行图。</p>
+<ul>
+<li>StreamGraph：是根据用户通过 DataStream API 编写的代码生成的最初的图，用来表示程序的拓扑结构。在这张图中，节点就是用户调用的算子，边表示数据流。</li>
+<li>JobGraph：JobGraph是提交给 JobManager 的数据结构。StreamGraph经过优化后生成了 JobGraph，主要的优化为，将多个符合条件的节点链接在一起作为一个节点，这样可以减少数据交换所需要的序列化、反序列化以及传输消耗。这个链接的过程叫做算子链，会在下一节简单介绍。</li>
+<li>ExecutionGraph：JobManager 根据 JobGraph 生成ExecutionGraph。ExecutionGraph是JobGraph的并行化版本，是调度层最核心的数据结构。</li>
+<li>物理执行图：JobManager 根据 ExecutionGraph 对作业进行调度后，在各个TaskManager 上部署任务形成的图，物理执行并不是一个具体的数据结构。</li>
+</ul>
+<p>可以看到，Flink在数据流图上可谓煞费苦心，仅各类图就有四种之多。对于新人来说，可以不用太关心这些非常细节的底层实现，只需要了解以下几个核心概念：</p>
+<ul>
+<li>Flink采用主从架构，JobManager起着管理协调作用，TaskManager负责物理执行，在执行过程中会发生一些数据交换、生命周期管理等事情。</li>
+<li>用户调用Flink API，构造逻辑视图，Flink会对逻辑视图优化，并转化为物理执行图，最后被执行的是物理执行图。</li>
+</ul>
+<h3 id=23-任务算子子任务与算子链>2.3 任务、算子子任务与算子链</h3>
+<p>在分布式运行的过程中，Flink将一些算子子任务（Subtask）链接在一起，组成算子链（Operator Chain），链接后将以任务(Task)的形式被TaskManager调度执行。使用算子链是一个非常有效的优化，它可以有效降低算子子任务之间的传输开销。链接之后形成的Task是TaskManager中的一个线程。</p>
+<p><img src=https://pic1.zhimg.com/80/v2-6144acbff5daf063d5da085a67447d18_1440w.jpg alt></p>
+<p>图 7 任务、子任务与算子链</p>
+<p>例如，数据从Source算子前向传播到 flatMap算子，再由flatMap算子前向传播到map算子，中间没有发生跨分区的数据交换，因此，我们完全可以将Source、flatMap和map几个Operator Subtask组合在一起，形成一个Task。keyBy算子发生了数据重分布，数据会跨越分区，因此map和keyBy无法被链接到一起。同样，我们也不能把sum和Sink链接到一起。</p>
+<p>默认情况下，Flink会尽量将更多的Subtask链接在一起，但一个Subtask有超过一个输入或发生数据交换时，链接就无法建立。尽管将算子链接到一起会降低一些传输开销，但是也有一些情况并不需要太多链接。比如，有时候我们需要将一个非常长的算子链拆开，这样我们就可以将原来集中在一个线程中的计算拆分到多个线程中来并行计算。Flink手动配置是否对某些算子启用算子链。</p>
+<h3 id=24-任务槽位与计算资源>2.4 任务槽位与计算资源</h3>
+<h3 id=任务槽位的概念>任务槽位的概念</h3>
+<p>根据前文的介绍，我们已经了解到TaskManager负责具体的任务执行。TaskManager是一个Java虚拟机进程，在TaskManager中可以并行运行多个Task。在程序执行之前，经过优化，部分Subtask被链接在一起，组成一个Task。每个Task是一个线程，需要TaskManager为其分配相应的资源，TaskManager使用任务槽位（Task Slot）给任务分配资源，简称槽位（Slot）。</p>
+<p>在解释任务槽位的概念前，我们先回顾一下进程与线程的概念。在操作系统层面，进程（Process）是进行资源分配和调度的一个独立单位，线程（Thread）是是CPU调度的基本单位。比如，我们常用的Office Word软件，在启动后就占用操作系统的一个进程。Windows上可以使用任务管理器来查看当前活跃进程，Linux上可以使用top命令来查看。线程是进程的一个子集，一个线程一般专注于处理一些特定任务，不独立拥有系统资源，只拥有一些运行中必要的资源，如程序计数器。一个进程至少有一个线程，也可以有多个线程。多线程场景下，每个线程都处理一小个任务，多个线程以高并发的方式同时处理多个小任务，可以提高处理能力。</p>
+<p>回到Flink的槽位分配机制上，一个TaskManager是一个进程，TaskManager可以管理一至多个Task，每个Task是一个线程，占用一个槽位。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-0b7a01d48b30a4d6cdab65f23488933f_1440w.jpg alt></p>
+<p>图 8 Task Slot与Task Manager</p>
+<p>假设我们给WordCount程序分配两个TaskManager，每个TaskManager又分配3个槽位，所以总共是6个槽位。结合图 7中对这个作业的并行度设置，整个作业被划分为5个Task，使用5个线程，这5个线程可以按照图 8所示的方式分配到6个槽位中。</p>
+<p>每个槽位的资源是整个TaskManager资源的子集，比如这里的TaskManager下有3个槽位，每个槽位占用TaskManager所管理的1/3的内存，在第一个槽位内运行的任务不会与在第二个槽位内运行的任务互相争抢内存资源。注意，在分配资源时，Flink并没有将CPU资源明确分配给各个槽位。</p>
+<p>Flink允许用户设置TaskManager中槽位的数目，这样用户就可以确定以怎样的粒度将任务做相互隔离。如果每个TaskManager只包含一个槽位，那么运行在该槽位内的任务将独享JVM。如果TaskManager包含多个槽位，那么多个槽位内的任务可以共享JVM资源，比如共享TCP连接、心跳信息、部分数据结构等。如无特殊需要，可以将槽位数目设置为TaskManager下可用的CPU核心数，那么平均下来，每个槽位都能获得至少一个CPU核心。</p>
+<h3 id=槽位共享>槽位共享</h3>
+<p>图 8中展示了任务的一种资源分配方式，默认情况下， Flink还提供了一种槽位共享（Slot Sharing）的优化机制，进一步优化数据传输开销，充分利用计算资源。将图 8中的任务做槽位共享优化后，结果如图 9所示。</p>
+<p><img src=https://pic3.zhimg.com/80/v2-c9f3ee4b18d9600b17359bad8731428e_1440w.jpg alt></p>
+<p>图 9 槽位共享示意图</p>
+<p>开启槽位共享后，Flink允许将独占一个槽位的任务与同一个作业中的其他任务共享槽位。于是可以将一个作业从开头到结尾的所有Subtask都放置在一个槽位中，如图 9中最左侧的数据流，这样槽位内的数据交换成本更低。而且，对于一个数据流图来说，Source、map等算子的计算量相对不大，window算子的计算量比较大，计算量较大的Subtask与计算量较小的Subtask相互互补，可以腾出更多的槽位，分配给更多Task，这样可以更好地利用资源。而不开启槽位共享，计算量小的Source、map算子子任务独占了槽位，造成一定的资源浪费。</p>
+<h3 id=并行度与槽位数目>并行度与槽位数目</h3>
+<p>图 3中提到了并行度，在WordCount的例子中，除去Sink算子的并行度为1外，其他算子的并行度均为2，也就是说在并行度为2的情况下，每个算子只能拆分为2个Subtask。图 8中的方式共占用5个槽位，支持槽位共享后，图 9只占用2个槽位，这里故意将剩下的几个槽位置空，只是为了演示需要，如果这个作业的数据量非常大，占用的数据分区很多，其实完全可以通过增加并行度，将这些槽位填充，为更多的并行任务提供资源。</p>
+<p><img src=https://pic2.zhimg.com/80/v2-067c1f2c3f4ba050f727e6aaf5543329_1440w.jpg alt></p>
+<p>图 10 并行度与槽位数目</p>
+<p>为了充分利用空槽位，占满图 9中多余的4个槽位，我们可以把除Sink外的其他算子的并行度都设置为6。图 2‑10展示了将并行度增加后，资源分配情况。</p>
+<p>并行度和槽位数目的概念可能容易让人混淆，这里再次阐明一下。用户使用Flink提供的API算子可以构建一个逻辑视图，需要将任务并行才能被物理执行。整个作业将被切分为多个实例，每个实例处理整个作业输入数据的一部分。如果输入数据过大，增大并行度可以增加更多的实例，加快数据处理速度。可见，并行度是Flink对任务并行切分的一种描述。槽位数目是在资源设置时，对单个TaskManager的资源切分粒度。并行度、槽位数目和TaskManager数可大致按照公式 1来计算。</p>
+<p><img src=https://pic1.zhimg.com/80/v2-451fd1da5531072d356b1ec1ba93c370_1440w.png alt></p>
+<p>公式 1 并行度、TaskManager数与Task Slot数关系</p>
+<p>其中，ceil为上限函数，表示对除法结果向上取整。关于并行度、槽位数目等配置，将在后续文章中详细说明。</p>
+<h3 id=25-flink-api结构>2.5 Flink API结构</h3>
+<p><img src=https://pic4.zhimg.com/80/v2-6118b07dff5f00d58f06db2b82207ccb_1440w.jpg alt></p>
+<p>图 11 Flink API结构</p>
+<p>我们之前讨论的WordCount例子中，一直使用的是Flink提供的DataStream API，即在数据流上的操作。除了DataStream API，Flink给编程人员不同层次API，主要有三层：</p>
+<ol>
+<li>Flink最底层提供的是有状态的流式计算引擎，流（Stream）、状态（State）和时间（Time）等流式计算概念都在这一层得到了实现。</li>
+<li>一般情况下，应用程序不会使用上述底层接口，而是使用Flink提供的核心API：针对有界和无界数据流的DataStream API和针对有界数据集的DataSet API。用户可以使用这两个API进行常用的数据处理：转换（Transformation）、连接（Join）、聚合（Aggregation）、窗口（Window）以及对状态（State）的操作。这一层有点像Spark提供的RDD级别的接口。</li>
+<li>Table API和SQL是更高级别的抽象。在这一层，数据被转换成了关系型数据库式的表格，每个表格拥有一个表模式（Schema），用户可以像操作表格那样操作流式数据，例如可以使用针对结构化数据的select、join、group-by等操作。如果用户熟悉SQL语句，那么可以很快上手Flink的Table API和SQL。很多公司的数据流非常依赖SQL，Flink SQL降低了从其他框架迁移至Flink的成本。</li>
+</ol>
+<p>我们将在后续文章中介绍DataStream API、Table API和SQL。</p>
+<h3 id=26-flink组件栈>2.6 Flink组件栈</h3>
+<p>了解Flink的主从架构以及API结构后，我们可以将Flink的核心组件分层来剖析。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-31dac21c9812c8b19f5a432929521ce3_1440w.jpg alt></p>
+<p>图 12 Flink组件栈</p>
+<h3 id=部署层>部署层</h3>
+<p>大数据引擎首先需要部署在物理机或虚拟机上。Flink支持多种部署方式，可以部署在单机、集群，以及云上。</p>
+<h3 id=运行时层>运行时层</h3>
+<p>运行时（Runtime）层为Flink各类计算提供了实现。这一层做了前面章节中提到的将数据流图转化为物理执行图、资源分配以及分布式调度与执行等大部分工作。</p>
+<h3 id=api层>API层</h3>
+<p>API层主要实现了面向数据流的流处理DataStream API和面向数据集的批处理DataSet API。在这两个API之上，Flink还提供了更丰富的工具：</p>
+<ul>
+<li>面向数据流处理的：CEP（Complex Event Process，复杂事件处理）、基于类SQL的Table API和SQL</li>
+<li>面向数据集批处理的：FlinkML（机器学习计算库）、Gelly（图计算库）</li>
+</ul>
+<h2 id=3-flink时间处理机制>3 Flink时间处理机制</h2>
+<h3 id=31-时间窗口>3.1 时间窗口</h3>
+<p>在批处理场景下，数据已经是按照某个时间维度分批次地存储了。一些公司经常将用户行为日志按天存储在一个文件目录下，另外一些开放数据集都会说明数据采集的时间始末。因此，对于批处理任务，处理一个数据集，其实就是对该数据集对应的时间窗口内的数据进行处理。在流计算场景下，数据以源源不断的流的形式存在，数据一直在产生，没有始末。我们要对数据进行处理时，往往需要明确一个时间窗口，比如，数据在“每秒”、“每小时”、“每天”的维度下的一些特性。一般有如下几种定义时间窗口的方式。</p>
+<h3 id=滚动窗口>滚动窗口</h3>
+<p><img src=https://pic4.zhimg.com/80/v2-dbfc6013f3dadf1bae2c6802ae35ff97_1440w.jpg alt></p>
+<p>图 13 固定数据数目的滚动窗口</p>
+<p><img src=https://pic1.zhimg.com/80/v2-36611d45c569176cc03ab990bf7acfc8_1440w.jpg alt></p>
+<p>图 14 固定时间间隔的滚动窗口</p>
+<p>滚动窗口（Tumbling Window）模式下窗口之间互不重叠，且窗口长度是固定的，长度可以是数据的条数，也可以是时间间隔。图 13是固定长度为4的滚动窗口，图 14是固定长度为10分钟的滚动窗口。定长滚动窗口是经常用到的一种窗口模式。在本文最开始的WordCount例子中，我们使用的是定长为5秒的滚动窗口。</p>
+<h3 id=滑动窗口>滑动窗口</h3>
+<p><img src=https://pic3.zhimg.com/80/v2-6666b3b8ccf8e39d18d558770f5a3d86_1440w.jpg alt></p>
+<p>图 15 滑动窗口</p>
+<p>滑动窗口（Sliding Window）也是一种窗口长度定长的模式。与滚动窗口不同，滑动窗口模式下窗口和窗口之间有滑动间隔（Slide）。再以WordCount为例，我们要统计10分钟内的词频，并且每隔1分钟统计一次，就需要使用滑动窗口。</p>
+<h3 id=会话窗口>会话窗口</h3>
+<p>会话（Session）是一个用户交互概念，常常出现在互联网应用上，一般指用户在某APP或某网站上短期内产生的一系列行为。比如，用户在手机淘宝上短时间有大量的搜索和点击的行为，这系列行为事件组成了一个Session，接着可能因为一些其他因素，用户暂停了与APP的交互，过一会用户又返回APP，经过一系列搜索、点击、与客服沟通，最终下单。Session窗口的长度并不固定，因此不能用上面两种形式的窗口来建模。</p>
+<p><img src=https://pic3.zhimg.com/80/v2-b34efc018a871410e8747363c53754be_1440w.jpg alt></p>
+<p>图 16 会话窗口</p>
+<p>Session没有固定长度，那如何将数据划分到不同的窗口呢？Flink提供了Session Gap的概念。</p>
+<p><img src=https://pic2.zhimg.com/80/v2-3c9b7e4acb22d6ba56009888d74fb9ed_1440w.jpg alt></p>
+<p>图 17 session gap示意图</p>
+<p>我们继续以用户在手机淘宝上的行为为例，现在有3个用户，每个用户产生了不同的行为，果两个行为数据的时间戳小于session gap，则被划归到同一个窗口中，图 17中user2的window4，如两个行为数据的时间戳大于了session gap，则被划归到两个不同的窗口中，user2的window1和window2之间的时间间隔大于最小的session gap，数据被划归为了两个窗口。</p>
+<p>我们将在后续文章详细介绍以上几种窗口的使用方法。</p>
+<h3 id=32-flink三种时间语义>3.2 Flink三种时间语义</h3>
+<p>如果我们要定义基于时间的窗口，那么首先要定义时间。在程序中，时间一般基于Unix时间戳，即以1970-01-01-00:00:00.000为起始点。时间戳毫秒精度是时间距离该起点的毫秒总数，时间戳微秒精度是事件距离该起点的微秒总数。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-c9384bef28395bd0385aeaca71ab5717_1440w.jpg alt></p>
+<p>图 18 三种时间语义</p>
+<p>之前文章中我们提到了流处理的时间语义问题，在Flink中一般有三种时间概念，如图 18所示。</p>
+<ul>
+<li>事件时间（Event Time）是事件实际发生的时间，通常是事件发生时嵌入到事件上的时间，比如某个传感器在生成数据时，会将时间戳打入这个数据上。</li>
+<li>接收时间（Ingestion Time）是事件进入Flink的时间，确切的说，是该事件进入Source算子时，Source算子的当前时间。</li>
+<li>处理时间（Processing Time）是各个时间算子处理该事件的当前时间。一般情况下，处理时间会比摄入时间更晚一些。</li>
+</ul>
+<p>Processing Time是最简单的时间概念，只需要算子获取当前运行机器的系统时间，不需要考虑其他任何因素，因此使用Processing Time作为时间，可以获得最好的性能和最低的延迟。但Processing Time并不能代表事件实际发生的时间，从事件实际发生到算子处理的过程有大量的不确定性，以Processing Time来计算，很可能导致事件的处理是乱序的，产生不可复现的结果。</p>
+<p>Event Time可以保证事件顺序的可靠性，因此可以得到一致的、可复现的结果。Event Time虽然准确，但也有其弊端：我们无法预知某个时间下，是否所有数据均已到达，因此需要使用水位线机制处理延迟数据。</p>
+<h3 id=33-水位线>3.3 水位线</h3>
+<p>之前文章已经提到，水位线（Watermark）机制假设在某个时间点上，不会有比这个时间点更晚的上报数据。Watermark常被作为一个时间窗口的结束时间。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-446814cd3f7eef0e87447156e979cb93_1440w.jpg alt></p>
+<p>图 19 一个带有Watermark的数据流</p>
+<p>Flink中的Watermark是被系统插入到数据流的特殊数据。Watermark的时间戳单调递增，且与事件时间戳相关。如上图的数据流所示，方块是事件，三角形是该事件对应的时间戳，圆圈为Watermark。当Flink接受到时间戳值为5的Watermark时，系统假设时间戳小于5的事件均已到达，后续到达的小于5的事件均为延迟数据。Flink处理到最新的Watermark，会开启这个时间窗口的计算，把这个Watermark之前的数据纳入进此次计算，延迟数据则不能被纳入进来，因此使用Watermark会导致微小的误差。</p>
+<h3 id=生成watermark>生成Watermark</h3>
+<p>流数据中的事件时间戳与Watermark高度相关，事件时间戳的抽取和Watermark的生成也基本是同时进行的，抽取的过程会遇到下面两种情况：</p>
+<ol>
+<li>数据流中已经包含了事件时间戳和Watermark。</li>
+<li>使用抽取算子生成事件时间戳和Watermark，这也是实际应用中更为常见的场景。因为后续的计算都依赖时间，Watermark抽取算子最好在数据接入后马上调用。具体而言，Watermark抽取算子包含两个函数：第一个函数从数据流的事件中抽取时间戳，并将时间戳赋值到事件的元数据上，第二个函数生成Watermark。</li>
+</ol>
+<p>Flink有两种方式来生成Watermark：</p>
+<ol>
+<li>周期性（Periodic）生成Watermark：Flink每隔一定时间间隔，定期调用Watermark生成函数。这种方式下，Watermark的生成与时间有周期性的关系。</li>
+<li>断点式（Punctuated）生成Watermark：数据流中某些带有特殊标记的数据自带了Watermark信息，Flink监控数据流中的每个事件，当接收到带有特殊标记数据时，会触发Watermark的生成。这种方式下，Watermark的生成与时间无关，与何时接收到特殊标记数据有关。</li>
+</ol>
+<p>无论是以上那种方式，Flink都会生成Watermark并插入到数据流中。一旦时间戳和Watermark生成后，后续的算子将以Event Time的时间语义来处理这个数据流。Flink把时间处理部分的代码都做了封装，会在内部处理各类时间问题，用户不需要担心延迟数据等任何时间相关问题。用户只需要在数据接入的一开始生成时间戳和Watermark，Flink会负责剩下的事情。</p>
+<h3 id=延迟数据>延迟数据</h3>
+<p>Flink有一些机制专门收集和处理延迟数据。迟到事件在Watermark之后到达，一般处理的方式有三种：</p>
+<ol>
+<li>将迟到事件作为错误事件直接丢弃</li>
+<li>将迟到事件收集起来另外再处理</li>
+<li>重新触发计算</li>
+</ol>
+<p>对于第二种方式，用户可以使用Flink提供的“Side Output”机制，将迟到事件放入一个单独的数据流，以便再对其单独处理。</p>
+<p>对于第三种方式，用户可以使用Flink提供的“Allowed Lateness”机制，设置一个允许的最大迟到时长，原定的时间窗口关闭后，Flink仍然会保存该窗口的状态，直至超过迟到时长，迟到的事件加上原来的事件一起重新被计算。</p>
+<p>我们将在后续文章中详细介绍Event Time的使用、Watermark生成、延迟数据处理等技术细节。</p>
+<h2 id=4-flink的状态和检查点>4 Flink的状态和检查点</h2>
+<h3 id=41-状态>4.1 状态</h3>
+<p>在之前的文章中我们已经提到了状态的概念：流式大数据处理引擎会根据流入数据持续更新状态数据。状态可以是当前所处理事件的位置偏移（Offset）、一个时间窗口内的某种输入数据、或与具体作业有关的自定义变量。</p>
+<p><img src=https://pic2.zhimg.com/80/v2-24d6d4959a1643bb586d10cd738effb5_1440w.jpg alt></p>
+<p>图 20 数据流与状态示意图</p>
+<p>对于WordCount的例子来说，已经处理了一个”Hello”单词，并且正在处理一个”Hello”，对于Source算子来说，当前数据的位置偏移为3，所有已处理的数据中，单词”Hello”的出现次数为2。这个作业的状态包括当前处理的位置偏移、已处理过的单词出现次数等变量信息。</p>
+<h3 id=42-检查点>4.2 检查点</h3>
+<h3 id=一致性检查点>一致性检查点</h3>
+<p>在一个有状态的流处理作业中，为保证高吞吐和低延迟，Flink的每个Task需要高效读写状态数据，Task会在本地的TaskManager中存储状态数据。然而，由于大数据系统一般运行在多台机器上，可能会遇到进程被杀、机器宕机、网络抖动等问题，一旦出现宕机等问题，该机器上的状态以及相应的计算会丢失，因此需要一种恢复机制来应对这些潜在问题。</p>
+<p>Flink使用一致性检查点（Consistent Checkpoint）技术来做故障恢复。检查点机制一般是定期将状态数据生成快照（Snapshot），持久化存储起来，一旦发生意外，Flink主动重启应用，并从最近的快照中恢复，再继续处理新流入数据。一致性检查点技术可以将分布在多台节点上的所有状态都记录下来，并提供了Exactly-Once的投递保障，其背后是使用了Chandy-Lamport算法，将本地的状态数据保存到一个存储空间上，故障发生后及时恢复最近的快照数据。我们将在后续文章中详细介绍一致性检查点的算法原理。</p>
+<h3 id=状态后端>状态后端</h3>
+<p>Task在本地内存中保存一份状态数据，但在分布式系统中，某个Task在任意时间点都可能发生故障，因此Task上的本地状态数据可以被认为是脆弱的。Flink定期将本地的状态数据持久化保存到一个存储空间上。用户可以选择以怎样的方式来保存这些状态数据，这种机制被称为状态后端（State Backend）。Flink提供了三种状态后端：内存、文件系统和RocksDB。</p>
+<p>内存肯定是读写性能最优的方式，单个节点的内存有限，因此这种状态后端会对状态数据的大小有限制。相比内存，本地磁盘的速度更慢，其所能承担的数据量更大，RocksDB 就是一种基于本地磁盘的状态后端。此外，Flink还允许将数据存储到分布式文件系统，如Hadoop的HDFS和AWS的S3上，分布式文件系统的数据存储能力非常大，足以应付海量数据的存储需求。我们将在后续文章中详细介绍三种状态后端的使用方法。</p>
+<h3 id=savepoint>Savepoint</h3>
+<p>在容错上，除了Checkpoint，Flink还提供了Savepoint机制。从名称和实现上，这两个机制都极其相似，甚至Savepoint会使用Checkpoint的数据，但实际上，这两个机制的定位不同。</p>
+<p><img src=https://pic2.zhimg.com/80/v2-a7083a338d25958556531caf71ffccc5_1440w.jpg alt></p>
+<p>图 21 Checkpoint和Savepoint</p>
+<p>Checkpoint是Flink定期触发并自动执行的故障恢复机制，以应对各种意外情况，其设计初衷主要是针对容错和故障恢复。Savepoint会使用Checkpoint生成的快照数据，但与Checkpoint不同点在于，Savepoint需要编程人员手动介入，用来恢复暂停作业。相比而言，Checkpoint是自动执行，Savepoint是手动管理。</p>
+<p>当我们想要手动处理之前已经处理过的数据，就可以使用Savepoint，因此Savepoint经常被用来调试程序：</p>
+<ul>
+<li>我们可以给同一份作业设置不同的并行度，来找到最佳的并行度设置</li>
+<li>我们想测试一个新功能或修复一个已知的bug，并用新的程序逻辑处理原来的数据</li>
+<li>进行一些A/B实验，使用相同的数据源测试程序的不同版本</li>
+<li>因为状态可以被持久化存储到分布式文件系统上，我们甚至可以将同样一份应用程序从一个集群迁移到另一个集群，只需保证不同的集群都可以访问这个文件系统</li>
+</ul>
+<p>Checkpoint 和 Savepoint 是Flink提供的两个相似的功能，它们满足了不同的需求，以确保一致性、容错性，满足了作业升级、BUG 修复、迁移、A/B测试等不同需求。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2022-01-08 12:19:20
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/architech/>architech</a>
+<a href=https://justice.bj.cn/tags/flink/>flink</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/cratedb/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">CrateDB</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/30.architech/flink/flink-%E6%B6%88%E8%B4%B9%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B/>
+<span class="next-text nav-default">Flink_消费消息的流程</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>
