@@ -1,0 +1,409 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>图解_Golang_的_GC_算法 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="图解 Golang 的 GC 算法 简介 虽然 Golang 的 GC 自打一开始，就被人所诟病，但是经过这么多年的发展，Golang 的 GC 已经改善了非常多，变得非常优秀了。 以下是 Golang GC 算">
+<meta name=keywords content="Hugo,theme,jane">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/14.language/golang/golang-gc%E7%AE%97%E6%B3%95.html>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="图解_Golang_的_GC_算法">
+<meta property="og:description" content="图解 Golang 的 GC 算法 简介 虽然 Golang 的 GC 自打一开始，就被人所诟病，但是经过这么多年的发展，Golang 的 GC 已经改善了非常多，变得非常优秀了。 以下是 Golang GC 算">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/golang-gc%E7%AE%97%E6%B3%95.html"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2021-11-25T15:52:28+00:00">
+<meta property="article:modified_time" content="2021-11-25T15:52:28+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="图解_Golang_的_GC_算法">
+<meta itemprop=description content="图解 Golang 的 GC 算法 简介 虽然 Golang 的 GC 自打一开始，就被人所诟病，但是经过这么多年的发展，Golang 的 GC 已经改善了非常多，变得非常优秀了。 以下是 Golang GC 算"><meta itemprop=datePublished content="2021-11-25T15:52:28+00:00">
+<meta itemprop=dateModified content="2021-11-25T15:52:28+00:00">
+<meta itemprop=wordCount content="1656">
+<meta itemprop=keywords content="language,golang,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="图解_Golang_的_GC_算法">
+<meta name=twitter:description content="图解 Golang 的 GC 算法 简介 虽然 Golang 的 GC 自打一开始，就被人所诟病，但是经过这么多年的发展，Golang 的 GC 已经改善了非常多，变得非常优秀了。 以下是 Golang GC 算"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>图解_Golang_的_GC_算法</h1>
+<div class=post-meta>
+<time datetime=2021-11-25 class=post-time>
+2021-11-25 15:52:28
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/language.html> language </a>
+<a href=https://justice.bj.cn/categories/golang.html> golang </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#标记-清扫mark-and-sweep算法>标记-清扫(Mark And Sweep)算法</a>
+<ul>
+<li><a href=#标记-清扫mark-and-sweep算法存在什么问题>标记-清扫(Mark And Sweep)算法存在什么问题？</a></li>
+</ul>
+</li>
+<li><a href=#三色并发标记法>三色并发标记法</a></li>
+<li><a href=#gc-和用户逻辑如何并行操作>gc 和用户逻辑如何并行操作？</a>
+<ul>
+<li><a href=#process-新生成对象的时候gc-该如何操作呢不会乱吗>process 新生成对象的时候，GC 该如何操作呢？不会乱吗？</a></li>
+<li><a href=#那么灰色或者黑色对象的引用改为白色对象的时候golang-是该如何操作的>那么，灰色或者黑色对象的引用改为白色对象的时候，Golang 是该如何操作的？</a></li>
+</ul>
+</li>
+<li><a href=#参考文献>参考文献</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=图解-golang-的-gc-算法>图解 Golang 的 GC 算法</h1>
+<h2 id=简介>简介</h2>
+<p>虽然 Golang 的 GC 自打一开始，就被人所诟病，但是经过这么多年的发展，Golang 的 GC 已经改善了非常多，变得非常优秀了。</p>
+<p>以下是 Golang GC 算法的里程碑：</p>
+<ul>
+<li>
+<p>v1.1 STW</p>
+</li>
+<li>
+<p>v1.3 Mark STW, Sweep 并行</p>
+</li>
+<li>
+<p>v1.5 三色标记法</p>
+</li>
+<li>
+<p>v1.8 hybrid write barrier</p>
+</li>
+</ul>
+<p>经典的 GC 算法有三种： <code>引用计数(reference counting)</code>、 <code>标记-清扫(mark&sweep)</code>、 <code>复制收集(CopyandCollection)</code>。</p>
+<p>Golang 的 GC 算法主要是基于 <code>标记-清扫(markandsweep)</code>算法，并在此基础上做了改进。</p>
+<h2 id=标记-清扫mark-and-sweep算法>标记-清扫(Mark And Sweep)算法</h2>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2021/11/11-19-30-30-go-gc-gif.webp alt></p>
+<p>法主要有两个主要的步骤：</p>
+<ul>
+<li>
+<p>标记(Mark phase)：找出不可达的对象，然后做上标记。</p>
+</li>
+<li>
+<p>清除(Sweep phase)：回收标记好的对象。</p>
+</li>
+</ul>
+<p>操作非常简单，但是有一点需要额外注意：mark and sweep 算法在执行的时候，需要程序暂停！即 <code>stop the world</code>。
+也就是说，这段时间程序会卡在哪儿。故中文翻译成 <code>卡顿</code>。</p>
+<p>开始标记，程序暂停。程序和对象的此时关系是这样的：</p>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/22-13-46-55-go-gc01.png alt></p>
+<p>然后开始标记，process 找出它所有可达的对象，并做上标记。如下图所示：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje63ibrVyulmXcjp1oXDOPO4dVZvVts5K9zJIHha5apibSWdd1nnV8m54Dw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>标记完了之后，然后开始清除未标记的对象：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6XMjDBzQIniaYNIAwf1yvh8SJBYibdmLzTJ1gKao6zicl7hZbo3JTSXRibQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>然后垃圾清除了，变成了下图这样。</p>
+<p>最后，停止暂停，让程序继续跑。然后循环重复这个过程，直到 process 生命周期结束。</p>
+<h3 id=标记-清扫mark-and-sweep算法存在什么问题>标记-清扫(Mark And Sweep)算法存在什么问题？</h3>
+<p>标记-清扫(Mark And Sweep)算法这种算法虽然非常的简单，但是还存在一些问题：</p>
+<ul>
+<li>
+<p>STW，stop the world；让程序暂停，程序出现卡顿。</p>
+</li>
+<li>
+<p>标记需要扫描整个 heap</p>
+</li>
+<li>
+<p>清除数据会产生 heap 碎片</p>
+</li>
+</ul>
+<p>这里面最重要的问题就是：mark-and-sweep 算法会暂停整个程序。</p>
+<p>Go 是如何面对并这个问题的呢？</p>
+<h2 id=三色并发标记法>三色并发标记法</h2>
+<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2021/11/11-19-35-58-go-gc-3-color.webp alt></p>
+<p>Golang 的三色标记法的大体流程：</p>
+<p>首先：程序创建的对象都标记为白色。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6aQjX1iaPgmDiaNohGeekUxH2a0HXAJ4PhaduibBibh6CbOJtea4eR4js1Q/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>gc 开始：扫描所有可到达的对象，标记为灰色</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6ELwZkSkibBYotZhyAGB9rIpMzibt48gSO9ltq9D5iaTL133GtUlLbnKSQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>从灰色对象中找到其引用对象标记为灰色，把灰色对象本身标记为黑色</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje62yaMUvD35Oibk6icTD5Kl4pib7553lpgz1VFLJSPOLicb8YAqPPyfQjBFQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>监视对象中的内存修改，并持续上一步的操作，直到灰色标记的对象不存在</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje61oYDvicEpYp9uicHHbuoQxb2ewbDNicTMvqzQIkQ2T2EwOYogCrJefZVw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>此时，gc 回收白色对象。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6xRZbJ1fpRVB9x3Nj7rAfVZrQdNHB77wEu6WtnpNicibria7bzu8MAlnRA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>最后，将所有黑色对象变为白色，并重复以上所有过程。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6lqEagViaWUTxzw0hL7AfA51QykcBpg0Dbz6zLw8K19IXBhe3L6O0Ljg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>好了，大体的流程就是这样的，让我们回到刚才的问题：Go 是如何解决标记-清除(mark and sweep)算法中的卡顿(stw，stop the world)问题的呢？</p>
+<h2 id=gc-和用户逻辑如何并行操作>gc 和用户逻辑如何并行操作？</h2>
+<p>标记-清除(mark and sweep)算法的 STW(stop the world)操作，就是 runtime 把所有的线程全部冻结掉，所有的线程全部冻结意味着用户逻辑是暂停的。这样所有的对象都不会被修改了，这时候去扫描是绝对安全的。</p>
+<p>Go 如何减短这个过程呢？标记-清除(mark and sweep)算法包含两部分逻辑：标记和清除。
+我们知道 Golang 三色标记法中最后只剩下的黑白两种对象，黑色对象是程序恢复后接着使用的对象，如果不碰触黑色对象，只清除白色的对象，肯定不会影响程序逻辑。所以： <code>清除操作和用户逻辑可以并发。</code></p>
+<p>标记操作和用户逻辑也是并发的，用户逻辑会时常生成对象或者改变对象的引用，那么标记和用户逻辑如何并发呢？</p>
+<h3 id=process-新生成对象的时候gc-该如何操作呢不会乱吗>process 新生成对象的时候，GC 该如何操作呢？不会乱吗？</h3>
+<p>我们看如下图，在此状态下：process 程序又新生成了一个对象，我们设想会变成这样：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6GsPbtM8PqZVZUibpZQYiaPUAoqFZrJBVQvOvLuiaGInvYDibs9icmr6TA5Q/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>但是这样显然是不对的，因为按照三色标记法的步骤，这样新生成的对象 A 最后会被清除掉，这样会影响程序逻辑。</p>
+<p>Golang 为了解决这个问题，引入了 <code>写屏障</code>这个机制。
+写屏障：该屏障之前的写操作和之后的写操作相比，先被系统其它组件感知。
+通俗的讲：就是在 gc 跑的过程中，可以监控对象的内存修改，并对对象进行重新标记。(实际上也是超短暂的 stw，然后对对象进行标记)</p>
+<p>在上述情况中， <code>新生成的对象，一律都标位灰色！</code>即下图：</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6qKxHooLKicibBCia4pZibcGicxSyz0NYQMRmFEQNWSVXE5kff6VMa3U4ia6w/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<h3 id=那么灰色或者黑色对象的引用改为白色对象的时候golang-是该如何操作的>那么，灰色或者黑色对象的引用改为白色对象的时候，Golang 是该如何操作的？</h3>
+<p>看如下图，一个黑色对象引用了曾经标记的白色对象。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6RpJAciaTibYnOuiaFaLnh7t03sraj0wKjqmmhKdPdrD7G7jgPWiabSdGhw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>这时候，写屏障机制被触发，向 GC 发送信号，GC 重新扫描对象并标位灰色。</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/W4ZicqIeQOOcoiaib0sp1y04XNwibewvHje6EibfZpRonwcHOqibibBEicVyPnzu3t1fmGTbvugQ1jxJicrnrxVdXwNRxDQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
+<p>因此，gc 一旦开始，无论是创建对象还是对象的引用改变，都会先变为灰色。</p>
+<h2 id=参考文献>参考文献</h2>
+<ul>
+<li>Golang’s Real-time GC in Theory and PracticeGolang&rsquo;s realtime garbage collector<a href="https://mp.weixin.qq.com/s?__biz=MzU4ODczMDg5Ng==&mid=2247483688&idx=1&sn=46742e533886fe8b2fb91d79cf5144eb&scene=21#wechat_redirect">Golang 垃圾回收剖析</a></li>
+<li><a href=https://www.jianshu.com/p/bfc3c65c05d1>深入Golang Runtime之Golang GC的过去,当前与未来 - 简书</a></li>
+<li></li>
+</ul>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2021-11-25 15:52:28
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/language.html>language</a>
+<a href=https://justice.bj.cn/tags/golang.html>golang</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/36.monitor/prometheus/prometheus%E6%9F%A5%E8%AF%A2%E8%AF%AD%E8%A8%80.html>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">PromQL查询语言</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/40.storage/%E5%AD%98%E5%82%A8%E6%B5%8B%E8%AF%95.html>
+<span class="next-text nav-default">文件系统测试</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>
