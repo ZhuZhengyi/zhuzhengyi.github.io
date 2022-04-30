@@ -95,7 +95,7 @@ public:
             if (c>='0' && c<='9') {
                 repeat = 10*repeat + c-'0';
             } else if ( c == '[') {
-                string subs = dfs(s, i);
+                string subs = dfs(s, i);  //
                 while (repeat>0) {
                     res += subs;
                     repeat--;

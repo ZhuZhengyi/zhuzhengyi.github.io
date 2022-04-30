@@ -2,7 +2,7 @@
 <head>
 <meta charset=utf-8>
 <meta http-equiv=x-ua-compatible content="IE=edge">
-<title>Kubernetes Volume实现原理 - Justice的小站</title>
+<title>k8s Volume实现原理 - Justice的小站</title>
 <meta name=renderer content="webkit">
 <meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
 <meta name=MobileOptimized content="width">
@@ -14,25 +14,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Kubernetes Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消">
+<meta name=description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消">
 <meta name=keywords content="Hugo,theme,jane">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
-<meta property="og:title" content="Kubernetes Volume实现原理">
-<meta property="og:description" content="Kubernetes Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消">
+<meta property="og:title" content="k8s Volume实现原理">
+<meta property="og:description" content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-04-30T00:25:08+08:00">
-<meta property="article:modified_time" content="2022-04-30T00:25:08+08:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content="Kubernetes Volume实现原理">
-<meta itemprop=description content="Kubernetes Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消"><meta itemprop=datePublished content="2022-04-30T00:25:08+08:00">
-<meta itemprop=dateModified content="2022-04-30T00:25:08+08:00">
+<meta property="article:published_time" content="2022-04-30T09:23:49+08:00">
+<meta property="article:modified_time" content="2022-04-30T09:23:49+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="k8s Volume实现原理">
+<meta itemprop=description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消"><meta itemprop=datePublished content="2022-04-30T09:23:49+08:00">
+<meta itemprop=dateModified content="2022-04-30T09:23:49+08:00">
 <meta itemprop=wordCount content="8255">
-<meta itemprop=keywords content="cloudnative,k8s,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content="Kubernetes Volume实现原理">
-<meta name=twitter:description content="Kubernetes Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta itemprop=keywords content><meta name=twitter:card content="summary">
+<meta name=twitter:title content="k8s Volume实现原理">
+<meta name=twitter:description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -163,15 +163,11 @@ Justice's Blog
 <div id=content class="content container">
 <article class="post bg-white">
 <header class=post-header>
-<h1 class=post-title>Kubernetes Volume实现原理</h1>
+<h1 class=post-title>k8s Volume实现原理</h1>
 <div class=post-meta>
 <time datetime=2022-04-30 class=post-time>
-2022-04-30 00:25:08
+2022-04-30 09:23:49
 </time>
-<div class=post-category>
-<a href=https://justice.bj.cn/categories/cloudnative/> cloudnative </a>
-<a href=https://justice.bj.cn/categories/k8s/> k8s </a>
-</div>
 <span id=busuanzi_container_page_pv>
 | 阅读 <span id=busuanzi_value_page_pv></span>
 </span>
@@ -211,7 +207,7 @@ Justice's Blog
 </div>
 </div>
 <div class=post-content>
-<h1 id=kubernetes-volume实现原理>Kubernetes Volume实现原理</h1>
+<h1 id=k8s-volume实现原理>k8s Volume实现原理</h1>
 <p>在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消息队列等等。</p>
 <p>然而 Kuberentes 中的每一个容器随时都可能因为某些原因而被删除和重启，容器中的文件也会随着它的删除而丢失，所以我们需要对集群中的某些文件和数据进行『持久化』；除此之外，由于同一个 Pod 中的多个 Container 可能也会有共享文件的需求，比如通过共享文件目录的方式为 nginx 生成需要代理的静态文件，所以我们需要一种方式来解决这两个问题。</p>
 <p>作为 Kubernetes 集群中除了 Pod 和 Service 之外最常见的基本对象，Volume 不仅能够解决 Container 中文件的临时性问题，也能够让同一个 Pod 中的多个 Container 共享文件。</p>
@@ -1390,7 +1386,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-04-30 00:25:08
+2022-04-30 09:23:49
 </span>
 </p>
 <p class=copyright-item>
@@ -1409,19 +1405,9 @@ Justice's Blog
 </div>
 </div>
 <footer class=post-footer>
-<div class=post-tags>
-<a href=https://justice.bj.cn/tags/cloudnative/>cloudnative</a>
-<a href=https://justice.bj.cn/tags/k8s/>k8s</a>
-</div>
 <nav class=post-nav>
-<a class=prev href=/post/32.cloudnative/k8s/k8s%E4%B9%8Bvolume%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">K8S之Volume原理</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/leetcode/doc/394.%E5%AD%97%E7%AC%A6%E4%B8%B2%E8%A7%A3%E7%A0%81/>
-<span class="next-text nav-default">字符串解码</span>
+<a class=next href=/post/32.cloudnative/k8s/k8s%E4%B9%8Bcsi%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/>
+<span class="next-text nav-default">k8s之CSI实现原理</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
