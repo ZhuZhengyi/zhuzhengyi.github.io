@@ -57,6 +57,7 @@ public:
     /**
     * ## 解题思路
     * * 
+    * * f(n) = f(n/2) * f(n/2) * f(n%2)
     */
     double myPow(double x, int n) {
         // x == 0
