@@ -81,10 +81,42 @@
  * 
  */
 
+#include <string>
+
+using namespace std;
+
 // @lc code=start
 class Solution {
+private:
+    bool isSpace(char c) { return c==' '; }
+    bool isSgn(char c) { return (c=='+' || c=='-'); }
+    bool isDot(char c) { return c=='.'; }
+    bool isNum(char c) { return (c<='9' && c>='0'); }
+    bool isE(char c) { return (c=='e'||c=='E'); }
 public:
+    /**
+     ## 解题思路
+     * 有效数字 := <[小数|整数]>[[e|E]<整数>] 
+     * 小数 := [+|-]<> 
+     **/
     bool isNumber(string s) {
+        int i = 0;
+        bool haveNum = false;
+
+        // skip space
+        while(i<s.size() && isSpace(s[i])) ++i;
+
+        if (i<s.size() && isSgn(s[i])) ++i;
+
+        while(i<s.size())
+
+    }
+
+    bool isFloat(string& s, int i, int j) {
+
+    }
+
+    bool isInt(string& s, int i, int j) {
 
     }
 };
