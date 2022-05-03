@@ -70,7 +70,7 @@ public:
             } else if (!(i%5)) {
                 res.push_back("Buzz");
             } else {
-                res.push_back(string(1, '0'+i));
+                res.push_back(to_string(i));
             }
         }
 
