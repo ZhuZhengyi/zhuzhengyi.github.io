@@ -96,8 +96,8 @@ private:
 public:
     /**
      ## 解题思路
-     * 有效数字 := <[小数|整数]>[[e|E]<整数>] 
-     * 小数 := [+|-]<> 
+       1. 使用i表示当前char的index，
+       2. 按柜子依次check char，并++i;
      **/
     bool isNumber(string s) {
         int i = 0;
@@ -106,19 +106,46 @@ public:
         // skip space
         while(i<s.size() && isSpace(s[i])) ++i;
 
+        // 判断符号位
         if (i<s.size() && isSgn(s[i])) ++i;
 
-        while(i<s.size())
+        // 检查.前是否有数字
+        while(i<s.size() && isNum(s[i])) {
+            haveNum=true;
+            ++i;
+        }
 
+        // 检查.     
+        if (i<s.size() && isDot(s[i])) ++i;
+
+        // 检查.后面是否有num
+        while(i<s.size() && isNum(s[i])) {
+            haveNum=true;
+            ++i;
+        } 
+
+        // 检查数字后面是否有e/E
+        if (i<s.size()-1 && haveNum && isE(s[i])) {
+            haveNum = false;      //e后面必须要有数字，先设为false
+            ++i;
+            if (i<s.size() && isSgn(s[i])) {  //e后面的符号
+                ++i;
+            }
+        };
+
+        // 检查e/E 后面的数字
+        while(i<s.size() && isNum(s[i])) {
+            haveNum=true;       //e后面有数字，则
+            ++i;
+        }
+
+        //末尾空字符
+        while(i<s.size() && isSpace(s[i])) ++i;
+
+        //
+        return (i==s.size() && haveNum);
     }
 
-    bool isFloat(string& s, int i, int j) {
-
-    }
-
-    bool isInt(string& s, int i, int j) {
-
-    }
 };
 // @lc code=end
 
