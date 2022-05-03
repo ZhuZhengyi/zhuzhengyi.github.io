@@ -62,26 +62,35 @@
  */
 
 // @lc code=start
+/*
+## 解题思路
+* 用一个stack记录每次push时的最小值
+*/
 class MinStack {
+private:
+    stack<int> m_stack;
+    stack<int> minStack;
+
 public:
     MinStack() {
-
     }
     
     void push(int val) {
-
+        m_stack.push(val);
+        minStack.push(min(val, minStack.size()>0?minStack.top():val));
     }
     
     void pop() {
-
+        m_stack.pop();
+        minStack.pop();
     }
     
     int top() {
-
+        return m_stack.top();
     }
-    
-    int getMin() {
 
+    int getMin() {
+        return minStack.top();
     }
 };
 
