@@ -61,10 +61,14 @@
  * 
  */
 
+#include <stack>
+using namespace std;
+
 // @lc code=start
 /*
 ## 解题思路
-* 用一个stack记录每次push时的最小值
+* 用一个额外的minStack记录每次push/pop时的最小值；
+* push/pop时，同时更新minStack;
 */
 class MinStack {
 private:
