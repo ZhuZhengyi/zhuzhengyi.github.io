@@ -55,6 +55,14 @@
  */
 class Solution {
 public:
+    /*
+    ## 解题思路
+    * 递归
+      1. 先分别展开左右子树；
+      2. 将root->right指向左子树link头；
+      3. 设置一个遍历指针，移动到左子link末尾；
+      4. 末尾节点right指针指向右子link；
+    */
     void flatten(TreeNode* root) {
         if(!root){
             return;
@@ -62,14 +70,16 @@ public:
         flatten(root->left);
         flatten(root->right);
         if(root->left) {
-            auto right = root->right;
-            root->right = root->left;
-            root->left = NULL;
-            auto p = root->right;
-            while(root->right) {
-                root = root->right;
+            auto right_link_head = root->right;   //先临时保存右子树链表头指针
+            
+            root->right = root->left;     //将root->right 指向 left链表
+            root->left = NULL;            //root->left 置空
+
+            auto p = root->right;         //以接入right的最后指针
+            while(p->right) {
+                p = p->right;
             }
-            root->right = right;
+            p->right = right_link_head;
         }
     }
 };

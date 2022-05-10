@@ -51,15 +51,42 @@ class Solution {
 public:
     /*
     ## 解题思路
-    * 
+    * 1234 * 5678 = (1000+200+30+4)*(5000+600+70+8)
+                  = 1000 * 5000   
+                  + 1000*600 + 200*5000  
+                  + 1000*70 + 200*600 + 30*5000 
+                  + 1000*8 + 200*70 + 30*600 + 4*5000
+                  ...
+                  + 4*8
+    * 对于结果第k位的数，是由分别有nums1和nums2中下标 i+j = k
+      的数字相乘并累加(再加上累积进位)得到的
+      即    res[k] =  nums1[0]*nums2[k] 
+                    + nums1[1]*nums2[k-1]
+                    ...
+                    + nums1[k]*nums2[0]
+                    + carry
     */
     string multiply(string num1, string num2) {
         if(num1 == "0" || num2 == "0") {
-            return 0;
+            return "0";
         }
         if(num1 == "1" || num2 == "1") {
             return num1=="1"?num2:num1;
         }
+        
+        int carry = 0;   //进位
+        int m = num1.size()-1;
+        int n = num2.size()-1;
+        
+        string product;
+        for (int i=0; i<=m+n || carry; ++i) {
+            for (int j=max(0, i-n); j<=min(i, m); ++j)
+                carry += (num1[m-j] - '0') * (num2[n-i+j] - '0');
+            product += carry % 10 + '0';
+            carry /= 10;
+        }
+        reverse(begin(product), end(product));
+        return product;
 
     }
 };
