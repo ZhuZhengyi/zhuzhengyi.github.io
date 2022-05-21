@@ -25,11 +25,11 @@
 <meta property="og:description" content="Flink内存管理 JVM存在的问题 对象存储密度低 Full GC 影响性能 OOM 影响稳定 Cache Miss 代码结构： 基础数据结构（package:org.apache.fl">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/flink/flink%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-01-08T12:19:20+08:00">
-<meta property="article:modified_time" content="2022-01-08T12:19:20+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
+<meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Flink内存管理">
-<meta itemprop=description content="Flink内存管理 JVM存在的问题 对象存储密度低 Full GC 影响性能 OOM 影响稳定 Cache Miss 代码结构： 基础数据结构（package:org.apache.fl"><meta itemprop=datePublished content="2022-01-08T12:19:20+08:00">
-<meta itemprop=dateModified content="2022-01-08T12:19:20+08:00">
+<meta itemprop=description content="Flink内存管理 JVM存在的问题 对象存储密度低 Full GC 影响性能 OOM 影响稳定 Cache Miss 代码结构： 基础数据结构（package:org.apache.fl"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
 <meta itemprop=wordCount content="3109">
 <meta itemprop=keywords content="architech,flink,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Flink内存管理">
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Flink内存管理</h1>
 <div class=post-meta>
-<time datetime=2022-01-08 class=post-time>
-2022-01-08 12:19:20
+<time datetime=2022-05-21 class=post-time>
+2022-05-21 21:27:53
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/architech/> architech </a>
@@ -255,7 +255,7 @@ Justice's Blog
 <span class=o>}</span>
 </code></pre></td></tr></table>
 </div>
-</div><p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-09-57-36-TB17qs5JpXXXXXhXpXXXXXXXXXX.png alt=img></p>
+</div><p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-57-36-TB17qs5JpXXXXXhXpXXXXXXXXXX.png alt=img></p>
 <ul>
 <li><strong>Network Buffers:</strong> 一定数量的32KB大小的 buffer，主要用于数据的网络传输。在 TaskManager 启动的时候就会分配。默认数量是 2048 个，可以通过 <code>taskmanager.network.numberOfBuffers</code> 来配置。</li>
 <li><strong>Memory Manager Pool:</strong> 这是一个由 <code>MemoryManager</code> 管理的，由众多<code>MemorySegment</code>组成的超大集合。Flink 中的算法（如 sort/shuffle/join）会向这个内存池申请 MemorySegment，将序列化后的数据存于其中，使用完后释放回内存池。默认情况下，池子占了堆内存的 70% 的大小。</li>
@@ -556,7 +556,7 @@ Justice's Blog
 </div><ul>
 <li><strong>数据视图</strong></li>
 </ul>
-<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-09-57-49-flink-source-code-analysis-memory-management_dataview-class-diagram.png alt=dataview-class-diagram></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-57-49-flink-source-code-analysis-memory-management_dataview-class-diagram.png alt=dataview-class-diagram></p>
 <p>提供内存逻辑视图操作</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -596,21 +596,21 @@ Justice's Blog
 <li><code>PojoTypeInfo</code>: 任意的 POJO (Java or Scala)，例如，Java对象的所有成员变量，要么是 public 修饰符定义，要么有 getter/setter 方法。</li>
 <li><code>GenericTypeInfo</code>: 任意无法匹配之前几种类型的类。</li>
 </ul>
-<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-09-57-56-image-20180513121031892.png alt=image-20180513121031892></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-57-56-image-20180513121031892.png alt=image-20180513121031892></p>
 <p>如下图展示 一个内嵌型的Tuple3 对象的序列化过程。</p>
-<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-09-58-03-TB1lvdbJFXXXXa9XVXXXXXXXXXX.png alt=img></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-58-03-TB1lvdbJFXXXXa9XVXXXXXXXXXX.png alt=img></p>
 <p>可以看出这种序列化方式存储密度是相当紧凑的。其中 int 占4字节，double 占8字节，POJO多个一个字节的header，PojoSerializer只负责将header序列化进去，并委托每个字段对应的serializer对字段进行序列化。</p>
 <p>Flink 的类型系统可以很轻松地扩展出自定义的TypeInformation、Serializer以及Comparator，来提升数据类型在序列化和比较时的性能。</p>
 <h3 id=数据操作>数据操作</h3>
 <p>Flink 提供了如 group、sort、join 等操作，这些操作都需要访问海量数据。这里，我们以sort为例，这是一个在 Flink 中使用非常频繁的操作。</p>
 <p>首先，Flink 会从 MemoryManager 中申请一批 MemorySegment，我们把这批 MemorySegment 称作 sort buffer，用来存放排序的数据。</p>
-<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-09-58-12-TB1_hhgJFXXXXc2XFXXXXXXXXXX.png alt=img></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-58-12-TB1_hhgJFXXXXc2XFXXXXXXXXXX.png alt=img></p>
 <p>我们会把 sort buffer 分成两块区域。一个区域是用来存放所有对象完整的二进制数据。另一个区域用来存放指向完整二进制数据的指针以及定长的序列化后的key（key+pointer）。如果需要序列化的key是个变长类型，如String，则会取其前缀序列化。如上图所示，当一个对象要加到 sort buffer 中时，它的二进制数据会被加到第一个区域，指针（可能还有key）会被加到第二个区域。</p>
 <p>将实际的数据和指针加定长key分开存放有两个目的:</p>
 <p>第一，交换定长块（key+pointer）更高效，不用交换真实的数据也不用移动其他key和pointer。</p>
 <p>第二，这样做是缓存友好的，因为key都是连续存储在内存中的，可以大大减少 cache miss。</p>
 <p>排序的关键是比大小和交换。Flink 中，会先用 key 比大小，这样就可以直接用二进制的key比较而不需要反序列化出整个对象。因为key是定长的，所以如果key相同（或者没有提供二进制key），那就必须将真实的二进制数据反序列化出来，然后再做比较。之后，只需要交换key+pointer就可以达到排序的效果，真实的数据不用移动。</p>
-<p><img src=https://gitee.com/justice/gitnote-img-bed/raw/master/2020/11/13-09-58-20-TB1f6BnJFXXXXbnXFXXXXXXXXXX.png alt=img></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-58-20-TB1f6BnJFXXXXbnXFXXXXXXXXXX.png alt=img></p>
 <h3 id=flink内存管理优势>Flink内存管理优势：</h3>
 <ol>
 <li>节省内存空间</li>
@@ -632,7 +632,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-01-08 12:19:20
+2022-05-21 21:27:53
 </span>
 </p>
 <p class=copyright-item>
@@ -656,10 +656,10 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/flink/>flink</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/30.architech/flink/flink%E5%85%A5%E9%97%A8/>
+<a class=prev href=/post/30.architech/flink/flink-%E6%B6%88%E8%B4%B9%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">Flink入门</span>
+<span class="prev-text nav-default">Flink 消费消息的流程</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
 <a class=next href=/post/30.architech/flink/flink%E7%AE%80%E4%BB%8B/>
