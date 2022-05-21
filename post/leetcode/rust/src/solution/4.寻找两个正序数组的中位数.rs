@@ -76,8 +76,21 @@ impl Solution {
     /// ## 解题思路
     /// 1. 先按两个数组的长度对数组进行区分，明确；
     /// 2. 
+    /// 
+    /// 
+    ///              m_total
+    ///   [ 4, 7, 10, (23), 40, 85, 88]
+    ///        [3, 5, (8), 10, 15]
+    ///               m1
+    /// 
+    /// 
+    ///              m_total
+    ///   [ 4, 7, 10, (23), 40, 85, 88]
+    ///        [3, 5, (28), 30, 45]
+    ///               m1
+    /// 
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
-        // 按长度区分数组
+        // 按数组长度
         let (nums1, nums2) = if nums1.len() < nums2.len() {
             (nums1, nums2) 
         } else { 
@@ -88,20 +101,21 @@ impl Solution {
         let (mut l, mut h) = (0, l1);
 
         //
-        let mid = (l1+l2-1)/2;     //总数组中点
-        let mut i = (l + h) / 2;    //短数组中点
+        let m_total = (l1+l2-1)/2;     //总数组中点
+        let mut m1 = (l + h) / 2;      //短数组中点
+        //
         while l < h {
-            i = (l + h) / 2;
-            if i > mid-1 || nums1[i] >= nums2[mid-i-1] {
-                h = i;
+            m1 = (l + h) / 2;
+            if m1 > m_total-1 || nums1[m1] >= nums2[m_total-m1-1] {
+                h = m1;
             } else { 
-                l = i + 1;
+                l = m1 + 1;
             }
         }
-        i = l;
+        m1 = l;
 
-        let s1 = &nums1[i..(i+2)];
-        let s2 = &nums2[(mid-i)..(mid-i+2)];
+        let s1 = &nums1[m1..(m1+2)];
+        let s2 = &nums2[(m_total-m1)..(m_total-m1+2)];
         let mut newfew = vec![s1, s2].concat();
         newfew.sort();
         

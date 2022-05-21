@@ -64,8 +64,6 @@ impl Solution {
             i = i+1;
         }
         return (&str0[..i]).to_string();
-
-
     }
 }
 // @lc code=end
