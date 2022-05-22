@@ -76,6 +76,11 @@
 
 use std::collections::HashMap;
 impl Solution {
+    /// ## 解题思路
+    /// * 回文字符串的个数取决于奇数字符的个数和k的关系
+    /// * 当在k<字符串长度，且奇数字符个数>k时，
+    /// * 根据抽屉原理可知，必定存在一个短串中的奇数字符个数>1, 则该短串将无法成为回文串；
+    /// * 所以可以使用一个hash map统计每个字符的次数，根据map中奇数字符的次数得到正确的结果；
     pub fn can_construct(s: String, k: i32) -> bool {
         let mut chars = HashMap::new();
         for c in s.chars() {
