@@ -17,7 +17,934 @@
 &lt;/ul></description></item><item><title>Pages</title><link>https://justice.bj.cn/homepage/pages/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/pages/</guid><description/></item><item><title>Experiences</title><link>https://justice.bj.cn/homepage/experiences/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/experiences/</guid><description/></item><item><title>Vintage</title><link>https://justice.bj.cn/homepage/vintage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/vintage/</guid><description/></item><item><title>Blank</title><link>https://justice.bj.cn/homepage/blank/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://justice.bj.cn/homepage/blank/</guid><description>
 &lt;div style="text-align:center">
 &lt;p>Write anything you like here!&lt;/p>
-&lt;/div></description></item><item><title>枚举(Enum)</title><link>https://justice.bj.cn/post/14.language/rust/22.rust%E6%9E%9A%E4%B8%BEenum/</link><pubDate>Fri, 03 Jun 2022 15:30:38 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/rust/22.rust%E6%9E%9A%E4%B8%BEenum/</guid><description>&lt;h1 id="枚举enum">枚举(Enum)&lt;/h1>
+&lt;/div></description></item><item><title>eBPF简史转</title><link>https://justice.bj.cn/post/21.linux/ebpf%E7%AE%80%E5%8F%B2/</link><pubDate>Fri, 03 Jun 2022 15:30:38 +0800</pubDate><guid>https://justice.bj.cn/post/21.linux/ebpf%E7%AE%80%E5%8F%B2/</guid><description>&lt;h1 id="ebpf简史转">eBPF简史[转]&lt;/h1>
+&lt;h2 id="源头一篇-1992-年的论文">源头：一篇 1992 年的论文&lt;/h2>
+&lt;p>考虑到 BPF 的知名度，在介绍 eBPF 之前，笔者自觉还是有必要先来回答另一个问题：&lt;/p>
+&lt;h2 id="什么是-bpf">什么是 BPF?&lt;/h2>
+&lt;p>笔者在前文中说过了，BPF 的全称是 Berkeley Packet Filter，顾名思义，这是一个用于过滤(filter)网络报文(packet)的架构。&lt;/p>
+&lt;p>其实 BPF 可谓是名气不大，作用不小的典范：如果笔者一开始提出 BPF 的同时还捎带上大名鼎鼎的 tcpdump 或 wireshark，估计绝大部分读者都会了然了：BPF 即为 tcpdump 抑或 wireshark 乃至网络监控(Network Monitoring)领域的基石。&lt;/p>
+&lt;p>今天我们看到的 BPF 的设计，最早可以追溯到 1992 年刊行在 USENIX conference 上的一篇论文：The BSD Packet Filter: A New Architecture for User-level Packet Capture。由于最初版本的 BPF 是实现于 BSD 系统之上的，于是在论文中作者称之为&amp;quot;BSD Packet Filter&amp;quot;；后来由于 BPF 的理念渐成主流，为各大操作系统所接受，B 所代表的 BSD 便也渐渐淡去，最终演化成了今天我们眼中的 Berkeley Packet Filter。&lt;/p>
+&lt;p>诚然，无论 BSD 和 Berkeley 如何变换，其后的 Packet Filter 总是不变的，这两个单词也基本概括了 BPF 的两大核心功能：&lt;/p>
+&lt;ul>
+&lt;li>过滤(Filter): 根据外界输入的规则过滤报文；&lt;/li>
+&lt;li>复制(Copy)：将符合条件的报文由内核空间复制到用户空间；&lt;/li>
+&lt;/ul>
+&lt;p>以 tcpdump 为例：熟悉网络监控(network monitoring)的读者大抵都知道 tcpdump 依赖于 pcap 库，tcpdump 中的诸多核心功能都经由后者实现，其整体工作流程如下图所示：&lt;/p>
+&lt;p>图 1. Tcpdump 工作流程&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-22-55-epbf-image001.png" alt="">&lt;/p>
+&lt;p>由图 1 不难看出，位于内核之中的 BPF 模块是整个流程之中最核心的一环：它一方面接受 tcpdump 经由 libpcap 转码而来的滤包条件(Pseudo Machine Language) ，另一方面也将符合条件的报文复制到用户空间最终经由 libpcap 发送给 tcpdump。&lt;/p>
+&lt;p>读到这里，估计有经验的读者已经能够在脑海里大致勾勒出一个 BPF 实现的大概了，图 2 引自文献 1，读者们可以管窥一下当时 BPF 的设计：&lt;/p>
+&lt;p>图 2. BPF Overview&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-23-01-epbf002.png" alt="">&lt;/p>
+&lt;p>时至今日，传统 BPF 仍然遵循图 2 的路数：途经网卡驱动层的报文在上报给协议栈的同时会多出一路来传送给 BPF，再经后者过滤后最终拷贝给用户态的应用。除开本文提及的 tcpdump，当时的 RARP 协议也可以利用 BPF 工作(Linux 2.2 起，内核开始提供 rarp 功能，因此如今的 RARP 已经不再需要 BPF 了)。&lt;/p>
+&lt;p>整体来说，BPF 的架构还是相对浅显易懂的，不过要是深入细节的话就没那么容易了：因为其中的 filter 的设计（也是文献 1 中着墨最多的地方）要复杂那么一点点。&lt;/p>
+&lt;h3 id="pseudo-machine-language">Pseudo Machine Language&lt;/h3>
+&lt;p>估计在阅读本文之前，相当数量的读者都会误以为所谓的 Filter&lt;/p>
+&lt;p>的是挂在 tcpdump 末尾处的 expression 吧，类似于图 1 中的&amp;quot;tcp and dst port 7070&amp;quot;这样。但倘若我们如下文这样在 tcpdump 的调用中加入一个-d，还会发现其中大有乾坤：&lt;/p>
+&lt;p>清单 1 tcpdump -d&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">#以下代码可以在任意支持 tcpdump 的类 Unix 平台上运行，输出大同小异
+bash-3.2$ sudo tcpdump -d -i lo tcp and dst port 7070
+(000) ldh [12]
+(001) jeq #0x86dd jt 2 jf 6 #检测是否为 ipv6 报文，若为假(jf)则按照 ipv4 报文处理(L006)
+(002) ldb [20]
+(003) jeq #0x6 jt 4 jf 15 #检测是否为 tcp 报文
+(004) ldh [56]
+(005) jeq #0x1b9e jt 14 jf 15 #检测是否目标端口为 7070(0x1b9e)，若为真(jt)则跳转 L014
+(006) jeq #0x800 jt 7 jf 15 #检测是否为 ipv4 报文
+(007) ldb [23]
+(008) jeq #0x6 jt 9 jf 15 #检测是否为 tcp 报文
+(009) ldh [20]
+(010) jset #0x1fff jt 15 jf 11 #检测是否为 ip 分片(IP fragmentation)报文
+(011) ldxb 4*([14]&amp;amp;0xf)
+(012) ldh [x + 16] #找到 tcp 报文中 dest port 的所在位置
+(013) jeq #0x1b9e jt 14 jf 15 #检测是否目标端口为 7070(0x1b9e)，若为真(jt)则跳转 L014
+(014) ret #262144 #该报文符合要求
+(015) ret #0 #该报文不符合要求
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>根据 man page，tcpdump 的-d 会将输入的 expression 转义为一段&amp;quot;human readable&amp;quot;的&amp;quot;compiled packet-matching code&amp;quot;。当然，如清单 1 中的内容，对于很多道行不深的读者来说，基本是&amp;quot;human unreadable&amp;quot;的，于是笔者专门加入了一些注释加以解释，但是相较于-dd 和-ddd 反人类的输出，这确可以称得上是&amp;quot;一目了然&amp;quot;的代码了。&lt;/p>
+&lt;p>这段看起来类似于汇编的代码，便是 BPF 用于定义 Filter 的伪代码，亦即图 1 中 libpcap 和内核交互的 pseudo machine language(也有一种说法是，BPF 伪代码设计之初参考过当时大行其道的 RISC 令集的设计理念)，当 BPF 工作时，每一个进出网卡的报文都会被这一段代码过滤一遍，其中符合条件的(ret #262144)会被复制到用户空间，其余的(ret #0)则会被丢弃。&lt;/p>
+&lt;p>BPF 采用的报文过滤设计的全称是 CFG(Computation Flow Graph)，顾名思义是将过滤器构筑于一套基于 if-else 的控制流(flow graph)之上，例如清单 1 中的 filter 就可以用图 3 来表示：&lt;/p>
+&lt;p>图 3 基于 CFG 实现的 filter 范例&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-23-07-epbf003.png" alt="">&lt;/p>
+&lt;p>CFG 模型最大的优势是快，参考文献 1 中就比较了 CFG 模型和基于树型结构构建出的 CSPF 模型的优劣，得出了基于 CFG 模型需要的运算量更小的结论；但从另一个角度来说，基于伪代码的设计却也增加了系统的复杂性：一方面伪指令集已经足够让人眼花缭乱的了；另一方面为了执行伪代码，内核中还需要专门实现一个虚拟机(pseudo-machine)，这也在一定程度上提高了开发和维护的门槛。&lt;/p>
+&lt;p>当然，或许是为了提升系统的易用性，一方面 BPF 设计者们又额外在 tcpdump 中设计了我们今天常见的过滤表达式(实际实现于 libpcap，当然两者也都源于 Lawrence Berkeley Lab)，令过滤器真正意义上&amp;quot;Human Readable&amp;quot;了起来；另一方面，由于设计目标只是过滤字节流形式的报文，虚拟机及其伪指令集的设计相对会简单不少：整个虚拟机只实现了两个 32 位的寄存器，分别是用于运算的累加器 A 和通用寄存器 X；且指令集也只有寥寥 20 来个，如表 1 所示：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;strong>Category&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>Opcodes&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>Address modes&lt;/strong>&lt;/th>
+&lt;th>&lt;/th>
+&lt;th>&lt;/th>
+&lt;th>&lt;/th>
+&lt;th>&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;strong>Load Instructions&lt;/strong>&lt;/td>
+&lt;td>ldb&lt;/td>
+&lt;td>[k]&lt;/td>
+&lt;td>[x+k]&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>ldh&lt;/td>
+&lt;td>[k]&lt;/td>
+&lt;td>[x+k]&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>ld&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>#len&lt;/td>
+&lt;td>M[k]&lt;/td>
+&lt;td>[k]&lt;/td>
+&lt;td>[x+k]&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>ldx&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>#len&lt;/td>
+&lt;td>M[k]&lt;/td>
+&lt;td>4 * ([k] &amp;amp; 0xf)&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Store Instructions&lt;/strong>&lt;/td>
+&lt;td>st&lt;/td>
+&lt;td>M[k]&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>stx&lt;/td>
+&lt;td>M[k]&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>ALU Instruction&lt;/strong>&lt;/td>
+&lt;td>add&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>sub&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>mul&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>div&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>and&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>or&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>lsh&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>rsh&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>x&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Branch Instruction&lt;/strong>&lt;/td>
+&lt;td>jmp&lt;/td>
+&lt;td>L&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>jeq&lt;/td>
+&lt;td>#k, Lt, Lf&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>jgt&lt;/td>
+&lt;td>#k, Lt, Lf&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>jge&lt;/td>
+&lt;td>#k, Lt, Lf&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>jset&lt;/td>
+&lt;td>#k, Lt, Lf&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Misc Instruction&lt;/strong>&lt;/td>
+&lt;td>tax&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>txa&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Return Instruction&lt;/strong>&lt;/td>
+&lt;td>ret&lt;/td>
+&lt;td>#k&lt;/td>
+&lt;td>a&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>易用性方面的提升很大程度上弥补了 BPF 本身的复杂度带来的缺憾，很大程度上推动了 BPF 的发展，此后数年，BPF 逐渐称为大众所认同，包括 Linux 在内的众多操作系统都开始将 BPF 引入了内核。&lt;/p>
+&lt;p>鉴于 Linux 上 BPF 如火如荼的大好形势，本文余下的部分笔者将基于 Linux 上的 BPF 实现进行展开。&lt;/p>
+&lt;h3 id="lsf-linux-下的-bpf-实现">LSF: Linux 下的 BPF 实现&lt;/h3>
+&lt;p>BPF 是在 1997 年首次被引入 Linux 的，当时的内核版本尚为 2.1.75。准确的说，Linux 内核中的报文过滤机制其实是有自己的名字的：Linux Socket Filter，简称 LSF。但也许是因为 BPF 名声太大了吧，连&lt;a href="https://www.kernel.org/doc/Documentation/networking/filter.txt">内核文档&lt;/a>都不大买这个帐，直言 LSF 其实就是(aka)BPF。&lt;/p>
+&lt;p>当然，LSF 和 BPF 除了名字上的差异以外，还是有些不同的，首当其冲的分歧就是接口：传统的 BSD 开启 BPF 的方式主要是靠打开(open)/dev/bpfX 设备，之后利用 ioctl 来进行控制；而 linux 则选择了利用套接字选项(sockopt)SO_ATTACH_FILTER/SO_DETACH_FILTER 来执行系统调用，篇幅所限，这部分内容笔者就不深入了，有兴趣的读者可以通过移步&lt;a href="http://man7.org/linux/man-pages/man7/socket.7.html">socket 的 manual page&lt;/a>或&lt;a href="https://www.kernel.org/doc/Documentation/networking/filter.txt">内核 filter 文档&lt;/a>深入了解。这里笔者只给出一个例子来让读者们对 Linux 下的 BPF 的开发有一个直观的感受：&lt;/p>
+&lt;h5 id="清单-2-bpf-sample">清单 2 BPF Sample&lt;/h5>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;span class="lnt">50
+&lt;/span>&lt;span class="lnt">51
+&lt;/span>&lt;span class="lnt">52
+&lt;/span>&lt;span class="lnt">53
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;lt;……&amp;gt;&lt;/span>&lt;span class="cp">
+&lt;/span>&lt;span class="cp">&lt;/span>&lt;span class="c1">// tcpdump -dd 生成出的伪代码块
+&lt;/span>&lt;span class="c1">// instruction format:
+&lt;/span>&lt;span class="c1">// opcode: 16bits; jt: 8bits; jf: 8bits; k: 32bits
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">static&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">sock_filter&lt;/span> &lt;span class="n">code&lt;/span>&lt;span class="p">[]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="p">{&lt;/span> &lt;span class="mh">0x28&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x0000000c&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (000) ldh [12]
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x15&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x000086dd&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (001) jeq #0x86dd jt 2 jf 6
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x30&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000014&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (002) ldb [20]
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x15&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">11&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000006&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (003) jeq #0x6 jt 4 jf 15
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x28&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000038&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (004) ldh [56]
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x15&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">9&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000438&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (005) jeq #0x438 jt 14 jf 15
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x15&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">8&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000800&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (006) jeq #0x800 jt 7 jf 15
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x30&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000017&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (007) ldb [23]
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x15&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">6&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000006&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (008) jeq #0x6 jt 9 jf 15
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x28&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000014&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (009) ldh [20]
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x45&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00001fff&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (010) jset #0x1fff jt 15 jf 11
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0xb1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x0000000e&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (011) ldxb 4*([14]&amp;amp;0xf)
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x48&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000010&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (012) ldh [x + 16]
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x15&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000438&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (013) jeq #0x438 jt 14 jf 15
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x6&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00040000&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (014) ret #262144
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="mh">0x6&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mh">0x00000000&lt;/span> &lt;span class="p">},&lt;/span> &lt;span class="c1">// (015) ret #0
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">argc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">**&lt;/span>&lt;span class="n">argv&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">sock_fprog&lt;/span> &lt;span class="n">bpf&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">code&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">sock_filter&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">code&lt;/span> &lt;span class="p">};&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 1. 创建 raw socket
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">s&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">socket&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">AF_PACKET&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">SOCK_RAW&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">htons&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">ETH_P_ALL&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 2. 将 socket 绑定给指定的 ethernet dev
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">name&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">argv&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">];&lt;/span> &lt;span class="c1">// ethernet dev 由 arg 1 传入
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">memset&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">addr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">addr&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">addr&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">sll_ifindex&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">if_nametoindex&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">name&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">bind&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">sockaddr&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">addr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">addr&lt;/span>&lt;span class="p">)))&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 3. 利用 SO_ATTACH_FILTER 将 bpf 代码块传入内核
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">setsockopt&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">SOL_SOCKET&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">SO_ATTACH_FILTER&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">bpf&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">bpf&lt;/span>&lt;span class="p">)))&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="p">(;&lt;/span> &lt;span class="p">;)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">bytes&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">recv&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">s&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">buf&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">buf&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">);&lt;/span> &lt;span class="c1">// 4. 利用 recv()获取符合条件的报文
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">ip_header&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">iphdr&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="n">buf&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">ether_header&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">inet_ntop&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">AF_INET&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">ip_header&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">saddr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">src_addr_str&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">src_addr_str&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">inet_ntop&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">AF_INET&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">ip_header&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">daddr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dst_addr_str&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dst_addr_str&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">printf&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;IPv%d proto=%d src=%s dst=%s&lt;/span>&lt;span class="se">\n&lt;/span>&lt;span class="s">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="n">ip_header&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">version&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">ip_header&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">protocol&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">src_addr_str&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">dst_addr_str&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>篇幅所限，清单 2 中笔者只列出了部分代码，代码分析也以注释为主。有兴趣的读者可以移步&lt;a href="https://raw.githubusercontent.com/windywolf/example/master/eBPF/bpfsample.c">这&lt;/a>&lt;a href="https://raw.githubusercontent.com/windywolf/example/master/eBPF/bpfsample.c">里&lt;/a>阅读完全版。&lt;/p>
+&lt;p>由于主要是和过滤报文打交道，内核中(before 3.18)的 BPF 的绝大部分实现都被放在了&lt;a href="http://elixir.free-electrons.com/linux/v2.6.39.4/source/net/core/filter.c">net/core/filter.c&lt;/a>下，篇幅原因笔者就不对代码进行详述了，文件不长，600 来行(v2.6)，比较浅显易懂，有兴趣的读者可以移步品评一下。值得留意的函数有两个，sk_attach_filter()和sk_run_filter()：前者将 filter 伪代码由用户空间复制进内核空间；后者则负责在报文到来时执行伪码解析。&lt;/p>
+&lt;h3 id="演进jit-for-bpf">演进：JIT For BPF&lt;/h3>
+&lt;p>BPF 被引入 Linux 之后，除了一些小的性能方面的调整意外，很长一段时间都没有什么动静。直到 3.0 才首次迎来了比较大的革新：在一些特定硬件平台上，BPF 开始有了用于提速的 JIT(Just-In-Time) Compiler。&lt;/p>
+&lt;p>最先实现 JIT 的是&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/x86/net">x&lt;/a>&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/x86/net">8&lt;/a>&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/x86/net">6&lt;/a>平台，其后包括&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/arm/net">arm&lt;/a>、&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/powerpc/net">ppc&lt;/a>、&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/390/net">S390&lt;/a>、&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/arch/mips/net">mips&lt;/a>等一众平台纷纷跟进，到今天 Linux 的主流平台中支持 JIT For BPF 的已经占了绝大多数了。&lt;/p>
+&lt;p>BPF JIT 的接口还是简单清晰的：各平台的 JIT 编译函数都实现于&lt;a href="http://elixir.free-electrons.com/linux/v3.10.107/source/arch/x86/net/bpf_jit_comp.c#L147">bpf_jit_compile()&lt;/a>之中(3.16 之后，开始逐步改为&lt;a href="http://elixir.free-electrons.com/linux/v3.16/source/arch/x86/net/bpf_jit_comp.c#L869">bpf_int_jit_compile()&lt;/a>)，如果 CONFIG_BPF_JIT 被打开，则传入的 BPF 伪代码就会被传入该函数加以编译，编译结果被拿来替换掉默认的处理函数 sk_run_filter()。JIT 的实现不在本文讨论之列，其代码基本位于 arch/&lt;platform>/net 之下，有致力于优化的同学可以尝试学习一下。&lt;/p>
+&lt;p>打开 BPF 的 JIT 很简单，只要向/proc/sys/net/core/bpf_jit_enable 写入 1 即可；对于有调试需求的开发者而言，如果写入 2 的话，还可以在内核 log 中看到载入 BPF 代码时候 JIT 生成的优化代码，内核开发者们还提供了一个更加方便的工具&lt;a href="http://elixir.free-electrons.com/linux/v4.12.8/source/tools/net">bpf_jit_disam&lt;/a>，可以将内核 log 中的二进制转换为汇编以便阅读。&lt;/p>
+&lt;p>JIT Compiler 之后，针对 BPF 的小改进不断：如将 BPF 引入 seccomp(3.4)；添加一些 debug 工具如 bpf_asm 和 bpf_dbg(3.14)。不过比较革命性的大动作就要等到 3.17 了，这次的改进被称为 extended BPF，即 eBPF。&lt;/p>
+&lt;h2 id="进化extended-bpf">进化：extended BPF&lt;/h2>
+&lt;p>自 3.15 伊始，一个套源于 BPF 的全新设计开始逐渐进入人们的视野，并最终(3.17)被添置到了 kernel/bpf 下。这一全新设计最终被命名为了 extended BPF(eBPF)：顾名思义，有全面扩充既有 BPF 功能之意；而相对应的，为了后向兼容，传统的 BPF 仍被保留了下来，并被重命名为 classical BPF(cBPF)。&lt;/p>
+&lt;p>相对于 cBPF，eBPF 带来的改变可谓是革命性的：一方面，它已经为内核追踪(Kernel Tracing)、应用性能调优/监控、流控(Traffic Control)等领域带来了激动人心的变革；另一方面，在接口的设计以及易用性上，eBPF 也有了较大的改进。&lt;/p>
+&lt;p>Linux 内核代码的 samples 目录下有大量前人贡献的&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/samples/bpf">eBPF sample&lt;/a>，这里笔者先挑选其中相对简单的 sockex1 来帮助读者们建立一个 eBPF 的初步印象：&lt;/p>
+&lt;h5 id="清单-3-sockex1_userc">清单 3 sockex1_user.c&lt;/h5>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;lt;…&amp;gt;&lt;/span>&lt;span class="cp">
+&lt;/span>&lt;span class="cp">&lt;/span>&lt;span class="c1">// 篇幅所限，清单 3 和 4 都只罗列出部分关键代码，有兴趣一窥全貌的读者可以移步 http://elixir.free-electrons.com/linux/v4.12.6/source/samples/bpf深入学习
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">ac&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">**&lt;/span>&lt;span class="n">argv&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="c1">// 1. eBPF 的伪代码位于 sockex1_kern.o 中，这是一个由 llvm 生成的 elf 格式文件，指令集为 bpf;
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">snprintf&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">filename&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">filename&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="s">&amp;#34;%s_kern.o&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">argv&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">]);&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">load_bpf_file&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">filename&lt;/span>&lt;span class="p">))&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="c1">// load_bpf_file()定义于 bpf_load.c，利用 libelf 来解析 sockex1_kern.o
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 并利用 bpf_load_program 将解析出的伪代码 attach 进内核;
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 2. 因为 sockex1_kern.o 中 bpf 程序的类型为 BPF_PROG_TYPE_SOCKET_FILTER
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 所以这里需要用用 SO_ATTACH_BPF 来指明程序的 sk_filter 要挂载到哪一个套接字上
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">sock&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">open_raw_sock&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;lo&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">assert&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">setsockopt&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">sock&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">SOL_SOCKET&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">SO_ATTACH_BPF&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">prog_fd&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">prog_fd&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">]))&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">//……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="mi">5&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="c1">// 3. 利用 map 机制获取经由 lo 发出的 tcp 报文的总长度
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">key&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">IPPROTO_TCP&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">assert&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">bpf_map_lookup_elem&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">map_fd&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">],&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">tcp_cnt&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="p">}&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>清单 4 sockex1_kern.c&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;lt;……&amp;gt;&lt;/span>&lt;span class="cp">
+&lt;/span>&lt;span class="cp">&lt;/span>&lt;span class="c1">// 预先定义好的 map 对象
+&lt;/span>&lt;span class="c1">// 这里要注意好其实 map 是需要由用户空间程序调用 bpf_create_map()进行创建的
+&lt;/span>&lt;span class="c1">// 在这里定义的 map 对象，实际上会在 load_bpf_file()解析 ELF 文件的同时被解析和创建出来
+&lt;/span>&lt;span class="c1">// 这里的 SEC(NAME)宏表示在当前 obj 文件中新增一个段(section)
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">bpf_map_def&lt;/span> &lt;span class="nf">SEC&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;maps&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="n">my_map&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="p">.&lt;/span>&lt;span class="n">type&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">BPF_MAP_TYPE_ARRAY&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="p">.&lt;/span>&lt;span class="n">key_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">u32&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;span class="p">.&lt;/span>&lt;span class="n">value_size&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">long&lt;/span>&lt;span class="p">),&lt;/span>
+&lt;span class="p">.&lt;/span>&lt;span class="n">max_entries&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">256&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="p">};&lt;/span>
+&lt;span class="n">SEC&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;socket1&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">bpf_prog1&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">__sk_buff&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">skb&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="c1">// 这个例子比较简单，仅仅是读取输入报文的包头中的协议位而已
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 这里的 load_byte 实际指向了 llvm 的 built-in 函数 asm(llvm.bpf.load.byte)
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 用于生成 eBPF 指令 BPF_LD_ABS 和 BPF_LD_IND
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">index&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">load_byte&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">skb&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">ETH_HLEN&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">offsetof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">iphdr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">protocol&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="kt">long&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// ……
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="c1">// 根据 key(&amp;amp;index，注意这是一个指向函数的引用)获取对应的 value
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">value&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">bpf_map_lookup_elem&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">my_map&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">index&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="n">__sync_fetch_and_add&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">skb&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">len&lt;/span>&lt;span class="p">);&lt;/span> &lt;span class="c1">//这里的__sync_fetch_and_add 是 llvm 中的内嵌函数，表示 atomic 加操作
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">return&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 为了满足 GPL 毒药的需求，所有会注入内核的 BPF 代码都须显式的支持 GPL 协议
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">char&lt;/span> &lt;span class="n">_license&lt;/span>&lt;span class="p">[]&lt;/span> &lt;span class="n">SEC&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;license&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s">&amp;#34;GPL&amp;#34;&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>对比一下清单 3&amp;amp;4 以及清单 2 的代码片段，很容易看出一些 eBPF 显而易见的革新：&lt;/p>
+&lt;ul>
+&lt;li>用 C 写成的 BPF 代码(sockex1_kern.o)；&lt;/li>
+&lt;li>基于 map 的内核与用户空间的交互方式；&lt;/li>
+&lt;li>全新的开发接口；&lt;/li>
+&lt;/ul>
+&lt;p>除此之外，还有一些不那么明显的改进隐藏在内核之中：&lt;/p>
+&lt;ul>
+&lt;li>全新的伪指令集设计；&lt;/li>
+&lt;li>In-kernel verifier;&lt;/li>
+&lt;/ul>
+&lt;p>由一个文件(net/core/filter.c)进化到一个目录(kernel/bpf)，eBPF 的蜕变三言两语间很难交代清楚，下面笔者就先基于上述的几点变化来帮助大家入个门，至于个中细节，就只能靠读者以后自己修行了。&lt;/p>
+&lt;h3 id="再见了汇编">再见了汇编&lt;/h3>
+&lt;p>利用高级语言书写 BPF 逻辑并经由编译器生成出伪代码来并不是什么新鲜的尝试，比如 libpcap 就是在代码中内嵌了一个小型编译器来分析 tcpdump 传入的 filter expression 从而生成 BPF 伪码的。只不过长久以来该功能一直没有能被独立出来或者做大做强，究其原因，主要还是由于传统的 BPF 所辖领域狭窄，过滤机制也不甚复杂，就算是做的出来，估计也不堪大用。&lt;/p>
+&lt;p>然而到了 eBPF 的时代，情况终于发生了变化：现行的伪指令集较之过去已经复杂太多，再用纯汇编的开发方式已经不合时宜，于是，自然而然的，利用 C 一类的高级语言书写 BPF 伪代码的呼声便逐渐高涨了起来。&lt;/p>
+&lt;p>目前，支持生成 BPF 伪代码的编译器只有 llvm 一家，即使是通篇使用 gcc 编译的 Linux 内核，samples 目录下的 bpf 范例也要借用 llvm 来编译完成。还是以 sockex1 为例，用户态下的代码 sockex_user.c 是利用 HOSTCC 定义的编译器编译的；但 sockex_kern.c 就需要用到 clang 和 llvm 了。在&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/samples/bpf/Makefile">samples/bpf/Makefile&lt;/a>中，可以看到：&lt;/p>
+&lt;h5 id="清单-5-samplesbpfmakefile">清单 5 samples/bpf/Makefile&lt;/h5>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-makefile" data-lang="makefile">&lt;span class="c"># ......
+&lt;/span>&lt;span class="c"># List of programs to build
+&lt;/span>&lt;span class="c">&lt;/span>&lt;span class="nv">hostprogs-y&lt;/span> &lt;span class="o">:=&lt;/span> test_lru_dist
+&lt;span class="nv">hostprogs-y&lt;/span> &lt;span class="o">+=&lt;/span> sockex1
+&lt;span class="c"># ……
+&lt;/span>&lt;span class="c">&lt;/span>&lt;span class="nv">sockex1-objs&lt;/span> &lt;span class="o">:=&lt;/span> bpf_load.o &lt;span class="k">$(&lt;/span>LIBBPF&lt;span class="k">)&lt;/span> sockex1_user.o
+&lt;span class="c"># ……
+&lt;/span>&lt;span class="c"># 注意，这里有一个小 tip，就是如果在内核的 Makefile 中，
+&lt;/span>&lt;span class="c"># 有某一个目标文件你不希望使用内核的通用编译规则的话(类似于本文的 sockex1_kern.o)，
+&lt;/span>&lt;span class="c"># 可以像这里一样，并不把该文件加入任何 xxxprogs 或 xxx-objs，
+&lt;/span>&lt;span class="c"># 而是直接放入 always，这样内核就会在本地 Makefile 中搜索编译规则了。
+&lt;/span>&lt;span class="c">&lt;/span>&lt;span class="nv">always&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="k">$(&lt;/span>hostprogs-y&lt;span class="k">)&lt;/span>
+&lt;span class="err">&amp;lt;strong&amp;gt;always&lt;/span> &lt;span class="err">&amp;lt;/strong&amp;gt;&amp;lt;strong&amp;gt;+=&lt;/span> &lt;span class="err">sockex1_kern.o&amp;lt;/strong&amp;gt;&lt;/span>
+&lt;span class="c"># ……
+&lt;/span>&lt;span class="c">&lt;/span>&lt;span class="nv">LLC&lt;/span> &lt;span class="o">?=&lt;/span> llc
+&lt;span class="nv">CLANG&lt;/span> &lt;span class="o">?=&lt;/span> clang
+&lt;span class="c"># ……
+&lt;/span>&lt;span class="c"># sockex1_kern.o 就是使用了下述规则编译为 BPF 代码的，请注意笔者加粗的部分
+&lt;/span>&lt;span class="c">&lt;/span>&lt;span class="nf">$(obj)/%.o&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="k">$(&lt;/span>&lt;span class="nv">src&lt;/span>&lt;span class="k">)&lt;/span>/%.&lt;span class="n">c&lt;/span>
+&lt;span class="k">$(&lt;/span>&lt;span class="nv">CLANG&lt;/span>&lt;span class="k">)&lt;/span> &lt;span class="k">$(&lt;/span>&lt;span class="nv">NOSTDINC_FLAGS&lt;/span>&lt;span class="k">)&lt;/span> &lt;span class="k">$(&lt;/span>&lt;span class="nv">LINUXINCLUDE&lt;/span>&lt;span class="k">)&lt;/span> &lt;span class="k">$(&lt;/span>&lt;span class="nv">EXTRA_CFLAGS&lt;/span>&lt;span class="k">)&lt;/span> &lt;span class="err">\&lt;/span>
+&lt;span class="err">-D__KERNEL__&lt;/span> &lt;span class="err">-D__ASM_SYSREG_H&lt;/span> &lt;span class="err">-Wno-unused-value&lt;/span> &lt;span class="err">-Wno-pointer-sign&lt;/span> &lt;span class="err">\&lt;/span>
+&lt;span class="err">-Wno-compare-distinct-pointer-types&lt;/span> &lt;span class="err">\&lt;/span>
+&lt;span class="err">-Wno-gnu-variable-sized-type-not-at-end&lt;/span> &lt;span class="err">\&lt;/span>
+&lt;span class="err">-Wno-address-of-packed-member&lt;/span> &lt;span class="err">-Wno-tautological-compare&lt;/span> &lt;span class="err">\&lt;/span>
+&lt;span class="err">-Wno-unknown-warning-option&lt;/span> &lt;span class="err">\&lt;/span>
+&lt;span class="err">-O2&lt;/span> &lt;span class="err">-emit-llvm&lt;/span> &lt;span class="err">-c&lt;/span> &lt;span class="k">$&amp;lt;&lt;/span> &lt;span class="err">-o&lt;/span> &lt;span class="err">-|&lt;/span>
+&lt;span class="k">$(&lt;/span>&lt;span class="nv">LLC&lt;/span>&lt;span class="k">)&lt;/span> &lt;span class="nv">-march&lt;/span>&lt;span class="o">=&lt;/span>bpf -filetype&lt;span class="o">=&lt;/span>obj -o
+&lt;span class="k">$@&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>能用 C 书写 BPF 自然是便利了许多，但也不代表余下的开发工作就是一片坦途了：首先 llvm 的输出是 elf 文件，这也意味着想要获取能传入内核的代码，我们还需要额外做一段解析 elf 的工作，这也是为什么 Sample 下的范例几乎无一例外地都链接了 libelf 库；其次，同时也是比较重要的一点，不要忘记 BPF 的代码是跑在内核空间中的，因此书写时必得煞费苦心一番才好，以防一个不小心就做出个把内核干趴下的漏洞来：下文中提及的 verifier 就是为了这一点而生，每一个被放进内核的 BPF 代码，都须要经过它的检验才行。&lt;/p>
+&lt;h3 id="bpf-程序的类别以及-map-机制">BPF 程序的类别以及 Map 机制&lt;/h3>
+&lt;p>清单 3 中我们看到 sockex1_kern.o 是由 load_bpf_file()函数载入内存的，但实际上 eBPF 提供用来将 BPF 代码载入内核的正式接口函数其实是 bpf_load_program()，该接口负责通过参数向内核提供三类信息：&lt;/p>
+&lt;ul>
+&lt;li>BPF 程序的类型、&lt;/li>
+&lt;li>BPF 代码&lt;/li>
+&lt;li>代码运行时所需要的存放 log 的缓存地址(位于用户空间)；&lt;/li>
+&lt;/ul>
+&lt;p>有意思的是，目前所有注入内核的 BPF 程序都需要附带 GPL 协议支持信息，bpf_load_program()的 license 参数就是用来载入协议字串的。&lt;/p>
+&lt;p>由 eBPF 伊始，BPF 程序开始有分类了，通过 bpf_load_program 的参数 bpf_prog_type，我们可以看到 eBPF 支持的程序类型。这里笔者将一些常用的类型罗列于下表之中供读者参考：&lt;/p>
+&lt;h4 id="表-2-常见-bpf_prog_type-定义">表 2 常见 bpf_prog_type 定义&lt;/h4>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;strong>bpf_prog_type&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>BPF prog 入口参数(R1)&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>程序类型&lt;/strong>&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_SOCKET_FILTER&lt;/strong>&lt;/td>
+&lt;td>&lt;strong>struct __sk_buff&lt;/strong>&lt;/td>
+&lt;td>用于过滤进出口网络报文，功能上和 cBPF 类似。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_KPROBE&lt;/strong>&lt;/td>
+&lt;td>&lt;strong>struct pt_regs&lt;/strong>&lt;/td>
+&lt;td>用于 kprobe 功能的 BPF 代码。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_TRACEPOINT&lt;/strong>&lt;/td>
+&lt;td>这类 BPF 的参数比较特殊，根据 tracepoint 位置的不同而不同。&lt;/td>
+&lt;td>用于在各个 tracepoint 节点运行。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_XDP&lt;/strong>&lt;/td>
+&lt;td>&lt;strong>struct xdp_md&lt;/strong>&lt;/td>
+&lt;td>用于控制 XDP(eXtreme Data Path)的 BPF 代码。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_PERF_EVENT&lt;/strong>&lt;/td>
+&lt;td>&lt;strong>struct bpf_perf_event_data&lt;/strong>&lt;/td>
+&lt;td>用于定义 perf event 发生时回调的 BPF 代码。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_CGROUP_SKB&lt;/strong>&lt;/td>
+&lt;td>&lt;strong>struct __sk_buff&lt;/strong>&lt;/td>
+&lt;td>用于在 network cgroup 中运行的 BPF 代码。功能上和 Socket_Filter 近似。具体用法可以参考范例 test_cgrp2_attach。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>BPF_PROG_TYPE_CGROUP_SOCK&lt;/strong>&lt;/td>
+&lt;td>&lt;strong>struct bpf_sock&lt;/strong>&lt;/td>
+&lt;td>另一个用于在 network cgroup 中运行的 BPF 代码，范例 test_cgrp2_sock2 中就展示了一个利用 BPF 来控制 host 和 netns 间通信的例子。&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>深入对比清单 3(eBPF)和清单 2(cBPF)的实现的差异，还会发现一个比较明显的不同之处：BPF 代码进内核之后，cBPF 和内核通讯的方式是 recv()；而 eBPF 则将 socket 丢到一边，使用一种名为 map 的全新机制和内核通讯，其大致原理下图所示：&lt;/p>
+&lt;h4 id="图-4-ebpf-的-map-机制">图 4 eBPF 的 map 机制&lt;/h4>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-23-22-epbf004.png" alt="">&lt;/p>
+&lt;p>从图上看，这套设计本身不复杂：位于用户空间中的应用在内核中辟出一块空间建立起一个数据库用以和 eBPF 程序交互(bpf_create_map())；数据库本身以 Key-Value 的形式进行组织，无论是从用户空间还是内核空间都可以对其进行访问，两边有着相似的接口，最终在逻辑上也都殊途同归。&lt;/p>
+&lt;p>不难发现，map 带来的最大优势是效率：相对于 cBPF 一言不合就把一个通信报文从内核空间丢出来的豪放，map 机制下的通讯耗费就要小家碧玉的多了：还是以 sockex1 为例，一次通信从内核中仅仅复制 4 个字节，而且还是已经处理好了可以直接拿来就用的，做过内核开发的人都知道这对于性能意味着什么。&lt;/p>
+&lt;p>map 机制解决的另一个问题是通信数据的多样性问题。cBPF 所覆盖的功能范围很简单，无外乎是网络监控和 seccomp 两块，数据接口设计的粗放一点也就算了；而 eBPF 的利用范围则要广的多，性能调优、内核监控、流量控制什么的应有尽有，数据接口的多样性设计就显得很必要了。下表中就列出了现有 eBPF 中的 map 机制中常见的数据类型：&lt;/p>
+&lt;h5 id="表-3-map-机制下的常见数据类型">表 3. map 机制下的常见数据类型&lt;/h5>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;strong>Category&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>Source&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>Bpf_map_type&lt;/strong>&lt;/th>
+&lt;th>&lt;strong>用途&lt;/strong>&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;strong>Array&lt;/strong>&lt;/td>
+&lt;td>Arraymap.c&lt;/td>
+&lt;td>BPF_MAP_TYPE_ARRAY BPF_MAP_TYPE_CGROUP_ARRAY BPF_MAP_TYPE_PERF_EVENT_ARRAY BPF_MAP_TYPE_PERCPU_ARRAY BPF_MAP_TYPE_ARRAY_OF_MAPS&lt;/td>
+&lt;td>实际就是数组，所以所有的 key 必须是整数。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>&lt;/td>
+&lt;td>BPF_MAP_TYPE_PROG_ARRAY&lt;/td>
+&lt;td>该类型是一个特例，主要用于自定义函数，利用 JUMP_TAIL_CALL令跳转&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Hash&lt;/strong>&lt;/td>
+&lt;td>Hashmap.c&lt;/td>
+&lt;td>BPF_MAP_TYPE_HASH BPF_MAP_TYPE_PERCPU_HASH BPF_MAP_TYPE_LRU_HASH BPF_MAP_TYPE_LRU_PERCPU_HASH BPF_MAP_TYPE_HASH_OF_MAPS&lt;/td>
+&lt;td>真正意义上的 map 数据类型，如果 key 值为整数以外的类型必须使用&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Stack Trace&lt;/strong>&lt;/td>
+&lt;td>Stackmap.c&lt;/td>
+&lt;td>BPF_MAP_TYPE_STACK_TRACE&lt;/td>
+&lt;td>真正意义上的 map 数据类型，如果 key 值为整数以外的类型必须使用存储特定应用在某一特定时间点的栈状态(包括内核态和用户态)，key 只有两个：分别为内核栈 id 和用户栈 id，利用 bpf_get_stackid()获取;&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;strong>Longest Prefix Match Trie&lt;/strong>&lt;/td>
+&lt;td>Lpm_trie.c&lt;/td>
+&lt;td>BPF_MAP_TYPE_LPM_TRIE&lt;/td>
+&lt;td>基于 Longest Prefix Match 前缀树实现，适宜处理以 CIBR 为键值时的情况&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="新的指令集">新的指令集&lt;/h3>
+&lt;p>eBPF 对于既有 cBPF 令集的改动量之大，以至于基本上不能认为两者还是同一种语言了。个中变化，我们可以通过反汇编清单 4 的源代码(llvm-objdump &amp;ndash;disassemble)略知一二：&lt;/p>
+&lt;p>清单 6 Disassemble of sockex1_kern.o&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-objectivec" data-lang="objectivec">&lt;span class="n">sockex1_kern&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nl">o&lt;/span>&lt;span class="p">:&lt;/span> &lt;span class="n">file&lt;/span> &lt;span class="n">format&lt;/span> &lt;span class="n">ELF64&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">BPF&lt;/span>
+&lt;span class="n">Disassembly&lt;/span> &lt;span class="n">of&lt;/span> &lt;span class="n">section&lt;/span> &lt;span class="nl">socket1&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;span class="nl">bpf_prog1&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;span class="mi">0&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="n">bf&lt;/span> &lt;span class="mi">16&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r6&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">r1&lt;/span>
+&lt;span class="mi">1&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">30&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mi">17&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r0&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">u8&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">skb&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">23&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;span class="mi">2&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">63&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="n">a&lt;/span> &lt;span class="n">fc&lt;/span> &lt;span class="n">ff&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">u32&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="n">r10&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">r0&lt;/span>
+&lt;span class="mi">3&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">61&lt;/span> &lt;span class="mi">61&lt;/span> &lt;span class="mo">04&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r1&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">u32&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="n">r6&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">4&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="mi">4&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">55&lt;/span> &lt;span class="mo">01&lt;/span> &lt;span class="mi">08&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">04&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">r1&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">4&lt;/span> &lt;span class="k">goto&lt;/span> &lt;span class="mi">8&lt;/span>
+&lt;span class="mi">5&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="n">bf&lt;/span> &lt;span class="n">a2&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r2&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">r10&lt;/span>
+&lt;span class="mi">6&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mo">07&lt;/span> &lt;span class="mo">02&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">fc&lt;/span> &lt;span class="n">ff&lt;/span> &lt;span class="n">ff&lt;/span> &lt;span class="n">ff&lt;/span> &lt;span class="n">r2&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4&lt;/span>
+&lt;span class="mi">7&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">18&lt;/span> &lt;span class="mo">01&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r1&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0ll&lt;/span>
+&lt;span class="mi">9&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">85&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">01&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">call&lt;/span> &lt;span class="mi">1&lt;/span>
+&lt;span class="mi">10&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">15&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">02&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="n">r0&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="k">goto&lt;/span> &lt;span class="mi">2&lt;/span>
+&lt;span class="mi">11&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">61&lt;/span> &lt;span class="mi">61&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r1&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">u32&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="n">r6&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="mi">12&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="n">db&lt;/span> &lt;span class="mi">10&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">lock&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">u64&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="n">r0&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="n">r1&lt;/span>
+&lt;span class="nl">LBB0_3&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;span class="mi">13&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="n">b7&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">r0&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>
+&lt;span class="mi">14&lt;/span>&lt;span class="o">:&lt;/span> &lt;span class="mi">95&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="mo">00&lt;/span> &lt;span class="n">exit&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>我们不用管这段汇编写了点儿什么，先跟清单 2 开头的那段 cBPF 代码对比一下两者的异同：&lt;/p>
+&lt;ul>
+&lt;li>寄存器：eBPF 支持更多的寄存器；
+&lt;ul>
+&lt;li>cBPF：A, X + stack, 32bit;&lt;/li>
+&lt;li>eBPF：R1~R10 + stack, 64bit，显然，如此的设计主要针对现在大行其道的 64 位硬件，同时更多的寄存器设计也便于运行时和真实环境下的寄存器进行对应，以提高效率；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>opcode：两者的格式不同；
+&lt;ul>
+&lt;li>cBPF: op 16b, jt 8b, jf 8b, K 32b;&lt;/li>
+&lt;li>eBPF: op 8b, dstReg 4b, srcReg 4b, off 16b, imm 32b;&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>其他：sockex1_kern.o 设计的比较简单，但还是可以从中看出 eBPF 的一大改进：可以调用内核中预设好的函数（Call 1，这里指向的函数是 bpf_map_lookup_elem()，如果需要比较全的预设函数索引的话可以移步&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/include/uapi/linux/bpf.h#L494">这里&lt;/a>）。除此之外，eBPF 命令集中比较重要的新晋功能还有：
+&lt;ul>
+&lt;li>load/store 多样化：
+&lt;ul>
+&lt;li>cBPF：仅可以读 packet(即 skb)以及读写 stack；&lt;/li>
+&lt;li>eBPF：可以读写包括 stack/map/context，也即 BPF prog 的传入参数可读写。换句话说，任意传入 BPF 代码的数据流均可以被修改；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>除开预设函数外，开发者还可以自定义 BPF 函数(JUMP_TAIL_CALL)；&lt;/li>
+&lt;li>除了前向跳转外(Jump Forward，cBPF 支持)，还可以后向跳转(Jump Backword)；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>至于 eBPF 具体的指令表，因为过于庞杂这里笔者就不作文抄公了。不过 eBPF 中的几个寄存器的利用规则这里还是可以有的，否则要读懂清单 6 中的代码略有困难：&lt;/p>
+&lt;ul>
+&lt;li>R0：一般用来表示函数返回值，包括整个 BPF 代码块（其实也可被看做一个函数）的返回值；&lt;/li>
+&lt;li>R1~R5：一般用于表示内核预设函数的参数；&lt;/li>
+&lt;li>R6~R9：在 BPF 代码中可以作存储用，其值不受内核预设函数影响；&lt;/li>
+&lt;li>R10：只读，用作栈指针(SP)；&lt;/li>
+&lt;/ul>
+&lt;h3 id="in-kernel-verifier">In-kernel Verifier&lt;/h3>
+&lt;p>其实结合前面那么多的内容看下来不难发现 eBPF 其实近似于一种改头换面后的内核模块，只不过它比内核模块更短小精干，实现的功能也更新颖一些罢了，但无论是什么样的架构，只要存在注入的代码就会有安全隐患，eBPF 也不外如是——毕竟注入的代码是要在内核中运行的。&lt;/p>
+&lt;p>为了最大限度的控制这些隐患，cBPF 时代就开始加入了&lt;a href="http://elixir.free-electrons.com/linux/v2.6.39.4/source/net/core/filter.c#L498">代码检查机制&lt;/a>以防止不规范的注入代码；到了 eBPF 时代则在载入程序(bpf_load_program())时加入了更复杂的&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/kernel/bpf/verifier.c#L3544">verifier 机制&lt;/a>，在运行注入程序之前，先进行一系列的安全检查，最大限度的保证系统的安全。具体来说，verifier 机制会对注入的程序做两轮检查：&lt;/p>
+&lt;ul>
+&lt;li>首轮检查(First pass，实现于&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/kernel/bpf/verifier.c#L2586">check_cfg()&lt;/a>)可以被认为是一次深度优先搜索，主要目的是对注入代码进行一次 DAG(Directed Acyclic Graph，有向无环图)检测，以保证其中没有循环存在；除此之外，一旦在代码中发现以下特征，verifier 也会拒绝注入：
+&lt;ul>
+&lt;li>代码长度超过上限，目前(内核版本 4.12)eBPF 的代码长度上限为 4K 条指令——这在 cBPF 时代很难达到，但别忘了 eBPF 代码是可以用 C 实现的；&lt;/li>
+&lt;li>存在可能会跳出 eBPF 代码范围的 JMP，这主要是为了防止恶意代码故意让程序跑飞；&lt;/li>
+&lt;li>存在永远无法运行(unreachable)的 eBPF 令，例如位于 exit 之后的指令；&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>次轮检查(Second pass，实现于&lt;a href="http://elixir.free-electrons.com/linux/v4.12.6/source/kernel/bpf/verifier.c#L2896">do_check()&lt;/a>)较之于首轮则要细致很多：在本轮检测中注入代码的所有逻辑分支从头到尾都会被完全跑上一遍，所有的指令的参数（寄存器）、访问的内存、调用的函数都会被仔细的捋一遍，任何的错误都会导致注入程序被退货。由于过分细致，本轮检查对于注入程序的复杂度也有所限制：首先程序中的分支(branch)不允许超过 1024 个；其次经检测的指令数也必须在 96K 以内。&lt;/li>
+&lt;/ul>
+&lt;h3 id="overview-ebpf-的架构">Overview: eBPF 的架构&lt;/h3>
+&lt;p>诚然，eBPF 设计的复杂程度已是超越 cBPF 太多太多，笔者罗里吧嗦了大半天，其实也就是将将领着大家入门的程度而已，为了便于读者们能够把前文所述的碎片知识串到一起，这里笔者将 eBPF 的大体架构草绘一番，如下图所示，希望能帮助大家对 eBPF 构建一个整体的认识。&lt;/p>
+&lt;h4 id="图-5-architecture-of-ebpf">图 5. Architecture of eBPF&lt;/h4>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-23-30-epbf005.png" alt="">&lt;/p>
+&lt;h3 id="追求极简bpf-compiler-collectionbcc">追求极简：BPF Compiler Collection(BCC)&lt;/h3>
+&lt;p>现在让我们将目光聚焦到 eBPF 的使用——相信这是大部分读者最感兴趣的部分，毕竟绝大多数人其实并没有多少机会参与 eBPF 的开发——重新回到清单 3&amp;amp;4 中的 sockex1：说句良心话，虽然现在可以用 C 来实现 BPF，但编译出来的却仍然是 ELF 文件，开发者需要手动析出真正可以注入内核的代码。这部分工作多少有些麻烦，如果可以有一个通用的方案一步到位的生成出 BPF 代码就好了，开发者的注意力应该放在其他更有价值的地方，不是吗？&lt;/p>
+&lt;p>于是就有人设计了 BPF Compiler Collection(BCC)，BCC 是一个 python 库，但是其中有很大一部分的实现是基于 C 和 C++的，python 只不过实现了对 BCC 应用层接口的封装而已。&lt;/p>
+&lt;p>使用 BCC 进行 BPF 的开发仍然需要开发者自行利用 C 来设计 BPF 程序——但也仅此而已，余下的工作，包括编译、解析 ELF、加载 BPF 代码块以及创建 map 等等基本可以由 BCC 一力承担，无需多劳开发者费心。&lt;/p>
+&lt;p>限于篇幅关于 BCC 笔者不再过多展开，文章的最后笔者再给出一个基于 BCC 实现的 sockex1 的例子，读者可以感受一下使用 BCC 带给开发者们的便利性：&lt;/p>
+&lt;h5 id="清单-7-a-sample-of-bcc">清单 7 A sample of BCC&lt;/h5>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-python" data-lang="python">&lt;span class="kn">from&lt;/span> &lt;span class="nn">bcc&lt;/span> &lt;span class="kn">import&lt;/span> &lt;span class="n">BPF&lt;/span>
+&lt;span class="c1"># 和清单 2 一样，篇幅所限，这里只贴一部分源码，完全版请移步 https://raw.githubusercontent.com/windywolf/example/master/eBPF/bccsample.py&lt;/span>
+&lt;span class="n">interface&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;ens160&amp;#34;&lt;/span>
+&lt;span class="c1"># BCC 可以接受直接将 BPF 代码嵌入 python code 之中&lt;/span>
+&lt;span class="c1"># 为了方便展示笔者使用了这一功能&lt;/span>
+&lt;span class="c1"># 注意：prog 中的中文注释是由于笔者需要写作之故加入，如果读者想尝试运行这段代码，&lt;/span>
+&lt;span class="c1"># 则请将中文全部删除，因为目前 BCC 还不支持在内嵌 C 代码中使用中文注释&lt;/span>
+&lt;span class="n">prog&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;&amp;#34;&amp;#34;
+&lt;/span>&lt;span class="s2">#include &amp;lt;net/sock.h&amp;gt;
+&lt;/span>&lt;span class="s2">#include &amp;lt;bcc/proto.h&amp;gt;
+&lt;/span>&lt;span class="s2">// BCC 中专门为 map 定义了一系列的宏，以方便使用
+&lt;/span>&lt;span class="s2">// 宏中的 struct 下还定义了相应的函数，让开发者可以如 C++一般操作 map
+&lt;/span>&lt;span class="s2">// 这里笔者定义了一个 array 类型的 map，名为 my_map1
+&lt;/span>&lt;span class="s2">BPF_ARRAY(my_map1, long);
+&lt;/span>&lt;span class="s2">// BCC 下的 BPF 程序中不再需要定义把函数或变量专门放置于某个 section 下了
+&lt;/span>&lt;span class="s2">int bpf_prog1(struct __sk_buff *skb)
+&lt;/span>&lt;span class="s2">{
+&lt;/span>&lt;span class="s2"> // ……
+&lt;/span>&lt;span class="s2"> struct ethernet_t *eth = cursor_advance(cursor, sizeof(*eth));
+&lt;/span>&lt;span class="s2"> // ……
+&lt;/span>&lt;span class="s2"> struct ip_t *ip = cursor_advance(cursor, sizeof(*ip));
+&lt;/span>&lt;span class="s2"> int index = ip-&amp;gt;nextp;
+&lt;/span>&lt;span class="s2"> long zero = 0; // BCC 下的 bpf 书写还是有很多坑的
+&lt;/span>&lt;span class="s2"> // 例如，这里如果不去定义一个局部变量 zero，
+&lt;/span>&lt;span class="s2"> // 而是直接用常量 0 作为 lookup_or_init()的变量就会报错
+&lt;/span>&lt;span class="s2"> // map 类下的各个方法的具体细节可以参照 reference_guide.md
+&lt;/span>&lt;span class="s2"> value = my_map1.lookup_or_init(&amp;amp;index, &amp;amp;zero);
+&lt;/span>&lt;span class="s2"> if (value)
+&lt;/span>&lt;span class="s2"> __sync_fetch_and_add(value, skb-&amp;gt;len);
+&lt;/span>&lt;span class="s2"> return 0;
+&lt;/span>&lt;span class="s2">}
+&lt;/span>&lt;span class="s2">&amp;#34;&amp;#34;&amp;#34;&lt;/span>
+&lt;span class="n">bpf&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">BPF&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">text&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="n">prog&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">debug&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="c1"># 注入 bpf_prog1 函数&lt;/span>
+&lt;span class="n">function&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">bpf&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">load_func&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;bpf_prog1&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">BPF&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">SOCKET_FILTER&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="c1"># 这是一段 SOCKET_FILTER 类型的 BPF，所以需要挂载到某一个 interface 上&lt;/span>
+&lt;span class="n">BPF&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">attach_raw_socket&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">function&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">interface&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="c1"># 利用 map 机制获取进出 interface 的各个协议的报文总长&lt;/span>
+&lt;span class="n">bpf_map&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">bpf&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;my_map1&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span>
+&lt;span class="k">while&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">:&lt;/span>
+&lt;span class="nb">print&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;TCP : &lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s2">, UDP : &lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s2">, ICMP: &lt;/span>&lt;span class="si">{}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">format&lt;/span>&lt;span class="p">(&lt;/span>
+&lt;span class="n">bpf_map&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">socket&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">IPPROTO_TCP&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="c1"># …&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="结束语">结束语&lt;/h2>
+&lt;p>本文从 BPF 的源头开始，一路讲到了近年来刚刚杀青的 eBPF，虽说拘泥于篇幅，大多内容只能蜻蜓点水、浅尝辄止，但文中 BPF 的原理、设计、实现和应用均有所涉猎，勉强也能拿来入个门了。加之近年来基于 eBPF 的应用层出不穷，希望本文能激发读者们的奇思妙想，从而设计出更多基于 BPF 的优秀应用来。&lt;/p>
+&lt;h2 id="参考资源">参考资源&lt;/h2>
+&lt;ol>
+&lt;li>[Steven McCanne, Van Jacobson] The BSD Packet Filter: A New Architecture for User-level Packet Capture, BPF 的源头，可在&lt;a href="http://www.tcpdump.org/papers/bpf-usenix93.pdf">这里&lt;/a>查阅；&lt;/li>
+&lt;li>&lt;a href="http://www.tcpdump.org/tcpdump_man.html,">http://www.tcpdump.org/tcpdump_man.html,&lt;/a> tcpdump 的 manual page;&lt;/li>
+&lt;li>&lt;a href="https://www.kernel.org/doc/Documentation/networking/filter.txt,">https://www.kernel.org/doc/Documentation/networking/filter.txt,&lt;/a> 内核的 BPF 文档；&lt;/li>
+&lt;li>&lt;a href="http://man7.org/linux/man-pages/man7/socket.7.html,">http://man7.org/linux/man-pages/man7/socket.7.html,&lt;/a> Linux 套接字的 manual page，其中有对 Linux Kernel 中 BPF 接口的大致介绍，不过论及详细程度还是不及参考文献 3 的；&lt;/li>
+&lt;li>&lt;a href="https://lwn.net/Articles/437981/">https://lwn.net/Articles/437981/&lt;/a>，LWN 上刊载的 JIT For BPF 首次被引入的消息：A JIT For Packet Filters;&lt;/li>
+&lt;li>&lt;a href="https://lwn.net/Articles/603983/,">https://lwn.net/Articles/603983/,&lt;/a> LWN 上刊载的 eBPF 的介绍文献：Extending extended BPF。由于年代久远接口相关的内容已经落后于最新代码了，权作参考；&lt;/li>
+&lt;li>&lt;a href="https://github.com/iovisor/bcc,">https://github.com/iovisor/bcc,&lt;/a> BCC 的源码，但由于编译需要比较多的依赖，如果想偷个懒的话可以移步&lt;a href="https://hub.docker.com/r/zlim/bcc/">这里&lt;/a>直接获取 docker image；&lt;/li>
+&lt;li>&lt;a href="https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md">bcc/reference_guide.md at master · iovisor/bcc · GitHub&lt;/a>, BCC 开发指南；&lt;/li>
+&lt;li>&lt;a href="http://elixir.free-electrons.com/linux/latest/source,">http://elixir.free-electrons.com/linux/latest/source,&lt;/a> Linux Kernel 源码阅读利器。&lt;/li>
+&lt;/ol></description></item><item><title>枚举(Enum)</title><link>https://justice.bj.cn/post/14.language/rust/22.rust%E6%9E%9A%E4%B8%BEenum/</link><pubDate>Fri, 03 Jun 2022 15:30:38 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/rust/22.rust%E6%9E%9A%E4%B8%BEenum/</guid><description>&lt;h1 id="枚举enum">枚举(Enum)&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;ul>
 &lt;li>
@@ -2739,7 +3666,325 @@ $ &lt;span class="nb">cd&lt;/span> accumulo-1.9.1
 &lt;li>&lt;a href="https://blog.ippon.tech/use-cassandra-mongodb-hbase-accumulo-mysql/">https://blog.ippon.tech/use-cassandra-mongodb-hbase-accumulo-mysql/&lt;/a>&lt;/li>
 &lt;li>&lt;a href="https://www.cloudera.com/products/open-source/apache-hadoop/apache-accumulo.htmlh">https://www.cloudera.com/products/open-source/apache-hadoop/apache-accumulo.htmlh&lt;/a>&lt;/li>
 &lt;li>&lt;a href="http://wikibon.org/blog/breaking-analysis-accumulo-why-the-world-needs-another-nosql-database/">http://wikibon.org/blog/breaking-analysis-accumulo-why-the-world-needs-another-nosql-database/&lt;/a>&lt;/li>
-&lt;/ol></description></item><item><title>Alluxio</title><link>https://justice.bj.cn/post/30.architech/alluxio/</link><pubDate>Sat, 21 May 2022 21:27:53 +0800</pubDate><guid>https://justice.bj.cn/post/30.architech/alluxio/</guid><description>&lt;h1 id="alluxio">Alluxio&lt;/h1>
+&lt;/ol></description></item><item><title>AF_XDP</title><link>https://justice.bj.cn/post/21.linux/af_xdp/</link><pubDate>Sat, 21 May 2022 21:27:53 +0800</pubDate><guid>https://justice.bj.cn/post/21.linux/af_xdp/</guid><description>&lt;h1 id="af_xdp">AF_XDP&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;p>&lt;strong>AF_XDP&lt;/strong>是一种用于高性能包处理的地址簇(Address Family)。&lt;/p>
+&lt;p>使用XDP程序中的&lt;strong>XDP_REDIRECT&lt;/strong>操作，可以使用&lt;code>bpf_redirect_map（）&lt;/code>函数将入口帧重定向到其他启用XDP的网络设备。 AF_XDP套接字使XDP程序可以将帧重定向到用户空间应用程序中的内存缓冲区。&lt;/p>
+&lt;p>可以通过&lt;code>socket()&lt;/code>系统调用创建AF_XDP socket (XSK)。每个XSK涉及两个ring：RX ring和TX ring。一个socket可以从RX ring上接收报文，并发送到TX ring。这两个rings分别通过socket选项&lt;code>XDP_RX_RING&lt;/code> 和&lt;code>XDP_TX_RING&lt;/code>进行注册。每个socket必须至少具有其中一个ring。RX或TX ring描述符指向内存域中的data buffer，称为UMEM。RX和TX可以共享相同的UMEM，这样一个报文无需在RX和TX之间进行拷贝。此外，如果一个报文由于重传需要保留一段时间，则指向该报文的描述符可以指向另外一个报文，这样就避免了数据的拷贝。基本流程&lt;a href="https://www.dpdk.org/wp-content/uploads/sites/35/2018/10/pm-06-DPDK-PMD-for-AF_XDP.pdf">如下&lt;/a>：&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-11-39-2020-09-30-17-18-13-image.png" alt="">&lt;/p>
+&lt;p>UMEM包含一系列大小相同的chunks，ring中的描述符通过引用帧的地址来引用该帧，该地址为整个UMEM域的偏移量。用户空间会使用合适的方式(malloc，mmap，大页内存等)为UMEM分配内存，然后使用使用新的socket选项&lt;code>XDP_UMEM_REG&lt;/code>将内存域注册到内核中。UMEM也包含两个ring：FILL ring和COMPLETION ring。应用会使用FILL ring下发addr，让内核填写RX包数据。一旦接收到报文，RX ring会引用这些帧。COMPLETION ring包含内核传输完的帧地址，且可以被用户空间使用，用于TX或RX。因此COMPLETION ring中的帧地址为先前使用TX ring传输的地址。总之，RX和FILL ring用于RX路径，TX和COMPLETION ring用于TX路径。&lt;/p>
+&lt;p>最后会使用bind()调用将socket绑定到一个设备以及该设备指定的队列id上，绑定没有完成前无法传输流量。&lt;/p>
+&lt;p>最后会使用bind()调用将socket绑定到一个设备以及该设备指定的队列id上，绑定没有完成前无法传输流量。&lt;/p>
+&lt;p>可以在多个进程间共享UMEM 。如果一个进程需要更新UMEM，则会跳过注册UMEM和其对应的两个ring的过程。在bind调用中设置&lt;code>XDP_SHARED_UMEM&lt;/code> 标志，并提交该进程期望共享UMEM的XSK，以及新创建的XSK socket。新进程会在其共享UMEM的RX ring中接收到帧地址引用。注意，由于ring的结构是单生产者/单消费者的，新的进程的socket必须创建独立的RX和TX ring。同样的原因，每个UMEM也只能有一个FILL和COMPLETION ring。每个进程都需要正确地处理好UMEM。&lt;/p>
+&lt;p>那么报文是怎么从XDP程序分发到XSKs的呢？通过名为&lt;code>XSKMAP&lt;/code>(完整名为BPF_MAP_TYPE_XSKMAP`) BPF map。用户空间的应用可以将一个XSK放到该map的任意位置，然后XDP程序就可以将一个报文重定向到该map中指定的索引中，此时XDP会校验map中的XSK确实绑定到该设备和ring号。如果没有，则会丢弃该报文。如果map中的索引为空，也会丢弃该报文。因此，当前的实现中强制要求必须加载一个XDP程序(以及保证XSKMAP存在一个XSK)，这样才能通过XSK将流量传送到用户空间。&lt;/p>
+&lt;p>AF_XDP可以运行在两种模式上：&lt;code>XDP_SKB&lt;/code>和&lt;code>XDP_DRV&lt;/code>。如果驱动不支持XDP，则在加载XDP程序是需要明确指定使用XDP_SKB，&lt;code>XDP_SKB&lt;/code>模式使用SKB和通用的XDP功能，并将数据复制到用户空间，是一种适用于任何网络设备的回退模式。 如果驱动支持XDP，将使用AF_XDP代码提供更好的性能，但仍然会将数据拷贝到用户空间的操作。&lt;/p>
+&lt;h5 id="术语">术语&lt;/h5>
+&lt;h6 id="umem">UMEM&lt;/h6>
+&lt;p>UMEM是一个虚拟的连续内存域，分割为相同大小的帧。&lt;/p>
+&lt;p>一个UMEM会关联一个netdev以及该netdev的队列id。通过&lt;code>XDP_UMEM_REG&lt;/code> socket选项进行创建和配置(chunk大小，headroom，开始地址和大小)。通过&lt;code>bind()&lt;/code>系统调用将一个UMEM绑定到一个netdev和队列id。umem的基本结构如下：&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-11-49-1334952-20200807102005413-1869804955.png" alt="">&lt;/p>
+&lt;p>一个AF_XDP为一个链接到一个独立的UMEM的socket，但一个UMEM可以有多个AF_XDP socket。为了共享一个通过socket A创建的UMEM，socket B可以将结构体&lt;code>sockaddr_xdp&lt;/code>中的成员sxdp_flags设置为&lt;code>XDP_SHARED_UMEM&lt;/code>，并将A的文件描述符传递给结构体&lt;code>sockaddr_xdp&lt;/code>的成员&lt;code>sxdp_shared_umem_fd&lt;/code>。&lt;/p>
+&lt;p>UMEM有两个单生产者/单消费者ring，用于在内核和用户空间应用程序之间转移UMEM帧。&lt;/p>
+&lt;h6 id="rings">Rings&lt;/h6>
+&lt;p>有4类不同类型的ring：FILL, COMPLETION, RX 和TX，所有的ring都是单生产者/单消费者，因此用户空间的程序需要显示地同步对这些rings进行读/写的多进程/线程。&lt;/p>
+&lt;p>UMEM使用2个ring：FILL和COMPLETION。每个关联到UMEM的socket必须有1个RX队列，1个TX队列或同时拥有2个队列。如果配置了4个socket(同时使用TX和RX)，那么此时会有1个FILL ring，1个COMPLETION ring，4个TX ring和4个RX ring。&lt;/p>
+&lt;p>ring是基于首(生产者)尾(消费者)的结构。一个生产者会在结构体xdp_ring的producer成员指出的ring索引处写入数据，并增加生产者索引；一个消费者会结构体xdp_ring的consumer成员指出的ring索引处读取数据，并增加消费者索引。&lt;/p>
+&lt;p>可以通过_RING setsockopt系统调用配置和创建ring，使用mmap()，并结合合适的偏移量，将其映射到用户空间&lt;/p>
+&lt;p>ring的大小需要是2次幂。&lt;/p>
+&lt;h6 id="umem-fill-ring">UMEM Fill Ring&lt;/h6>
+&lt;p>FILL ring用于将UMEM帧从用户空间传递到内核空间，同时将UMEM地址传递给ring。例如，如果UMEM的大小为64k，且每个chunk的大小为4k，那么UMEM包含16个chunk，可以传递的地址为0到64k。&lt;/p>
+&lt;p>传递给内核的帧用于ingress路径(RX rings)。&lt;/p>
+&lt;p>用户应用也会在该ring中生成UMEM地址。注意，如果以对齐的chunk模式运行应用，则内核会屏蔽传入的地址。即，如果一个chunk大小为2k，则会屏蔽掉log2(2048) LSB的地址，意味着2048, 2050 和3000都将引用相同的chunk。如果用户应用使用非对其的chunk模式运行，那么传入的地址将保持不变。&lt;/p>
+&lt;h6 id="umem-completion-ring">UMEM Completion Ring&lt;/h6>
+&lt;p>COMPLETION Ring用于将UMEM帧从内核空间传递到用户空间，与FILL ring相同，使用了UMEM索引。&lt;/p>
+&lt;p>已经发送的从内核空间传递到用户空间的帧还可以被用户空间使用。&lt;/p>
+&lt;p>用户应用会消费该ring种的UMEM地址。&lt;/p>
+&lt;h6 id="rx-ring">RX Ring&lt;/h6>
+&lt;p>RX ring位于socket的接收侧，ring中的每个表项都是一个&lt;code>xdp_desc&lt;/code> 结构的描述符。该描述符包含UMEM偏移量(地址)以及数据的长度。&lt;/p>
+&lt;p>如果没有帧从FILL ring传递给内核，则RX ring中不会出现任何描述符。&lt;/p>
+&lt;p>用户程序会消费该ring中的&lt;code>xdp_desc&lt;/code>描述符。&lt;/p>
+&lt;h6 id="tx-ring">TX Ring&lt;/h6>
+&lt;p>TX Ring用于发送帧。在填充&lt;code>xdp_desc&lt;/code>(索引，长度和偏移量)描述符后传递给该ring。&lt;/p>
+&lt;p>如果要启动数据传输，则必须调用&lt;code>sendmsg()&lt;/code>，未来可能会放宽这种限制。&lt;/p>
+&lt;p>用户程序会给TX ring生成&lt;code>xdp_desc&lt;/code> 描述符。&lt;/p>
+&lt;h5 id="xskmap--bpf_map_type_xskmap">XSKMAP / BPF_MAP_TYPE_XSKMAP&lt;/h5>
+&lt;p>在XDP侧会用到类型为&lt;code>BPF_MAP_TYPE_XSKMAP&lt;/code> 的BPF map，并结合&lt;code>bpf_redirect_map()&lt;/code>将ingress帧传递给socket。&lt;/p>
+&lt;p>用户应用会通过&lt;code>bpf()&lt;/code>系统调用将socket插入该map。&lt;/p>
+&lt;p>注意，如果一个XDP程序尝试将帧重定向到一个与队列配置和netdev不匹配的socket时，会丢弃该帧。即，如果一个AF_XDP socket绑定到一个名为eth0，队列为17的netdev上时，只有当XDP程序指定到eth0且队列为17时，才会将数据传递给该socket。参见&lt;code>samples/bpf/&lt;/code>获取例子&lt;/p>
+&lt;h5 id="配置标志位和socket选项">配置标志位和socket选项&lt;/h5>
+&lt;h6 id="xdp_copy-和xdp_zero_copy-bind标志">XDP_COPY 和XDP_ZERO_COPY bind标志&lt;/h6>
+&lt;p>当绑定到一个socket时，内核会首先尝试使用零拷贝进行拷贝。如果不支持零拷贝，则会回退为使用拷贝模式。即，将所有的报文拷贝到用户空间。但如果想强制指定一种特定的模式，则可以使用如下标志：如果给bind调用传递了&lt;code>XDP_COPY&lt;/code>，则内核将强制进入拷贝模式；如果没有使用拷贝模式，则bind调用会失败，并返回错误。相反地，&lt;code>XDP_ZERO_COPY&lt;/code> 将强制socket使用零拷贝或调用失败。&lt;/p>
+&lt;h6 id="xdp_shared_umem-bind-标志">XDP_SHARED_UMEM bind 标志&lt;/h6>
+&lt;p>该表示可以使多个socket绑定到系统的UMEM，但仅能使用系统的队列id。这种模式下，每个socket都有其各自的RX和TX ring，但UMEM只能有一个FILL ring和一个COMPLETION ring。为了使用这种模式，需要创建第一个socket，并使用正常模式进行绑定。然后创建第二个socket，含一个RX和一个TX(或二者之一)，但不会创建FILL 或COMPLETION ring(与第一个socket共享)。在bind调用中，设置&lt;code>XDP_SHARED_UMEM&lt;/code>选项，并在sxdp_shared_umem_fd中提供初始socket的fd。以此类推。&lt;/p>
+&lt;p>那么当接收到一个报文后，应该上送到那个socket呢？答案是由XDP程序来决定。将所有的socket放到XDP_MAP中，然后将报文发送给数组中索引对应的socket。下面展示了一个简单的以轮询方式分发报文的例子：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;lt;linux/bpf.h&amp;gt;&lt;/span>&lt;span class="cp">
+&lt;/span>&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;#34;bpf_helpers.h&amp;#34;&lt;/span>&lt;span class="cp">
+&lt;/span>&lt;span class="cp">&lt;/span>
+&lt;span class="cp">#define MAX_SOCKS 16
+&lt;/span>&lt;span class="cp">&lt;/span>
+&lt;span class="k">struct&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">__uint&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">type&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">BPF_MAP_TYPE_XSKMAP&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">__uint&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">max_entries&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">MAX_SOCKS&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">__uint&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">key_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">__uint&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">value_size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">xsks_map&lt;/span> &lt;span class="n">SEC&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;.maps&amp;#34;&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="k">static&lt;/span> &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">rr&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">SEC&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;xdp_sock&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">xdp_sock_prog&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">xdp_md&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ctx&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="n">rr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">rr&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">&amp;amp;&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">MAX_SOCKS&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="nf">bpf_redirect_map&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">xsks_map&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">rr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">XDP_DROP&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>注意，由于只有一个FILL和一个COMPLETION ring，且是单生产者单消费者的ring，需要确保多处理器或多线程不会同时使用这些ring。libbpf没有提供原子同步功能。&lt;/p>
+&lt;p>当多个socket绑定到相同的umem时，libbpf会使用这种模式。然而，需要注意的是，需要在&lt;code>xsk_socket__create&lt;/code>调用中提供&lt;code>XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD&lt;/code> libbpf_flag，然后将其加载到自己的XDP程序中(因为libbpf没有内置路由流量功能)。&lt;/p>
+&lt;h6 id="xdp_use_need_wakeup-bind标志">XDP_USE_NEED_WAKEUP bind标志&lt;/h6>
+&lt;p>该选择支持在FILL ring和TX ring中设置一个名为&lt;code>need_wakeup&lt;/code>的标志，用户空间作为这些ring的生产者。当在bind调用中设置了该选项，如果需要明确地通过系统调用唤醒内核来继续处理报文时，会设置&lt;code>need_wakeup&lt;/code> 标志。&lt;/p>
+&lt;p>如果将该标志设置给FILL ring，则应用需要调用&lt;code>poll()&lt;/code>，以便在RX ring上继续接收报文。如，当内核检测到FILL ring中没有足够的buff，且NIC的RX HW RING中也没有足够的buffer时会发生这种情况。此时会关中断，这样NIC就无法接收到任何报文(由于没有足够的buffer)，由于设置了need_wakeup，这样用户空间就可以在FILL ring上增加buffer，然后调用&lt;code>poll()&lt;/code>，这样内核驱动就可以将这些buffer添加到HW ring上继续接收报文。&lt;/p>
+&lt;p>如果将该标志设置给TX ring，意味着应用需要明确地通知内核发送位于TX ring上的报文。可以通过调用&lt;code>poll()&lt;/code>，或调用&lt;code>sendto()&lt;/code>完成。&lt;/p>
+&lt;p>可以在&lt;em>samples/bpf/xdpsock_user.c&lt;/em>中找到例子。在TX路径上使用libbpf辅助函数的例子如下：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">xsk_ring_prod__needs_wakeup&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">my_tx_ring&lt;/span>&lt;span class="p">))&lt;/span>
+&lt;span class="n">sendto&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">xsk_socket__fd&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">xsk_handle&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">NULL&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">MSG_DONTWAIT&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">NULL&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>建议启用该模式，由于减少了TX路径上的系统调用的数目，因此可以在应用和驱动运行在同一个(或不同)core的情况下提升性能。&lt;/p>
+&lt;h6 id="xdp_rxtxumem_fillumem_completion_ring-setsockopts">XDP_{RX|TX|UMEM_FILL|UMEM_COMPLETION}_RING setsockopts&lt;/h6>
+&lt;p>这些socket选项分别设置RX, TX, FILL和COMPLETION ring的描述符数量(必须至少设置RX或TX ring的描述符大小)。如果同时设置了RX和TX，就可以同时接收和发送来自应用的流量；如果仅设置了其中一个，就可以节省相应的资源。如果需要将一个UMEM绑定到socket，需要同时设置FILL ring和COMPLETION ring。如果使用了&lt;code>XDP_SHARED_UMEM&lt;/code>标志，无需为除第一个socket之外的socket创建单独的UMEM，所有的socket将使用共享的UMEM。注意ring为单生产者单消费者结构，因此多进程无法同时访问同一个ring。参见&lt;code>XDP_SHARED_UMEM&lt;/code>章节。&lt;/p>
+&lt;p>使用libbpf时，可以通过给&lt;code>xsk_socket__create&lt;/code>函数的rx和tx参数设置NULL来创建Rx-only和Tx-only的socket。&lt;/p>
+&lt;p>如果创建了一个Tx-only的socket，建议不要在FILL ring中放入任何报文，否则，驱动可能会认为需要接收数据(但实际上并不是这样的)，进而影响性能。&lt;/p>
+&lt;h6 id="xdp_umem_reg-setsockopt">XDP_UMEM_REG setsockopt&lt;/h6>
+&lt;p>该socket选项会给一个socket注册一个UMEM，其对应的区域包含了可以容纳报文的buffer。该调用会使用一个指向该区域开始处的指针，以及该区域的大小。此外，还有一个UMEM可以切分的chunk大小参数(目前仅支持2K或4K)。如果一个UMEM区域的大小为128K，且chunk大小为2K，意味着该UMEM域最大可以有128K / 2K = 64个报文，且最大的报文大小为2K。&lt;/p>
+&lt;p>还有一个选项可以在UMEM中设置每个buffer的headroom。如果设置为N字节，意味着报文会从buffer的第N个字节开始，为应用保留前N个字节。最后一个选项为标志位字段，会在每个UMEM标志中单独处理。&lt;/p>
+&lt;h6 id="xdp_statistics-getsockopt">XDP_STATISTICS getsockopt&lt;/h6>
+&lt;p>获取一个socket丢弃信息，用于调试。支持的信息为：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="k">struct&lt;/span> &lt;span class="n">xdp_statistics&lt;/span> &lt;span class="p">{&lt;/span>
+&lt;span class="n">__u64&lt;/span> &lt;span class="n">rx_dropped&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="cm">/* Dropped for reasons other than invalid desc */&lt;/span>
+&lt;span class="n">__u64&lt;/span> &lt;span class="n">rx_invalid_descs&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="cm">/* Dropped due to invalid descriptor */&lt;/span>
+&lt;span class="n">__u64&lt;/span> &lt;span class="n">tx_invalid_descs&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="cm">/* Dropped due to invalid descriptor */&lt;/span>
+&lt;span class="p">};&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h6 id="xdp_options-getsockopt">XDP_OPTIONS getsockopt&lt;/h6>
+&lt;p>获取一个XDP socket的选项。目前仅支持&lt;code>XDP_OPTIONS_ZEROCOPY&lt;/code>，用于检查是否使用了零拷贝。&lt;/p>
+&lt;blockquote>
+&lt;p>从AF_XDP的特性上可以看到其&lt;a href="https://pantheon.tech/what-is-af_xdp/">局限性&lt;/a>：不能使用XDP将不同的流量重定向的多个AF_XDP socket上，原因是每个AF_XDP socket必须绑定到物理接口的TX队列上。大多数的物理和仿真HW的每个接口仅支持一个RX/TX队列，因此当该接口上绑定了一个AF_XDP后，后续的绑定操作都将失败。仅有少数HW支持多RX/TX队列，且通常仅有2/4/8个队列，无法扩展给cloud中的上百个容器使用。&lt;/p>
+&lt;/blockquote>
+&lt;p>更多细节参见AF_XDP&lt;a href="https://www.kernel.org/doc/html/latest/networking/af_xdp.html">官方文档&lt;/a>以及这篇&lt;a href="http://vger.kernel.org/lpc_net2018_talks/lpc18_paper_af_xdp_perf-v2.pdf">论文&lt;/a>。&lt;/p>
+&lt;h2 id="tchttpsdocsciliumioenlatestbpftc-traffic-control">&lt;a href="https://docs.cilium.io/en/latest/bpf/#tc-traffic-control">TC&lt;/a>&lt;/h2>
+&lt;p>除了XDP，BPF还可以在网络数据路径的内核tc(traffic control)层之外使用。上文已经给出了XDP和TC的区别。&lt;/p>
+&lt;blockquote>
+&lt;ul>
+&lt;li>&lt;code>ingress&lt;/code> hook：&lt;code>__netif_receive_skb_core() -&amp;gt; sch_handle_ingress()&lt;/code>&lt;/li>
+&lt;li>&lt;code>egress&lt;/code> hook：&lt;code>__dev_queue_xmit() -&amp;gt; sch_handle_egress()&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-12-21-1334952-20200809204246404-1470995812.png" alt="">&lt;/p>
+&lt;/blockquote>
+&lt;p>运行在tc层的BPF程序使用的是 &lt;code>cls_bpf&lt;/code> (cls即Classifiers的简称)分类器。在tc中，将BPF的附着点描述为一个&amp;quot;分类器&amp;quot;，这个词有点误导，因此它少描述了&lt;code>cls_bpf&lt;/code>的所支持的功能。即一个完整的可编程的报文处理器不仅可以读取&lt;code>skb&lt;/code>的元数据和报文数据，还可以对其进行任意修改，最后终止tc的处理，并返回裁定的action(见下)。&lt;code>cls_bpf&lt;/code>可以认为是一个自包含的，可以管理和执行tc BPF程序的实体。&lt;/p>
+&lt;p>&lt;code>cls_bpf&lt;/code>可以包含一个或多个tc BPF程序。通常，在传统的tc方案中，分类器和action模块是分开的，每个分类器可以附加一个或多个action，一旦匹配到分类器时就会执行action。但在现代软件数据路径中使用这种模式的tc处理复杂的报文时会遇到扩展性问题。由于附加到cls_bpf的tc BPF程序是完全自包含的，因此可以有效地将解析和操作过程融合到一个单元中。幸好有了&lt;code>cls_bpf&lt;/code>的&lt;code>direct-action&lt;/code>模式，该模式下，仅需要返回tc action裁定结果并立即结束处理流即可，可以在网络数据流中实现可扩展的可编程报文处理流程，同时避免了action的线性迭代。&lt;code>cls_bpf&lt;/code>是tc层中唯一能够实现这种快速路径的“分类器”模块。&lt;/p>
+&lt;p>与XDP BPF程序类似，tc BPF程序可以在运行时通过cls_bpf自动更新，而不会中断任何网络流或重启服务。&lt;/p>
+&lt;p>&lt;code>cls_bpf&lt;/code>可以附加的tc ingress和egree钩子都通过一个名为&lt;code>sch_clsact&lt;/code>的伪qdisc进行管理。由于该伪qdisc可以同时管理ingress和egress的tc钩子，因此它是ingress qdisc的超集(也可直接替换)。对于&lt;code>__dev_queue_xmit()&lt;/code>中的tc的egress钩子，需要注意的是，它不是在内核的qdisc root锁下运行的。因此，tc ingress和egress钩子都以无锁的方式运行在快速路径中，且这两个钩子都禁用了抢占，并运行在RCU读取侧。&lt;/p>
+&lt;p>通常在egress上会存在附着到网络设备上的qdisc，如&lt;code>sch_mq&lt;/code>，&lt;code>sch_fq&lt;/code>，&lt;code>sch_fq_codel&lt;/code>或&lt;code>sch_htb&lt;/code>，其中有些是可分类的qdisc(包含子类)，因此会要求一个报文分类机制来决定在哪里解复用数据包。该过程通过调用&lt;code>tcf_classify()&lt;/code>进行处理，进而调用tc分类器(如果存在)。&lt;code>cls_bpf&lt;/code>也可以附加并用于如下场景：一些在qdisc root锁下的操作可能会收到锁竞争的影响。&lt;code>sch_clsact&lt;/code> qdisc的egress钩子出现在更早的时间点，但它不属于这个锁的范围，因此作完全独立于常规的egress qdiscs。因此，对于&lt;code>sch_htb&lt;/code>这样的情况，&lt;code>sch_clsact&lt;/code> qdisc可以通过qdisc root锁之外的tc BPF执行繁重的包分类工作，通过在这些 tc BPF 程序中设置 &lt;code>skb-&amp;gt;mark&lt;/code> 或 &lt;code>skb-&amp;gt;priority&lt;/code> ，这样 &lt;code>sch_htb&lt;/code> 只需要一个简单的映射即可，不需要在root锁下执行代价高昂的报文分类工作，通过这种方式可以减少锁竞争。&lt;/p>
+&lt;p>在sch_clsact结合cls_bpf的场景下支持offloaded tc BPF程序，这种情况下，先前加载的BPF程序是从SmartNIC驱动程序jit生成的，以便在NIC上以本机方式运行。只有在&lt;code>direct-action&lt;/code>模式下运行的&lt;code>cls_bpf&lt;/code>程序才支持offloaded。&lt;code>cls_bpf&lt;/code>仅支持offload一个单独的程序(无法offload多个程序)，且只有ingress支持offload BPF程序。&lt;/p>
+&lt;p>一个&lt;code>cls_bpf&lt;/code>实例可以包含多个tc BPF程序，如果是这种情况，那么&lt;code>TC_ACT_UNSPEC&lt;/code>程序返回码可以继续执行列表中的下一个tc BPF程序。然而，这样做的缺点是，多个程序需要多次解析相同的报文，导致性能下降。&lt;/p>
+&lt;h3 id="返回码">返回码&lt;/h3>
+&lt;p>tc的ingress和egress钩子共享相同的action来返回tc BPF程序使用的裁定结果，定义在 &lt;code>linux/pkt_cls.h&lt;/code>系统头文件中：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="cp">#define TC_ACT_UNSPEC (-1)
+&lt;/span>&lt;span class="cp">#define TC_ACT_OK 0
+&lt;/span>&lt;span class="cp">#define TC_ACT_SHOT 2
+&lt;/span>&lt;span class="cp">#define TC_ACT_STOLEN 4
+&lt;/span>&lt;span class="cp">#define TC_ACT_REDIRECT 7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>系统头文件中还有一些以&lt;code>TC_ACT_*&lt;/code>开头的action变量，可以被两个钩子使用。但它们与上面的语义相同。即，从tc BPF的角度来看&lt;code>TC_ACT_OK&lt;/code>和&lt;code>TC_ACT_RECLASSIFY&lt;/code>的语义相同，三个&lt;code>TC_ACT_stelled&lt;/code>、&lt;code>TC_ACT_QUEUED&lt;/code>和&lt;code>TC_ACT_TRAP&lt;/code>操作码的语义也是相同的。因此，对于这些情况，我们只描述 &lt;code>TC_ACT_OK&lt;/code> 和 &lt;code>TC_ACT_STOLEN&lt;/code> 操作码。&lt;/p>
+&lt;p>从&lt;code>TC_ACT_UNSPEC&lt;/code>开始，表示&amp;quot;未指定的action&amp;quot;，用于以下三种场景：i)当一个offloaded tc程序的tc ingress钩子运行在&lt;code>cls_bpf&lt;/code>的位置，则该offloaded程序将返回&lt;code>TC_ACT_UNSPEC&lt;/code>；ii)为了在多程序场景下继续执行&lt;code>cls_bpf&lt;/code>中的下一个BPF程序，后续的程序需要与步骤i中的offloaded tc BPF程序配合使用，但出现了一个非offloaded场景下运行的tc BPF程序；iii)&lt;code>TC_ACT_UNSPEC&lt;/code>还可以用于单个程序场景，用于告诉内核继续使用skb，不会产生其他副作用。&lt;code>TC_ACT_UNSPEC&lt;/code>与&lt;code>TC_ACT_OK&lt;/code>类似，两者都会将skb通过ingress向上传递到网络栈的上层，或者通过egress向下传递到网络设备驱动程序，以便在egress进行传输。与&lt;code>TC_ACT_OK&lt;/code>的唯一不同之处是，&lt;code>TC_ACT_OK&lt;/code>基于tc BPF程序设定的classid来设置&lt;code>skb-&amp;gt;tc_index&lt;/code>，而 &lt;code>TC_ACT_UNSPEC&lt;/code> 是通过 tc BPF 程序之外的 BPF上下文中的 &lt;code>skb-&amp;gt;tc_classid&lt;/code> 进行设置。&lt;/p>
+&lt;p>&lt;code>TC_ACT_SHOT&lt;/code>通知内核丢弃报文，即网络栈上层将不会在ingress的skb中看到该报文，类似地，这类报文也不会在egress中发送。&lt;code>TC_ACT_SHOT&lt;/code>和&lt;code>TC_ACT_STOLEN&lt;/code>本质上是相似的，仅存在部分差异：&lt;code>TC_ACT_SHOT&lt;/code>会通知内核已经通过&lt;code>kfree_skb()&lt;/code>释放skb，且会立即给调用者返回&lt;code>NET_XMIT_DROP&lt;/code>；而TC_ACT_STOLEN会通过&lt;code>consume_skb()&lt;/code>释放skb,并给上层返回&lt;code>NET_XMIT_SUCCESS&lt;/code>，假装传输成功。perf的报文丢弃监控会记录&lt;code>kfree_skb()&lt;/code>的操作，因此不会记录任何因为&lt;code>TC_ACT_STOLEN&lt;/code>丢弃的报文，因为从语义上说，这些 &lt;code>skb&lt;/code> 是被消费或排队的而不是被丢弃的。&lt;/p>
+&lt;p>最后&lt;code>TC_ACT_REDIRECT&lt;/code> action允许tc BPF程序通过&lt;code>bpf_redirect()&lt;/code>辅助函数将skb重定向到相同或不同的设备ingress或egress路径上。通过将报文导入其他设备的ingress或egress方向，可以最大化地实现BPF的报文转发功能。使用该方式不需要对目标网络设备做任何更改，也不需要在目标设备上运行另外一个&lt;code>cls_bpf&lt;/code>实例。&lt;/p>
+&lt;h3 id="加载tc-bpf程序">加载tc BPF程序&lt;/h3>
+&lt;p>假设有一个名为&lt;code>prog.o&lt;/code>的tc BPF程序，可以通过tc命令将该程序加载到网络设备山。与XDP不同，它不需要依赖驱动将BPF程序附加到设备上，下面会用到一个名为&lt;code>em1&lt;/code>的网络设备，并将程序附加到&lt;code>em1&lt;/code>的&lt;code>ingress&lt;/code>报文路径上。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc qdisc add dev em1 clsact&lt;/span>
+&lt;span class="c1"># tc filter add dev em1 ingress bpf da obj prog.o&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>第一步首先配置一个&lt;code>clsact&lt;/code> qdisc。如上文所述，clsact是一个伪造的qdisc，与&lt;code>ingress&lt;/code> qdisc类似，仅包含分类器和action，但不会提供实际的队列功能，它是附加bpf分类器所必需的。&lt;code>clsact&lt;/code> 提供了两个特殊的钩子，称为&lt;code>ingress&lt;/code>和&lt;code>egress&lt;/code>，分类器可以附加到这两个钩子上。&lt;code>ingress&lt;/code>和&lt;code>egress&lt;/code>钩子都位于网络数据路径的中央接收和发送位置，每个经过设备的报文都会经过此处。&lt;code>ingees&lt;/code>钩子通过内核的&lt;code>__netif_receive_skb_core() -&amp;gt; sch_handle_ingress()&lt;/code>进行调用，&lt;code>egress&lt;/code>钩子通过&lt;code>__dev_queue_xmit() -&amp;gt; sch_handle_egress()&lt;/code>进行调用。&lt;/p>
+&lt;p>将程序附加到&lt;code>egress&lt;/code>钩子上的操作为：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc filter add dev em1 egress bpf da obj prog.o&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;code>clsact&lt;/code> qdisc以无锁的方式处理来自&lt;code>ingress&lt;/code>和&lt;code>egress&lt;/code>方向的报文，且可以附加到一个无队列虚拟设备上，如连接到容器的&lt;code>veth&lt;/code>设备。&lt;/p>
+&lt;p>在钩子之后，&lt;code>tc filter&lt;/code>命令选择使用&lt;code>bpf&lt;/code>的&lt;code>da&lt;/code>(direct-action)模式。推荐使用并指定da&lt;code>模式&lt;/code>，基本上意味着bpf分类器不再需要调用外部tc action模块，所有报文的修改，转发或其他action都可以通过附加的BPF程序来实现，因此处理速度更快。&lt;/p>
+&lt;p>到此位置，已经附加bpf程序，一旦有报文传输到该设备后就会执行该程序。与XDP相同，如果不使用默认的section名称，则可以在加载期间进行指定，例如，下面指定的section名为&lt;code>foobar&lt;/code>：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc filter add dev em1 egress bpf da obj prog.o sec foobar&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>iptables2的BPF加载器允许跨程序类型使用相同的命令行语法。&lt;/p>
+&lt;p>附加的程序可以使用如下命令列出：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc filter show dev em1 ingress&lt;/span>
+filter protocol all pref &lt;span class="m">49152&lt;/span> bpf
+filter protocol all pref &lt;span class="m">49152&lt;/span> bpf handle 0x1 prog.o:&lt;span class="o">[&lt;/span>ingress&lt;span class="o">]&lt;/span> direct-action id &lt;span class="m">1&lt;/span> tag c5f7825e5dac396f
+&lt;span class="c1"># tc filter show dev em1 egress&lt;/span>
+filter protocol all pref &lt;span class="m">49152&lt;/span> bpf
+filter protocol all pref &lt;span class="m">49152&lt;/span> bpf handle 0x1 prog.o:&lt;span class="o">[&lt;/span>egress&lt;span class="o">]&lt;/span> direct-action id &lt;span class="m">2&lt;/span> tag b2fd5adc0f262714
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;code>prog.o:[ingress]&lt;/code>的输出说明程序段&lt;code>ingress&lt;/code>通过文件&lt;code>prog.o&lt;/code>进行加载，且&lt;code>bpf&lt;/code>运行在&lt;code>direct-action&lt;/code>模式下。上面两种情况附加了程序&lt;code>id&lt;/code>和&lt;code>tag&lt;/code>，其中后者表示对指令流的hash，该hash可以与目标文件或带有堆栈跟踪的perf report等相关。最后，&lt;code>id&lt;/code>表示系统范围内的BPF程序的唯一标识符，可以使用&lt;code>bpftool&lt;/code>来查看或dump附加的BPF程序。&lt;/p>
+&lt;p>tc可以附加多个BPF程序，它提供了其他可以链接在一起的分类器。但附加一个BPF程序已经可以完全满足需求，因为通过&lt;code>da&lt;/code>(&lt;code>direct-action&lt;/code>)模式可以在一个程序中实现所有的报文操作，意味着BPF程序将返回tc action裁定结果，如&lt;code>TC_ACT_OK&lt;/code>, &lt;code>TC_ACT_SHOT&lt;/code>等。为了获得最佳性能和灵活性，推荐使用这种方式。&lt;/p>
+&lt;p>在上述&lt;code>show&lt;/code>命令中，在BPF的相关输出旁显示了&lt;code>pref 49152&lt;/code> 和&lt;code>handle 0x1&lt;/code>。如果没有通过命令行显式地提供，会自动生成的这两个输出。&lt;code>perf&lt;/code>表明了一个优先级数字，即当附加了多个分类器时，将会按照优先级上升的顺序执行这些分类器。&lt;code>handle&lt;/code>表示一个标识符，当一个&lt;code>perf&lt;/code>加载了系统分类器的多个实例时起作用。由于在BPF场景下，一个程序足矣，&lt;code>perf&lt;/code>和&lt;code>handle&lt;/code>通常可以忽略。&lt;/p>
+&lt;p>只有在需要自动替换附加的BPF程序的情况下，才会推荐在初始化加载前指定&lt;code>pref&lt;/code>和&lt;code>handle&lt;/code>，这样在以后执行&lt;code>replace&lt;/code>操作时就不必在进行查询。创建方式如下：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc filter add dev em1 ingress pref 1 handle 1 bpf da obj prog.o sec foobar&lt;/span>
+&lt;span class="c1"># tc filter show dev em1 ingress&lt;/span>
+filter protocol all pref &lt;span class="m">1&lt;/span> bpf
+filter protocol all pref &lt;span class="m">1&lt;/span> bpf handle 0x1 prog.o:&lt;span class="o">[&lt;/span>foobar&lt;span class="o">]&lt;/span> direct-action id &lt;span class="m">1&lt;/span> tag c5f7825e5dac396f
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>对于原子替换，可以使用(来自文件&lt;code>prog.o&lt;/code>中的&lt;code>foobar&lt;/code> section的BPF程序)如下命令来更新现有的&lt;code>ingress&lt;/code>钩子上的程序&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc filter replace dev em1 ingress pref 1 handle 1 bpf da obj prog.o sec foobar&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>最后，为了移除所有ingress和egress上附加的程序，可以使用如下命令：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc filter del dev em1 ingress&lt;/span>
+&lt;span class="c1"># tc filter del dev em1 egress&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>为了移除网络设备上的整个&lt;code>clsact&lt;/code> qdisc，即移除掉ingress和egress钩子上附加的所有程序，可以使用如下命令：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc qdisc del dev em1 clsact&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>如果NIC和驱动也像XDP BPF程序一样支持offloaded，则tc BPF程序也可以是offloaded的。Netronome的nfp同时支持两种类型的BPF offload。&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># tc qdisc add dev em1 clsact&lt;/span>
+&lt;span class="c1"># tc filter replace dev em1 ingress pref 1 handle 1 bpf skip_sw da obj prog.o&lt;/span>
+Error: TC offload is disabled on net device.
+We have an error talking to the kernel
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>如果出现了如上错误，则表示首先需要通过ethtool的&lt;code>hw-tc-offload&lt;/code>来启动tc硬件offload：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># ethtool -K em1 hw-tc-offload on&lt;/span>
+&lt;span class="c1"># tc qdisc add dev em1 clsact&lt;/span>
+&lt;span class="c1"># tc filter replace dev em1 ingress pref 1 handle 1 bpf skip_sw da obj prog.o&lt;/span>
+&lt;span class="c1"># tc filter show dev em1 ingress&lt;/span>
+filter protocol all pref &lt;span class="m">1&lt;/span> bpf
+filter protocol all pref &lt;span class="m">1&lt;/span> bpf handle 0x1 prog.o:&lt;span class="o">[&lt;/span>classifier&lt;span class="o">]&lt;/span> direct-action skip_sw in_hw id &lt;span class="m">19&lt;/span> tag 57cd311f2e27366b
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;code>in_hw&lt;/code>标志表示程序已经offload到了NIC中。&lt;/p>
+&lt;p>注意不能同时offload tc和XDP BPF，必须且只能选择其中之一。&lt;/p></description></item><item><title>Alluxio</title><link>https://justice.bj.cn/post/30.architech/alluxio/</link><pubDate>Sat, 21 May 2022 21:27:53 +0800</pubDate><guid>https://justice.bj.cn/post/30.architech/alluxio/</guid><description>&lt;h1 id="alluxio">Alluxio&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;p>Alluxio是一个开源的基于内存的分布式存储系统, 为计算框架和存储系统构建了桥梁，使应用程序能够通过一个公共接口连接到许多存储系统。 项目源自 UC Berkeley 的 &lt;a href="https://amplab.cs.berkeley.edu/software/">AMPLab&lt;/a>（见&lt;a href="https://www.alluxio.org/resources/white-papers">论文&lt;/a>）&lt;/p>
 &lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-47-16-image-20190515093053597.png" alt="image-20190515093053597">&lt;/p>
@@ -2835,106 +4080,4 @@ alluxio.worker.tieredstore.level1.watermark.low.ratio&lt;span class="o">=&lt;/sp
 &lt;h2 id="参考">参考&lt;/h2>
 &lt;ol>
 &lt;li>&lt;a href="https://blog.csdn.net/Androidlushangderen/article/details/81142285">https://blog.csdn.net/Androidlushangderen/article/details/81142285&lt;/a>&lt;/li>
-&lt;/ol></description></item><item><title>Anna</title><link>https://justice.bj.cn/post/30.architech/anna/</link><pubDate>Sat, 21 May 2022 21:27:53 +0800</pubDate><guid>https://justice.bj.cn/post/30.architech/anna/</guid><description>&lt;h1 id="anna">Anna&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Anna是伯克利 RISE 实验室推出了KV存储数据库，提供了惊人的存取速度、超强的伸缩性和史无前例的一致性保证。anna基于无协调 actor 模型，每个 actor 对应一个线程，对任何一个共享状态都有自己的一份私有拷贝，并通过异步广播将更新通知给其他 actor。在多核服务器上，这种模型比传统的共享内存模型的性能要高出一个数量级。&lt;/p>
-&lt;h2 id="特点">特点&lt;/h2>
-&lt;p>&lt;a href="http://db.cs.berkeley.edu/jmh/papers/anna_ieee18.pdf">Anna&lt;/a> 的key和节点的分布也是一致性哈希。采用 &lt;a href="http://publicatio.bibl.u-szeged.hu/1529/1/gossip11.pdf">gossip&lt;/a> 算法来处理actor的容灾和扩缩容。按文中的意思似乎数据分片的同步也采用的是 &lt;a href="http://publicatio.bibl.u-szeged.hu/1529/1/gossip11.pdf">gossip&lt;/a> 。不过在这一点上 &lt;a href="http://publicatio.bibl.u-szeged.hu/1529/1/gossip11.pdf">gossip&lt;/a> 对分布式系统的局部分片扩容天生是比 &lt;a href="https://en.wikipedia.org/wiki/Paxos_(computer_science)">Paxos&lt;/a> 和 &lt;a href="https://raft.github.io/">Raft&lt;/a> 要好很多。&lt;/p>
-&lt;h2 id="架构">架构&lt;/h2>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-47-31-image-20190528100256465.png" alt="image-20190528100256465">&lt;/p>
-&lt;p>Anna 服务器由一系列独立的线程组成，每个线程运行无协调的 actor。每个线程对应一个 CPU 核心，线程数量不超过 CPU 的总核数。客户端代理负责将远程请求分发给 actor，每个 actor 都有一个私有的哈希表，这些哈希表存放在共享内存中。线程间的变更通过内存广播进行交换，而服务器间的变更则通过 protobuf 进行交换。&lt;/p>
-&lt;p>这种线程和 CPU 核心一对一的模型避免了上下文切换开销。actor 之间不共享键值状态，通过一致性哈希对键空间进行分区，并使用多主复制机制在 actor 之间复制数据分区，而且复制系数是可配置的。actor 基于时间戳将键的更新通知给其他 actor 副本，每个 actor 有自己的私有状态，这个状态保存在一个叫作“格子”的数据结构中，确保在消息发生延迟、重排或重复时仍然能够保证一致性。&lt;/p>
-&lt;h2 id="性能测评">性能测评&lt;/h2>
-&lt;ul>
-&lt;li>Anna 与 TBB、Masstree 和 Ideal&lt;/li>
-&lt;li>Anna 与Redis&lt;/li>
-&lt;li>Anna 与 Cassandra&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://mp.weixin.qq.com/s/3WmGpZkEuSz-ox_2CPCsqg">https://mp.weixin.qq.com/s/3WmGpZkEuSz-ox_2CPCsqg&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://github.com/ucbrise/anna">https://github.com/ucbrise/anna&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://juejin.im/entry/5aaa708b51882555627d04b4">https://juejin.im/entry/5aaa708b51882555627d04b4&lt;/a>&lt;/li>
-&lt;li>&lt;a href="http://db.cs.berkeley.edu/jmh/papers/anna_ieee18.pdf">http://db.cs.berkeley.edu/jmh/papers/anna_ieee18.pdf&lt;/a>&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>apache arrow</title><link>https://justice.bj.cn/post/30.architech/arrow/</link><pubDate>Sat, 21 May 2022 21:27:53 +0800</pubDate><guid>https://justice.bj.cn/post/30.architech/arrow/</guid><description>&lt;h2 id="apache-arrow">apache arrow&lt;/h2>
-&lt;h3 id="简介">简介&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>Apache Arrow 是一种基于内存的列式数据格式；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>为了解决系统到系统之间的数据传输问题，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>2016 年 2 月 Arrow 被提升为 Apache 的顶级项目。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>和protobuf相比，protobuf主要是序列化structured data，有很多的键值对和非常深的nested structure。arrow序列化的对象主要还是表格状数据。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="主要技术">主要技术&lt;/h3>
-&lt;ul>
-&lt;li>适配器模式&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-48-18-image-20190513185116005.png" alt="image-20190513185116005">&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>列式存储&lt;/p>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-48-27-image-20190513185147232.png" alt="image-20190513185147232">&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>SIMD&lt;/p>
-&lt;p>即单指令流多数据流（SingleInstruction Multiple Data），是一种采用一个控制器来控制多个处理器，同时对一组数据（又称“数据向量”）中的每一个分别执行相同的操作从而实现空间上的并行性的技术。在微处理器中，单指令流多数据流技术则是一个控制器控制多个平行的处理微元。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>对于 Apache Arrow 的期望：&lt;/p>
-&lt;ul>
-&lt;li>列式存储：大数据系统几乎都是列式存储的，类似于 Apache Parquet 这样的列式数据存储技术自从诞生起就是大家的期望。&lt;/li>
-&lt;li>内存式：SAP HANA 是第一个利用内存加速分析流程的组件，随着 Apache Spark 的出现，进一步提升了利用内存加速流程的技术可能性落地。&lt;/li>
-&lt;li>复杂数据和动态模式：当我们通过继承和内部数据结构呈现数据的时候，一开始有点麻烦，后来就有了 JSON 和基于文档的数据库。&lt;/li>
-&lt;/ul>
-&lt;p>Arrow 的列式存储有着 O(1) 的随机访问速度，并且可以进行高效的 Cache，同时还允许 SIMD 指令的优化。由于很多大数据系统都是在 JVM 上运行的，Arrow 对于 Python 和 R 的社区来说显得格外重要。&lt;/p>
-&lt;p>Apache Arrow 是基于 Apache Drill 中的 Value Vector 来实现的，而使用 Value Vector 可以减少运算时重复访问数据带来的成本。&lt;/p>
-&lt;h2 id="内存表示">内存表示&lt;/h2>
-&lt;p>arrow在内存中表示数据的最基本单元是array，它代表了一连串长度已知、类型相同的数据。而多个长度相同、类型相同或者不同的array就可以用来表示结果集（或者一部分的结果集）。举一个简单的例子：一个如下图所示的结果集（或者table）&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">+------+------+
-| C1 | C2 | [
-|------+------| DoubleArray: [ 1.11, 2.22, 3.33],
-| 1.11 | foo | -&amp;gt; StringArray: [ foo, bar, NULL]
-| 2.22 | bar | ]
-| 3.33 | NULL |
-+------+------+
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>就可以表示成一个大小为2的有序集合，集合中的array（DoubleArray 和 StringArray）长度为3。arrow限制了array的最大长度，当结果集（或者表）的大小超过了array的最大长度，就需要把结果集水平切分成多个有序集合。&lt;/p>
-&lt;h2 id="arrow-flight">Arrow Flight&lt;/h2>
-&lt;p>近段时间Arrow最大的变化就是添加了Flight，一个通用C/S架构的高性能数据传输框架。Flight基于gRPC开发，从最开始重点就是优化Arrow格式数据。&lt;/p>
-&lt;p>Flight的具体细节请看&lt;a href="https://arrow.apache.org/blog/2019/10/13/introducing-arrow-flight/">官方文档&lt;/a>。这里只介绍它的优势：&lt;/p>
-&lt;ul>
-&lt;li>无序列化/反序列化：Flight会直接将内存中的Arrow发送，不进行任何序列化/反序列化操作&lt;/li>
-&lt;li>批处理：Flight对record batch的操作无需访问具体的列、记录或者元素&lt;/li>
-&lt;li>高并发：Flight的吞吐量只收到客户端和服务端的吞吐量以及网络的限制&lt;/li>
-&lt;li>网络利用率高：Flight使用基于HTTP/2的gRPC，不仅是快&lt;/li>
-&lt;/ul>
-&lt;p>&lt;a href="https://www.dremio.com/is-time-to-replace-odbc-jdbc/">官方给出的数据&lt;/a>是Flight的传输大约是标准ODBC的20-50倍。&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://www.infoq.cn/article/apache-arrow">聊聊 Apache Arrow&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/339132159">Apache Arrow简介&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://cloud.tencent.com/developer/article/1902699">Apache Arrow - 大数据在数据湖后的下一个风向标 - 云+社区 - 腾讯云&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://developer.aliyun.com/article/397187">Apache Arrow 内存数据-阿里云开发者社区&lt;/a>&lt;/li>
-&lt;li>&lt;a href="http://www.liuhaihua.cn/archives/698599.html">http://www.liuhaihua.cn/archives/698599.html&lt;/a>&lt;/li>
-&lt;li>&lt;/li>
 &lt;/ol></description></item></channel></rss>

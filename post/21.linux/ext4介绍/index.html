@@ -1,0 +1,509 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>Ext4文件系统架构分析(一) - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="Ext4文件系统架构分析(一) 本文描述Ext4文件系统磁盘布局和元数据的一些分析，同样适用于Ext3和Ext2文件系统，除了它们不支持的Ex">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/ext4%E4%BB%8B%E7%BB%8D/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="Ext4文件系统架构分析(一)">
+<meta property="og:description" content="Ext4文件系统架构分析(一) 本文描述Ext4文件系统磁盘布局和元数据的一些分析，同样适用于Ext3和Ext2文件系统，除了它们不支持的Ex">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/ext4%E4%BB%8B%E7%BB%8D/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
+<meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="Ext4文件系统架构分析(一)">
+<meta itemprop=description content="Ext4文件系统架构分析(一) 本文描述Ext4文件系统磁盘布局和元数据的一些分析，同样适用于Ext3和Ext2文件系统，除了它们不支持的Ex"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
+<meta itemprop=wordCount content="7383">
+<meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="Ext4文件系统架构分析(一)">
+<meta name=twitter:description content="Ext4文件系统架构分析(一) 本文描述Ext4文件系统磁盘布局和元数据的一些分析，同样适用于Ext3和Ext2文件系统，除了它们不支持的Ex"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>Ext4文件系统架构分析(一)</h1>
+<div class=post-meta>
+<time datetime=2022-05-21 class=post-time>
+2022-05-21 21:27:53
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#ext4文件系统架构分析一httpswwwcnblogscomalantu2018p8461272html><a href=https://www.cnblogs.com/alantu2018/p/8461272.html>Ext4文件系统架构分析(一)</a></a></li>
+<li><a href=#1-ext4文件系统布局综述>1. Ext4文件系统布局综述</a></li>
+<li><a href=#11磁盘布局>1.1 磁盘布局</a></li>
+<li><a href=#12flexible块组flex_bg>1.2 Flexible 块组（flex_bg）</a></li>
+<li><a href=#13元块组metablockgroups>1.3 元块组（Meta Block Groups）</a></li>
+<li><a href=#14lazy块组初始化>1.4 Lazy 块组初始化</a></li>
+<li><a href=#15特殊inodes>1.5 特殊inodes</a></li>
+<li><a href=#16数据块和inode分配策略>1.6 数据块和Inode分配策略</a></li>
+<li><a href=#17超级块>1.7 超级块</a></li>
+<li><a href=#18块组描述符>1.8 块组描述符</a></li>
+<li><a href=#19数据块位图与inode位图>1.9 数据块位图与inode位图</a></li>
+<li><a href=#110inode表>1.10 Inode表</a></li>
+<li><a href=#111查找inode>1.11 查找inode</a></li>
+<li><a href=#112inodei_block0s的内容>1.12 inode.i_block0[]s的内容</a></li>
+<li><a href=#113-符号链接>1.13  符号链接</a></li>
+<li><a href=#114直接间接块地址>1.14 直接/间接块地址</a></li>
+<li><a href=#115extent树>1.15   Extent 树</a></li>
+<li><a href=#116extent树数据块校验和可能加入的新元数据>1.16 Extent树数据块校验和：可能加入的新元数据</a></li>
+<li><a href=#117目录项>1.17 目录项</a></li>
+<li><a href=#118线性经典目录>1.18 线性（经典）目录</a></li>
+<li><a href=#119哈希树目录>1.19 哈希树目录</a></li>
+<li><a href=#120扩展属性ea>1.20 扩展属性EA</a></li>
+<li><a href=#121日志jbd2>1.21 日志（JBD2）</a>
+<ul>
+<li><a href=#1211布局>1.21.1 布局</a></li>
+<li><a href=#1212-数据块头部>1.21.2  数据块头部</a></li>
+<li><a href=#1213-超级块>1.21.3  超级块</a></li>
+<li><a href=#1214-描述数据块descriptor-block>1.21.4  描述数据块Descriptor Block</a></li>
+<li><a href=#1215-数据块data-block>1.21.5  数据块Data Block</a></li>
+<li><a href=#1217-提交块>1.21.7  提交块</a></li>
+</ul>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h2 id=ext4文件系统架构分析一httpswwwcnblogscomalantu2018p8461272html><a href=https://www.cnblogs.com/alantu2018/p/8461272.html>Ext4文件系统架构分析(一)</a></h2>
+<p>本文描述Ext4文件系统磁盘布局和元数据的一些分析，同样适用于Ext3和Ext2文件系统，除了它们不支持的Ext4的特性外。整个分析分两篇博文，分别概述布局和详细介绍各个布局的数据结构及组织寻址方式等。感兴趣的看官敬请留意和指导！</p>
+<h2 id=1-ext4文件系统布局综述>1. Ext4文件系统布局综述</h2>
+<p>一个Ext4文件系统被分成一系列块组。为减少磁盘碎片产生的性能瓶颈，块分配器尽量保持每个文件的数据块都在同一个块组中，从而减少寻道时间。以4KB的数据块为例，一个块组可以包含32768个数据块，也就是128MB。</p>
+<h2 id=11磁盘布局>1.1 磁盘布局</h2>
+<p>Ext4文件系统的标准磁盘布局如下：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-26-23-28989651_13764045230xDi.jpg alt></p>
+<p>Ext4文件系统主要使用块组0中的超级块和块组描述符表，在其他一些特定块组中有超级块和块组描述符表的冗余备份。如果块组中不含冗余备份，那么块组就以数据块位图开始。当格式化磁盘成为Ext4文件系统的时候，mkfs将在块组描述符表后面分配预留GDT表数据块(“Reserve GDT blocks”)以用于将来扩展文件系统。紧接在预留GDT表数据块后的是数据块位图与inode表位图，这两个位图分别表示本块组内的数据块与inode表的使用，inode表数据块之后就是存储文件的数据块了。在这些各种各样的块中，超级块、GDT、块位图、Inode位图都是整个文件系统的元数据，当然inode表也是文件系统的元数据，但是inode表是与文件一一对应的，我更倾向于将inode当做文件的元数据，因为在实际格式化文件系统的时候，除了已经使用的十来个外，其他inode表中实际上是没有任何数据的，直到创建了相应的文件才会分配inode表，文件系统才会在inode表中写入与文件相关的inode信息。</p>
+<h2 id=12flexible块组flex_bg>1.2 Flexible 块组（flex_bg）</h2>
+<p>Flexible 块组（flex_bg）是从Ext4开始引入的新特性。在一个flex_bg中，几个块组在一起组成一个逻辑块组flex_bg。Flex_bg的第一个块组中的位图空间和inode表空间扩大为包含了flex_bg中其他块组上位图和inode表。</p>
+<p>比如flex_bg包含4个块组，块组0将按序包含超级块、块组描述符表、块组0-3的数据块位图、块组0-3的inode位图、块组0-3的inode表，块组0中的其他空间用于存储文件数据。同时，其他块组上的数据块位图、inode位图、inode表元数据就不存在了，但是SB和GDT还是存在的。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-26-33-28989651_1376404620OKyF.jpg alt></p>
+<p>Flexible块组的作用是：</p>
+<ol>
+<li>聚集元数据，加速元数据载入；</li>
+<li>使得大文件在磁盘上尽量连续；</li>
+</ol>
+<p>即使开启flex_bg特性，超级块和块组描述符的冗余备份仍然位于块组的开头。 Flex_bg中块组的个数由2^ext4_super_block.s_log_groups_per_flex 给出。</p>
+<h2 id=13元块组metablockgroups>1.3 元块组（Meta Block Groups）</h2>
+<p>通常，在每个冗余备份的超级块的后面是一个完整的(包含所有块组描述符的)块组描述符表的备份。这样会产生一个限制，以Ext4的块组描述符大小64 Bytes计算，文件系统中最多只能有2^21个块组，也就是文件系统最大为256TB。</p>
+<p>使用元块组Meta Block Groups特性，每个块组都包含该块组自己的描述符的冗余备份。因此可以创建2^33个块组，也就是文件系统最大1EB。48位数据块，每个块组128MB，因而可以创建2^33个块组。</p>
+<p>元块组实际上是可以用一个块组描述符块来进行描述的块组集，简单的说，它由一系列块组组成，同时这些块组对应的块组描述符存储在一个块中。它的出现使得Ext3和Ext4的磁盘布局有了一定的变化，以往超级块后紧跟的是变长的GDT块，现在是超级块依然决定于是否是3,5,7的幂，而一个块组描述符块则存储在元块组的第一个，第二个和最后一个块组的开始处(见下图)</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-26-40-28989651_1376404725HTsy.png alt></p>
+<p>(1)  文件系统创建时。用户可以指定使用这种布局。 </p>
+<p>(2)  当文件系统增长而且预留的组描述符块耗尽时。目前超级块中有一个域s_first_meta_bg用于描述第一个使用元块组的块组。 </p>
+<p> 当增加新块组时，我们不需要给组描述符表预留空间，而是在当前文件系统后面直接添加新的元块组就可以了。</p>
+<h2 id=14lazy块组初始化>1.4 Lazy 块组初始化</h2>
+<p>如果块组中的相应标志已设置，那么块组中的inode位图和inode表将不被初始化。这样可以减少mkfs时间，如果开启了块组描述符校验和功能，甚至连块组都可以不初始化。</p>
+<h2 id=15特殊inodes>1.5 特殊inodes</h2>
+<p>Ext4预留了一些inode做特殊特性使用，见下表：</p>
+<p>表 1  Ext4的特殊inode</p>
+<p>Inode号    用途</p>
+<p>0      不存在0号inode</p>
+<p>1      损坏数据块链表</p>
+<p>2      根目录</p>
+<p>3      ACL索引</p>
+<p>4      ACL数据</p>
+<p>5      Boot  loader</p>
+<p>6      未删除的目录</p>
+<p>7      预留的块组描述符inode</p>
+<p>8      日志inode</p>
+<p>11     第一个非预留的inode，通常是lost+found目录</p>
+<h2 id=16数据块和inode分配策略>1.6 数据块和Inode分配策略</h2>
+<p>在机械磁盘上，保持相关的数据块相互接近可以总的磁头移动时间，因而可以加速磁盘IO。在SSD上虽然没有磁头转动，数据局部性可以增加每次IO请求的传输的数据大小，因而减少响应IO请求的传输次数。数据的局部性对单个擦除块的写入产生影响，可以加速文件重写的速度。因而尽可能减少碎片是必要的。inode和数据块的分配策略可以保证数据的局部集中。以下为inode和数据块的分配策略：</p>
+<p>(1)  多块分配可以减少磁盘碎片。当文件初次创建的时候，块分配器预测性地分配8KB的磁盘空间给文件。当文件关闭的时候，未使用的空间当然也就释放了。但是如果推测是正确的，那么文件数据将写到一个多个块的extent中。</p>
+<p>(2)  延迟分配。当一个文件需要更多的数据块引起写操作时，文件系统推迟决定新数据在磁盘上的存放位置，直到脏的buffer写到磁盘为止。</p>
+<p>(3)  尽量保持文件的数据块与其inode在同一个块组中。可以减少磁盘寻道时间.</p>
+<p>(4)  尽量保持同一个目录中的所有inodes与目录位于同一个块组中。这样的假设前提是一个目录中的文件是相关的。</p>
+<p>(5)  磁盘卷被分成128MB的块组。当在根目录中创建目录时，inode分配器扫描块组并将新目录放到它找到的使用负荷最小的块组中。这可以保证目录在磁盘上的分散性。</p>
+<p>(6)  即使上述机制无效，仍然可以使用e4defrag整理碎片文件。</p>
+<h2 id=17超级块>1.7 超级块</h2>
+<p>超级块记录整个文件系统的大量信息，如数据块个数、inode个数、支持的特性、管理信息，等待。</p>
+<p>如果设置sparse_super特性标志，超级块和块组描述符表的冗余备份仅存放在编号为0或3、5、7的幂次方的块组中。如果未设置sparse_super特性标志，冗余备份存在与所有的块组中。以下是2.6.32.18内核中对Ext4超级块的描述：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-27-11-28989651_1376493519z4rQ.png alt></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-27-15-28989651_1376493582Lvr6.png alt></p>
+<p>3.0的内核中，Ext4的超级块加入了以下相关元数据：快照、文件系统错误处理相关、挂载选项、配额文件inode、超级块校验和等，见下图。目前没有深入研究这些新的元数据。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-27-21-28989651_1376493600Aq8i.png alt></p>
+<h2 id=18块组描述符>1.8 块组描述符</h2>
+<p>一个块组中，具有固定位置的数据结构是超级块和块组描述符。其他数据结构位置都可以不固定。Flex_bg机制使用这个性质将几个块组聚合成一个flex块组，将flex_bg中所有位图和inode 表放到flex_bg的第一个块组中。详细情况可以参考我的上一篇Ext4分析博文的Flexible 块组（flex_bg）部分。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-27-25-28989651_1376493616YUiG.png alt></p>
+<h2 id=19数据块位图与inode位图>1.9 数据块位图与inode位图</h2>
+<p>数据块位图跟踪块组中数据块使用情况。Inode位图跟踪块组中Inode使用情况。每个位图一个数据块，每一位用0或1表示一个块组中数据块或inode表中inode的使用情况。如果一个数据块大小是4KB的话，那一个位图块可以表示4<em>1024</em>8个数据块的使用情况，这也是单个块组具有的最大数据块个数。这样可以算出一个块组大小是128MB。当然一个位图块也可以表示4<em>1024</em>8个inode的使用情况，但是实际上一个块组中即使存满了文件，也不会用到这么多的inode，因为实际系统中基本不会出现所有文件大小都小于等于1个数据块大小的情况。实际上一个块组中有多少个inode，在块组描述符中是确定的，在文件系统格式化过程中也会看到这个数值，如果没记错的话，大概是每4个还是8个数据块分配一个inode空间。</p>
+<h2 id=110inode表>1.10 Inode表</h2>
+<p>为了找到与一个文件相关的信息，必须遍历目录文件找到与文件相关的目录项，然后加载inode找到该文件的元数据。Ext4在目录项中用一位存储了文件类型(通常存储在inode中)的拷贝，这对性能提升有益。Inode表的大小为ext4_super_block.s_inode_size * ext4_super_block.s_inodes_per_group Bytes。 <br>
+<img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-27-33-28989651_13764936686K5v.png alt></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-27-41-28989651_13764936937EGO.png alt></p>
+<h2 id=111查找inode>1.11 查找inode</h2>
+<p>每个块组包含ext4_super_block.s_inodes_per_group个inodes。因为0号inode不存在，可以通过如下的算式计算inode所在的块组：</p>
+<p><code>bg=(inode_num -1)/ ext4_super_block.s_inodes_per_group</code></p>
+<p>inode在块组中inode表中的索引index可以通过如下的算式计算：</p>
+<p><code>index=(inode_num -1) % ext4_super_block.s_inodes_per_group</code></p>
+<p>inode在inode表中的地址偏移为：</p>
+<p><code>offset=index * ext4_super_block.s_inode _size</code></p>
+<h2 id=112inodei_block0s的内容>1.12 inode.i_block0[]s的内容</h2>
+<p>取决于文件类型，inode.i_blocks[]使用的方式不同。一般来说，常规文件和目录用inode.i_blocks[]作为文件数据块索引信息，特殊文件将inode.i_blocks[]用于特殊用途。常规文件用inode.i_blocks[]作为文件数据块索引信息的三级索引结构会在后面直接、间接块地址中详细介绍。</p>
+<h2 id=113-符号链接>1.13  符号链接</h2>
+<p>如果符号链接的目标字符串长度小于60字节，那么就将其存储在inode.i_blocks[]中，inode中inode.i_blocks[]占据的大小刚好是60KB。这里要注意到的是，有些文件其内容是跟文件的元数据放在一起的，因而就没有了数据块。也就是说不是每个文件数据都必然占据着一个数据块。</p>
+<h2 id=114直接间接块地址>1.14 直接/间接块地址</h2>
+<p> Ext2/Ext3中数据块映射方式如下表</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-28-43-28989651_1376493721DQi6.png alt></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-28-48-28989651_1376493732tfez.png alt></p>
+<h2 id=115extent树>1.15   Extent 树</h2>
+<p>Ext4中用extent树代替了逻辑块映射。使用extents，用一个struct ext4_extent结构就可以映射多个数据块，减少元数据块的使用。如果设置了flex_bg，甚至可以用一个extent分配一个非常大的文件。使用extent特性，inode必须设置extents flag。</p>
+<p>Extents以树的方式安排。Extent树的每个节点都以一个ext4_extent_header开头，如果节点是内部节点(ext4_extent_header.eh_depth>0)，ext4_extent_header后面紧跟的是ext4_extent_header .eh_entries个索引项struct ext4_extent_idx，每个索引项指向该extent树中一个包含更多的节点的数据块。如果节点是叶子节点(ext4_extent_header.eh_depth==0)，ext4_extent_header后面紧跟的是ext4_extent_header .eh_entries个struct ext4_extent数据结构。这些ext4_extent结构指向文件数据块。Extent树的根结点存储在inode.i_blocks中，可以存储文件的前4个extents而不需额外的元数据块。</p>
+<p>ext4_extent_header：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-28-54-28989651_1376493751828X.png alt></p>
+<p>struct ext4_extent_idx：extent树的内部节点，也称为索引节点。</p>
+<p><img src=http://blog.chinaunix.net/attachment/201308/14/28989651_1376493761Or0J.jpg alt></p>
+<p>ext4_extent：extent树的叶子节点。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-29-08-28989651_1376493772mVMU.png alt></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-29-03-28989651_13764937882FDI.png alt></p>
+<h2 id=116extent树数据块校验和可能加入的新元数据>1.16 Extent树数据块校验和：可能加入的新元数据</h2>
+<p>由于extent树的根在inode中，因而Extent树数据块指extent树的除根据节点外的所有内部节点和叶子节点。Extent的树根节点和叶子节点的数据块中存储完xt4_extent_idx和xt4_extent数据结构后至少会留下4 ((2^x%12)>=4) bytes的空间。因而可以加入一个结构struct ext4_extent_tail，其中存储32位的校验和。位于inode中的4个extents无需校验和，因为inode已经做了校验和。</p>
+<h2 id=117目录项>1.17 目录项</h2>
+<p>Ext4文件系统中，一个目录差不多是一个平面文件，映射任意长度的字符串到文件系统中的一个inode。文件系统中存在多个目录项引用同一个inode——硬链接，这也是硬链接不能链接其他文件系统中的文件的原因。</p>
+<h2 id=118线性经典目录>1.18 线性（经典）目录</h2>
+<p>缺省地，目录文件中包含一个线性的目录项数组。未使用的目录项标记为inode =0。Ext4文件系统默认地使用struct ext4_dir_entry_2记录目录项，除非没有设置filetype特性标志。在没有设置filetype特性标志的情况下，使用struct ext4_dir_entry记录目录项。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>ext4_dir_entry</span><span class=p>{</span>
+    <span class=n>__le32</span>     <span class=n>inode</span><span class=p>;</span>
+    <span class=n>__le16</span>     <span class=n>rec_len</span><span class=p>;</span>
+    <span class=n>__le16</span>     <span class=n>name_len</span><span class=p>;</span>
+    <span class=kt>char</span>       <span class=n>name</span><span class=p>[</span><span class=n>EXT4_NAME_LEN</span><span class=p>];</span>
+<span class=p>};</span>
+
+<span class=k>struct</span> <span class=n>ext4_dir_entry_2</span><span class=p>{</span>
+    <span class=n>__le32</span>     <span class=n>inode</span><span class=p>;</span>
+    <span class=n>__le16</span>     <span class=n>rec_len</span><span class=p>;</span>
+    <span class=n>__u8</span>       <span class=n>name_len</span><span class=p>;</span>
+    <span class=n>__u8</span>       <span class=n>file_type</span><span class=p>;</span>
+    <span class=kt>char</span>       <span class=n>name</span><span class=p>[</span><span class=n>EXT4_NAME_LEN</span><span class=p>];</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=119哈希树目录>1.19 哈希树目录</h2>
+<p>线性目录项不利于系统性能提升。因而从ext3开始加入了快速平衡树哈希目录项名称。如果在inode中设置EXT4_INDEX_FL标志，目录使用哈希的B树（hashed btree ，htree）组织和查找目录项。为了向后只读兼容Ext2，htree实际上隐藏在目录文件中。</p>
+<p>Ext2的惯例，树的根总是在目录文件的第一个数据块中。“.”和“..”目录项必须出现在第一个数据块的开头。因而这两个目录项在数据块的开头存放两个struct ext4_dir_entry_2结构，且它们不存到树中。根结点的其他部分包含树的元数据，最后一个hash->block map查找到htree中更低的节点。如果dx_root.info.indirect_levels不为0，那么htree有两层；htree根结点的map指向的数据块是一个内部节点，由一个minor hash索引。Htree中的内部节点的minor_hash->block map之后包含一个零化的(zeroed out) structext4_dir_entry_2找到叶子节点。叶子节点包括一个线性的struct ext4_dir_entry_2数组；所有这些项都哈希到相同的值。如果发生溢出，目录项简单地溢出到下一个叶子节点，哈希的least-significant位（内部节点的map）做相应设置。</p>
+<p>       以htree的方式遍历目录，计算要查找的目录文件名称的哈希值，然后使用哈希值找到对应的数据块号。如果树是flat，该数据块是目录项的线性数组，因而可被搜索到；否则，计算文件名称的minor hash，并使用minor hash查找相应的第三个数据块号。第三个数据块是目录项线性数组。</p>
+<p>**Htree的根 ：**struct dx_root<br>
+<img src=http://blog.chinaunix.net/attachment/201311/7/28989651_13838358542Gih.jpg alt></p>
+<p><strong>Htree****的内部节点：</strong> struct dx_node</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_13838359310LhJ.jpg alt></p>
+<p>Htree 树根和节点中都存在的 <strong>Hash map</strong>**：** struct dx_entry</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383835946jC8F.jpg alt></p>
+<h2 id=120扩展属性ea>1.20 扩展属性EA</h2>
+<p>扩展属性（xattrs）通常存储在磁盘上的一个单独的数据块中，通过inode.i_file_acl*引用。扩展属性的第一应用是存储文件的ACL以及其他安全数据(selinux)。使用user_xattr挂载选项就可为用户存储以“user”开头的所有扩展属性。这样的限制在3.0内核中已经消失。</p>
+<p>可以在两个地方找到扩展属性：一是在一个inode项结尾到下一个inode项开头的地方；二是inode.i_file_acl指向 的数据块之中，到3.0为止，这个数据块中不包含指向第二个扩展属性数据块的指针。理论上可以将每个属性值存储到一个单独的数据块中，但是3.0内核为止仍然没有这样做。</p>
+<p>当扩展属性不存储在一个inode之后的时候，就会有一个头部ext4_xattr_ibody_header</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836044J1Ee.jpg alt></p>
+<p>扩展属性数据块的开头是ext4_xattr _header</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836053bZMK.jpg alt></p>
+<p>紧跟在ext4_xattr_ibody_header或者ext4_xattr _header后面的是结构数组 struct ext4_xattr_entry</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_13838360603T4T.jpg alt></p>
+<p>扩展属性值可以紧跟在ext4_xattr_entry项表后面。考虑4 bytes对齐。扩展属性值从扩展属性数据块的末尾开始向ext4_xattr _header / ext4_xattr_entry表的方向增长。当发生溢出时，溢出的部分放到一个单独的磁盘数据块上。</p>
+<h2 id=121日志jbd2>1.21 日志（JBD2）</h2>
+<p>文件系统在磁盘上保留一段小的连续区域(默认128MB)，作为尽可能需要快速写入磁盘的“重要”数据的存放地。一旦该重要数据事务完全写到磁盘，将其从磁盘写缓存中刷出。被提交的数据一份记录也被写到日志。一段时间后，日志在擦除提交记录前将事务写到它们在磁盘上的最终位置(可能包含大量的寻道或者大量的读-写-擦除)。</p>
+<p>从性能方面考虑，Ext4默认直接将文件系统元数据写到日志。因而不能保证文件数据块的一致性。</p>
+<p>       日志的inode为8。日志inode的前68 bytes复制了ext4 超级块。日志文件在文件系统中是普通文件，但是隐藏不可见。日志文件通常消耗一个完整的块组，可以通过mke2fs将日志文件放在磁盘的中间。</p>
+<p>Ext4和Ocfs2都使用JBD2。</p>
+<h3 id=1211布局>1.21.1 布局</h3>
+<p>日志布局</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836366A8dq.jpg alt></p>
+<p>一个事务以描述符和一些数据或者block revocation链表开始。一个结束的事务总是以一个提交块结束。如果没有提交记录（或者校验和不匹配），事务在日志重演的时候将被丢弃。</p>
+<h3 id=1212-数据块头部>1.21.2  数据块头部</h3>
+<p>日志中的每个数据块的开头都是一个12 bytes的数据结构 struct journal_header_s</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836376fBf6.jpg alt></p>
+<h3 id=1213-超级块>1.21.3  超级块</h3>
+<p>日志的超级块比Ext4的超级块简单。保存在日志的超级块中是日志的关键数据。日志超级块使用数据结构struct journal_superblock_s表示，大小为1024 bytes。</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836388Dhwt.jpg alt></p>
+<h3 id=1214-描述数据块descriptor-block>1.21.4  描述数据块Descriptor Block</h3>
+<p>Descriptor Block包含一个日志数据块tags的数组，这些tags描述了日志中接下来的数据块的最终位置。</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836398lSZl.jpg alt></p>
+<p>日志数据块tags具有如下格式：由数据结构struct journal_block_tag_s表示，可以是8，12，24或38bytes。</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_13838364075ta9.jpg alt></p>
+<h3 id=1215-数据块data-block>1.21.5  数据块Data Block</h3>
+<p>存放的是通过日志写到磁盘的数据块。但是如果数据块的前4 bytes与jbd2的魔数匹配，那么这些4 bytes用0代替，并且在Descriptor Block中设置escaped。</p>
+<p><strong>1.21.6  Revocation Block</strong></p>
+<p>Revocation block用于记录本事务中的数据块链表，取代任何潜在日志中的更陈旧的数据块这样可以加速恢复，因为陈旧的数据块不必写到磁盘。</p>
+<p>Revocation block使用 structjbd2_journal_revoke_header_s结构表示</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836484127L.jpg alt></p>
+<h3 id=1217-提交块>1.21.7  提交块</h3>
+<p>提交快表明了一个事务已完整写到日志。一旦提交块到达日志，存储在该事务中的数据可以写到它们在磁盘中的最终位置。</p>
+<p>提交快由数据结构struct commit_header表示：</p>
+<p><img src=http://blog.chinaunix.net/attachment/201311/7/28989651_1383836493RAT5.jpg alt></p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2022-05-21 21:27:53
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/elasticsearch/es%E5%9F%BA%E7%A1%80%E4%B9%8Blucene/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">ElasticSearch基础之lucene</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/30.architech/flink/flink-%E6%B6%88%E8%B4%B9%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B/>
+<span class="next-text nav-default">Flink 消费消息的流程</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>

@@ -1,0 +1,838 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>UIO - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="UIO 简介 UIO（Userspace I/O,用户空间IO）是运行在用户空间的I/O技术。UIO将驱动的很少一部分运行在内核空间，而在用户空间实现">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-uio/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="UIO">
+<meta property="og:description" content="UIO 简介 UIO（Userspace I/O,用户空间IO）是运行在用户空间的I/O技术。UIO将驱动的很少一部分运行在内核空间，而在用户空间实现">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-uio/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
+<meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="UIO">
+<meta itemprop=description content="UIO 简介 UIO（Userspace I/O,用户空间IO）是运行在用户空间的I/O技术。UIO将驱动的很少一部分运行在内核空间，而在用户空间实现"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
+<meta itemprop=wordCount content="2363">
+<meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="UIO">
+<meta name=twitter:description content="UIO 简介 UIO（Userspace I/O,用户空间IO）是运行在用户空间的I/O技术。UIO将驱动的很少一部分运行在内核空间，而在用户空间实现"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>UIO</h1>
+<div class=post-meta>
+<time datetime=2022-05-21 class=post-time>
+2022-05-21 21:27:53
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#优势>优势</a>
+<ul>
+<li><a href=#工作原理><strong>工作原理</strong></a></li>
+</ul>
+</li>
+<li><a href=#实现原理>实现原理</a>
+<ul>
+<li><a href=#uio涉及的函数><strong>UIO涉及的函数</strong></a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=uio>UIO</h1>
+<h2 id=简介>简介</h2>
+<p>UIO（Userspace I/O,用户空间IO）是运行在用户空间的<a href=http://baike.baidu.com/subview/300881/11169495.htm>I/O</a>技术。UIO将驱动的很少一部分运行在内核空间，而在用户空间实现驱动的绝大多数功能！使用UIO可以避免设备的驱动程序需要随着内核的更新而更新的问题。</p>
+<h2 id=优势>优势</h2>
+<ul>
+<li>
+<p>简单。用户态便于调测；</p>
+</li>
+<li>
+<p>可以使用<strong>C++</strong>、<strong>Java</strong>等高级语言进行开发；</p>
+</li>
+<li>
+<p>即便用户空间驱动程序挂了，也不会影响系统的正常运行。</p>
+</li>
+</ul>
+<h3 id=工作原理><strong>工作原理</strong></h3>
+<p>设备驱动主要完成2件事：</p>
+<ul>
+<li>
+<p>处理设备产生的硬中断和存取设备内存；</p>
+</li>
+<li>
+<p>硬中断处理必须在内核空间进行，而设备内存的存取可以在用户空间进行。</p>
+</li>
+</ul>
+<p>UIO框架分为2部分：</p>
+<ul>
+<li>
+<p>内核部分： 主要实现硬件寄存器的内存映射及读写操作，</p>
+</li>
+<li>
+<p>用户空间部分： 负责将<strong>UIO</strong>设备的<strong>uio_mem</strong>映射到本地，*实现用户空间程序能够访问硬件设备寄存器。</p>
+<p>UIO驱动模型请参考图1所示：</p>
+</li>
+</ul>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/10-13-41-29-2020-11-10-13-41-15-image.png alt></p>
+<h2 id=实现原理>实现原理</h2>
+<p><strong>UIO内核部分</strong></p>
+<p>UIO内核驱动做的事情相对来说比较少，主要的任务是：</p>
+<ul>
+<li>
+<p>分配和记录设备所需的资源*（使能PCI设备、申请资源、读取并记录配置信息）、</p>
+</li>
+<li>
+<p><em>注册<strong>UIO</strong>设备</em>（uio_register_device()）</p>
+</li>
+<li>
+<p>实现硬中断处理函数。</p>
+</li>
+</ul>
+<p>接下来我们将从代码角度，重点介绍UIO内核驱动实现涉及的重要数据结构和调用的函数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>uio_portio</span> <span class=p>{</span>
+    <span class=k>struct</span> <span class=n>kobjectkobj</span><span class=p>;</span>
+    <span class=n>structuio_port</span> <span class=o>*</span><span class=n>port</span><span class=p>;</span>
+<span class=p>};</span>
+
+<span class=cm>/** * struct uio_port - description of a UIO port region
+</span><span class=cm>* @name: name of the port region for identification 
+</span><span class=cm>* @start: start of portregion 
+</span><span class=cm>* @size: size of port region 
+</span><span class=cm>* @porttype: type of port (see UIO_PORT_*below) 
+</span><span class=cm>* @portio: for use by the UIO core only. */</span>
+<span class=k>struct</span> <span class=n>uio_port</span> <span class=p>{</span>
+    <span class=k>const</span> <span class=kt>char</span>      <span class=o>*</span><span class=n>name</span><span class=p>;</span>
+    <span class=kt>unsigned</span> <span class=kt>long</span>       <span class=n>start</span><span class=p>;</span>
+    <span class=kt>unsigned</span> <span class=kt>long</span>       <span class=n>size</span><span class=p>;</span>
+    <span class=kt>int</span>         <span class=n>porttype</span><span class=p>;</span>
+    <span class=n>structuio_portio</span>   <span class=o>*</span><span class=n>portio</span><span class=p>;</span>
+<span class=p>};</span>
+
+<span class=cm>/* defines for uio_port-&gt;porttype */</span>
+<span class=cp>#define UIO_PORT_NONE 0
+</span><span class=cp>#define UIO_PORT_X86 1
+</span><span class=cp>#define UIO_PORT_GPIO 2
+</span><span class=cp>#define UIO_PORT_OTHER 3
+</span><span class=cp></span>
+<span class=cm>/** * struct uio_mem - description of a UIO memoryregion 
+</span><span class=cm>* @name: name of the memory region for identification 
+</span><span class=cm>* @addr: addressof the device&#39;s memory * @size: size of IO 
+</span><span class=cm>* @memtype: type of memory addrpoints to 
+</span><span class=cm>* @internal_addr: ioremap-ped version of addr, for driver internaluse 
+</span><span class=cm>* @map: for use by the UIO core only. */</span>
+<span class=k>struct</span> <span class=n>uio_mem</span> <span class=p>{</span>
+    <span class=k>const</span> <span class=kt>char</span>      <span class=o>*</span><span class=n>name</span><span class=p>;</span>
+    <span class=kt>unsigned</span> <span class=kt>long</span>       <span class=n>addr</span><span class=p>;</span>
+    <span class=kt>unsigned</span> <span class=kt>long</span>       <span class=n>size</span><span class=p>;</span>
+    <span class=kt>int</span>         <span class=n>memtype</span><span class=p>;</span>
+    <span class=kt>void</span> <span class=n>__iomem</span>       <span class=o>*</span><span class=n>internal_addr</span><span class=p>;</span>
+    <span class=n>structuio_map</span>      <span class=o>*</span><span class=n>map</span><span class=p>;</span>
+<span class=p>};</span>
+
+
+<span class=k>struct</span> <span class=n>uio_map</span> <span class=p>{</span>
+    <span class=k>struct</span> <span class=n>kobjectkobj</span><span class=p>;</span>
+    <span class=k>struct</span> <span class=n>uio_mem</span><span class=o>*</span><span class=n>mem</span><span class=p>;</span>
+<span class=p>};</span>
+
+<span class=k>static</span> <span class=k>const</span> <span class=k>struct</span> <span class=n>vm_operations_struct</span> <span class=n>uio_vm_ops</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=p>.</span><span class=n>open</span> <span class=o>=</span><span class=n>uio_vma_open</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>close</span> <span class=o>=</span><span class=n>uio_vma_close</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>fault</span> <span class=o>=</span><span class=n>uio_vma_fault</span><span class=p>,</span>
+<span class=p>};</span>
+
+<span class=k>static</span> <span class=k>struct</span> <span class=n>device_attribute</span> <span class=n>uio_class_attributes</span><span class=p>[]</span> <span class=o>=</span><span class=p>{</span>
+    <span class=n>__ATTR</span><span class=p>(</span><span class=n>name</span><span class=p>,</span><span class=n>S_IRUGO</span><span class=p>,</span> <span class=n>show_name</span><span class=p>,</span> <span class=nb>NULL</span><span class=p>),</span>
+   <span class=n>__ATTR</span><span class=p>(</span><span class=n>version</span><span class=p>,</span> <span class=n>S_IRUGO</span><span class=p>,</span> <span class=n>show_version</span><span class=p>,</span> <span class=nb>NULL</span><span class=p>),</span>
+    <span class=n>__ATTR</span><span class=p>(</span><span class=n>event</span><span class=p>,</span><span class=n>S_IRUGO</span><span class=p>,</span> <span class=n>show_event</span><span class=p>,</span> <span class=nb>NULL</span><span class=p>),</span>
+    <span class=p>{}</span>
+<span class=p>};</span>
+<span class=cm>/* UIO class infrastructure */</span>
+<span class=k>static</span> <span class=k>struct</span> <span class=n>class</span> <span class=n>uio_class</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=p>.</span><span class=n>name</span> <span class=o>=</span> <span class=s>&#34;uio&#34;</span><span class=p>,</span><span class=c1>///sys/class/uio
+</span><span class=c1></span>    <span class=p>.</span><span class=n>dev_attrs</span> <span class=o>=</span><span class=n>uio_class_attributes</span><span class=p>,</span>
+<span class=p>};</span>
+
+
+<span class=k>static</span> <span class=k>const</span> <span class=k>struct</span> <span class=n>file_operations</span> <span class=n>uio_fops</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=p>.</span><span class=n>owner</span>      <span class=o>=</span> <span class=n>THIS_MODULE</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>open</span>       <span class=o>=</span> <span class=n>uio_open</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>release</span>    <span class=o>=</span> <span class=n>uio_release</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>read</span>       <span class=o>=</span> <span class=n>uio_read</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>write</span>      <span class=o>=</span> <span class=n>uio_write</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>mmap</span>       <span class=o>=</span> <span class=n>uio_mmap</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>poll</span>       <span class=o>=</span> <span class=n>uio_poll</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>fasync</span>     <span class=o>=</span> <span class=n>uio_fasync</span><span class=p>,</span>
+    <span class=p>.</span><span class=n>llseek</span>     <span class=o>=</span> <span class=n>noop_llseek</span><span class=p>,</span>
+<span class=p>};</span>
+
+
+<span class=cm>/* Protect idr accesses */</span>
+<span class=k>static</span> <span class=nf>DEFINE_MUTEX</span><span class=p>(</span><span class=n>minor_lock</span><span class=p>);</span>
+<span class=k>static</span> <span class=nf>DEFINE_IDR</span><span class=p>(</span><span class=n>uio_idr</span><span class=p>);</span>
+
+<span class=k>struct</span> <span class=n>uio_device</span> <span class=p>{</span>
+    <span class=n>structmodule</span>       <span class=o>*</span><span class=n>owner</span><span class=p>;</span>
+    <span class=n>structdevice</span>       <span class=o>*</span><span class=n>dev</span><span class=p>;</span>
+    <span class=kt>int</span>         <span class=n>minor</span><span class=p>;</span>
+    <span class=n>atomic_t</span>        <span class=n>event</span><span class=p>;</span>
+    <span class=n>structfasync_struct</span>    <span class=o>*</span><span class=n>async_queue</span><span class=p>;</span>
+    <span class=n>wait_queue_head_t</span>   <span class=n>wait</span><span class=p>;</span>
+    <span class=kt>int</span>         <span class=n>vma_count</span><span class=p>;</span>
+    <span class=n>structuio_info</span>     <span class=o>*</span><span class=n>info</span><span class=p>;</span>
+    <span class=n>structkobject</span>      <span class=o>*</span><span class=n>map_dir</span><span class=p>;</span>
+    <span class=n>structkobject</span>      <span class=o>*</span><span class=n>portio_dir</span><span class=p>;</span>
+<span class=p>};</span>
+
+
+<span class=cm>/* * struct uio_info - UIO device capabilities 
+</span><span class=cm>  *@uio_dev: the UIO device this info belongs to 
+</span><span class=cm> * @name: device name 
+</span><span class=cm> * @version:device driver version 
+</span><span class=cm> * @mem: list of mappable memory regions, size==0 for endof list 
+</span><span class=cm>* @port: list of port regions, size==0 for end of list 
+</span><span class=cm>* @irq:interrupt number or UIO_IRQ_CUSTOM 
+</span><span class=cm>* @irq_flags: flags for request_irq() 
+</span><span class=cm>*@priv: optional private data * @handler: the device&#39;s irq handler 
+</span><span class=cm>* @mmap: mmapoperation for this uio device * @open: open operation for this uio device 
+</span><span class=cm>*@release: release operation for this uio device 
+</span><span class=cm>* @irqcontrol: disable/enableirqs when 0/1 is written to /dev/uioX 
+</span><span class=cm>*/</span>    
+<span class=k>struct</span> <span class=n>uio_info</span> <span class=p>{</span>
+    <span class=n>structuio_device</span>   <span class=o>*</span><span class=n>uio_dev</span><span class=p>;</span>
+    <span class=k>const</span> <span class=kt>char</span>      <span class=o>*</span><span class=n>name</span><span class=p>;</span>
+    <span class=k>const</span> <span class=kt>char</span>      <span class=o>*</span><span class=n>version</span><span class=p>;</span>
+    <span class=n>structuio_mem</span>      <span class=n>mem</span><span class=p>[</span><span class=n>MAX_UIO_MAPS</span><span class=p>];</span>
+    <span class=n>structuio_port</span>     <span class=n>port</span><span class=p>[</span><span class=n>MAX_UIO_PORT_REGIONS</span><span class=p>];</span>
+    <span class=kt>long</span>            <span class=n>irq</span><span class=p>;</span>
+    <span class=kt>unsigned</span> <span class=kt>long</span>       <span class=n>irq_flags</span><span class=p>;</span>
+    <span class=kt>void</span>            <span class=o>*</span><span class=n>priv</span><span class=p>;</span>
+    <span class=n>irqreturn_t</span><span class=p>(</span><span class=o>*</span><span class=n>handler</span><span class=p>)(</span><span class=kt>int</span> <span class=n>irq</span><span class=p>,</span> <span class=k>struct</span> <span class=n>uio_info</span> <span class=o>*</span><span class=n>dev_info</span><span class=p>);</span>
+    <span class=kt>int</span> <span class=p>(</span><span class=o>*</span><span class=n>mmap</span><span class=p>)(</span><span class=n>structuio_info</span> <span class=o>*</span><span class=n>info</span><span class=p>,</span> <span class=k>struct</span> <span class=n>vm_area_struct</span> <span class=o>*</span><span class=n>vma</span><span class=p>);</span>
+    <span class=kt>int</span> <span class=p>(</span><span class=o>*</span><span class=n>open</span><span class=p>)(</span><span class=n>structuio_info</span> <span class=o>*</span><span class=n>info</span><span class=p>,</span> <span class=k>struct</span> <span class=n>inode</span> <span class=o>*</span><span class=n>inode</span><span class=p>);</span>
+    <span class=kt>int</span><span class=p>(</span><span class=o>*</span><span class=n>release</span><span class=p>)(</span><span class=k>struct</span> <span class=n>uio_info</span> <span class=o>*</span><span class=n>info</span><span class=p>,</span> <span class=k>struct</span> <span class=n>inode</span> <span class=o>*</span><span class=n>inode</span><span class=p>);</span>
+    <span class=kt>int</span><span class=p>(</span><span class=o>*</span><span class=n>irqcontrol</span><span class=p>)(</span><span class=k>struct</span> <span class=n>uio_info</span> <span class=o>*</span><span class=n>info</span><span class=p>,</span> <span class=n>s32</span> <span class=n>irq_on</span><span class=p>);</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>UIO用户空间部分</strong></p>
+<p><em>用户空间驱动</em>主要完成2个关键任务:</p>
+<ul>
+<li>
+<p>响应硬件中断;</p>
+</li>
+<li>
+<p>从存取设备内存。</p>
+<p>下面将使用理论 + 代码对用户空间驱动的能力进行介绍。</p>
+</li>
+</ul>
+<p>响应硬中断通常有2种处理方式，</p>
+<ol>
+<li>
+<p>调用<strong>read()</strong>，*阻塞/dev/uioX，*当设备产生中断时，**read()**操作立即返回；</p>
+</li>
+<li>
+<p>调用<strong>poll()</strong>，使用**select()*<em>等待中断发生</em>（select()有一个超时参数可用来实现有限时间内等待中断）。</p>
+</li>
+</ol>
+<p>下面用一段代码说明如何完成硬中断响应处理*（阻塞**/dev/uio0**，调用**read()**处理硬中断信号）。*</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int32_t</span> <span class=n>irq_count</span><span class=p>;</span>
+<span class=kt>int</span> <span class=n>fd</span> <span class=o>=</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/dev/uio0&#34;</span><span class=p>,</span> <span class=n>O_RDWR</span><span class=p>);</span>
+
+<span class=cm>/* Map the register regions to proccess&#39;s virtual memspace */</span>
+<span class=kt>void</span> <span class=o>*</span> <span class=n>access</span> <span class=o>=</span> <span class=n>mmap</span><span class=p>(</span><span class=nb>NULL</span><span class=p>,</span> <span class=mi>4096</span><span class=p>,</span><span class=n>PROT_READ</span> <span class=o>|</span> <span class=n>PROT_WRITE</span><span class=p>,</span> <span class=n>MAP_SHARED</span><span class=p>,</span> <span class=n>fd</span><span class=p>,</span> <span class=mi>0</span><span class=p>);</span>
+
+<span class=k>while</span> <span class=p>(</span><span class=n>read</span><span class=p>(</span><span class=n>fd</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>irq_count</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span> <span class=o>==</span> <span class=mi>4</span><span class=p>)</span> 
+<span class=p>{</span>
+    <span class=n>printf</span><span class=p>(</span><span class=s>&#34;Interrupt number %dn&#34;</span><span class=p>,</span> <span class=n>irq_count</span><span class=p>);</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>对于如何存取设备内存呢？通过读写<code>/sys/class/uioX</code>下的各个文件（注册的UIO设备在该目录下），完成对设备内存的读写。</p>
+<p>比如UIO设备为uio0，那么映射的设备内存将在/sys/class/uio/uio0/maps下，对该文件的读写就是对设备内存的读写。</p>
+<p>下面用一段代码说明如何存取设备内存（将设备信息<strong>mmap</strong>到用户空间，用户空间程序便可直接操作设备内存空间）。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>char</span> <span class=n>uio_addr_buf</span><span class=p>[</span><span class=mi>16</span><span class=p>]</span><span class=o>=</span><span class=p>{</span><span class=mi>0</span><span class=p>};</span>
+<span class=kt>char</span> <span class=n>uio_size_buf</span><span class=p>[</span><span class=mi>16</span><span class=p>]</span><span class=o>=</span><span class=p>{</span><span class=mi>0</span><span class=p>};</span>
+
+<span class=kt>int</span> <span class=n>uio_fd</span><span class=p>,</span><span class=n>addr_fd</span><span class=p>,</span><span class=n>size_fd</span><span class=p>;</span>
+<span class=kt>int</span> <span class=n>uio_size</span><span class=p>;</span>
+<span class=kt>void</span> <span class=o>*</span><span class=n>uio_addr</span><span class=p>,</span> <span class=o>*</span><span class=n>access_address</span><span class=p>;</span>
+<span class=kt>int</span> <span class=n>n</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>
+
+<span class=n>uio_fd</span> <span class=o>=</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/dev/uio0&#34;</span><span class=p>,</span><span class=n>O_RDWR</span><span class=p>);</span>
+<span class=n>addr_fd</span> <span class=o>=</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/sys/class/uio/uio0/maps/map0/addr&#34;</span><span class=p>,</span><span class=n>O_RDONLY</span><span class=p>);</span>
+<span class=n>size_fd</span> <span class=o>=</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/sys/class/uio/uio0/maps/map0/size&#34;</span><span class=p>,</span><span class=n>O_RDONLY</span><span class=p>);</span>
+
+<span class=k>if</span> <span class=p>(</span><span class=n>addr_fd</span> <span class=o>&lt;</span> <span class=mi>0</span> <span class=o>||</span> <span class=n>size_fd</span> <span class=o>&lt;</span> <span class=mi>0</span> <span class=o>||</span> <span class=n>uio_fd</span> <span class=o>&lt;</span> <span class=mi>0</span><span class=p>)</span>
+<span class=p>{</span>
+    <span class=n>fprintf</span><span class=p>(</span><span class=n>stderr</span><span class=p>,</span><span class=s>&#34;mmap:%s</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span><span class=n>strerror</span><span class=p>(</span><span class=n>errno</span><span class=p>));</span>
+    <span class=n>exit</span><span class=p>(</span><span class=o>-</span><span class=mi>1</span><span class=p>);</span>
+<span class=p>}</span>
+
+<span class=n>n</span><span class=o>=</span><span class=n>read</span><span class=p>(</span><span class=n>addr_fd</span><span class=p>,</span><span class=n>uio_addr_buf</span><span class=p>,</span><span class=k>sizeof</span><span class=p>(</span><span class=n>uio_addr_buf</span><span class=p>));</span>
+<span class=k>if</span> <span class=p>(</span><span class=n>n</span><span class=o>&lt;</span><span class=mi>0</span><span class=p>)</span>
+<span class=p>{</span>
+    <span class=n>fprintf</span><span class=p>(</span><span class=n>stderr</span><span class=p>,</span><span class=s>&#34;%s</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=n>strerror</span><span class=p>(</span><span class=n>errno</span><span class=p>));</span>
+    <span class=n>exit</span><span class=p>(</span><span class=o>-</span><span class=mi>1</span><span class=p>);</span>
+<span class=p>}</span>
+
+<span class=n>n</span><span class=o>=</span><span class=n>read</span><span class=p>(</span><span class=n>size_fd</span><span class=p>,</span><span class=n>uio_size_buf</span><span class=p>,</span><span class=k>sizeof</span><span class=p>(</span><span class=n>uio_size_buf</span><span class=p>));</span>
+<span class=k>if</span> <span class=p>(</span><span class=n>n</span><span class=o>&lt;</span><span class=mi>0</span><span class=p>)</span>
+<span class=p>{</span>
+    <span class=n>fprintf</span><span class=p>(</span><span class=n>stderr</span><span class=p>,</span><span class=s>&#34;%s</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span> <span class=n>strerror</span><span class=p>(</span><span class=n>errno</span><span class=p>));</span>
+    <span class=n>exit</span><span class=p>(</span><span class=o>-</span><span class=mi>1</span><span class=p>);</span>
+<span class=p>}</span>
+
+<span class=n>uio_addr</span> <span class=o>=</span> <span class=p>(</span><span class=kt>void</span><span class=o>*</span><span class=p>)</span><span class=n>strtoul</span><span class=p>(</span><span class=n>uio_addr_buf</span><span class=p>,</span><span class=nb>NULL</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>
+<span class=n>uio_size</span> <span class=o>=</span> <span class=p>(</span><span class=kt>int</span><span class=p>)</span><span class=n>strtol</span><span class=p>(</span><span class=n>uio_size_buf</span><span class=p>,</span><span class=nb>NULL</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>
+
+<span class=n>access_address</span> <span class=o>=</span> <span class=n>mmap</span><span class=p>(</span><span class=nb>NULL</span><span class=p>,</span><span class=n>uio_size</span><span class=p>,</span><span class=n>PROT_READ</span> <span class=o>|</span><span class=n>PROT_WRITE</span><span class=p>,</span>
+                           <span class=n>MAP_SHARED</span><span class=p>,</span><span class=n>uio_fd</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>
+<span class=k>if</span><span class=p>(</span><span class=n>access_address</span> <span class=o>==</span> <span class=p>(</span><span class=kt>void</span><span class=o>*</span><span class=p>)</span><span class=o>-</span><span class=mi>1</span><span class=p>)</span>
+<span class=p>{</span>
+    <span class=n>fprintf</span><span class=p>(</span><span class=n>stderr</span><span class=p>,</span><span class=s>&#34;mmap:%s</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span><span class=n>strerror</span><span class=p>(</span><span class=n>errno</span><span class=p>));</span>
+    <span class=n>exit</span><span class=p>(</span><span class=o>-</span><span class=mi>1</span><span class=p>);</span>
+<span class=p>}</span>
+
+<span class=n>printf</span><span class=p>(</span><span class=s>&#34;The device address %p (lenth %d)</span><span class=se>\n</span><span class=s>&#34;</span>
+        <span class=s>&#34;canbe accessed over</span><span class=se>\n</span><span class=s>&#34;</span>
+       <span class=s>&#34;logical address %p</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>,</span><span class=n>uio_addr</span><span class=p>,</span><span class=n>uio_size</span><span class=p>,</span><span class=n>access_address</span><span class=p>);</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=uio涉及的函数><strong>UIO涉及的函数</strong></h3>
+<p>最后一章节，<em><strong>对</strong></em><em><strong>UIO</strong></em><em><strong>框架主要涉及函数定义及功能描述进行汇总</strong></em>，具体的内容请参考如下表信息。</p>
+<table>
+<thead>
+<tr>
+<th><strong>函数定义</strong></th>
+<th><strong>功能描述</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>static int __init uio_init(void)</td>
+<td>申请字符设备号和设备，并注册到系统中，注册uio_class到系统中</td>
+</tr>
+<tr>
+<td>staticvoid__exituio_exit(void)</td>
+<td>注销uio_class,注销字符设备编号和删除设备</td>
+</tr>
+<tr>
+<td>static void release_uio_class(void)</td>
+<td>注销uio_class,注销字符设备编号和删除设备</td>
+</tr>
+<tr>
+<td>static int init_uio_class(void)</td>
+<td>申请字符设备号和设备，并注册到系统中，注册uio_class到系统中</td>
+</tr>
+<tr>
+<td>static int uio_major_init(void)</td>
+<td>申请字符设备编号和设备，并初始化</td>
+</tr>
+<tr>
+<td>static void uio_major_cleanup(void)</td>
+<td>注销字符设备编号，删除设备</td>
+</tr>
+<tr>
+<td>static int uio_open(struct inode *inode,  struct file *filep)</td>
+<td>获得和次设备号关联的uio_device指针，创建一个辅助变量listener, 并调用info指向的uio_info结构中的open方法</td>
+</tr>
+<tr>
+<td>static int uio_release(struct inode  *inode, struct file *filep)</td>
+<td>调用uio_device的字段info指向的uio_info中的release方法，释放辅助结构体listener</td>
+</tr>
+<tr>
+<td>static int uio_fasync(int fd, struct file  *filep, int on)</td>
+<td>管理uio_device的async_queue</td>
+</tr>
+<tr>
+<td>static unsigned int uio_poll(struct file  *filep, poll_table *wait)</td>
+<td>使进程在传递到该系统调用的所有文件描述符对应的等待队列上等待，并返回一个是否可以立即无阻塞执行的位掩码</td>
+</tr>
+<tr>
+<td>static ssize_t uio_read(struct file  *filep, char __user *buf, size_t count, loff_t *ppos)</td>
+<td>复制uio设备中断事件计数器的值到用户空间</td>
+</tr>
+<tr>
+<td>int __uio_register_device(struct module *owner,  struct device *parent, struct uio_info *info)</td>
+<td>调用uio_info中注册的handler中断处理函数，对设备的中断事件计数器增一并通知各读进程，有数据可读</td>
+</tr>
+<tr>
+<td>void uio_event_notify(struct uio_info  *info)</td>
+<td>“触发”一个中断事件，对设备的中断事件计数器增一，并通知各读进程，有数据可读</td>
+</tr>
+<tr>
+<td>static ssize_t uio_write(struct file  *filep, const char __user *buf,size_t count, loff_t *ppos)</td>
+<td>读取用户空间的值，并调用uio_device注册的irqcontrol函数</td>
+</tr>
+<tr>
+<td>static int uio_mmap(struct file *filep,  struct vm_area_struct *vma)</td>
+<td>对uio设备进行mmap处理</td>
+</tr>
+</tbody>
+</table>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://www.cnblogs.com/kb342/p/5168197.html>dpdk中uio技术 - 笑侃码农 - 博客园</a></li>
+<li></li>
+</ol>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2022-05-21 21:27:53
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/12.data_struct/tree/trietree/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">TrieTree(字典树)</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/32.cloudnative/unikernel%E5%9F%BA%E7%A1%80/>
+<span class="next-text nav-default">Unikernel基础知识</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>

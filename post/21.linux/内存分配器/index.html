@@ -1,0 +1,521 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>内存分配器 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="内存分配器 简介 系统的物理内存是有限的，而对内存的需求是变化的, 程序的动态性越强，内存管理就越重要，选择合适的内存管理算法会带来明显的性能提升">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E5%99%A8/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="内存分配器">
+<meta property="og:description" content="内存分配器 简介 系统的物理内存是有限的，而对内存的需求是变化的, 程序的动态性越强，内存管理就越重要，选择合适的内存管理算法会带来明显的性能提升">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E5%99%A8/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
+<meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="内存分配器">
+<meta itemprop=description content="内存分配器 简介 系统的物理内存是有限的，而对内存的需求是变化的, 程序的动态性越强，内存管理就越重要，选择合适的内存管理算法会带来明显的性能提升"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
+<meta itemprop=wordCount content="5048">
+<meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="内存分配器">
+<meta name=twitter:description content="内存分配器 简介 系统的物理内存是有限的，而对内存的需求是变化的, 程序的动态性越强，内存管理就越重要，选择合适的内存管理算法会带来明显的性能提升"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://gohugo.io rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>内存分配器</h1>
+<div class=post-meta>
+<time datetime=2022-05-21 class=post-time>
+2022-05-21 21:27:53
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#内存分配器>内存分配器</a></li>
+<li><a href=#简介>简介</a></li>
+<li><a href=#目标>目标</a>
+<ul>
+<li><a href=#现状>现状</a></li>
+</ul>
+</li>
+<li><a href=#ptmalloc2>ptmalloc2</a>
+<ul>
+<li><a href=#ptmalloc原理>ptmalloc原理</a></li>
+</ul>
+</li>
+<li><a href=#多线程支持>多线程支持</a>
+<ul>
+<li><a href=#ptmalloc内存管理>ptmalloc内存管理</a></li>
+<li><a href=#ptmalloc分配流程>ptmalloc分配流程</a></li>
+<li><a href=#ptmalloc的缺陷>ptmalloc的缺陷</a></li>
+</ul>
+</li>
+<li><a href=#tcmalloc>tcmalloc</a>
+<ul>
+<li><a href=#小对象分配>小对象分配</a></li>
+<li><a href=#centralcache分配管理>CentralCache分配管理</a></li>
+<li><a href=#回收>回收</a></li>
+<li><a href=#tcmalloc的改进>tcmalloc的改进</a></li>
+<li><a href=#性能对比>性能对比</a></li>
+<li><a href=#官方测试>官方测试</a></li>
+<li><a href=#github-mysql优化>github mysql优化</a></li>
+</ul>
+</li>
+<li><a href=#jemalloc>Jemalloc</a>
+<ul>
+<li><a href=#jemalloc原理>jemalloc原理</a></li>
+<li><a href=#jemalloc的优化>jemalloc的优化</a></li>
+<li><a href=#性能对比-1>性能对比</a></li>
+</ul>
+</li>
+<li><a href=#总结>总结</a></li>
+<li><a href=#参考资料>参考资料</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h2 id=内存分配器>内存分配器</h2>
+<h2 id=简介>简介</h2>
+<p>系统的物理内存是有限的，而对内存的需求是变化的, 程序的动态性越强，内存管理就越重要，选择合适的内存管理算法会带来明显的性能提升。<br>
+比如nginx， 它在每个连接accept后会malloc一块内存，作为整个连接生命周期内的内存池。 当HTTP请求到达的时候，又会malloc一块当前请求阶段的内存池, 因此对malloc的分配速度有一定的依赖关系。</p>
+<p>内存分配器是</p>
+<p>ptmalloc、tcmalloc和jemalloc</p>
+<ul>
+<li>
+<p><strong>ptmalloc</strong>: glibc使用的内存分配器；</p>
+</li>
+<li>
+<p><strong>tcmalloc</strong>：google开发的内存分配器；</p>
+</li>
+<li>
+<p><strong>jemalloc</strong>: facebook开源的内存分配器；</p>
+</li>
+<li>
+<p><strong>mimalloc</strong>：微软开源的内存分配器；</p>
+</li>
+</ul>
+<h2 id=目标>目标</h2>
+<p>内存管理可以分为三个层次，自底向上分别是：</p>
+<ul>
+<li>内核级：操作系统内核的内存管理;</li>
+<li>系统调用库级：glibc层使用系统调用维护的内存管理算法;</li>
+<li>应用级：应用程序从glibc动态分配内存后，根据应用程序本身的程序特性进行优化， 比如使用引用计数std::shared_ptr，apache的内存池方式等等。</li>
+</ul>
+<p>一个优秀的通用内存分配器应具有以下特性:</p>
+<ul>
+<li>额外的空间损耗尽量少</li>
+<li>分配速度尽可能快</li>
+<li>尽量避免内存碎片</li>
+<li>缓存本地化友好</li>
+<li>通用性，兼容性，可移植性，易调试</li>
+</ul>
+<h3 id=现状>现状</h3>
+<p>目前大部分服务端程序使用glibc提供的malloc/free系列函数，而glibc使用的ptmalloc2在性能上远远弱后于google的tcmalloc和facebook的jemalloc。 而且后两者只需要使用<strong>LD_PRELOAD</strong>环境变量启动程序即可，甚至并不需要重新编译。</p>
+<h2 id=ptmalloc2>ptmalloc2</h2>
+<p>ptmalloc2是我们当前使用的glibc malloc版本。</p>
+<h3 id=ptmalloc原理>ptmalloc原理</h3>
+<p>系统调用接口</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-56-21-2020-05-31-18-48-19-image.png alt></p>
+<p>上图是 x86_64 下 Linux 进程的默认地址空间, 对 heap 的操作, 操作系统提供了brk()系统调用，设置了Heap的上边界； 对 mmap 映射区域的操作,操作系 统 供了 mmap()和 munmap()函数。<br>
+因为系统调用的代价很高，不可能每次申请内存都从内核分配空间，尤其是对于小内存分配。 而且因为mmap的区域容易被munmap释放，所以一般大内存采用mmap()，小内存使用brk()。</p>
+<h2 id=多线程支持>多线程支持</h2>
+<ul>
+<li>Ptmalloc2有一个主分配区(main arena)， 有多个非主分配区。 非主分配区只能使用mmap向操作系统批发申请HEAP_MAX_SIZE（64位系统为64MB）大小的虚拟内存。 当某个线程调用malloc的时候，会先查看线程私有变量中是否已经存在一个分配区，如果存在则尝试加锁，如果加锁失败则遍历arena链表试图获取一个没加锁的arena， 如果依然获取不到则创建一个新的非主分配区。</li>
+<li>free()的时候也要获取锁。分配小块内存容易产生碎片，ptmalloc在整理合并的时候也要对arena做加锁操作。在线程多的时候，锁的开销就会增大。</li>
+</ul>
+<h3 id=ptmalloc内存管理>ptmalloc内存管理</h3>
+<ul>
+<li>
+<p>用户请求分配的内存在ptmalloc中使用chunk表示， 每个chunk至少需要8个字节额外的开销。</p>
+</li>
+<li>
+<p>用户free掉的内存不会马上归还操作系统，ptmalloc会统一管理heap和mmap区域的空闲chunk，避免了频繁的系统调用。</p>
+</li>
+<li>
+<p>ptmalloc 将相似大小的 chunk 用双向链表链接起来, 这样的一个链表被称为一个 bin。</p>
+</li>
+<li>
+<p>Ptmalloc 一共 维护了128 个 bin,并使用一个数组来存储这些 bin(如下图所示)。</p>
+</li>
+<li>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-57-17-2020-05-31-18-49-27-image.png alt></p>
+</li>
+<li>
+<p>当free一个chunk并放入bin的时候， ptmalloc 还会检查它前后的 chunk 是否也是空闲的, 如果是的话,ptmalloc会首先把它们合并为一个大的 chunk, 然后将合并后的 chunk 放到 unstored bin 中。</p>
+</li>
+<li>
+<p>ptmalloc 为了提高分配的速度,会把一些小的(不大于64B) chunk先放到一个叫做 fast bins 的容器内。</p>
+</li>
+<li>
+<p>在fast bins和bins都不能满足需求后，ptmalloc会设法在一个叫做top chunk的空间分配内存。 对于非主分配区会预先通过mmap分配一大块内存作为top chunk， 当bins和fast bins都不能满足分配需要的时候, ptmalloc会设法在top chunk中分出一块内存给用户, 如果top chunk本身不够大, 分配程序会重新mmap分配一块内存chunk, 并将 top chunk 迁移到新的chunk上，并用单链表链接起来。</p>
+</li>
+<li>
+<p>如果free()的chunk恰好 与 top chunk 相邻,那么这两个 chunk 就会合并成新的 top chunk，如果top chunk大小大于某个阈值才还给操作系统。</p>
+</li>
+<li>
+<p>主分配区类似，不过通过sbrk()分配和调整top chunk的大小，只有heap顶部连续内存空闲超过阈值的时候才能回收内存。</p>
+</li>
+<li>
+<p>需要分配的 chunk 足够大,而且 fast bins 和 bins 都不能满足要求,甚至 top chunk 本身也不能满足分配需求时,ptmalloc 会使用 mmap 来直接使用内存映射来将页映射到进程空间。</p>
+</li>
+</ul>
+<h3 id=ptmalloc分配流程>ptmalloc分配流程</h3>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-57-22-2020-05-31-18-53-50-image.png alt></p>
+<h3 id=ptmalloc的缺陷>ptmalloc的缺陷</h3>
+<ul>
+<li>后分配的内存先释放,因为 ptmalloc 收缩内存是从 top chunk 开始,如果与 top chunk 相邻的 chunk 不能释放, top chunk 以下的 chunk 都无法释放。</li>
+<li>多线程锁开销大， 需要避免多线程频繁分配释放。</li>
+<li>内存从thread的areana中分配， 内存不能从一个arena移动到另一个arena， 就是说如果多线程使用内存不均衡，容易导致内存的浪费。 比如说线程1使用了300M内存，完成任务后glibc没有释放给操作系统，线程2开始创建了一个新的arena， 但是线程1的300M却不能用了。</li>
+<li>每个chunk至少8字节的开销很大</li>
+<li>不定期分配长生命周期的内存容易造成内存碎片，不利于回收。 64位系统最好分配32M以上内存，这是使用mmap的阈值。</li>
+</ul>
+<h2 id=tcmalloc>tcmalloc</h2>
+<p>tcmalloc是Google开源的一个内存管理库， 作为glibc malloc的替代品。目前已经在chrome、safari等知名软件中运用。<br>
+根据官方测试报告，ptmalloc在一台2.8GHz的P4机器上（对于小对象）执行一次malloc及free大约需要300纳秒。而TCMalloc的版本同样的操作大约只需要50纳秒。</p>
+<h3 id=小对象分配>小对象分配</h3>
+<ul>
+<li>
+<p>tcmalloc为每个线程分配了一个线程本地ThreadCache，小内存从ThreadCache分配，此外还有个中央堆（CentralCache），ThreadCache不够用的时候，会从CentralCache中获取空间放到ThreadCache中。</p>
+</li>
+<li>
+<p>小对象（&lt;=32K）从ThreadCache分配，大对象从CentralCache分配。大对象分配的空间都是4k页面对齐的，多个pages也能切割成多个小对象划分到ThreadCache中。</p>
+<p>小对象有将近170个不同的大小分类(class)，每个class有个该大小内存块的FreeList单链表，分配的时候先找到best fit的class，然后无锁的获取该链表首元素返回。如果链表中无空间了，则到CentralCache中划分几个页面并切割成该class的大小，放入链表中。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-57-27-2020-05-31-18-57-14-image.png alt></p>
+</li>
+</ul>
+<h3 id=centralcache分配管理>CentralCache分配管理</h3>
+<ul>
+<li>大对象(>32K)先4k对齐后，从CentralCache中分配。 CentralCache维护的PageHeap如下图所示， 数组中第256个元素是所有大于255个页面都挂到该链表中。<br>
+<img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-02-43-tcmalloc-pageheap.png alt=tcmalloc-pageheap>]</li>
+<li>当best fit的页面链表中没有空闲空间时，则一直往更大的页面空间则，如果所有256个链表遍历后依然没有成功分配。 则使用sbrk, mmap, /dev/mem从系统中分配。</li>
+<li>tcmalloc PageHeap管理的连续的页面被称为span.<br>
+如果span未分配， 则span是PageHeap中的一个链表元素<br>
+如果span已经分配，它可能是返回给应用程序的大对象， 或者已经被切割成多小对象，该小对象的size-class会被记录在span中</li>
+<li>在32位系统中，使用一个中央数组(central array)映射了页面和span对应关系， 数组索引号是页面号，数组元素是页面所在的span。 在64位系统中，使用一个3-level radix tree记录了该映射关系。</li>
+</ul>
+<h3 id=回收>回收</h3>
+<ul>
+<li>当一个object free的时候，会根据地址对齐计算所在的页面号，然后通过central array找到对应的span。</li>
+<li>如果是小对象，span会告诉我们他的size class，然后把该对象插入当前线程的ThreadCache中。如果此时ThreadCache超过一个预算的值（默认2MB），则会使用垃圾回收机制把未使用的object从ThreadCache移动到CentralCache的central free lists中。</li>
+<li>如果是大对象，span会告诉我们对象锁在的页面号范围。 假设这个范围是[p,q]， 先查找页面p-1和q+1所在的span，如果这些临近的span也是free的，则合并到[p,q]所在的span， 然后把这个span回收到PageHeap中。</li>
+<li>CentralCache的central free lists类似ThreadCache的FreeList，不过它增加了一级结构，先根据size-class关联到spans的集合， 然后是对应span的object链表。如果span的链表中所有object已经free， 则span回收到PageHeap中。</li>
+</ul>
+<h3 id=tcmalloc的改进>tcmalloc的改进</h3>
+<ul>
+<li>ThreadCache会阶段性的回收内存到CentralCache里。 解决了ptmalloc2中arena之间不能迁移的问题。</li>
+<li>Tcmalloc占用更少的额外空间。例如，分配N个8字节对象可能要使用大约8N * 1.01字节的空间。即，多用百分之一的空间。Ptmalloc2使用最少8字节描述一个chunk。</li>
+<li>更快。小对象几乎无锁， >32KB的对象从CentralCache中分配使用自旋锁。 并且>32KB对象都是页面对齐分配，多线程的时候应尽量避免频繁分配，否则也会造成自旋锁的竞争和页面对齐造成的浪费。</li>
+</ul>
+<h3 id=性能对比>性能对比</h3>
+<h3 id=官方测试>官方测试</h3>
+<p>测试环境是2.4GHz dual Xeon，开启超线程，redhat9，glibc-2.3.2, 每个线程测试100万个操作。<br>
+<img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-02-37-tcmalloc-perf1.png alt=tcmalloc测试1></p>
+<h3 id=github-mysql优化>github mysql优化</h3>
+<p><a href=https://github.com/blog/1422-tcmalloc-and-mysql>github使用tcmalloc后，mysql性能提升30%</a></p>
+<h2 id=jemalloc>Jemalloc</h2>
+<p>jemalloc是facebook推出的， 最早的时候是freebsd的libc malloc实现。 目前在firefox、facebook服务器各种组件中大量使用。</p>
+<h3 id=jemalloc原理>jemalloc原理</h3>
+<ul>
+<li>与tcmalloc类似，每个线程同样在&lt;32KB的时候无锁使用线程本地cache。</li>
+<li>Jemalloc在64bits系统上使用下面的size-class分类：<br>
+Small: [8], [16, 32, 48, …, 128], [192, 256, 320, …, 512], [768, 1024, 1280, …, 3840]<br>
+Large: [4 KiB, 8 KiB, 12 KiB, …, 4072 KiB]<br>
+Huge: [4 MiB, 8 MiB, 12 MiB, …]</li>
+<li>small/large对象查找metadata需要常量时间， huge对象通过全局红黑树在对数时间内查找。</li>
+<li>虚拟内存被逻辑上分割成chunks（默认是4MB，1024个4k页），应用线程通过round-robin算法在第一次malloc的时候分配arena， 每个arena都是相互独立的，维护自己的chunks， chunk切割pages到small/large对象。free()的内存总是返回到所属的arena中，而不管是哪个线程调用free()。</li>
+</ul>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-02-27-jemalloc-arena-chunk.png alt="jemalloc Arena Chunk layout">](http://ww</p>
+<ul>
+<li>通过arena分配的时候需要对arena bin（每个small size-class一个，细粒度）加锁，或arena本身加锁。<br>
+并且线程cache对象也会通过垃圾回收指数退让算法返回到arena中。<br>
+<img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-02-21-jemalloc-arena-thread-cache.png alt="jemalloc Arena and thread cache layout">](<a href=http://www.cnhalo.ne>http://www.cnhalo.ne</a></li>
+</ul>
+<h3 id=jemalloc的优化>jemalloc的优化</h3>
+<ul>
+<li>Jmalloc小对象也根据size-class，但是它使用了低地址优先的策略，来降低内存碎片化。</li>
+<li>Jemalloc大概需要2%的额外开销。（tcmalloc 1%， ptmalloc最少8B）</li>
+<li>Jemalloc和tcmalloc类似的线程本地缓存，避免锁的竞争</li>
+<li>相对未使用的页面，优先使用dirty page，提升缓存命中。</li>
+</ul>
+<h3 id=性能对比-1>性能对比</h3>
+<h4 id=官方测试-1>官方测试</h4>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-02-07-jemalloc-throughput.png alt=jemalloc官方测试报告></p>
+<p>4.3.2 mysql优化<br>
+测试环境：2x Intel E5/2.2Ghz with 8 real cores per socket，16 real cores， 开启hyper-threading， 总共32个vcpu。 16个table，每个5M row。<br>
+OLTP_RO测试包含5个select查询：select_ranges, select_order_ranges, select_distinct_ranges, select_sum_ranges,</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-59-42-jemalloc-mysql-perf.png alt="jemalloc mysql性能测试"></p>
+<p>可以看到在多核心或者多线程的场景下， jemalloc和tcmalloc带来的tps增加非常明显。</p>
+<h2 id=总结>总结</h2>
+<p>在多线程环境使用tcmalloc和jemalloc效果非常明显。<br>
+当线程数量固定，不会频繁创建退出的时候， 可以使用jemalloc；反之使用tcmalloc可能是更好的选择。</p>
+<h2 id=参考资料>参考资料</h2>
+<p><a href=http://www.valleytalk.org/wp-content/uploads/2015/02/glibc%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86ptmalloc%E6%BA%90%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901.pdf>glibc内存管理ptmalloc源代码分析</a><br>
+<a href=http://www.cnblogs.com/vector03/p/5182730.html>Inside jemalloc</a><br>
+<a href=https://yq.aliyun.com/articles/6045>tcmalloc浅析</a><br>
+<a href=http://goog-perftools.sourceforge.net/doc/tcmalloc.html>tcmalloc官方文档</a><br>
+<a href=https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919>Scalable memory allocation using jemalloc</a><br>
+<a href=https://www.percona.com/blog/2013/03/08/mysql-performance-impact-of-memory-allocators-part-2/>mysql-performance-impact-of-memory-allocators-part-2</a><br>
+<a href=http://www.360doc.com/content/13/0915/09/8363527_314549128.shtml>ptmalloc,tcmalloc和jemalloc内存分配策略研究</a><br>
+<a href="https://www.youtube.com/watch?v=RcWp5vwGlYU">Tick Tock, malloc Needs a Clock</a></p>
+<ul>
+<li><a href=https://zhuanlan.zhihu.com/p/369972058>https://zhuanlan.zhihu.com/p/369972058</a></li>
+</ul>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2022-05-21 21:27:53
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/60.blockchain/etherume/%E4%BB%A5%E5%A4%AA%E5%9D%8A%E5%8C%BA%E5%9D%97%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">以太坊数据结构</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/12.data_struct/40.%E5%88%86%E5%B8%83%E5%BC%8F%E5%93%88%E5%B8%8C%E8%A1%A8dht/>
+<span class="next-text nav-default">分布式哈希表(DHT)</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2022
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+<script src=/js/l2d/L2Dwidget.min.js></script>
+<script src=/js/l2d/L2Dwidget.0.min.js></script>
+<script src=/js/l2d/L2Dwidget.init.js></script>
+</body>
+</html>
