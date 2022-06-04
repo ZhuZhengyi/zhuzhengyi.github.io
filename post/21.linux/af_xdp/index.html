@@ -25,11 +25,11 @@
 <meta property="og:description" content="AF_XDP 简介 AF_XDP是一种用于高性能包处理的地址簇(Address Family)。 使用XDP程序中的XDP_REDIRECT操作，可以使用bp">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/af_xdp/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
-<meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2022-06-04T10:26:13+08:00">
+<meta property="article:modified_time" content="2022-06-04T10:26:13+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="AF_XDP">
-<meta itemprop=description content="AF_XDP 简介 AF_XDP是一种用于高性能包处理的地址簇(Address Family)。 使用XDP程序中的XDP_REDIRECT操作，可以使用bp"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
-<meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="AF_XDP 简介 AF_XDP是一种用于高性能包处理的地址簇(Address Family)。 使用XDP程序中的XDP_REDIRECT操作，可以使用bp"><meta itemprop=datePublished content="2022-06-04T10:26:13+08:00">
+<meta itemprop=dateModified content="2022-06-04T10:26:13+08:00">
 <meta itemprop=wordCount content="10949">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="AF_XDP">
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>AF_XDP</h1>
 <div class=post-meta>
-<time datetime=2022-05-21 class=post-time>
-2022-05-21 21:27:53
+<time datetime=2022-06-04 class=post-time>
+2022-06-04 10:26:13
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/linux/> linux </a>
@@ -211,8 +211,7 @@ Justice's Blog
 <p>那么报文是怎么从XDP程序分发到XSKs的呢？通过名为<code>XSKMAP</code>(完整名为BPF_MAP_TYPE_XSKMAP`) BPF map。用户空间的应用可以将一个XSK放到该map的任意位置，然后XDP程序就可以将一个报文重定向到该map中指定的索引中，此时XDP会校验map中的XSK确实绑定到该设备和ring号。如果没有，则会丢弃该报文。如果map中的索引为空，也会丢弃该报文。因此，当前的实现中强制要求必须加载一个XDP程序(以及保证XSKMAP存在一个XSK)，这样才能通过XSK将流量传送到用户空间。</p>
 <p>AF_XDP可以运行在两种模式上：<code>XDP_SKB</code>和<code>XDP_DRV</code>。如果驱动不支持XDP，则在加载XDP程序是需要明确指定使用XDP_SKB，<code>XDP_SKB</code>模式使用SKB和通用的XDP功能，并将数据复制到用户空间，是一种适用于任何网络设备的回退模式。 如果驱动支持XDP，将使用AF_XDP代码提供更好的性能，但仍然会将数据拷贝到用户空间的操作。</p>
 <h5 id=术语>术语</h5>
-<h6 id=umem>UMEM</h6>
-<p>UMEM是一个虚拟的连续内存域，分割为相同大小的帧。</p>
+<h6 id=umem-umem是一个虚拟的连续内存域分割为相同大小的帧>UMEM: UMEM是一个虚拟的连续内存域，分割为相同大小的帧。</h6>
 <p>一个UMEM会关联一个netdev以及该netdev的队列id。通过<code>XDP_UMEM_REG</code> socket选项进行创建和配置(chunk大小，headroom，开始地址和大小)。通过<code>bind()</code>系统调用将一个UMEM绑定到一个netdev和队列id。umem的基本结构如下：</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-11-49-1334952-20200807102005413-1869804955.png alt></p>
 <p>一个AF_XDP为一个链接到一个独立的UMEM的socket，但一个UMEM可以有多个AF_XDP socket。为了共享一个通过socket A创建的UMEM，socket B可以将结构体<code>sockaddr_xdp</code>中的成员sxdp_flags设置为<code>XDP_SHARED_UMEM</code>，并将A的文件描述符传递给结构体<code>sockaddr_xdp</code>的成员<code>sxdp_shared_umem_fd</code>。</p>
@@ -531,7 +530,7 @@ filter protocol all pref <span class=m>1</span> bpf handle 0x1 prog.o:<span clas
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-05-21 21:27:53
+2022-06-04 10:26:13
 </span>
 </p>
 <p class=copyright-item>
@@ -554,14 +553,8 @@ filter protocol all pref <span class=m>1</span> bpf handle 0x1 prog.o:<span clas
 <a href=https://justice.bj.cn/tags/linux/>linux</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/30.architech/accumulo/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">Accumulo</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/30.architech/alluxio/>
-<span class="next-text nav-default">Alluxio</span>
+<a class=next href=/post/21.linux/ebpf%E7%AE%80%E5%8F%B2/>
+<span class="next-text nav-default">eBPF简史(转)</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
