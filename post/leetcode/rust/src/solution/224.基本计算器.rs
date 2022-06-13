@@ -59,38 +59,52 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    ///
+	/// 对于表达式： 1+(4—(5+2))-3+(6+8)-(10-(19-3))
+	///           = 1 + 4 + (-5) + (-2) + (-3) + 6 + 8 + (-10) + (--19) + (---3) 
+	/// 可以看出, 结果 = 各个数字与其前面的符号 的 和 组成
+	/// 各个数字前面的符号由嵌套括号决定，每多一层括号，
+	/// 如果括号前为+, 则括号中的各个数字符号不变；
+	/// 如果括号前符号为-, 则括号中各个数字的符号取反；
     pub fn calculate(s: String) -> i32 {
-        let mut nums = vec![];
+        let bs = s.as_bytes();
+        let mut ret: i32 = 0;
         let mut ops = vec![];
-        let mut n: i32;
-        nums.push_back(0);
-        for c in s.chars() {
-            match c {
-                ' ' => {
+        ops.push(1);
+        let mut sign: i32 = 1;
+        let mut i: usize = 0;
+        while i < bs.len() {
+            match bs[i] {
+                b' ' => {
+                    i+=1;
                 },
-                '(' => { //
-                    ops.push_back(c);
+                b'(' => { //
+                    ops.push(sign);
+                    i+=1;
                 },
-                ')' => {
-                    while ops.len() > 0 {
-                        let op = ops.back();
-                        if op != '(' {
-
-                        } else {
-                            ops.pop_back();
-                        }
-                    }
+                b')' => {
+                    ops.pop();
+                    i+=1;
                 },
-                '+'||'-' => {
-
+                b'+' => {
+                    sign = ops[ops.len()-1];
+                    i+=1;
                 },
+                b'-' => {
+                    sign = -1 * ops[ops.len()-1];
+                    i+=1;
+                }
                 _ => {
-
+                    let mut num = 0;
+                    while i<s.len() && matches!(bs[i], b'0'..=b'9')  {
+                        num = num*10 + (bs[i] as i32 - b'0' as i32);
+                        i+=1;
+                    }
+                    ret += sign * num;
                 }
             }
-
         }
+
+        ret
     }
 }
 // @lc code=end
