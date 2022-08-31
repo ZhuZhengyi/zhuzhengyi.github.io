@@ -67,7 +67,7 @@
 
 // @lc code=start
 class H2O {
-    /*
+/*
     int cnt_h = 0;
     condition_variable cv;
     mutex mu;
