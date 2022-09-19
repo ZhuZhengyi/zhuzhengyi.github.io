@@ -86,7 +86,14 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 
     pub fn count_sub_trees(n: i32, edges: Vec<Vec<i32>>, labels: String) -> Vec<i32> {
+        let mut adjustNodes: Vec<Vec<i32>> = Vec::with_capacity(n);
+        for edge in edges {
+            adjustNodes[edge[0]].push(edge[1]);
+            adjustNodes[edge[1]].push(edge[0]);
+        }
 
     }
 }
