@@ -85,16 +85,63 @@
  */
 
 // @lc code=start
+#[derive(Clone)]
+struct Node {
+    edges: Vec<i32>,
+    label: u8,
+    visited: bool,
+}
+
 impl Solution {
     /// ## 解题思路
-    /// 
+    /// * 深度优先搜索
+    /// 1. 
     pub fn count_sub_trees(n: i32, edges: Vec<Vec<i32>>, labels: String) -> Vec<i32> {
-        let mut adjustNodes: Vec<Vec<i32>> = Vec::with_capacity(n);
+        // 初始化每一个节点的邻居矩阵
+        let mut graphic: Vec<Node> = Vec::with_capacity(n as usize);
+        graphic.resize(n as usize, Node {
+            edges: Vec::new(),
+            label: 0,
+            visited: false,
+        });
+        // 初始化各个节点的边
         for edge in edges {
-            adjustNodes[edge[0]].push(edge[1]);
-            adjustNodes[edge[1]].push(edge[0]);
+            graphic[edge[0] as usize].edges.push(edge[1]);
+            graphic[edge[1] as usize].edges.push(edge[0]);
+        }
+        // 初始化各个节点的label
+        for (i, l) in labels.as_bytes().into_iter().enumerate() {
+            graphic[i].label = l - b'a';
         }
 
+        let mut result: Vec<i32> = Vec::with_capacity(n as usize);
+        result.resize(n as usize, 0);
+
+        //
+        Solution::dfs(0, &mut graphic, &mut result);
+
+        result
+    }
+
+    fn dfs(node: i32, graphic: &mut [Node], result: &mut [i32]) -> [i32; 26] {
+        let current_node = &mut graphic[node as usize];
+        current_node.visited = true;
+        let label = current_node.label as usize;
+        let mut count = [0_i32; 26];
+        count[label] += 1;
+
+        for i in 0..current_node.edges.len() {
+            let child = graphic[node as usize].edges[i];
+            if !graphic[child as usize].visited {
+                let cc = Solution::dfs(child, graphic, result);
+                for j in 0..26 {
+                    count[j] += cc[j];
+                }
+            }
+        }
+
+        result[node as usize] = count[label];
+        count
     }
 }
 // @lc code=end

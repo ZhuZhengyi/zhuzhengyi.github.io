@@ -47,13 +47,16 @@
 // }
 impl Solution {
     /// ## 解题思路
-    /// 
+    /// 1. 新建一个空链表d；
+    /// 2. 依次从头取出l1,l2的各个节点，计算对应节点数字和；
+    /// 3. 根据和及是否进位生产结果节点，append到链表d末尾；
+    /// 4. 当l1,l2所有节点遍历完，且进位数也为0时，结束遍历；
     pub fn add_two_numbers(l1: Option<Box<ListNode>>, l2: Option<Box<ListNode>>) -> Option<Box<ListNode>> {
         let (mut l1, mut l2) = (l1, l2);
         let mut dummy_head = Some(Box::new(ListNode::new(0)));
         let mut tail = &mut dummy_head;
-        let (mut l1_end, mut l2_end, mut overflow) = (false, false, 0i32);
-        loop {
+        let (mut l1_end, mut l2_end, mut overflow) = (false, false, 0_i32);
+        let result = loop {
             let val1 = match l1 {
                 Some(node) => {
                     l1 = node.next;
@@ -74,21 +77,22 @@ impl Solution {
                     0
                 }
             };
+            // 如果l1,l2都结束，且进位标志也为0，则跳出loop
             if l1_end && l2_end && overflow == 0 {
                 break dummy_head.unwrap().next;
             }
+            // 否则计算当前节点和进位值
             let sum = val1 + val2 + overflow;
-            let sum = if sum >= 10 {
-                overflow = 1;
-                sum - 10
-            } else {
-                overflow = 0;
-                sum
-            };
-            //
+            overflow = if sum > 9 { 1 } else { 0 };
+            let sum = sum % 10 ;
+
+            // 将sum节点append 新链表尾部
             tail.as_mut().unwrap().next = Some(Box::new(ListNode::new(sum)));
+            // 移动尾指针
             tail = &mut tail.as_mut().unwrap().next;
-        }
+        };
+        
+        result
     }
 }
 // @lc code=end
