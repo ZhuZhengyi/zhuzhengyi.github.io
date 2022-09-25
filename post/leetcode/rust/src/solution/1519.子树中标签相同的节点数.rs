@@ -123,6 +123,7 @@ impl Solution {
         result
     }
 
+    /// 深度遍历各个节点，计算每个节点的label次数
     fn dfs(node: i32, graphic: &mut [Node], result: &mut [i32]) -> [i32; 26] {
         let current_node = &mut graphic[node as usize];
         current_node.visited = true;
