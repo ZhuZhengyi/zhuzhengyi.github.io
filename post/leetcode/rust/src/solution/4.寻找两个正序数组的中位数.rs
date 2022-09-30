@@ -74,57 +74,73 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 1. 先按两个数组的长度对数组进行区分，明确；
-    /// 2. 
-    /// 
-    /// 
-    ///              m_total
-    ///   [ 4, 7, 10, (23), 40, 85, 88]
-    ///        [3, 5, (8), 10, 15]
-    ///               m1
-    /// 
-    /// 
-    ///              m_total
-    ///   [ 4, 7, 10, (23), 40, 85, 88]
-    ///        [3, 5, (28), 30, 45]
-    ///               m1
-    /// 
+    /// * 划分法 + 二分查找法
+    /// 1. 对于nums1, nums2, 其排序后的中位数按合并后数组(设为nums)总长度(m+n)可以分为两种：
+    ///     a. 总长度为偶数, 中位数为中间两个数和/2;
+    ///     b. 总长度为奇数，中位数为中间数(nums[(m+n)/2])；
+    /// 2. 由于nums1，nums2都为有序数组，合并后nums1,nums2各元素的先后次序不变；
+    /// 3. 合并后数组中位数处将nums1,nums2分别切为前后两个部分，设切开元素的索引分别为i，j：
+    ///     nums1[0], nums1[1], ..., nums1[i-1], | nums1[i], ..., nums1[m]
+    ///     nums2[0], nums2[1], ..., nums2[j-1], | nums2[j], ..., nums2[n]
+    ///     显然, 必须满足：
+    ///         nums1[i-1] <= nums2[j]    ......... (1)
+    ///         nums2[j-1] <= nums1[i]  ......... (2)
+    ///     可以证明，(1)可推导出(2)
+    /// 4. 如果总数组长度为偶数，则：
+    ///     len(nums1[0..i-1]) + len(nums2[0..j_1]) = len(nums1[i..]) + len(nums2[j..]), 
+    ///    即：
+    ///      i+j = len(nums1) -i + len(nums2) -j 
+    ///    => i + j = (len(nums1) + len(nums2) ) / 2
+    ///      此时中位数为: 
+    ///             (max(nums1[i-1], nums2[j-1]) + min(nums1[i], nums2[j]) ) / 2
+    ///    如果总长度为奇数，则：
+    ///     len(nums1[0..i-1]) + len(nums2[0..j-1]) = len(nums1[i..]) + len(nums2[j..]) + 1 
+    ///    即：
+    ///     i+j = len(nums1) -i + len(nums2) -j  + 1
+    ///    =>  i + j = (len(nums1) + len(nums2) + 1) / 2
+    ///    此时中位数为: 
+    ///             max(nums[i-1], nums[j-1])
+    ///    将上述两种情况综合一下，i,j 满足如下：
+    ///       i + j = (len(nums1) + len(nums2) + 1) / 2
+    ///    =>  
+    ///        j =  (len(nums1) + len(nums2) + 1) / 2 - i
+    /// 5. 因此，只需要找到满足条件的i, 使nums1[i-1] <= nums2[j]即可；
+    /// 6. 由于nums1，nums2都是有序的，可以使用二分查找来确定i;
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
-        // 按数组长度
+        // 将nums1，nums2中数组长度短的置前
         let (nums1, nums2) = if nums1.len() < nums2.len() {
             (nums1, nums2) 
         } else { 
             (nums2, nums1) 
         };
 
-        let (l1, l2) = (nums1.len(), nums2.len());
-        let (mut l, mut h) = (0, l1);
+        let (m, n) = (nums1.len(), nums2.len());
+        let (mut l, mut r) = (0, m);
+        let (mut mid1, mut mid2) = (0, 0);
+        // 寻找i
+        while l <= r {
+            let i = (l + r) / 2;
+            let j = (m + n + 1) / 2 - i;
 
-        //
-        let m_total = (l1+l2-1)/2;     //总数组中点
-        let mut m1 = (l + h) / 2;      //短数组中点
-        //
-        while l < h {
-            m1 = (l + h) / 2;
-            if m1 > m_total-1 || nums1[m1] >= nums2[m_total-m1-1] {
-                h = m1;
-            } else { 
-                l = m1 + 1;
+            let num1_i_1 = if i == 0 { std::i32::MIN } else { nums1[i-1] };
+            let num1_i = if i == m { std::i32::MAX } else { nums1[i] };
+            let num2_j_1 = if j == 0 { std::i32::MIN } else { nums2[j-1] };
+            let num2_j = if j == n { std::i32::MAX } else { nums2[j] } ;
+
+            if num1_i_1 <= num2_j {
+                mid1 = std::cmp::max(num1_i_1, num2_j_1);
+                mid2 = std::cmp::min(num1_i, num2_j);
+                l = i + 1;
+            } else {
+                r = i - 1;
             }
         }
-        m1 = l;
 
-        let s1 = &nums1[m1..(m1+2)];
-        let s2 = &nums2[(m_total-m1)..(m_total-m1+2)];
-        let mut newfew = vec![s1, s2].concat();
-        newfew.sort();
-        
-        let x = (l1+l2) % 2 ;
-        let mut res = newfew[0] as f64;
-        if x == 1 {
-            res = ( newfew[0] + newfew[1] )  as f64/ 2.0_f64 ;
+        if (m+n) % 2 == 0 {
+            (mid1+mid2) as f64 / 2.0_f64
+        } else {
+            mid1 as f64
         }
-        res
     }
 }
 // @lc code=end
