@@ -103,43 +103,47 @@ impl Solution {
     ///    将上述两种情况综合一下，i,j 满足如下：
     ///       i + j = (len(nums1) + len(nums2) + 1) / 2
     ///    =>  
-    ///        j =  (len(nums1) + len(nums2) + 1) / 2 - i
-    /// 5. 因此，只需要找到满足条件的i, 使nums1[i-1] <= nums2[j]即可；
+    ///       j =  (len(nums1) + len(nums2) + 1) / 2 - i
+    /// 5. 因此，只需要找到满足条件的最大i, 使nums1[i-1] <= nums2[j]即可；
     /// 6. 由于nums1，nums2都是有序的，可以使用二分查找来确定i;
+    /// 7. 处理边界情况
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
         // 将nums1，nums2中数组长度短的置前
-        let (nums1, nums2) = if nums1.len() < nums2.len() {
+        let (nums1, nums2) = if nums1.len() <= nums2.len() {
             (nums1, nums2) 
         } else { 
             (nums2, nums1) 
         };
 
-        let (m, n) = (nums1.len(), nums2.len());
-        let (mut l, mut r) = (0, m);
-        let (mut mid1, mut mid2) = (0, 0);
-        // 寻找i
+        let (l1, l2) = (nums1.len(), nums2.len());
+        let (mut l, mut r) = (0, l1);
         while l <= r {
             let i = (l + r) / 2;
-            let j = (m + n + 1) / 2 - i;
+            let j = (l1 + l2 + 1) / 2 - i;
 
             let num1_i_1 = if i == 0 { std::i32::MIN } else { nums1[i-1] };
-            let num1_i = if i == m { std::i32::MAX } else { nums1[i] };
-            let num2_j_1 = if j == 0 { std::i32::MIN } else { nums2[j-1] };
-            let num2_j = if j == n { std::i32::MAX } else { nums2[j] } ;
+            let num2_j = if j == l2 { std::i32::MAX } else { nums2[j] } ;
 
             if num1_i_1 <= num2_j {
-                mid1 = std::cmp::max(num1_i_1, num2_j_1);
-                mid2 = std::cmp::min(num1_i, num2_j);
                 l = i + 1;
             } else {
                 r = i - 1;
             }
         }
 
-        if (m+n) % 2 == 0 {
-            (mid1+mid2) as f64 / 2.0_f64
+        // 找到i
+        let i = (l + r) / 2;
+        let j = (l1 + l2 + 1) / 2 - i;
+
+        let num1_i_1 = if i == 0 { std::i32::MIN } else { nums1[i-1] };
+        let num2_j_1 = if j == 0 { std::i32::MIN } else { nums2[j-1] };
+        let num1_i = if i == l1 { std::i32::MAX } else { nums1[i] };
+        let num2_j = if j == l2 { std::i32::MAX } else { nums2[j] } ;
+
+        if (l1+l2) % 2 == 0 {
+            (std::cmp::max(num1_i_1, num2_j_1) + std::cmp::min(num1_i, num2_j) ) as f64 / 2.0_f64
         } else {
-            mid1 as f64
+            (std::cmp::max(num1_i_1, num2_j_1)) as f64
         }
     }
 }

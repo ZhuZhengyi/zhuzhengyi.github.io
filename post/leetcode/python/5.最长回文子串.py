@@ -31,10 +31,12 @@ class Solution:
     def longestPalindrome(self, s: str) -> str:
         '''
         ## 解题思路
-        dp[l, r]: 表示s[l:r+1] 是否为回文串
+        * 动态规划
+        1. 设dp[l, r]: 表示s[l:r+1] 是否为回文串
         状态转移方程：
-        dp[l, r] = (s[l] == s[r] and (r - l <= 2 or dp[l + 1, r - 1]))
-
+           dp[l, r] = (s[l] == s[r] and (r - l <= 2 or dp[l + 1, r - 1]))
+        初始状态：
+            dp[i][i] = True
         '''
         size = len(s)
         if size < 2:
@@ -44,7 +46,7 @@ class Solution:
         res = s[0]
         for r in range(1, size):
             for l in range(r):
-                if s[l] == s[r] and ( r -l <=2 or dp[l+1][r-1] ):
+                if s[l] == s[r] and ( r-l<=2 or dp[l+1][r-1] ):
                     dp[l][r] = True
                     cur_len = r - l + 1
                     if cur_len > longest:

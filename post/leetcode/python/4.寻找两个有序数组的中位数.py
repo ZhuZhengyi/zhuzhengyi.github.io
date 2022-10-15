@@ -52,12 +52,13 @@ class Solution:
         mid = int((m + n - 1) / 2)  # mid for total nums1 and nums2
         while l < h:
             i = int((l + h) / 2)  # mid of nums1
+            j = (m+n+1) / 2 - i
             if i > mid - 1 or a[i] >= b[mid - 1 - i]:  # nums1 当前
                 h = i  #
             else: 
                 l = i + 1  #
         i = l
-        nextfew = sorted(a[i:i+2] + b [mid-i: mid-i+2])
+        nextfew = sorted(a[i:i+2] + b[mid-i: mid-i+2])
         return (nextfew[0] + nextfew[1-(m+n)%2]) / 2.0
 # @lc code=end
 
