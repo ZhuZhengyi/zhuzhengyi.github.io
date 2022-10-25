@@ -77,8 +77,32 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// 递归法
+    /// 1. 分三种情形：普通字符，'.', '*', 
+    ///     a. 对于普通字符和'.', 都只需要检查单个对应位置字符；
+    ///     b. 对于'*', 需要检查'*'前一个字符；
+    /// 2. 
     pub fn is_match(s: String, p: String) -> bool {
+        // p为空时，s也为空匹配，否则不匹配
+        if p.len() == 0 {
+            return s.len() == 0;
+        }
 
+        // p不为空时，首字符是否匹配
+        // 首字符
+        let first_match = s.len() > 0 && 
+            (s.chars().nth(0) == p.chars().nth(0) ||  //首字符相等
+             p.chars().nth(0) == Some('.'));          //或者p首字符为.
+
+        // 如果是 c*
+        if p.len() >= 2 && p.chars().nth(1) == Some('*') {
+            return Solution::is_match(s.clone(), String::from(&p[2..]))  // c*的*匹配c 0次
+            ||  (first_match && Solution::is_match(String::from(&s[1..]), p));  //c*的* 匹配多次，
+        } else {  // 前两个不包含c*，则检查第一个字符是否匹配+递归匹配后续子串
+            return first_match && 
+             Solution::is_match(String::from(&s[1..]), String::from(&p[1..]));
+        }
     }
 }
 // @lc code=end
