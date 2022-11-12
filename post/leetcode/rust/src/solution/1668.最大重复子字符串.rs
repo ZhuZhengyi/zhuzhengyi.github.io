@@ -64,7 +64,7 @@ impl Solution {
     pub fn max_repeating(sequence: String, word: String) -> i32 {
         let max_word = word.repeat(sequence.len()/word.len());
         let mut l = max_word.len();
-        while ! sequence.contains(&max_word[..l]) {
+        while !sequence.contains(&max_word[..l]) {
             l -= word.len();
         }
 

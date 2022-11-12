@@ -75,6 +75,8 @@
  * 
  */
 
+use crate::*;
+
 // @lc code=start
 impl Solution {
     /// ## 解题思路
@@ -107,3 +109,12 @@ impl Solution {
 }
 // @lc code=end
 
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(Solution::is_match("mississippi".to_string(), "mis*is*p*.".to_string()), false);
+    }
+}

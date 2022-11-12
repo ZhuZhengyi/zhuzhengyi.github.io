@@ -71,7 +71,9 @@ impl Solution {
         let chars = word.as_bytes();
         match chars.iter().position(|&c| c == ch as u8) {
             Some(pos) => String::from_utf8(
-                        chars[..pos+1].iter().rev()
+                        chars[..=pos]
+                            .iter()
+                            .rev()
                             .chain(chars[pos+1..].iter())
                             .cloned()
                             .collect::<Vec<_>>()

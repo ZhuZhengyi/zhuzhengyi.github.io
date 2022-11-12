@@ -27,6 +27,8 @@
  * 
  */
 
+use crate::*;
+
 // @lc code=start
 use std::collections::HashMap;
 
@@ -40,7 +42,7 @@ impl Solution {
         let mut map: HashMap<i32, i32> = HashMap::new();
         for (i, n) in nums.iter().enumerate() {
             match map.get(n) {
-                Some(&preIdx) => { return vec![preIdx, i as i32]; },
+                Some(&pre_idx) => { return vec![pre_idx, i as i32]; },
                 None => {
                     map.insert(target - n, i as i32);
                 }
@@ -51,3 +53,12 @@ impl Solution {
 }
 // @lc code=end
 
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(Solution::two_sum([2,7,11,15].to_vec(), 9), [0,1]);
+    }
+}

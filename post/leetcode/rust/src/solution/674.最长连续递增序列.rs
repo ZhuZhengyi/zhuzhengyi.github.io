@@ -50,8 +50,25 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// * 贪心法
+    /// 1. 设 di 表示 以nums[i]为尾元素的递增序列长度；
+    /// 2. 从左至右依次遍历nums，比较当前num和上一个num prev的大小；
+    /// 3. 如果当前num>prev, 则将di + 1；
+    /// 4. 否则num<=prev, 则di = 1；
+    /// 5. 返回所有 max(di)
     pub fn find_length_of_lcis(nums: Vec<i32>) -> i32 {
-
+        let mut prev: i32 = -10^9;
+        let mut d = 0;
+        nums.iter()
+            .map(|&n|{
+                d = if n > prev { d + 1 } 
+                    else { 1 } ;
+                prev = n;
+                d
+            })
+            .max()
+            .unwrap_or_default()
     }
 }
 // @lc code=end
