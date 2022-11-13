@@ -32,23 +32,23 @@
  */
 
 // @lc code=start
-use std::cmp;
-
 impl Solution {
+    /// ## 解题思路
+    /// * 双指针法
     pub fn max_area(height: Vec<i32>) -> i32 {
+        use std::cmp;
         let (mut l, mut r) = (0 as usize, height.len() -1);
-        let mut res = 0;
+        let mut area = 0;
         while l < r {
+            area = cmp::max(area, cmp::min(height[l], height[r]) * ((r-l) as i32));
             if height[l] < height[r] {
-                res = cmp::max(res, height[l] * ( (r-l) as i32) );
                 l += 1
             } else {
-                res = cmp::max(res, height[r] * ((r-l) as i32) );
                 r -= 1
             }
         }
 
-        res
+        area
     }
 }
 // @lc code=end
