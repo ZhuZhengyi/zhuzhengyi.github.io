@@ -74,10 +74,10 @@ impl Solution {
 		for i in (0..n-1).rev() {
 			for j in i..n {
 				dp[i][j] = if i == j { 
-							piles[i] 
-						} else { 
-							std::cmp::max(piles[i]-dp[i+1][j], piles[j]-dp[i][j-1]) 
-						}; 
+						piles[i] 
+					} else { 
+						std::cmp::max(piles[i]-dp[i+1][j], piles[j]-dp[i][j-1]) 
+					}; 
 			}
 		}
 

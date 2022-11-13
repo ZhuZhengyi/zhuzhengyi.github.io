@@ -55,8 +55,20 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// * 贪心法
+    /// 1. 从最后一个开始，当剩余k >= 25 时，将剩余末尾字符置为 z
+    /// 2. 依次填充，直到k<25，前面均为 a
     pub fn get_smallest_string(n: i32, k: i32) -> String {
+        let mut v = vec![0; n as usize];
+        let mut k = k - n;
+        for e in v.iter_mut().rev() {
+            let m = std::cmp::min(25, k);
+            *e = m as u8 + b'a';
+            k -= m;
+        }
 
+        String::from_utf8(v).unwrap()
     }
 }
 // @lc code=end
