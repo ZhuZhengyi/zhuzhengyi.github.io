@@ -59,9 +59,30 @@
 
 // @lc code=start
 impl Solution {
-    pub fn stone_game(piles: Vec<i32>) -> bool {
+	/// ## 解题思路
+	/// * 动态规划
+	/// 1. 设dp[i][j]表示剩下piles[i..j]石子时，当前玩家所得石子的最大差；
+	/// 2. i>j时, 无意义，dp[i][j] = 0;
+	/// 3. i==j时, 只剩下这个,dp[i][j] = piles[i];
+	/// 4. i<j时, 当前玩家有2种取法，分别取piles[i], piles[j], 则剩下的被对家选: 
+	///     dp[i][j] = max(piles[i] - dp[i+1][j], piles[j] - dp[i][j-1])
+	/// 5. return dp[0][n-1] > 0
+	pub fn stone_game(piles: Vec<i32>) -> bool {
+		let n = piles.len();
+		let mut dp = vec![vec![0_i32; n]; n];
 
-    }
+		for i in (0..n-1).rev() {
+			for j in i..n {
+				dp[i][j] = if i == j { 
+							piles[i] 
+						} else { 
+							std::cmp::max(piles[i]-dp[i+1][j], piles[j]-dp[i][j-1]) 
+						}; 
+			}
+		}
+
+		dp[0][n-1] > 0
+	}
 }
 // @lc code=end
 
