@@ -50,16 +50,15 @@
 impl Solution {
     /// ## 解题思路
     /// * 递归
-    /// 1. f(n, k) = f(n-n%k, k) + n%k
+    /// 1. f(n, k) = f([n/k], k) + n%k
+    /// 2. 使用循环来代替递归
     pub fn sum_base(mut n: i32, k: i32) -> i32 {
-        let mut q = 0;
-        loop {
-            q += n % k;
+        let mut res = 0;
+        while n > 0 {
+            res += n % k;
             n /= k;
-            if n < k {
-                return q + n
-            }
         }
+        res
     }
 }
 // @lc code=end
