@@ -31,31 +31,29 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// * 使用一个临时字符串记录一个括号序列；
-    /// * 依次将左右括号加入到临时字符串尾部；
-    /// * 如果剩余的左右括号数都为0，则放完了，将临时字符串加入到结果数组中；
-    /// * 否则 
+    /// - 递归法
+    /// 1. 使用一个临时字符串记录一个括号序列；
+    /// 2. 依次将左右括号加入到临时字符串尾部；
+    /// 3. 如果剩余的左右括号数都为0，则放完了，将临时字符串加入到结果数组中；
+    /// 4. 否则 
     pub fn generate_parenthesis(n: i32) -> Vec<String> {
         let mut ans: Vec<String> = Vec::new();
 
-        fn travel(p: String, l: i32, r: i32, ans: &mut Vec<String>) {
+        fn dfs(p: String, l: i32, r: i32, ans: &mut Vec<String>) {
             match (l, r) {
-                (0, 0) => ans.push(p),
-                (l, r)  => {
-                    if l > 0 {
-                        travel(format!( "{}{}", p, "(" ), l - 1, r, ans);
+                (0, 0) => ans.push(p), //左右都放完了，存入结果集
+                (l, r) => {
+                    if l > 0 {      // 先放'(' 
+                        dfs(format!( "{}{}", p, "(" ), l - 1, r, ans);
                     }
-                    if r > l {
-                        travel(format!( "{}{}", p, ")" ), l, r - 1, ans);
+                    if r > l {      // 如果剩余')'个数> '(', 则
+                        dfs(format!( "{}{}", p, ")" ), l, r - 1, ans);
                     } 
                 }
             }
-            //左右都放完了，存入结果集
-            // 左括号还有剩余
-            // 右括号数多于左括号数
         }
 
-        travel(String::new(), n, n, &mut ans);
+        dfs(String::new(), n, n, &mut ans);
         ans
     }
 }

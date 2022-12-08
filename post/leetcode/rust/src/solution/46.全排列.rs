@@ -33,21 +33,32 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 回溯法
+    /// * 回溯法
+    /// 1. 
     pub fn permute(nums: Vec<i32>) -> Vec<Vec<i32>> {
+        let mut res: Vec<Vec<i32>> = vec![];
+        let mut tmp: Vec<i32> = vec![];
 
+        Self::_permute(nums, &mut res, &mut tmp);
+
+        res
     }
 
-    fn dfs(nums: Vec<i32>, 
-        acc: &mut Vec<i32>,
-        res: &mut Vec<i32>, 
-        visited: &mut HashSet<i32>
-    ) {
-        if acc.len() == nums.len() {
-            
+    fn _permute(nums: Vec<i32>, res: &mut Vec<Vec<i32>>, tmp: &mut Vec<i32>) {
+        if nums.is_empty() {
+            res.push(tmp.to_vec());
+            return;
         }
 
+        for (i, &val) in nums.iter().enumerate() {
+            tmp.push(val);
+            let mut nums2 = nums.clone();
+            nums2.remove(i);
+            Self::_permute(nums2, res, tmp);
+            tmp.pop();
+        }
     }
+
 }
 // @lc code=end
 
