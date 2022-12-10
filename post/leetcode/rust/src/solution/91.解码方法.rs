@@ -80,7 +80,9 @@ impl Solution {
     /// 1. 设 f[i]: 以s[i]为开始的可解码方法数，则最终要求的是f[0]
     /// 2. s[i] == '0'， f[i] = 0;
     /// 3. s[i] != '0'时，f[n-1] = 1;
-    ///    f[i] = f[i+1] + f[i+2] (i)
+    ///    f[i] = f[i+1] + f[i+2]     '1 23'
+    ///       or = f[i+1] + 1         '1 2'
+    ///       或 = f[i+1]             '3 23' 
     ///                 
     pub fn num_decodings(s: String) -> i32 {
         let n = s.len();
@@ -89,12 +91,10 @@ impl Solution {
         for i in (0..n).rev() {
             if s[i] == b'0' { 
                 continue; 
-            }
-            if i == n-1 {
+            } else if i == n-1 {
                 f[i] = 1;
                 continue;
-            }
-            if s[i] == b'1' || (s[i] == b'2' && s[i+1] < b'7' ) {
+            } else if s[i] == b'1' || (s[i] == b'2' && s[i+1] < b'7' ) {
                 if i < n-2 {
                     f[i] = f[i+1] + f[i+2];
                 } else {
@@ -107,7 +107,6 @@ impl Solution {
         
         f[0]
     }
-
 }
 // @lc code=end
 
