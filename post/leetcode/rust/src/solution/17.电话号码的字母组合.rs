@@ -72,7 +72,7 @@ impl Solution {
 
 #[test]
 fn it_works() {
-    assert_eq!( Solution::letter_combinations("35".to_string()), 
+    assert_eq!( Solution::letter_combinations("23".to_string()), 
                 vec!["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]);
 }
 

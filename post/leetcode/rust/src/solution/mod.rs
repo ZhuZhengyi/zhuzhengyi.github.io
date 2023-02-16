@@ -2,6 +2,7 @@
 //
 
 #![allow(dead_code)]
+#![warn(non_snake_case)]
 
 use std::cell::*;
 use std::rc::*;
