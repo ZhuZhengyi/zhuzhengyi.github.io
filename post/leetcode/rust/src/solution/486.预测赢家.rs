@@ -61,8 +61,7 @@ impl Solution {
     /// ## 解题思路
     /// * 递归
     pub fn predict_the_winner(nums: Vec<i32>) -> bool {
-        
-
+        todo!()
     }
 }
 // @lc code=end

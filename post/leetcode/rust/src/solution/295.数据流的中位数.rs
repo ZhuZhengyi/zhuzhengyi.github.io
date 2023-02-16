@@ -46,19 +46,8 @@
  * 
  */
 
-struct Solution;
-
 // @lc code=start
 use std::collections::BinaryHeap;
-
-/// ## 解题思路
-/// * 双堆法
-///  
-struct MedianFinder {
-    upper: BinaryHeap<i32>,
-    lower: BinaryHeap<i32>,
-    count: u64,
-}
 
 /**
  * `&self` means the method takes an immutable reference.
@@ -66,6 +55,8 @@ struct MedianFinder {
  */
 impl MedianFinder {
 
+    /// ## 解题思路
+    /// * 双堆法
     fn new() -> Self {
         MedianFinder{
             count: 0,
@@ -98,5 +89,10 @@ impl MedianFinder {
  * obj.add_num(num);
  * let ret_2: f64 = obj.find_median();
  */
+struct MedianFinder {
+    upper: BinaryHeap<i32>,
+    lower: BinaryHeap<i32>,
+    count: u64,
+}
 // @lc code=end
 

@@ -31,7 +31,7 @@ impl Solution {
             (None, r) => r,
             (l, None) => l,
             (Some(mut l), Some(mut r)) => {
-                if (l.val < r.val) {
+                if l.val < r.val {
                     l.next = Self::merge_two_lists(l.next, Some(r));
                     Some(l)
                 } else {

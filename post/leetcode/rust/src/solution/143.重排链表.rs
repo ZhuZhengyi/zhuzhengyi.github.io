@@ -49,10 +49,10 @@ use super::*;
 // }
 impl Solution {
     /// 解题思路：
-    /// 1. 
+    /// 1.
     pub fn reorder_list(head: &mut Option<Box<ListNode>>) {
         if head.is_none() {
-            return
+            return;
         }
 
         //get list length
@@ -67,7 +67,7 @@ impl Solution {
 
         //if list length < 2,
         if len < 2 {
-            return
+            return;
         }
 
         //split list into 2 sub lists: pre_half with normal order and last_half with reserv order
@@ -84,8 +84,8 @@ impl Solution {
                 i += 1;
                 next = current_node.next.take();
                 if i > cut_len {
-                    current_node.next = sub_revor_list.as_mut().unwrap().next.take();
-                    sub_revor_list.as_mut().unwrap().next = Some(current_node);
+                    current_node.next = sub_reverse_list.as_mut().unwrap().next.take();
+                    sub_reverse_list.as_mut().unwrap().next = Some(current_node);
                 } else {
                     tail_ptr1.as_mut().unwrap().next = Some(current_node);
                     tail_ptr1 = &mut tail_ptr1.as_mut().unwrap().next;
@@ -112,4 +112,3 @@ impl Solution {
     }
 }
 // @lc code=end
-

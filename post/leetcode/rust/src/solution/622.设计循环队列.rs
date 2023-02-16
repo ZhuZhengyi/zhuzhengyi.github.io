@@ -60,9 +60,6 @@
  */
 
 // @lc code=start
-struct MyCircularQueue {
-
-}
 
 
 /**
@@ -116,5 +113,7 @@ impl MyCircularQueue {
  * let ret_5: bool = obj.is_empty();
  * let ret_6: bool = obj.is_full();
  */
+struct MyCircularQueue {
+}
 // @lc code=end
 

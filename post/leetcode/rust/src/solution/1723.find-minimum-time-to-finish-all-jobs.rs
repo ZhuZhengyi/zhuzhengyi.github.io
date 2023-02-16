@@ -59,4 +59,3 @@ impl Solution {
 }
 
 // @lc code=end
-        max_word.

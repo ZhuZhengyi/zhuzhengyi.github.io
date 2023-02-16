@@ -116,27 +116,28 @@ impl Solution {
         let mut level = Vec::new();
         level.push(root.unwrap().clone());
 
-        let mut level_level = vec![ level ];
-        while ! level_level.is_empty() {
-            let mut level = level_level.remove(0);
-            let mut next_level = Vec::new();
-            let mut level_res = Vec::new();
-            level.iter().for_each(|node| {
-                if ! node.borrow().is_none() {
-                    level_res.push(node.borrow().val.to_string());
-                    next_level.push( node.borrow().left.clone());
-                    next_level.push( node.borrow().right.clone()); 
-                } else {
-                    level_res.push("".to_string());
-                }
-            });
-            res.push(level_res);
-            if ! next_level.is_empty() {
-                // level_level.push(next_level);
-            }
-        }
+        todo!()
+        // let mut level_level = vec![ level ];
+        // while ! level_level.is_empty() {
+        //     let mut level = level_level.remove(0);
+        //     let mut next_level = Vec::new();
+        //     let mut level_res = Vec::new();
+        //     level.iter().for_each(|node| {
+        //         if ! node.borrow().is_none() {
+        //             level_res.push(node.borrow().val.to_string());
+        //             next_level.push( node.borrow().left.clone());
+        //             next_level.push( node.borrow().right.clone()); 
+        //         } else {
+        //             level_res.push("".to_string());
+        //         }
+        //     });
+        //     res.push(level_res);
+        //     if ! next_level.is_empty() {
+        //         // level_level.push(next_level);
+        //     }
+        // }
 
-        res
+        //res
     }
 }
 // @lc code=end

@@ -60,8 +60,8 @@
  * 
  */
 
-use super::*;
-:wq
+struct Solution;
+
 // @lc code=start
 impl Solution {
     /// ## 解题思路
@@ -72,11 +72,11 @@ impl Solution {
     /// 5. 若遇到已染色点，且颜色与另一端点相同，则false；
     /// 6. 所有点都成功染色，则true；
     pub fn is_bipartite(graph: Vec<Vec<i32>>) -> bool {
-        let mut colors = vec![0; graph.len() * 2];
+        //let mut colors = vec![0; graph.len() * 2];
         todo!()
     }
 
-    fn color_dfs(node: usize, color: i32, graph: &Vec<Vec<i32>>, colors: mut &Vec<i32>) -> bool {
+    fn color_dfs(node: usize, color: i32, graph: &Vec<Vec<i32>>, colors: &mut Vec<i32>) -> bool {
         todo!()
     }
 }

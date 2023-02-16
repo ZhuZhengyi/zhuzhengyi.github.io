@@ -48,39 +48,12 @@ use super::*;
 
 // @lc code=start
 impl Solution {
-    /// ## 解题思路2
-    pub fn longest_consecutive(nums: Vec<i32>) -> i32 {
-        use std::collections::HashSet;
-
-        let num_set = HashSet::from(nums);
-
-        for n in num_set {
-            if ! hash.contains_key(&n) {
-                let (mut left, mut right) = (0, 0);
-                if let Some(l) = hash.get(&(n-1)) {
-                    left = *l;
-                }
-                if let Some(r) = hash.get(&(n+1)) {
-                    right = *r;
-                }
-                let cur_long = left + right + 1;
-                if cur_long > longest {
-                    longest = cur_long;
-                }
-                hash.insert(n-left, cur_long); 
-                hash.insert(n, cur_long);
-                hash.insert(n+right, cur_long); 
-            }
-        }
-
-        longest
-    }
-    /// ## 解题思路1
+    /// ## 解题思路
     /// * 顺序从左至右顺序遍历数组；
     /// * 遍历过程中，使用hashmap记录当前数遍历时的最长连续序列长度；
     /// * 当前数的最长连续序列长度cur_long 为其左右数的最长连续序列长度left + right + 1;
     /// * 同时更新左右相邻区间的记录值(连起来了)；
-    pub fn longest_consecutive1(nums: Vec<i32>) -> i32 {
+    pub fn longest_consecutive(nums: Vec<i32>) -> i32 {
         use std::collections::HashMap;
 
         let mut hash = HashMap::<i32,i32>::new();

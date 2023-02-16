@@ -67,7 +67,7 @@ impl Solution {
             }
         }
 
-        if let Some(mut node) = dummy_head2.as_mut().unwrap().next.take() {
+        if let Some(node) = dummy_head2.as_mut().unwrap().next.take() {
             ptr1.as_mut().unwrap().next = Some(node);
         }
 

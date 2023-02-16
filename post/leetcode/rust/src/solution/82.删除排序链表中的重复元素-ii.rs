@@ -55,7 +55,7 @@ impl Solution {
 
         let mut pre_val: i32 = -1;
         let mut pre_val_init = false;
-        let mut next_val: i32 = 0;
+        let next_val: i32 = 0;
         let mut head = head;
         while let Some(mut node) = head {
             head = node.next.take();

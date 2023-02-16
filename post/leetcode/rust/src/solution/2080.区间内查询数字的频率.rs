@@ -59,13 +59,8 @@
  * 
  */
 
-use super::*;
 
 // @lc code=start
-struct RangeFreqQuery {
-    arr: Vec<i32>
-}
-
 
 /**
  * `&self` means the method takes an immutable reference.
@@ -74,7 +69,7 @@ struct RangeFreqQuery {
 impl RangeFreqQuery {
 
     fn new(arr: Vec<i32>) -> Self {
-        RangeFreqQuery{arr: arr}
+        RangeFreqQuery{arr}
     }
     
     fn query(&self, left: i32, right: i32, value: i32) -> i32 {
@@ -82,14 +77,15 @@ impl RangeFreqQuery {
             return -1;
         }
         let mut right = right;
-        if right > self.arr.len() {
-            right = self.arr.len();
+        if right > self.arr.len() as i32 {
+            right = self.arr.len() as i32;
         }
 
-        self.arr[left..right]
+        self.arr[(left as usize)..(right as usize)]
             .iter()
-            .filter(|&a| a == value)
+            .filter(|&a| a == &value)
             .count()
+            as i32
     }
 }
 
@@ -98,5 +94,8 @@ impl RangeFreqQuery {
  * let obj = RangeFreqQuery::new(arr);
  * let ret_1: i32 = obj.query(left, right, value);
  */
+struct RangeFreqQuery {
+    arr: Vec<i32>
+}
 // @lc code=end
 

@@ -78,12 +78,7 @@
  * 
  */
 
-struct Solution;
-
 // @lc code=start
-struct LFUCache {
-}
-
 
 /**
  * `&self` means the method takes an immutable reference.
@@ -114,5 +109,7 @@ impl LFUCache {
  * let ret_1: i32 = obj.get(key);
  * obj.put(key, value);
  */
+struct LFUCache {
+}
 // @lc code=end
 

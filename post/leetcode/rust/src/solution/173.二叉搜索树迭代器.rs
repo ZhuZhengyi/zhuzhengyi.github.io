@@ -101,10 +101,6 @@ use super::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-struct BSTIterator {
-    state: BSTIteratorState, 
-    root: Option<Rc<RefCell<TreeNode>>>,
-}
 
 #[derive(Clone)]
 enum BSTIteratorState {
@@ -180,5 +176,9 @@ impl BSTIterator {
  * let ret_1: i32 = obj.next();
  * let ret_2: bool = obj.has_next();
  */
+struct BSTIterator {
+    state: BSTIteratorState, 
+    root: Option<Rc<RefCell<TreeNode>>>,
+}
 // @lc code=end
 

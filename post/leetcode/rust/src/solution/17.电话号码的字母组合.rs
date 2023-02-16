@@ -30,7 +30,7 @@
  * 
  */
 
-use super::*;
+struct Solution;
 
 // @lc code=start
 const MAPPING: [std::ops::RangeInclusive<u8>; 8] = [
@@ -70,13 +70,9 @@ impl Solution {
 }
 // @lc code=end
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn it_works() {
-        let t = letter_combinations("35".to_string());
-        println!("t, {}", t);
-    }
+#[test]
+fn it_works() {
+    assert_eq!( Solution::letter_combinations("35".to_string()), 
+                vec!["ad", "ae", "af", "bd", "be", "bf", "cd", "ce", "cf"]);
 }
 

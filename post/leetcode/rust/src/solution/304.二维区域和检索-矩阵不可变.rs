@@ -67,9 +67,6 @@
  */
 
 // @lc code=start
-struct NumMatrix {
-    acc: Vec<Vec<i32>>,
-}
 
 
 /**
@@ -109,5 +106,8 @@ impl NumMatrix {
  * let obj = NumMatrix::new(matrix);
  * let ret_1: i32 = obj.sum_region(row1, col1, row2, col2);
  */
+struct NumMatrix {
+    acc: Vec<Vec<i32>>,
+}
 // @lc code=end
 

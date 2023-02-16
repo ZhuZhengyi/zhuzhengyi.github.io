@@ -72,7 +72,7 @@
  * 
  */
 
-use super::*;
+struct Solution;
 
 // @lc code=start
 
@@ -123,9 +123,9 @@ impl Solution {
         eat(n, &mut record)
     }
 
-    /// 自底向上迭代 
-    ///     时间复杂度：O(n)
-    ///     空间复杂度：O(n)
+    // 自底向上迭代 
+    //     时间复杂度：O(n)
+    //     空间复杂度：O(n)
     // pub fn min_days(n: i32) -> i32 {
     //     if n < 2 {
     //         return n;

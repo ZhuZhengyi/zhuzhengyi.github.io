@@ -62,7 +62,8 @@ impl Solution {
     pub fn jump(nums: Vec<i32>) -> i32 {
         let mut step = 0;           //已跳的步数
         let mut last_jump_max_pos = 0;    //能跳到的最远位置
-        let mut fur__max_pos = 0;    //当前格能跳到的最远位置
+        let mut fur_max_pos = 0;    //当前格能跳到的最远位置
+        let mut cur_max_pos = 0;    //当前格能跳到的最远位置
         for i in 0..nums.len() - 1 {
             // 记录当前可以跳到的最远的位置
             fur_max_pos = fur_max_pos.max(i + nums[i] as usize);
