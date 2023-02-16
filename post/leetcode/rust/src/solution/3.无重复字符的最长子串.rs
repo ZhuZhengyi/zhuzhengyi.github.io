@@ -38,6 +38,8 @@
  *
  *
  */
+use super::*;
+
 // @lc code=start
 use std::collections::HashMap;
 
@@ -52,7 +54,7 @@ impl Solution {
     pub fn length_of_longest_substring(s: String) -> i32 {
         let mut map = HashMap::new(); //
         let mut last_i = 0;
-        let mut max_len 4.= 0;
+        let mut max_len = 0;
         for (i, c) in s.chars().enumerate() {
             last_i = last_i.max(*map.get(&c).unwrap_or(&0));
             max_len = max_len.max(i + 1 - last_i);

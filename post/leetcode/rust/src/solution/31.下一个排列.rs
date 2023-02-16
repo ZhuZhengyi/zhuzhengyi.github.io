@@ -60,6 +60,8 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     /// 思路：

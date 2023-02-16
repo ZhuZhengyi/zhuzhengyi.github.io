@@ -60,6 +60,8 @@
  * 
  */
 
+use super::*;
+:wq
 // @lc code=start
 impl Solution {
     /// ## 解题思路
@@ -71,12 +73,11 @@ impl Solution {
     /// 6. 所有点都成功染色，则true；
     pub fn is_bipartite(graph: Vec<Vec<i32>>) -> bool {
         let mut colors = vec![0; graph.len() * 2];
-        
+        todo!()
     }
 
     fn color_dfs(node: usize, color: i32, graph: &Vec<Vec<i32>>, colors: mut &Vec<i32>) -> bool {
-
-
+        todo!()
     }
 }
 // @lc code=end

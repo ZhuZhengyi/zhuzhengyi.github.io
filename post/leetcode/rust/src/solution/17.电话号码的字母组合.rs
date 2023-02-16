@@ -30,6 +30,8 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
 const MAPPING: [std::ops::RangeInclusive<u8>; 8] = [
     (b'a'..=b'c'),

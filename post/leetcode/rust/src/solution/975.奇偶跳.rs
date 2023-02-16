@@ -88,10 +88,12 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     pub fn odd_even_jumps(arr: Vec<i32>) -> i32 {
-
+        unimplemented!();
     }
 }
 // @lc code=end

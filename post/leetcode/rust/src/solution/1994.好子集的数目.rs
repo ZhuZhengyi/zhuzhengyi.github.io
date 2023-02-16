@@ -71,10 +71,12 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     pub fn number_of_good_subsets(nums: Vec<i32>) -> i32 {
-
+        todo!();
     }
 }
 // @lc code=end

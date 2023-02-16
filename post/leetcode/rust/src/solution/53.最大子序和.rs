@@ -28,10 +28,12 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     pub fn max_sub_array(nums: Vec<i32>) -> i32 {
-
+        todo!();
     }
 }
 // @lc code=end

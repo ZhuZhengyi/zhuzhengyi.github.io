@@ -72,30 +72,36 @@ struct MyCircularQueue {
 impl MyCircularQueue {
 
     fn new(k: i32) -> Self {
-
+        unimplemented!();
     }
     
     fn en_queue(&self, value: i32) -> bool {
+        unimplemented!();
 
     }
     
     fn de_queue(&self) -> bool {
 
+        unimplemented!();
     }
     
     fn front(&self) -> i32 {
 
+        unimplemented!();
     }
     
     fn rear(&self) -> i32 {
 
+        unimplemented!();
     }
     
     fn is_empty(&self) -> bool {
 
+        unimplemented!();
     }
     
     fn is_full(&self) -> bool {
+        unimplemented!();
 
     }
 }

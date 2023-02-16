@@ -45,10 +45,12 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     pub fn combination_sum4(nums: Vec<i32>, target: i32) -> i32 {
-        
+        todo!();
     }
 }
 // @lc code=end

@@ -1,6 +1,8 @@
 // 
 // @lc app=leetcode.cn id=21 lang=rust
 
+use super::*;
+
 // @lc code=start
 // #[derive(PartialEq, Eq, Clone, Debug)]
 // pub struct ListNode {

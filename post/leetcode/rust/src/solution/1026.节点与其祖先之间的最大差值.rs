@@ -4,6 +4,8 @@
  * [1026] 节点与其祖先之间的最大差值
  */
 
+use super::*;
+
 // @lc code=start
 // Definition for a binary tree node.
 // #[derive(Debug, PartialEq, Eq)]
@@ -27,7 +29,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 impl Solution {
     pub fn max_ancestor_diff(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {
-        
+        unimplemented!();
     }
 }
 // @lc code=end

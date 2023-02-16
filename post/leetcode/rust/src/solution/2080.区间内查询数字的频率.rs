@@ -59,6 +59,8 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
 struct RangeFreqQuery {
     arr: Vec<i32>

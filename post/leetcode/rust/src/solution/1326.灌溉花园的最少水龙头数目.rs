@@ -77,10 +77,12 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
 impl Solution {
     pub fn min_taps(n: i32, ranges: Vec<i32>) -> i32 {
-
+        todo!()
     }
 }
 // @lc code=end

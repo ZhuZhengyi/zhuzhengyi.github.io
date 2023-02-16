@@ -36,8 +36,9 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
-use std::cmp;
 
 impl Solution {
     /// ## 解题思路：
@@ -50,8 +51,8 @@ impl Solution {
         let mut min_price = prices[0];
         let mut max_profit = 0;
         for i in 1..prices.len() {
-            min_price = cmp::min(min_price, prices[i]);
-            max_profit = cmp::max(max_profit, prices[i] - min_price);
+            min_price = std::cmp::min(min_price, prices[i]);
+            max_profit = std::cmp::max(max_profit, prices[i] - min_price);
         }
 
         max_profit

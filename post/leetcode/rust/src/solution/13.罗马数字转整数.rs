@@ -68,8 +68,9 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
-use std::collections::HashMap;
 
 impl Solution {
     /// ## 解题思路

@@ -61,6 +61,8 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
 // Definition for singly-linked list.
 // #[derive(PartialEq, Eq, Clone, Debug)]
@@ -80,7 +82,7 @@
 // }
 impl Solution {
     pub fn split_list_to_parts(root: Option<Box<ListNode>>, k: i32) -> Vec<Option<Box<ListNode>>> {
-        let mut ans: Vec<Option<Box<ListNode>> = Vec::new();
+        let mut ans: Vec<Option<Box<ListNode>>> = Vec::new();
         if k < 1 {
             return ans;
         }
@@ -105,6 +107,8 @@ impl Solution {
                 i += 1;
             }
         }
+
+        todo!()
     }
 }
 // @lc code=end

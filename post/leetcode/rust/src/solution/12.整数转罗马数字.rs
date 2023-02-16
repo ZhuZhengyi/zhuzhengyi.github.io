@@ -68,9 +68,10 @@
  * 
  */
 
+use super::*;
+
 // @lc code=start
 
-use std::collections::BTreeMap;
 
 impl Solution {
 

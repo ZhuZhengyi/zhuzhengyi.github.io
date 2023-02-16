@@ -46,6 +46,8 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 use std::collections::BinaryHeap;
 

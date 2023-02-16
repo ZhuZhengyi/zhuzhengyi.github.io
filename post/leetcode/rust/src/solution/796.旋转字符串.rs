@@ -35,8 +35,12 @@
  *
  */
 
+use super::*;
+
 // @lc code=start
 impl Solution {
-    pub fn rotate_string(a: String, b: String) -> bool {}
+    pub fn rotate_string(a: String, b: String) -> bool {
+        todo!()
+    }
 }
 // @lc code=end

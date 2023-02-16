@@ -73,6 +73,9 @@
  * 
  */
 
+use super::*;
+struct Solution;
+
 // @lc code=start
 // Definition for a binary tree node.
 // #[derive(Debug, PartialEq, Eq)]
@@ -98,7 +101,7 @@ impl Solution {
     pub fn heigh(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {
         match root {
             None => 0 as i32,
-            Some(node) => 1 + cmp::max(heigh(node.borrow().left.clone()), heigh(node.borrow().right.clone())),
+            Some(node) => 1 + std::cmp::max(Solution::heigh(node.borrow().left.clone()), Solution::heigh(node.borrow().right.clone())),
         }
     }
 
@@ -129,7 +132,7 @@ impl Solution {
             });
             res.push(level_res);
             if ! next_level.is_empty() {
-                level_level.push(next_level);
+                // level_level.push(next_level);
             }
         }
 

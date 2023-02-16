@@ -1,7 +1,7 @@
 /*
  * @lc app=leetcode.cn id=2014 lang=rust
  *
- * [2014] 最大数量高于平均水平的订单
+ * [2014] 重复 K 次的最长子序列
  *
  * https://leetcode.cn/problems/longest-subsequence-repeated-k-times/description/
  *
@@ -67,8 +67,13 @@
  * 
  * 
  */
+
+struct Solution;
+
+// @lc code=start
 impl Solution {
     pub fn longest_subsequence_repeated_k(s: String, k: i32) -> String {
-
+        todo!();
     }
 }
+// @lc code=end

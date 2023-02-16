@@ -77,12 +77,14 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     /// ## 解题思路
     /// 
     pub fn min_operations_to_flip(expression: String) -> i32 {
-
+        todo!();
     }
 }
 // @lc code=end

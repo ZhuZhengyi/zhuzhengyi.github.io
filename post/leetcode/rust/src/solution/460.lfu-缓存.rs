@@ -78,9 +78,10 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 struct LFUCache {
-
 }
 
 
@@ -94,15 +95,16 @@ impl LFUCache {
     /// 使用map + linklist
     /// 
     fn new(capacity: i32) -> Self {
-
+        todo!();
     }
     
     fn get(&self, key: i32) -> i32 {
+        todo!();
 
     }
     
     fn put(&self, key: i32, value: i32) {
-
+        todo!();
     }
 }
 

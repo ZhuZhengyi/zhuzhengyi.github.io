@@ -28,6 +28,8 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     /// ## 解题思路

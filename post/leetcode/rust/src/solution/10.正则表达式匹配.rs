@@ -75,7 +75,7 @@
  * 
  */
 
-use crate::*;
+use super::*;
 
 // @lc code=start
 impl Solution {

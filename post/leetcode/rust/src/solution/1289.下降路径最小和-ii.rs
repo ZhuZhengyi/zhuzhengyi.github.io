@@ -43,7 +43,7 @@
  *
  */
 
-pub struct Solution{};
+use super::*;
 
 // @lc code=start
 impl Solution {

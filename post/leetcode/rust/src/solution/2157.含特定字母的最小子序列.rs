@@ -78,10 +78,12 @@
  * 
  */
 
+struct Solution;
+
 // @lc code=start
 impl Solution {
     pub fn group_strings(words: Vec<String>) -> Vec<i32> {
-
+        todo!();
     }
 }
 // @lc code=end

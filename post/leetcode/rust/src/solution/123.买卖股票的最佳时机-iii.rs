@@ -44,6 +44,10 @@
  * 
  */
 
+use super::*;
+
+struct Solution;
+
 // @lc code=start
 use std::cmp;
 

@@ -58,7 +58,7 @@
  *
  */
 
-use crate::*;
+struct Solution;
 
 // @lc code=start
 impl Solution {

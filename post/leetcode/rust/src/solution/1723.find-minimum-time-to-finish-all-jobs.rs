@@ -48,9 +48,15 @@
  * 
  * 
  */
+
+use super::*;
+
+// @lc code=start
 impl Solution {
     pub fn minimum_time_required(jobs: Vec<i32>, k: i32) -> i32 {
-
+        todo!();
     }
 }
+
+// @lc code=end
         max_word.

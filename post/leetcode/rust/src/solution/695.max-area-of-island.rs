@@ -50,6 +50,10 @@
  * 
  * 
  */
+
+use super::*;
+
+// @lc code=start
 impl Solution {
     /// ## 解题思路
     /// * 深度优先搜索
@@ -78,3 +82,4 @@ impl Solution {
         max_area
     } 
 }
+// @lc code=end
