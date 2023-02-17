@@ -56,7 +56,30 @@ impl Solution {
         l1: Option<Box<ListNode>>,
         l2: Option<Box<ListNode>>,
     ) -> Option<Box<ListNode>> {
-        let (mut l1, mut l2) = (l1, l2);
+        match (l1, l2) {
+            (None, None) => None,
+            (Some(n), None) | (None, Some(n)) => Some(n),
+            (Some(n1), Some(n2)) => {
+                let sum = n1.val + n2.val;
+                if sum < 10 {
+                    Some(Box::new(ListNode {
+                        val: sum,
+                        next: Solution::add_two_numbers(n1.next, n2.next),
+                    }))
+                } else {
+                    let carry = Some(Box::new(ListNode::new(1)));
+                    Some(Box::new(ListNode {
+                        val: sum - 10,
+                        next: Solution::add_two_numbers(
+                            carry,
+                            Solution::add_two_numbers(n1.next, n2.next),
+                        ),
+                    }))
+                }
+            }
+        }
+
+        /*         let (mut l1, mut l2) = (l1, l2);
         let mut dummy_head = Some(Box::new(ListNode::new(0)));
         let mut tail = &mut dummy_head;
         let (mut l1_end, mut l2_end, mut overflow) = (false, false, 0_i32);
@@ -96,7 +119,7 @@ impl Solution {
             tail = &mut tail.as_mut().unwrap().next;
         };
 
-        result
+        result */
     }
 }
 // @lc code=end

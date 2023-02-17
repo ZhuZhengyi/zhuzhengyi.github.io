@@ -30,7 +30,6 @@
  * 
  */
 
-struct Solution;
 
 // @lc code=start
 const MAPPING: [std::ops::RangeInclusive<u8>; 8] = [
@@ -69,6 +68,8 @@ impl Solution {
     }
 }
 // @lc code=end
+
+struct Solution;
 
 #[test]
 fn it_works() {

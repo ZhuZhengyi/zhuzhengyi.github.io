@@ -27,9 +27,9 @@
  *
  */
 
-// @lc code=start
-use std::collections::HashMap;
+use super::*;
 
+// @lc code=start
 impl Solution {
     /// ## 解题思路
     /// 1. 遍历序列；
@@ -37,6 +37,7 @@ impl Solution {
     /// 3. 如果遇到和遍历过的序列和为target的元素，则找到，返回true;
     /// 4. 否则不存在, 返回false；
     pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
+        use std::collections::HashMap;
         let mut map: HashMap<i32, i32> = HashMap::new();
         for (i, n) in nums.iter().enumerate() {
             match map.get(n) {
@@ -52,8 +53,6 @@ impl Solution {
     }
 }
 // @lc code=end
-struct Solution;
-
 #[cfg(test)]
 mod tests {
     use super::*;
