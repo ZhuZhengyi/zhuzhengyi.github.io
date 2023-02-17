@@ -38,7 +38,8 @@
  *
  *
  */
-use super::*;
+
+struct Solution;
 
 // @lc code=start
 use std::collections::HashMap;
@@ -64,3 +65,23 @@ impl Solution {
     }
 }
 // @lc code=end
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test() {
+        assert_eq!(
+            Solution::length_of_longest_substring("abcabcbb".to_string(),),
+            3
+        );
+        assert_eq!(
+            Solution::length_of_longest_substring("abcabcbb".to_string(),),
+            3
+        );
+        assert_eq!(
+            Solution::length_of_longest_substring("abcabcbb".to_string(),),
+            3
+        );
+    }
+}

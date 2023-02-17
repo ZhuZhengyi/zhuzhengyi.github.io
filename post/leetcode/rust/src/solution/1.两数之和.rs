@@ -54,9 +54,14 @@ impl Solution {
 // @lc code=end
 struct Solution;
 
-#[test]
-fn test() {
-    assert_eq!(Solution::two_sum([2, 7, 11, 15].into(), 9), [0, 1]);
-    assert_eq!(Solution::two_sum([3, 2, 4].into(), 6), [1, 2]);
-    assert_eq!(Solution::two_sum([3, 3].into(), 6), [0, 1]);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(Solution::two_sum([2, 7, 11, 15].into(), 9), [0, 1]);
+        assert_eq!(Solution::two_sum([3, 2, 4].into(), 6), [1, 2]);
+        assert_eq!(Solution::two_sum([3, 3].into(), 6), [0, 1]);
+    }
 }
