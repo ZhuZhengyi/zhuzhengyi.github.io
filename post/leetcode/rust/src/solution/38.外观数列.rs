@@ -93,15 +93,14 @@ impl Solution {
             return "1".to_string();
         }
         let n_1 = Self::count_and_say(n - 1);
-        let mut s =
-            n_1.chars().fold(
-                ("".to_string(), '&', 0),
-                |(mut done, in_prog, count), c| match c == in_prog {
-                    true => (done, in_prog, count + 1),
-                    false if in_prog != '&' => (format!("{}{}{}", done, count, in_prog), c, 1),
-                    _ => (done, c, 1),
-                },
-            );
+        let s = n_1.chars().fold(
+            ("".to_string(), '&', 0),
+            |(mut done, in_prog, count), c| match c == in_prog {
+                true => (done, in_prog, count + 1),
+                false if in_prog != '&' => (format!("{}{}{}", done, count, in_prog), c, 1),
+                _ => (done, c, 1),
+            },
+        );
 
         format!("{}{}{}", s.0, s.2, s.1)
     }

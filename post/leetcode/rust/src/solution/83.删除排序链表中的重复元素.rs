@@ -14,18 +14,18 @@
  * Testcase Example:  '[1,1,2]'
  *
  * 给定一个排序链表，删除所有重复的元素，使得每个元素只出现一次。
- * 
+ *
  * 示例 1:
- * 
+ *
  * 输入: 1->1->2
  * 输出: 1->2
- * 
- * 
+ *
+ *
  * 示例 2:
- * 
+ *
  * 输入: 1->1->2->3->3
  * 输出: 1->2->3
- * 
+ *
  */
 
 use super::*;
@@ -37,7 +37,7 @@ use super::*;
 //   pub val: i32,
 //   pub next: Option<Box<ListNode>>
 // }
-// 
+//
 // impl ListNode {
 //   #[inline]
 //   fn new(val: i32) -> Self {
@@ -49,27 +49,21 @@ use super::*;
 // }
 impl Solution {
     pub fn delete_duplicates(head: Option<Box<ListNode>>) -> Option<Box<ListNode>> {
-        let mut dummy_head = Some(Box::new(ListNode::new(0)));
-        let mut ptr = &mut dummy_head;
-
-        let mut pre_val: i32 = -1;
-        let mut pre_val_init = false;
-        let mut head = head;
-        while let Some(mut node) = head.take() {
-            head = node.next.take();
-            if pre_val_init && pre_val == node.val {
-                continue
-            }
-            pre_val = node.val;
-            pre_val_init = true;
-            //
-            ptr.as_mut().unwrap().next = Some(node);
-            ptr = &mut ptr.as_mut().unwrap().next;
+        if head.is_none() {
+            return None;
         }
 
-        dummy_head.unwrap().next
+        let mut h = head;
+        let mut p1 = h.as_mut().unwrap();
+        while let Some(p2) = p1.next.as_mut() {
+            if p2.val == p1.val {
+                p1.next = p2.next.take();
+            } else {
+                p1 = p1.next.as_mut().unwrap();
+            }
+        }
 
+        h
     }
 }
 // @lc code=end
-

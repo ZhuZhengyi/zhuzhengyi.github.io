@@ -73,9 +73,9 @@ impl Solution {
         let mut nodes_levels = Vec::new();
         nodes_levels.push(level);
         while !nodes_levels.is_empty() {
-            let mut level = nodes_levels.remove(0);   //取出一层
-            let mut next_level = Vec::new();          //下层节点
-            let mut level_res = Vec::new();                 //保存每一层的结果
+            let level = nodes_levels.remove(0); //取出一层
+            let mut next_level = Vec::new(); //下层节点
+            let mut level_res = Vec::new(); //保存每一层的结果
 
             // 依次取出当前层下层子树节点，放入下层队列中
             level.iter().for_each(|node| {
@@ -114,4 +114,3 @@ mod tests {
         // );
     }
 }
-

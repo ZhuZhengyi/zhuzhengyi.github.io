@@ -44,6 +44,7 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
     pub fn shortest_common_supersequence(str1: String, str2: String) -> String {
         todo!()
     }
