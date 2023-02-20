@@ -76,11 +76,11 @@ mod tests {
             3
         );
         assert_eq!(
-            Solution::length_of_longest_substring("abcabcbb".to_string(),),
-            3
+            Solution::length_of_longest_substring("bbbb".to_string(),),
+            1
         );
         assert_eq!(
-            Solution::length_of_longest_substring("abcabcbb".to_string(),),
+            Solution::length_of_longest_substring("pwwkew".to_string(),),
             3
         );
     }

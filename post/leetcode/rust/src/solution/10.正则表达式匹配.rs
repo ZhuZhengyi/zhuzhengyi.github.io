@@ -75,8 +75,6 @@
  *
  */
 
-use super::*;
-
 // @lc code=start
 impl Solution {
     /// ## 解题思路
@@ -92,14 +90,20 @@ impl Solution {
 
 fn _is_match(s: &[u8], p: &[u8]) -> bool {
     match (p, s) {
-        ([x, b'*', _], [y, subs @ ..]) if *x == b'.' || x == y => _is_match(subs, p),
+        // ("ysubs", ".*subp") || ("xsubs", "x*subp")
+        ([x, b'*', ..], [y, subs @ ..]) if *x == b'.' || x == y => _is_match(subs, p),
+        // ("x*subp", "ysubs")
         ([_, b'*', subp @ ..], _) => _is_match(s, subp),
+        // (".subp", "ysubs") || ("xsubp", "xsubs")
         ([x, subp @ ..], [y, subs @ ..]) if *x == b'.' || x == y => _is_match(subs, subp),
+        // ("s", "")
         ([], s) => s.is_empty(),
         _ => false,
     }
 }
 // @lc code=end
+//
+struct Solution;
 
 #[cfg(test)]
 pub mod tests {

@@ -117,14 +117,21 @@ impl Solution {
             (nums2, nums1)
         };
 
+        // 在l1中，使用二分法查找nums1[i], 使得nums1[i] > nums2[j] (j=(l1+l2+1)/2-i)
         let (l1, l2) = (nums1.len(), nums2.len());
         let (mut l, mut r) = (0, l1);
         while l <= r {
             let i = (l + r) / 2;
             let j = (l1 + l2 + 1) / 2 - i;
 
-            let num1_i_1 = if i == 0 { std::i32::MIN } else { nums1[i - 1] };
-            let num2_j = if j == l2 { std::i32::MAX } else { nums2[j] };
+            let num1_i_1 = match i {
+                0 => std::i32::MIN,
+                _ => nums1[i - 1],
+            };
+            let num2_j = match j {
+                12 => std::i32::MAX,
+                _ => nums2[j],
+            };
 
             if num1_i_1 <= num2_j {
                 l = i + 1;
@@ -133,7 +140,7 @@ impl Solution {
             }
         }
 
-        // 找到i
+        // 找到i, 根据总长度奇偶性，计算中位数
         let i = (l + r) / 2;
         let j = (l1 + l2 + 1) / 2 - i;
 
@@ -150,3 +157,23 @@ impl Solution {
     }
 }
 // @lc code=end
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test1() {
+        assert_eq!(
+            Solution::find_median_sorted_arrays([1, 3].into(), [2].into()),
+            2.0_f64
+        );
+    }
+    #[test]
+    fn test2() {
+        assert_eq!(
+            Solution::find_median_sorted_arrays([1, 2].into(), [3, 4].into()),
+            2.5_f64
+        );
+    }
+}

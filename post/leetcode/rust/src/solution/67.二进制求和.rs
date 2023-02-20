@@ -56,23 +56,23 @@ impl Solution {
             _ => (b, a),
         };
 
-        let a = format!( "0{}", a);
+        let a = format!("0{}", a);
 
         //
-        let mut ab = a.chars()
+        let ab = a
+            .chars()
             .rev()
             .zip(b.chars().rev().chain(iter::repeat('0')))
             .scan(0_u32, |carry, (x, y)| {
                 let s = x as u32 + y as u32 + *carry % 2;
                 *carry = s / 2;
-                Some(char::from_digit(s%2, 2))
+                Some(char::from_digit(s % 2, 2))
             })
             .map(|c| c.unwrap_or('0'))
             .collect::<String>()
             .chars()
             .rev()
-            .collect::<String>()
-            ;
+            .collect::<String>();
 
         if ab.len() > 1 && ab.starts_with('0') {
             String::from(&ab[1..])
@@ -83,3 +83,15 @@ impl Solution {
 }
 // @lc code=end
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(
+            Solution::add_binary("11".into(), "1".into()),
+            "100".to_string()
+        );
+    }
+}

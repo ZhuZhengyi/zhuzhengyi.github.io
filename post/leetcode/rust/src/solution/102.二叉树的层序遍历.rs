@@ -67,7 +67,6 @@ impl Solution {
             return res;
         }
 
-        // println!("root={:?}", root);
         let mut level = Vec::new();
         level.push(root.unwrap().clone());
 
