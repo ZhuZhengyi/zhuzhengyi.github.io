@@ -66,27 +66,23 @@ impl Solution {
     /// ## 解题思路
     /// - 动态规划
     /// 1. 设 dp[i][j]: 以text1[0..i], text2[0..j]的最长公共子序列
-    /// 2. 满足如下条件：
+    /// 2. 如下性质：
     ///     dp[0][j] = 0
     ///     dp[i][0] = 0
     /// 3. dp[i][j] = dp[i-1][j-1] + 1 (text1[i] == text2[j])
     ///           或者 = max(dp[i-1][j], dp[i][j-1])
     pub fn longest_common_subsequence(text1: String, text2: String) -> i32 {
-        let (m, n) = (text1.len(), text2.len());
-        let mut dp = vec![vec![0; n + 1]; m + 1];
-        let mut longest = 0;
-        for i in 1..(m + 1) {
-            for j in 1..(n + 1) {
-                if text1.chars().nth(i - 1) == text2.chars().nth(j - 1) {
-                    dp[i][j] = dp[i - 1][j - 1] + 1
+        let mut dp = vec![vec![0; text2.len() + 1]; text1.len() + 1];
+        for (i, c1) in text1.chars().enumerate() {
+            for (j, c2) in text2.chars().enumerate() {
+                dp[i + 1][j + 1] = if c1 == c2 {
+                    dp[i][j] + 1
                 } else {
-                    dp[i][j] = std::cmp::max(dp[i - 1][j], dp[i][j - 1]);
+                    std::cmp::max(dp[i][j + 1], dp[i + 1][j])
                 }
-                longest = std::cmp::max(longest, dp[i][j]);
             }
         }
-
-        longest
+        dp[text1.len()][text2.len()] as i32
     }
 }
 // @lc code=end

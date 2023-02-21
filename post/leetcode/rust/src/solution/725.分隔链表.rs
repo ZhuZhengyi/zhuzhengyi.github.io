@@ -81,9 +81,39 @@ use super::*;
 //   }
 // }
 impl Solution {
+    /// ## 解题思路
+    /// - 分割链表
     pub fn split_list_to_parts(root: Option<Box<ListNode>>, k: i32) -> Vec<Option<Box<ListNode>>> {
-        todo!()
+        let mut l = 0;
+        let mut node = &root;
+        while let Some(n) = node {
+            l += 1;
+            node = &n.next;
+        }
+
+        let n = l / k;
+        let mut head = root;
+        let mut res = Vec::with_capacity(k as usize);
+        for i in 0..k as usize {
+            res.push(head);
+            let mut node = &mut res[i];
+            for _ in 0..n + if i < (l % k) as usize { 1 } else { 0 } {
+                if let Some(x) = node {
+                    node = &mut x.next;
+                }
+            }
+            head = node.take();
+        }
+
+        res
     }
 }
 // @lc code=end
 
+#[cfg(test)]
+mod tests {
+    //use super::*;
+
+    #[test]
+    fn test() {}
+}

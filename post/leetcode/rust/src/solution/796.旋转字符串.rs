@@ -35,12 +35,30 @@
  *
  */
 
-use super::*;
-
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// - 将a复制一倍为aa；
+    /// - 如果aa包含b,则b必定为a的旋转字符串；
     pub fn rotate_string(a: String, b: String) -> bool {
-        todo!()
+        a.len() == b.len() && a.repeat(2).contains(b.as_str())
     }
 }
 // @lc code=end
+
+use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test() {
+        assert_eq!(
+            Solution::rotate_string("abcde".into(), "cdeab".into()),
+            true
+        );
+        assert_eq!(
+            Solution::rotate_string("abcde".into(), "abced".into()),
+            false
+        );
+    }
+}
