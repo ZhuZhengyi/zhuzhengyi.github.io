@@ -95,7 +95,7 @@ impl Solution {
         let n_1 = Self::count_and_say(n - 1);
         let s = n_1.chars().fold(
             ("".to_string(), '&', 0),
-            |(mut done, in_prog, count), c| match c == in_prog {
+            |(done, in_prog, count), c| match c == in_prog {
                 true => (done, in_prog, count + 1),
                 false if in_prog != '&' => (format!("{}{}{}", done, count, in_prog), c, 1),
                 _ => (done, c, 1),

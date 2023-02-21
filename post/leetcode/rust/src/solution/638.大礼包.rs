@@ -63,19 +63,15 @@
  *
  */
 
-use super::*;
-
 // @lc code=start
 impl Solution {
     /// ## 解题思路
     /// * 动态规划
     ///
     pub fn shopping_offers(price: Vec<i32>, special: Vec<Vec<i32>>, needs: Vec<i32>) -> i32 {
-        let mut res: i32 = 0;
-
         todo!();
-
-        res
     }
 }
 // @lc code=end
+
+use super::*;

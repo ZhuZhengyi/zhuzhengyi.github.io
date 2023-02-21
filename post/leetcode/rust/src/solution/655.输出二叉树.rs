@@ -111,7 +111,7 @@ impl Solution {
     }
 
     pub fn print_tree(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<String>> {
-        let mut res: Vec<Vec<String>> = Vec::new();
+        let res: Vec<Vec<String>> = Vec::new();
         //let mut res_level: Vec = vec![];
 
         if root.is_none() {
