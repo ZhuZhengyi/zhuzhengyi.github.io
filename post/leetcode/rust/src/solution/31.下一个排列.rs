@@ -96,3 +96,14 @@ impl Solution {
 }
 // @lc code=end
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        let mut nums = vec![1,2,3];
+        Solution::next_permutation(&mut nums);
+        assert_eq!(nums, vec![1,3,2]);
+    }
+}

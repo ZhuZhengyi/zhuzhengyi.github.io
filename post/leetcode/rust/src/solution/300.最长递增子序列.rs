@@ -61,15 +61,15 @@
  *
  */
 
-struct Solution;
-
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 假设nums[0:n]的最长递增子序列为lis[],
-    /// 则nums[0:n+1]的lis有一些情况：
-    /// a. nums[n] > lis[-1] => lis.push(nums[n])
-    /// b. nums[n] > lis[i-1] => lis[i] = nums[n] (i为第一个大于nums[n]的数)
+    /// - 二分查找
+    /// 1. 设lis[i]为nums[0..i]的最长递增子序列;
+    /// 2. 则：
+    ///    2.1 if nums[i+1] > lis.last() => lis.push(nums[n])
+    ///    2.2 else lis[i] = nums[n]
+    ///    (i为第一个大于nums[n]的数)
     ///
     pub fn length_of_lis(nums: Vec<i32>) -> i32 {
         if nums.len() < 1 {
@@ -104,3 +104,16 @@ impl Solution {
     }
 }
 // @lc code=end
+
+struct Solution;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        assert_eq!(Solution::length_of_lis(vec![10, 9, 2, 5, 3, 7, 101, 18]), 4);
+        assert_eq!(Solution::length_of_lis(vec![0, 1, 0, 3, 2, 3]), 4);
+        assert_eq!(Solution::length_of_lis(vec![7, 7, 7, 7, 7, 7, 7]), 1);
+    }
+}
