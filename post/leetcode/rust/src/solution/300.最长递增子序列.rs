@@ -65,7 +65,7 @@
 impl Solution {
     /// ## 解题思路
     /// - 二分查找
-    /// 1. 设lis[i]为nums[0..i]的最长递增子序列;
+    /// 1. 设lis[i]: nums[0..i]的最长递增子序列;
     /// 2. 则：
     ///    2.1 if nums[i+1] > lis.last() => lis.push(nums[n])
     ///    2.2 else lis[i] = nums[n]
