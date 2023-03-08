@@ -95,26 +95,32 @@ impl Solution {
     /// ## 解题思路
     /// - 动态规划+BTreeMap
     pub fn odd_even_jumps(arr: Vec<i32>) -> i32 {
-        let mut good_count = 1;
-        let mut odd = vec![false; arr.len()];
-        let mut even = vec![false; arr.len()];
+        let mut good_count = 1; // 好索引的计数，最后一个总是可以到达，所以至少为1
+        let mut odd = vec![false; arr.len()]; //每个索引位置是否经过奇数步跳跃到达终点；
+        let mut even = vec![false; arr.len()]; //每个索引位置是否经过偶数步跳跃到达终点；
         *odd.last_mut().unwrap() = true;
         *even.last_mut().unwrap() = true;
 
-        let mut map = BTreeMap::new();
+        let mut map = BTreeMap::new(); //
         map.insert(*arr.last().unwrap(), arr.len() - 1);
 
         for i in (0..arr.len() - 1).rev() {
             let from = arr[i];
+            // 在当前数字后面，存在>=当前数字的可跳数字
             if let Some((_, jump_index)) = map.range(from..).next() {
+                // 当前位置可进行奇数跳跃，是否能抵达终点和下一个偶数起跳点是否能达到终点一样；
                 odd[i] = even[*jump_index];
             }
+            // 在当前数字后面，存在<=当前数字的可跳数字
             if let Some((_, jump_index)) = map.range(..=from).next_back() {
+                // 当前位置可进行偶数跳跃，是否能抵达终点和下一个奇数起跳点是否能达到终点一样；
                 even[i] = odd[*jump_index];
             }
+            //如果当前位置可通过奇数起跳到达终点
             if odd[i] {
-                good_count += 1;
+                good_count += 1; //则好的起始索引数量+1
             }
+            //记录当前数字和索引
             map.insert(from, i);
         }
         good_count
