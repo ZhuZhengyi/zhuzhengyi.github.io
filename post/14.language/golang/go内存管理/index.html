@@ -2,7 +2,7 @@
 <head>
 <meta charset=utf-8>
 <meta http-equiv=x-ua-compatible content="IE=edge">
-<title>可视化Go内存管理 - Justice的小站</title>
+<title>Go内存管理 - Justice的小站</title>
 <meta name=renderer content="webkit">
 <meta name=referrer content="no-referrer">
 <meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="可视化Go内存管理 这篇文章基于Go 1.13的默认官方实现，有些概念细节可能会在Go的未来版本中发生变化 Go内部内存结构 首先，让我们看看Go内">
+<meta name=description content="Go内存管理 Go内部内存结构 首先，让我们看看Go内部的内存结构是什么样子的。 Go运行时将Goroutines（G）调度到逻辑处理器（P）上执">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/golang/go%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
-<meta property="og:title" content="可视化Go内存管理">
-<meta property="og:description" content="可视化Go内存管理 这篇文章基于Go 1.13的默认官方实现，有些概念细节可能会在Go的未来版本中发生变化 Go内部内存结构 首先，让我们看看Go内">
+<meta property="og:title" content="Go内存管理">
+<meta property="og:description" content="Go内存管理 Go内部内存结构 首先，让我们看看Go内部的内存结构是什么样子的。 Go运行时将Goroutines（G）调度到逻辑处理器（P）上执">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/go%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
-<meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content="可视化Go内存管理">
-<meta itemprop=description content="可视化Go内存管理 这篇文章基于Go 1.13的默认官方实现，有些概念细节可能会在Go的未来版本中发生变化 Go内部内存结构 首先，让我们看看Go内"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
-<meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="4130">
+<meta property="article:published_time" content="2023-03-08T19:49:11+08:00">
+<meta property="article:modified_time" content="2023-03-08T19:49:11+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="Go内存管理">
+<meta itemprop=description content="Go内存管理 Go内部内存结构 首先，让我们看看Go内部的内存结构是什么样子的。 Go运行时将Goroutines（G）调度到逻辑处理器（P）上执"><meta itemprop=datePublished content="2023-03-08T19:49:11+08:00">
+<meta itemprop=dateModified content="2023-03-08T19:49:11+08:00">
+<meta itemprop=wordCount content="4085">
 <meta itemprop=keywords content="language,golang,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content="可视化Go内存管理">
-<meta name=twitter:description content="可视化Go内存管理 这篇文章基于Go 1.13的默认官方实现，有些概念细节可能会在Go的未来版本中发生变化 Go内部内存结构 首先，让我们看看Go内"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:title content="Go内存管理">
+<meta name=twitter:description content="Go内存管理 Go内部内存结构 首先，让我们看看Go内部的内存结构是什么样子的。 Go运行时将Goroutines（G）调度到逻辑处理器（P）上执"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -164,10 +164,10 @@ Justice's Blog
 <div id=content class="content container">
 <article class="post bg-white">
 <header class=post-header>
-<h1 class=post-title>可视化Go内存管理</h1>
+<h1 class=post-title>Go内存管理</h1>
 <div class=post-meta>
-<time datetime=2022-05-21 class=post-time>
-2022-05-21 21:27:53
+<time datetime=2023-03-08 class=post-time>
+2023-03-08 19:49:11
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/language/> language </a>
@@ -195,7 +195,7 @@ Justice's Blog
 </ul>
 </li>
 <li><a href=#go内存使用栈与堆>Go内存使用（栈与堆）</a></li>
-<li><a href=#go内存管理>Go内存管理</a>
+<li><a href=#go内存管理-1>Go内存管理</a>
 <ul>
 <li><a href=#内存分配>内存分配</a></li>
 </ul>
@@ -206,8 +206,7 @@ Justice's Blog
 </div>
 </div>
 <div class=post-content>
-<h1 id=可视化go内存管理>可视化Go内存管理</h1>
-<p>这篇文章基于Go 1.13的默认官方实现，有些概念细节可能会在Go的未来版本中发生变化</p>
+<h1 id=go内存管理>Go内存管理</h1>
 <h2 id=go内部内存结构>Go内部内存结构</h2>
 <p>首先，让我们看看Go内部的内存结构是什么样子的。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-44-10-2020-03-10-19-07-25-image.png alt></p>
@@ -353,7 +352,7 @@ Justice's Blog
 <li>一旦主过程(main)完成，堆上的对象将不再具有来自Stack的指针的引用，并成为孤立对象</li>
 </ul>
 <p>栈是由操作系统自动管理的，而不是Go本身。因此，我们不必担心栈。另一方面，堆并不是由操作系统自动管理的，并且由于其具有最大的内存空间并保存动态数据，因此它可能会成倍增长，从而导致我们的程序随着时间耗尽内存。随着时间的流逝，它也变得支离破碎，使应用程序变慢。解决这些问题是垃圾收集的初衷。</p>
-<h2 id=go内存管理>Go内存管理</h2>
+<h2 id=go内存管理-1>Go内存管理</h2>
 <p>Go的内存管理包括在需要内存时自动分配内存，在不再需要内存时进行垃圾回收。这是由标准库完成的(译注：应该是运行时完成的)。与C/C++不同，开发人员不必处理它，并且Go进行的基础管理得到了高效的优化。</p>
 <h3 id=内存分配>内存分配</h3>
 <p>许多采用垃圾收集的编程语言都使用分代内存结构来使收集高效，同时进行压缩以减少碎片。正如我们前面所看到的，Go在这里采用了不同的方法，Go在构造内存方面有很大的不同。Go使用线程本地缓存(thread local cache)来加速小对象分配，并维护着scan/noscan的span来加速GC。这种结构以及整个过程避免了碎片，从而在GC期间无需做紧缩处理。</p>
@@ -401,7 +400,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-05-21 21:27:53
+2023-03-08 19:49:11
 </span>
 </p>
 <p class=copyright-item>
@@ -433,14 +432,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/golang/>golang</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/30.architech/parquet/>
+<a class=prev href=/post/14.language/golang/golang%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">列式存储格式Parquet</span>
+<span class="prev-text nav-default">golang最佳实践</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/14.language/golang/golang-gc%E7%AE%97%E6%B3%95/>
-<span class="next-text nav-default">图解 Golang 的 GC 算法</span>
+<a class=next href=/post/14.language/golang/golang%E4%B9%8Bcgo/>
+<span class="next-text nav-default">Go语言之cgo</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
