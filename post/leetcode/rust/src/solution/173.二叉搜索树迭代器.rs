@@ -97,17 +97,16 @@ use super::*;
 //     }
 //   }
 // }
+//
+
+use super::*;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[derive(Clone)]
-enum BSTIteratorState {
-    New,
-    Left(Rc<RefCell<BSTIterator>>),
-    Val,
-    Right(Rc<RefCell<BSTIterator>>),
-    Finished,
+type RTreeNode = Rc<RefCell<TreeNode>>;
+struct BSTIterator {
+    stack: RefCell<Vec<RTreeNode>>,
 }
 
 /**
@@ -116,12 +115,7 @@ enum BSTIteratorState {
  */
 impl BSTIterator {
     /// ## 解题思路
-    fn new(root: Option<Rc<RefCell<TreeNode>>>) -> Self {
-        BSTIterator {
-            root,
-            state: BSTIteratorState::New,
-        }
-    }
+    fn new(root: Option<Rc<RefCell<TreeNode>>>) -> Self {}
 
     fn next(&mut self) -> i32 {
         match self.state.clone() {
@@ -175,8 +169,13 @@ impl BSTIterator {
  * let ret_1: i32 = obj.next();
  * let ret_2: bool = obj.has_next();
  */
-struct BSTIterator {
-    root: Option<Rc<RefCell<TreeNode>>>,
-    state: BSTIteratorState,
-}
+
 // @lc code=end
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {}
+}
