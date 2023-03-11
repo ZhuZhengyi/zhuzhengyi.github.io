@@ -99,14 +99,11 @@ use super::*;
 // }
 //
 
-use super::*;
-
 use std::cell::RefCell;
 use std::rc::Rc;
 
-type RTreeNode = Rc<RefCell<TreeNode>>;
 struct BSTIterator {
-    stack: RefCell<Vec<RTreeNode>>,
+    stack: Vec<Rc<RefCell<TreeNode>>>, //保存待遍历的节点
 }
 
 /**
@@ -115,51 +112,55 @@ struct BSTIterator {
  */
 impl BSTIterator {
     /// ## 解题思路
-    fn new(root: Option<Rc<RefCell<TreeNode>>>) -> Self {}
+    /// - 栈
+    /// - 二叉树中序遍历
+    fn new(root: Option<Rc<RefCell<TreeNode>>>) -> Self {
+        let mut ret_iter = BSTIterator { stack: vec![] };
 
-    fn next(&mut self) -> i32 {
-        match self.state.clone() {
-            BSTIteratorState::New => {
-                if self.root.is_some() {
-                    self.state = BSTIteratorState::Left(Rc::new(RefCell::new(BSTIterator::new(
-                        self.root.as_ref().unwrap().borrow().left.clone(),
-                    ))));
-                } else {
-                    self.state = BSTIteratorState::Finished;
-                }
-                self.next()
+        // 如果根节点不为空
+        if let Some(root) = root.as_ref() {
+            // 将根节点入栈
+            ret_iter.stack.push(root.clone());
+
+            let mut node = Some(root.clone());
+            // 如果左子节点不为空
+            while let Some(left) = node.unwrap().borrow_mut().left.as_ref() {
+                // 将左子节点入栈
+                ret_iter.stack.push(left.clone());
+                // 移动到左子节点继续处理
+                node = Some(left.clone());
             }
-            BSTIteratorState::Left(iter) => {
-                if iter.borrow_mut().next() != -1 {
-                    iter.borrow_mut().next()
-                } else {
-                    self.state = BSTIteratorState::Val;
-                    self.next()
-                }
-            }
-            BSTIteratorState::Val => {
-                self.state = BSTIteratorState::Right(Rc::new(RefCell::new(BSTIterator::new(
-                    self.root.as_ref().unwrap().borrow().right.clone(),
-                ))));
-                self.root.clone().unwrap().borrow().val
-            }
-            BSTIteratorState::Right(iter) => {
-                if iter.borrow_mut().next() != -1 {
-                    iter.borrow_mut().next()
-                } else {
-                    self.state = BSTIteratorState::Finished;
-                    self.next()
-                }
-            }
-            BSTIteratorState::Finished => -1,
         }
+
+        ret_iter
+    }
+
+    /// next
+    fn next(&mut self) -> i32 {
+        let mut ret_val = -1;
+        // 如果stack中存在节点
+        if let Some(node) = self.stack.pop() {
+            ret_val = node.borrow().val;
+            //如果当前节点存在右子节点
+            if let Some(right) = node.borrow_mut().right.as_ref() {
+                // 将右子节点入栈
+                self.stack.push(right.clone());
+
+                let mut n = Some(right.clone());
+                //如果右子节点存在左子节点
+                while let Some(left) = n.unwrap().borrow_mut().left.as_ref() {
+                    // 将左子节点入栈
+                    self.stack.push(left.clone());
+                    n = Some(left.clone());
+                }
+            }
+        }
+
+        ret_val
     }
 
     fn has_next(&self) -> bool {
-        match self.state {
-            BSTIteratorState::Finished => false,
-            _ => true,
-        }
+        !self.stack.is_empty()
     }
 }
 
