@@ -95,6 +95,8 @@ impl Solution {
     ///     - 4.4 递归处理右子树；
     ///     - 4.5 将节点从路径中弹出；
     pub fn path_sum(root: Option<Rc<RefCell<TreeNode>>>, target_sum: i32) -> Vec<Vec<i32>> {
+
+        /// helper
         fn path_sum_rec(node: &Option<Rc<RefCell<TreeNode>>>, target_sum: i32, node_path: &mut Vec<i32>, res: &mut Vec<Vec<i32>>) {
             match node {
                 None => {},

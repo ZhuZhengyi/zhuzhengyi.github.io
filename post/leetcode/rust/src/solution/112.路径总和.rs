@@ -78,23 +78,25 @@ use std::rc::Rc;
 use std::cell::RefCell;
 impl Solution {
     /// 解题思路：
-    /// 递归遍历二叉树每个节点:
+    /// - 递归遍历二叉树每个节点:
     /// 1. 若节点为空，则遍历结束，未找到;
     /// 2. 若为叶子节点，且节点val==剩下的target, 则找到；
     /// 3. 否则递归在左右子树中查找target-node.val;
     pub fn has_path_sum(root: Option<Rc<RefCell<TreeNode>>>, target_sum: i32) -> bool {
-        fn has_path_sum_ref(node: &Option<Rc<RefCell<TreeNode>>>, target_sum: i32) -> bool {
+
+        /// helper
+        fn helper(node: &Option<Rc<RefCell<TreeNode>>>, target_sum: i32) -> bool {
             match node {
                 None => false,
                 Some(n) if n.borrow().left.is_none() && n.borrow().right.is_none() && n.borrow().val == target_sum => true,
                 Some(n) => {
-                    has_path_sum_ref(&n.borrow().left, target_sum - n.borrow().val) 
-                        || has_path_sum_ref(&n.borrow().right, target_sum - n.borrow().val) 
+                    helper(&n.borrow().left, target_sum - n.borrow().val) 
+                        || helper(&n.borrow().right, target_sum - n.borrow().val) 
                 }
             }
         } 
 
-        has_path_sum_ref(&root, target_sum)
+        helper(&root, target_sum)
     }
 }
 // @lc code=end

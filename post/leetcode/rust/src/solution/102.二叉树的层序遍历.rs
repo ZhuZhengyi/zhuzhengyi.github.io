@@ -60,6 +60,8 @@ use super::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 impl Solution {
+    /// ## 解题思路
+    /// - 队列
     pub fn level_order(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<i32>> {
         let mut res = Vec::new(); //result
 

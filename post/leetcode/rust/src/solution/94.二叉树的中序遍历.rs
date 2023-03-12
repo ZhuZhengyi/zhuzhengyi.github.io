@@ -56,7 +56,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 impl Solution {
     /// ## 解题思路
-    ///
+    /// - 递归+深度遍历
     pub fn inorder_traversal(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<i32> {
         fn inorder_dfs(node: &Option<Rc<RefCell<TreeNode>>>, res: &mut Vec<i32>) {
             match node {

@@ -114,6 +114,8 @@ impl BSTIterator {
     /// ## 解题思路
     /// - 栈
     /// - 二叉树中序遍历
+    /// 1. 初始化时，先将根节点入栈；
+    /// 2. 再循环将根节点的左子节点入栈；
     fn new(root: Option<Rc<RefCell<TreeNode>>>) -> Self {
         let mut ret_iter = BSTIterator { stack: vec![] };
 
@@ -136,6 +138,11 @@ impl BSTIterator {
     }
 
     /// next
+    /// 1. 判断stack中是否存在未遍历的节点；
+    /// 2. 如果存在，则将该节点出栈；
+    /// 3. 将节点值保存为返回值；
+    /// 4. 如果该节点存在右子节点，则将右子节点入栈；
+    /// 5. 如果右子节点存在左子节点，依次将所有的左子节点入栈；
     fn next(&mut self) -> i32 {
         let mut ret_val = -1;
         // 如果stack中存在节点

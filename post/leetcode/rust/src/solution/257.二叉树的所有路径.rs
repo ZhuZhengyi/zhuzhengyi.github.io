@@ -68,12 +68,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 impl Solution {
     /// ## 解题思路：
+    /// - 迭代
     /// 1. 中序递归遍历二叉树每个节点, 遍历时，记录每次遍历的路径
     /// 2. 到达叶子节点，则将路径加入到结果集中；
     /// 3. 遍历时，注意出入栈操作；
     pub fn binary_tree_paths(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<String> {
 
-        fn binary_tree_paths_inorder(node: &Option<Rc<RefCell<TreeNode>>>, node_path: &mut Vec<i32>, res: &mut Vec<String>)  {
+        /// helper
+        fn helper(node: &Option<Rc<RefCell<TreeNode>>>, node_path: &mut Vec<i32>, res: &mut Vec<String>)  {
             match node {
                 None => {}
                 Some(node) if node.borrow().left.is_none() && node.borrow().right.is_none() => {
@@ -83,8 +85,8 @@ impl Solution {
                 }
                 Some(node) => {
                     node_path.push(node.borrow().val);
-                    binary_tree_paths_inorder(&node.borrow().left, node_path, res);
-                    binary_tree_paths_inorder(&node.borrow().right, node_path, res);
+                    helper(&node.borrow().left, node_path, res);
+                    helper(&node.borrow().right, node_path, res);
                     node_path.pop();
                 }
             }
@@ -93,7 +95,7 @@ impl Solution {
         let mut node_path: Vec<i32> = vec![];
         let mut res: Vec<String> = vec![];
 
-        binary_tree_paths_inorder(&root, &mut node_path, &mut res);
+        helper(&root, &mut node_path, &mut res);
 
         res
     }

@@ -53,17 +53,19 @@ use super::*;
 //     }
 //   }
 // }
+
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::cmp;
+
 impl Solution {
     /// ## 解题思路
-    /// * 递归
-    /// max_depth = 1 + max(max_depth(left) + max_depth(right))
+    /// - 递归
+    /// `max_depth = 1 + max(max_depth(left) + max_depth(right))`
     pub fn max_depth(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {
         match root {
             None => 0,
-            Some(node) => 1 + cmp::max(Solution::max_depth(node.borrow().right.clone()), Solution::max_depth(node.borrow().left.clone())),
+            Some(node) => 1 + std::cmp::max(Solution::max_depth(node.borrow().right.clone()), 
+                                            Solution::max_depth(node.borrow().left.clone())),
         }
 
     }

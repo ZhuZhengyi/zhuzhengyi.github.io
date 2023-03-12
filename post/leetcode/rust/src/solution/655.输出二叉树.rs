@@ -96,53 +96,56 @@ struct Solution;
 //   }
 // }
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::Rc;
 impl Solution {
-    pub fn heigh(root: Option<Rc<RefCell<TreeNode>>>) -> i32 {
-        match root {
-            None => 0 as i32,
-            Some(node) => {
-                1 + std::cmp::max(
-                    Solution::heigh(node.borrow().left.clone()),
-                    Solution::heigh(node.borrow().right.clone()),
-                )
+
+    /// ## 解题思路
+    /// - 队列
+    /// 1. 首先计算树的最大深度;
+    /// 2. 根据最大深度,计算打印数组的长,宽, 根据长宽初始化打印数组;
+    /// 3. 根节点在数组中的位置为(0, width / 2), 将(root, r=0, left=0, right=width-1)四元组入队列;
+    /// 4. 依次取出队列中的四元组, 根据四元组值更新打印数组;
+    /// 5. 如果当前节点存在左子节点,右子节点加入到队列尾部;
+    pub fn print_tree(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<String>> {
+        /// 获取二叉树的高度
+        fn get_heigh(root: Option<Rc<RefCell<TreeNode>>>) -> usize {
+            match root {
+                None => 0,
+                Some(node) => {
+                    1 + std::cmp::max(
+                        get_heigh(node.borrow().left.clone()),
+                        get_heigh(node.borrow().right.clone()),
+                        )
+                }
             }
         }
-    }
-
-    pub fn print_tree(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<String>> {
-        let res: Vec<Vec<String>> = Vec::new();
-        //let mut res_level: Vec = vec![];
+        let heigh = get_heigh(root.clone());
+        let width = ((1 << heigh as u32) - 1) as usize;
+        let mut res = vec![vec!["".to_string(); width]; heigh];
 
         if root.is_none() {
             return res;
         }
 
-        let mut level = Vec::new();
-        level.push(root.unwrap().clone());
+        let mut q = VecDeque::new();
+        q.push_back((root.unwrap().clone(), 0, 0, width-1)); //将根节点push到队列尾部;
+        // 依次从队列头取出一个节点元组
+        while let Some((node, row, left, right)) = q.pop_front() {
+            let col = (left + right) / 2; //计算当前节点所在的col
+            res[row][col] = node.borrow().val.to_string(); //更新打印数组当前节点值
 
-        todo!()
-        // let mut level_level = vec![ level ];
-        // while ! level_level.is_empty() {
-        //     let mut level = level_level.remove(0);
-        //     let mut next_level = Vec::new();
-        //     let mut level_res = Vec::new();
-        //     level.iter().for_each(|node| {
-        //         if ! node.borrow().is_none() {
-        //             level_res.push(node.borrow().val.to_string());
-        //             next_level.push( node.borrow().left.clone());
-        //             next_level.push( node.borrow().right.clone());
-        //         } else {
-        //             level_res.push("".to_string());
-        //         }
-        //     });
-        //     res.push(level_res);
-        //     if ! next_level.is_empty() {
-        //         // level_level.push(next_level);
-        //     }
-        // }
-
-        //res
+            // 如果存在左子节点
+            if let Some(left_node) = node.borrow().left.as_ref() {
+                q.push_back((left_node.clone(), row+1, left, col-1)); //将左子节点push到队列尾
+            }
+            // 如果存在右子节点
+            if let Some(right_node) = node.borrow().right.as_ref() {
+                q.push_back((right_node.clone(), row+1, col+1, right)); //将右子节点push到队列尾
+            }
+        }
+        
+        res
     }
 }
 // @lc code=end
