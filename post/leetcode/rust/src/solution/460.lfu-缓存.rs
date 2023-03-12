@@ -86,8 +86,8 @@ use std::{
 };
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 struct CacheEntry {
-    count: usize,
-    used_time: usize,
+    count: usize,     //访问计数
+    used_time: usize, //最新访问时间
     key: i32,
     value: i32,
 }
@@ -118,6 +118,7 @@ impl LFUCache {
         }
     }
 
+    /// get
     fn get(&mut self, key: i32) -> i32 {
         self.time += 1;
         match self.entry_map.get_mut(&key) {
@@ -156,7 +157,7 @@ impl LFUCache {
                     self.entry_map.remove(&entry.key);
                 }
 
-                // 更新entry
+                // 插入entry
                 let entry = CacheEntry {
                     key,
                     value,
