@@ -58,6 +58,7 @@ use super::*;
 //   }
 // }
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::Rc;
 impl Solution {
     /// ## 解题思路
@@ -65,39 +66,27 @@ impl Solution {
     pub fn level_order(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<i32>> {
         let mut res = Vec::new(); //result
 
-        if root.is_none() {
-            return res;
-        }
-
-        let mut level = Vec::new();
-        level.push(root.unwrap().clone());
-
-        let mut nodes_levels = Vec::new();
-        nodes_levels.push(level);
-        while !nodes_levels.is_empty() {
-            let level = nodes_levels.remove(0); //取出一层
-            let mut next_level = Vec::new(); //下层节点
-            let mut level_res = Vec::new(); //保存每一层的结果
-
-            // 依次取出当前层下层子树节点，放入下层队列中
-            level.iter().for_each(|node| {
-                // 将本层节点数据加入到结果中
-                level_res.push(node.borrow().val);
-                if let Some(l) = node.borrow().left.clone() {
-                    next_level.push(l);
+        if let Some(root) = root {
+            let mut cur_level_nodes = VecDeque::new();
+            cur_level_nodes.push_back(root.clone());
+            while !cur_level_nodes.is_empty() {
+                let mut next_level_nodes = VecDeque::new();
+                let mut cur_level_vals = Vec::new();
+                while let Some(node) = cur_level_nodes.pop_front() {
+                    cur_level_vals.push(node.borrow().val);
+                    if let Some(left) = &node.borrow().left {
+                        next_level_nodes.push_back(left.clone());
+                    }
+                    if let Some(right) = &node.borrow().right {
+                        next_level_nodes.push_back(right.clone());
+                    }
                 }
-                if let Some(r) = node.borrow().right.clone() {
-                    next_level.push(r);
-                }
-            });
 
-            // 将下层队列加入到队列末尾
-            if !next_level.is_empty() {
-                nodes_levels.push(next_level);
+                res.push(cur_level_vals);
+                if !next_level_nodes.is_empty() {
+                    cur_level_nodes = next_level_nodes;
+                }
             }
-
-            // 将本层
-            res.push(level_res);
         }
 
         res

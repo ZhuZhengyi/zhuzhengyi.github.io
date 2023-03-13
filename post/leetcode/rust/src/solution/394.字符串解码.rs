@@ -67,33 +67,36 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// - 从左到右依次进行解码；
-    /// - 对于
-    /// - abcaaa2[c]]
+    /// - 栈
     pub fn decode_string(s: String) -> String {
-        let mut stack: Vec<(String, usize)> = Vec::new();
-        let mut str = String::new(); //
-        let mut times = 0; //
+        let mut stack: Vec<(String, usize)> = Vec::new(); // 栈, 保存遍历时已经解码的字符串和当前`[]`区间的times
+        let mut decoded_str = String::new(); // 已解码的字符串
+        let mut times = 0; // 区间次数
         for c in s.chars() {
             match c {
                 '[' => {
-                    stack.push((str.clone(), times));
-                    times = 0;
-                    str.clear();
+                    //进入[]区间，
+                    stack.push((decoded_str.clone(), times)); //将之前已解码字符串和当前区间的times入栈
+
+                    times = 0; //重置区间计数
+                    decoded_str.clear(); //重置已解码字符串
                 }
                 ']' => {
-                    if let Some((pre_str, this_times)) = stack.pop() {
-                        str = pre_str + str.repeat(this_times).as_str();
+                    // 离开区间,
+                    if let Some((pre_decoded_str, this_times)) = stack.pop() {
+                        // 将当前区间已解码字符串重复times，并附加到该区间前已解码字符串后，
+                        // 得到完整已解码字符串
+                        decoded_str = pre_decoded_str + decoded_str.repeat(this_times).as_str();
                     }
                 }
-                '0'..='9' => times = 10 * times + (c as u8 - b'0') as usize,
+                '0'..='9' => times = 10 * times + (c as u8 - b'0') as usize, //计算times
                 _ => {
-                    str.push(c);
+                    decoded_str.push(c);
                 }
             }
         }
 
-        str
+        decoded_str
     }
 }
 // @lc code=end

@@ -47,6 +47,7 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - hashmap
     /// * 顺序从左至右顺序遍历数组；
     /// * 遍历过程中，使用hashmap记录当前数遍历时的最长连续序列长度；
     /// * 当前数的最长连续序列长度cur_long 为其左右数的最长连续序列长度left + right + 1;
