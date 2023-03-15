@@ -99,13 +99,13 @@ impl Solution {
     ///     len(nums1[0..i-1]) + len(nums2[0..j-1]) = len(nums1[i..]) + len(nums2[j..]) + 1
     ///    即：
     ///     i+j = len(nums1) -i + len(nums2) -j  + 1
-    ///    =>  i + j = (len(nums1) + len(nums2) + 1) / 2
+    ///    =>  i + j = (nums1.len() + nums2.len() + 1) / 2
     ///    此时中位数为:
     ///             max(nums[i-1], nums[j-1])
     ///    将上述两种情况综合一下，i,j 满足如下：
-    ///       i + j = (len(nums1) + len(nums2) + 1) / 2
+    ///       i + j = (nums1.len() + nums2.len() + 1) / 2
     ///    =>  
-    ///       j =  (len(nums1) + len(nums2) + 1) / 2 - i
+    ///       j =  (nums1.len() + nums2.len() + 1) / 2 - i
     /// 5. 因此，只需要找到满足条件的最大i, 使nums1[i-1] <= nums2[j]即可；
     /// 6. 由于nums1，nums2都是有序的，可以使用二分查找来确定i;
     /// 7. 处理边界情况
