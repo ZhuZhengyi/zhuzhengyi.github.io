@@ -45,21 +45,78 @@
  *
  */
 
+use std::mem::swap;
+
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - 改进的快排
+    /// 1. 快速排序在选择分割点时,分割点会将nums分为2部分,一部分都比基准值小,另一部分大;
+    /// 2. 如果分割后基准值的index==k, 则得到结果;
+    /// 3. 否则如果<k, 则结果在后一部分,继续新的划分;
+    /// 4. 如果>k, 则结果在前一部分
     pub fn find_kth_largest(nums: Vec<i32>, k: i32) -> i32 {
-        todo!()
+        fn helper(nums: &mut [i32], k: i32) -> i32 {
+            let base = nums[0];
+            let (mut l, mut r) = (0, nums.len() - 1);
+            while l < r {
+                // 从右向左，寻找比基准值小的数的index
+                while r > l && nums[r] >= base {
+                    r -= 1;
+                }
+                // 右边找到比基准值小的数
+                if r > l && nums[r] < base {
+                    nums.swap(l, r); //交换这两个数的位置
+                    l += 1;
+                }
+                // 从左向右，查找比基准值大的数的index
+                while l < r && nums[l] <= base {
+                    l += 1;
+                }
+                // 左边找到比基准值大的数
+                if l < r && nums[l] > base {
+                    nums.swap(l, r);
+                    r -= 1;
+                }
+            }
+
+            if l == k as usize {
+                return nums[l];
+            } else {
+                if l < k as usize {
+                    return helper(&mut nums[(l + 1)..], k - (l as i32 + 1));
+                } else {
+                    return helper(&mut nums[..l], k);
+                }
+            }
+        }
+
+        if nums.len() == 1 {
+            return nums[0];
+        }
+
+        let k = nums.len() as i32 - k;
+        let mut nums = nums;
+        helper(&mut nums[..], k)
     }
 }
 // @lc code=end
 
 struct Solution;
 
+#[cfg(test)]
 mod tests {
+    use super::*;
 
+    #[test]
     fn test() {
-
+        assert_eq!(
+            Solution::find_kth_largest(vec![3, 2, 1, 5, 6, 4].to_vec(), 2),
+            5
+        );
+        assert_eq!(
+            Solution::find_kth_largest(vec![3, 2, 3, 1, 2, 4, 5, 5, 6].to_vec(), 4),
+            4
+        );
     }
-
 }
