@@ -109,7 +109,7 @@ mod tests {
     fn test() {
         assert_eq!(
             Solution::median_sliding_window(vec![1, 3, -1, -3, 5, 3, 6, 7].to_vec(), 3),
-            vec![1, -1, -1, 3, 5, 6].to_vec()
+            vec![1.0, -1.0, -1.0, 3.0, 5.0, 6.0].to_vec()
         );
     }
 }
