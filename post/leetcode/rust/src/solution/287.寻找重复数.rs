@@ -102,7 +102,8 @@ impl Solution {
         //将fast重新移动到0开始处, 
         //slow保持在相遇点位置
         fast = 0 as usize; 
-        while slow != fast { //两者同步向环相交点移动
+        while slow != fast { 
+            //两者同步移动
             slow = nums[slow] as usize;
             fast = nums[fast] as usize;
         }
