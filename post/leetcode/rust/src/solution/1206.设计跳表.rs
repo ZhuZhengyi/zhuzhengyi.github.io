@@ -158,16 +158,19 @@ impl Skiplist {
         for l in (0..level).rev() {
             while let Some(link) = link_opt.clone() {
                 let mut node = link.borrow_mut();
+                // 如果下个节点存在,且值<新节点值
                 if let Some(next) = node.next[l].clone()
                                         .filter(|n| n.borrow().val < num) {
-                    link_opt.replace(next.clone());
-                } else {
+                    link_opt.replace(next.clone()); //将当前节点替换为下个节点
+                } else { //否则下个节点不存在,或者节点值>=新节点值
+                    // 如果下个节点存在,且节点值>=新节点值
                     if let Some(next) = node.next[l].clone()
                                         .filter(|n| n.borrow().val >= num) {
-                        new_node.borrow_mut().next[l] = node.next[l].take();
+                        new_node.borrow_mut().next[l] = node.next[l].take(); //将新节点的该level下个指针指向下个节点;
                     }
+                    // 将当前节点的该级指针指向新节点
                     node.next[l].replace(new_node.clone());
-                    break;
+                    break; //结束当前级遍历
                 }
             }
         }
