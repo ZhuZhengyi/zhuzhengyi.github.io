@@ -48,32 +48,25 @@
 impl Solution {
     /// ## 解题思路
     /// - hashmap
-    /// * 顺序从左至右顺序遍历数组；
-    /// * 遍历过程中，使用hashmap记录当前数遍历时的最长连续序列长度；
-    /// * 当前数的最长连续序列长度cur_long 为其左右数的最长连续序列长度left + right + 1;
-    /// * 同时更新左右相邻区间的记录值(连起来了)；
+    /// 1. 使用hashmap记录每个num对应的连续序列长度；
+    /// 2. 从左至右顺序遍历数组;
+    /// 3. 对于每一个num，如果不在hashmap中，且其前后num-1,num+1对应的连续序列长度分别为l，r；
+    ///    则num的连续序列的长度: l + r + 1, 这说明nums[n-l..=n+r]范围内的数为连续序列.
+    ///    更新hashmap中的n, n-l, n+r对应的值为l+r+1
+    /// 4. 返回hashmap中最大的val;
     pub fn longest_consecutive(nums: Vec<i32>) -> i32 {
         use std::collections::HashMap;
-
-        let mut hash = HashMap::<i32, i32>::new();
-
+        let mut hash = HashMap::<i32, i32>::new(); // n -> seq_len
         let mut longest = 0;
         for n in nums {
             if !hash.contains_key(&n) {
-                let (mut left, mut right) = (0, 0);
-                if let Some(l) = hash.get(&(n - 1)) {
-                    left = *l;
-                }
-                if let Some(r) = hash.get(&(n + 1)) {
-                    right = *r;
-                }
-                let cur_long = left + right + 1;
-                if cur_long > longest {
-                    longest = cur_long;
-                }
-                hash.insert(n - left, cur_long);
-                hash.insert(n, cur_long);
-                hash.insert(n + right, cur_long);
+                let l = *hash.get(&(n - 1)).unwrap_or(&0);
+                let r = *hash.get(&(n + 1)).unwrap_or(&0);
+                let cur_len = l + r + 1;
+                hash.insert(n, cur_len);
+                hash.insert(n - l, cur_len);
+                hash.insert(n + r, cur_len);
+                longest = longest.max(cur_len);
             }
         }
 
