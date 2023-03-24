@@ -57,34 +57,34 @@ impl Solution {
     /// 4. 在遍历字符串时, 如果当前字符不在栈中,
     ///    且栈顶字符是重复字符且字典序>当前字符,则弹出栈顶字符,直到栈顶字符不满足上述条件;
     pub fn remove_duplicate_letters(s: String) -> String {
-        let mut uniq_letters = Vec::new(); //单调栈,记录删除后变为唯一的字符
-        let mut counts = vec![0; 26];      //记录各个字符出现的次数
-        s.as_bytes()
-            .iter()
-            .for_each(|&c| counts[(c - b'a') as usize] += 1); //统计字符串中各个字符出现的次数
-        let mut existed = vec![false; 26]; //记录字母是否
-                                           
-        s.as_bytes().iter().for_each(|&ch| {
-            let i = (ch - b'a') as usize;
-            counts[i] -= 1;  //
+        let mut uniq_letters = String::with_capacity(s.len()); //单调栈,记录删除后变为唯一的字符
+        let mut counts = vec![0; 26]; //记录各个字符出现的次数
+        s.chars()
+            .for_each(|c| counts[(c as u8 - b'a') as usize] += 1); //统计字符串中各个字符出现的次数
+        let mut existed = vec![false; 26]; //记录遍历时，字母是否在结果字符串中出现过
+
+        for ch in s.chars() {
+            let i = (ch as u8 - b'a') as usize;
+            counts[i] -= 1;
             // 如果当前字母不在最后结果中
             if !existed[i] {
                 // 依次将栈中所有多次出现且字典序>当前字母的所有前置字母移除
-                while let Some(&letter) = uniq_letters
+                while let Some(letter) = uniq_letters
+                    .chars()
                     .last()
-                    .filter(|&l| ch < (*l as u8) && counts[(*l as u8 - b'a') as usize] > 0)
+                    .filter(|&l| ch < l && counts[(l as u8 - b'a') as usize] > 0)
                 {
                     uniq_letters.pop(); //移除uniq_letters中的尾字符(该字符重复出现,且字典序>当前字符)
-                    existed[(letter as u8 - b'a') as usize] = false; //既然字符前一个
+                    existed[(letter as u8 - b'a') as usize] = false; //
                 }
 
-                uniq_letters.push(ch as char); //将当前字符压入栈顶(结果数组的末尾)
+                uniq_letters.push(ch); //将当前字符压入栈顶(结果数组的末尾)
                 existed[i] = true; //标记该字符已经已在结果中
             }
-        });
+        }
 
-        uniq_letters.iter().collect()
+        uniq_letters
+        //uniq_letters.iter().collect()
     }
 }
 // @lc code=end
-
