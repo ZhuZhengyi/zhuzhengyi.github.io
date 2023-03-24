@@ -86,13 +86,13 @@ impl Solution {
             Some(node) => {
                 let mut sorted = ListNode::new(std::i32::MIN); //已排序的list
                 let mut unsorted = Some(node); //未排序的list
-                                               
+
                 // 如果存在未排序的节点
                 while let Some(mut node_to_insert) = unsorted {
                     unsorted = node_to_insert.next.take(); //取下未排序链表头节点,
                                                            //保留后续未排序链表
-                                                           
-                    let mut sorted_ref = &mut sorted;  //设置一个可变指针指向已排序链表头
+
+                    let mut sorted_ref = &mut sorted; //设置一个可变指针指向已排序链表头
                     while sorted_ref.next.is_some()
                         && sorted_ref.next.as_ref().unwrap().val < node_to_insert.val
                     {
