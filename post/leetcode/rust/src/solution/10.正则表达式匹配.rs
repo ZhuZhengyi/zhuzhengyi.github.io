@@ -78,27 +78,31 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 递归
-    /// 1. 分三种情形：普通字符，'.', '*',
-    ///     a. 对于普通字符和'.', 都只需要检查单个对应位置字符；
-    ///     b. 对于'*', 需要检查'*'前一个字符；
-    /// 2.
+    /// - 递归
+    /// 1. 模式字符串p中包含以下三种类型的字符: 普通字符，'.', '*';
+    /// 2. 对于p,总共可分为以下5总形式:
+    ///     a. p以.*开头或x*开头(x相等), 则s的开头部分已经匹配, 需要继续匹配s除开首字符后部分subs和p是否匹配;
+    ///     b. p以x*开头,且x不相等, 则x*表示0次匹配s开头字符, 后面需要检查p后续的subp和s是否匹配；
+    ///     c. p以.或x且x相匹配, 则需要看s和p剩下的部分subs, subp是否匹配;
+    ///     d. p为空, 则取决于s是否也为空;
+    ///     e. 其他情况都不匹配;
     pub fn is_match(s: String, p: String) -> bool {
         _is_match(s.as_bytes(), p.as_bytes())
     }
 }
 
+/// s,p字节数组是否匹配
 fn _is_match(s: &[u8], p: &[u8]) -> bool {
-    match (p, s) {
-        // ("ysubs", ".*subp") || ("xsubs", "x*subp")
-        ([x, b'*', ..], [y, subs @ ..]) if *x == b'.' || x == y => _is_match(subs, p),
-        // ("x*subp", "ysubs")
-        ([_, b'*', subp @ ..], _) => _is_match(s, subp),
-        // (".subp", "ysubs") || ("xsubp", "xsubs")
-        ([x, subp @ ..], [y, subs @ ..]) if *x == b'.' || x == y => _is_match(subs, subp),
+    match (s, p) {
+        // ("y<subs>", ".*subp") || ("xsubs", "x*subp"), 
+        ([sc, subs @ ..], [pc, b'*', ..]) if *pc == b'.' || pc == sc => _is_match(subs, p),
+        // ("ysubs", "x*subp")
+        (_, [_, b'*', subp @ ..]) => _is_match(s, subp),
+        // ("scsubs", ".subp") || ("xsubp", "xsubs")
+        ([sc, subs @ ..], [pc, subp @ ..]) if *pc == b'.' || pc == sc => _is_match(subs, subp),
         // ("s", "")
-        ([], s) => s.is_empty(),
-        _ => false,
+        (s, []) => s.is_empty(),
+        _ => false,  //其他情况不匹配
     }
 }
 // @lc code=end

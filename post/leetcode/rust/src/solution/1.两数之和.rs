@@ -32,8 +32,9 @@ use super::*;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - hashmap
     /// 1. 遍历序列；
-    /// 2. 遍历过程中，使用一个map记录遍历过的序列;
+    /// 2. 遍历过程中，使用hashmap记录遍历过的序列;
     /// 3. 如果遇到和遍历过的序列和为target的元素，则找到，返回true;
     /// 4. 否则不存在, 返回false；
     pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
