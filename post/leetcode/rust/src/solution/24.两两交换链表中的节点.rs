@@ -46,40 +46,26 @@ use super::*;
 //   }
 // }
 impl Solution {
+    /// ## 解题思路
+    /// - 指针交换
     pub fn swap_pairs(head: Option<Box<ListNode>>) -> Option<Box<ListNode>> {
-        let mut dummy_head = Some(Box::new(ListNode { val: 0, next: head })); //add dummy_head before head
-        let mut p = dummy_head.as_mut();
+        let mut dummy = Box::new(ListNode { val: 0, next: head }); //add dummy_head before head
+        let mut p_ref = dummy.as_mut();
 
-        //
-        loop {
-            //take first node away from head next
-            let mut first = p.as_mut().unwrap().next.take();
-            if first.is_none() {
-                break;
+        while p_ref.next.is_some() && p_ref.next.as_ref().unwrap().next.is_some() {
+            if let Some(mut first) = p_ref.next.take() {
+                if let Some(mut second) = first.next.take() {
+                    first.next = second.next.take();
+                    second.next = Some(first);
+                    p_ref.next = Some(second);
+
+                    p_ref = p_ref.next.as_mut().unwrap();
+                    p_ref = p_ref.next.as_mut().unwrap();
+                }
             }
-            //take second node away from first next node
-            let mut second = first.as_mut().unwrap().next.take();
-            if second.is_none() {
-                p.as_mut().unwrap().next = first; //
-                break;
-            }
-
-            //swap first and second node
-            // take second next node away frome second
-            let second_next = second.as_mut().unwrap().next.take();
-            // move second next node first next node
-            first.as_mut().unwrap().next = second_next;
-            // move first node to second next node
-            second.as_mut().unwrap().next = first;
-            // move second node to p next node
-            p.as_mut().unwrap().next = second;
-
-            // p travels 2 steps next
-            p = p.unwrap().next.as_mut();
-            p = p.unwrap().next.as_mut();
         }
 
-        dummy_head.unwrap().next
+        dummy.next
     }
 }
 // @lc code=end
