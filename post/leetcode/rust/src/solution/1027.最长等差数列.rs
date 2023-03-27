@@ -56,12 +56,30 @@
  * 
  */
 
-use super::*;
+struct Solution;
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// - 动态规划
+    /// 1. 设dp[i][d]: 以a[i]为尾d为公差的最长等差序列长度;
+    /// 2. 题目转化为: max(dp[i][d])  (i=0..n, d=-10000..10000);
+    /// 3. 初始边界: dp[0][] = 1;
+    /// 4. 递推公式: dp[i][d] = dp[j][d] + 1 (nums[i] = nums[j] + d)
+    /// 5. 由递推公式, d=nums[i]-nums[j], 为保证d作为数组下标在合理范围内,
+    ///    将d加上nums中最大最小值的差值, 由于 0<=nums[i]<=500, 所以+500;
     pub fn longest_arith_seq_length(a: Vec<i32>) -> i32 {
-        unimplemented!();
+        let mut res = 0;
+        let mut dp = vec![vec![1; 2*500 + 1]; a.len()];
+        for i in 1..a.len() {
+            for j in 0..i {
+                let d = (a[i] - a[j] + 500) as usize;
+                dp[i][d] = dp[j][d] + 1;
+                res = res.max(dp[i][d]);
+            }
+        }
+
+        res
     }
 }
 // @lc code=end
