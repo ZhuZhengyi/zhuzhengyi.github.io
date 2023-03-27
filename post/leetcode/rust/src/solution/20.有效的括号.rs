@@ -61,6 +61,8 @@ struct Solution;
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// - 栈+hashmap
     pub fn is_valid(s: String) -> bool {
         use std::collections::HashMap;
         let mut tmp = vec![];
