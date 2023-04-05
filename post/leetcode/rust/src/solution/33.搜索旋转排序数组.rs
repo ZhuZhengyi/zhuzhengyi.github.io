@@ -88,15 +88,15 @@ impl Solution {
                 return mid as i32;
             }
             if nums[mid] > nums[l] { //左边长, 右边短
-                if nums[mid] > target && target > nums[l] { //中间值>target, 且
+                if nums[mid] > target && target > nums[l] { //中间值>target
                     r = mid - 1;
-                } else {   //中间值<target
+                } else {   
                     l = mid + 1;
                 }
             } else { //左边短,右边长
                 if nums[mid] < target && target < nums[l] { //中间值<target
                     l = mid + 1;
-                } else {   //中间值<target
+                } else {
                     r = mid - 1;
                 }
             }
