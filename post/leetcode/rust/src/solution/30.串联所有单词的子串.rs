@@ -103,6 +103,14 @@ impl Solution {
                         Some(mut entry) => { //
                             entry.1 += 1; //checked 计数-1
                             cnt += 1;
+                            if entry.1 > entry.0 {
+                                if let Some(mut e) = word_map.get_mut(&s[l..l+word_size]){
+                                    e.1 -= 1;
+                                }
+                                l += word_size;   //滑动窗口左边界
+                                cnt -= 1; //窗口内word计数-1
+                                break;
+                            }
                         }
                     }
                 }
