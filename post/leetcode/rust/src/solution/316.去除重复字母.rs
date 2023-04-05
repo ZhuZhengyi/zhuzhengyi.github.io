@@ -88,3 +88,5 @@ impl Solution {
     }
 }
 // @lc code=end
+
+struct Solution;

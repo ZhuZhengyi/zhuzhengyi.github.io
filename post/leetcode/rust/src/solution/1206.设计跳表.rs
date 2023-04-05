@@ -183,7 +183,7 @@ impl Skiplist {
         let mut existed = false;
 
         let mut link_opt = self.head.clone();
-        let mut level = self.level - 1;
+        // let level = self.level - 1;
         for l in (0..self.level).rev() {   //从上至下,依次遍历各层
             while let Some(link) = link_opt.clone() {
                 let mut node = link.borrow_mut();

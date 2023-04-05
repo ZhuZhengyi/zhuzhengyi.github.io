@@ -77,6 +77,10 @@
 
 // @lc code=start
 impl Solution {
-    pub fn smallest_equivalent_string(s1: String, s2: String, base_str: String) -> String {}
+    pub fn smallest_equivalent_string(s1: String, s2: String, base_str: String) -> String {
+        todo!()
+    }
 }
 // @lc code=end
+
+struct Solution;

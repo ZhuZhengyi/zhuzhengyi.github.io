@@ -54,8 +54,10 @@
 // @lc code=start
 impl Solution {
     pub fn solve(board: &mut Vec<Vec<char>>) {
+        todo!()
 
     }
 }
 // @lc code=end
 
+struct Solution;

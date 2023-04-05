@@ -45,7 +45,6 @@
  *
  */
 
-use std::mem::swap;
 
 // @lc code=start
 impl Solution {

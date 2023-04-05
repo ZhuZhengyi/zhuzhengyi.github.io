@@ -59,7 +59,7 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// 双指针法
+    /// - 双指针
     pub fn remove_duplicates(nums: &mut Vec<i32>) -> i32 {
         match nums.is_empty() {
             true => 0,

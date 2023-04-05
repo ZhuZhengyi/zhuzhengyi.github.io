@@ -96,10 +96,10 @@ mod tests {
     fn test() {
         assert_eq!(
             Solution::remove_kdigits("1432219".into(), 3),
-            "1219".to_str()
+            "1219".to_string()
         );
-        assert_eq!(Solution::remove_kdigits("10200".into(), 1), "200".to_str());
-        assert_eq!(Solution::remove_kdigits("10".into(), 2), "0".to_str());
-        assert_eq!(Solution::remove_kdigits("9".into(), 1), "0".to_str());
+        assert_eq!(Solution::remove_kdigits("10200".into(), 1), "200".to_string());
+        assert_eq!(Solution::remove_kdigits("10".into(), 2), "0".to_string());
+        assert_eq!(Solution::remove_kdigits("9".into(), 1), "0".to_string());
     }
 }

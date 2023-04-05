@@ -146,7 +146,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let obj = Trie::new();
+        let mut obj = Trie::new();
         obj.insert("apple".to_string());
         assert_eq!(obj.search("apple".into()), true);
         assert_eq!(obj.search("app".into()), false);

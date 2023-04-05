@@ -52,11 +52,15 @@ impl Solution {
         let mut dummy = Box::new(ListNode { val: 0, next: head }); //add dummy_head before head
         let mut p_ref = dummy.as_mut();
 
-        while p_ref.next.is_some() && p_ref.next.as_ref().unwrap().next.is_some() {
+        // 如果后面存在两个节点
+        while p_ref.next.is_some() 
+            && p_ref.next.as_ref().unwrap().next.is_some() {
+            //取下当前节点的下一个节点
             if let Some(mut first) = p_ref.next.take() {
+                //取下下一个节点的下一个为second
                 if let Some(mut second) = first.next.take() {
-                    first.next = second.next.take();
-                    second.next = Some(first);
+                    first.next = second.next.take(); //将第一个节点next指向second的下一个
+                    second.next = Some(first); // 
                     p_ref.next = Some(second);
 
                     p_ref = p_ref.next.as_mut().unwrap();

@@ -62,7 +62,7 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// * 迭代法
+    /// - 迭代法
     /// 1. 将数组排序；
     /// 2. 依次从candidates中取出一个数，如果该数小于当前target，则加入临时数组中；
     /// 3.
@@ -106,11 +106,11 @@ mod test {
     fn test() {
         assert_eq!(
             Solution::combination_sum(vec![2, 3, 6, 7], 7),
-            vec![ vec![2, 2, 3], vec![7],]
-            );
+            vec![vec![2, 2, 3], vec![7],]
+        );
         assert_eq!(
             Solution::combination_sum(vec![2, 3, 5], 8),
             vec![vec![2, 2, 2, 2], vec![2, 3, 3], vec![3, 5]]
-            );
+        );
     }
 }

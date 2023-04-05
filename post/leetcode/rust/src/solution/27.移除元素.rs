@@ -75,16 +75,17 @@ impl Solution {
         match nums.is_empty() {
             true => 0,
             false => {
-                let mut count = 0;
+                let mut del_cnt = 0;
+                // let mut len = nums.len();
                 for i in 0..nums.len() {
                     if nums[i] == val {
-                        count += 1;
-                    } else if count > 0 {
-                        nums[(i-count) as usize] = nums[i];
+                        del_cnt += 1;
+                    } else if del_cnt > 0 {
+                        nums[(i-del_cnt) as usize] = nums[i];
                     }
                 }
 
-                (nums.len() - count ) as i32
+                (nums.len() - del_cnt ) as i32
             }
         }
 
