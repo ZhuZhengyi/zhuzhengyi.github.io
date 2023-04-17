@@ -80,31 +80,34 @@ impl Solution {
     /// ## 解题思路
     /// - 递归
     /// 1. 模式字符串p中包含以下三种类型的字符: 普通字符，'.', '*';
-    /// 2. 对于p,总共可分为以下5总形式:
-    ///     a. p以.*开头或x*开头(x相等), 则s的开头部分已经匹配, 需要继续匹配s除开首字符后部分subs和p是否匹配;
-    ///     b. p以x*开头,且x不相等, 则x*表示0次匹配s开头字符, 后面需要检查p后续的subp和s是否匹配；
+    /// 2. 对于p,总共可分为以下几种形式:
+    ///     a. p以.*开头或a*开头(a相等), 则s的开头部分已经匹配, 需要继续匹配s除开首字符后部分和p是否匹配;
+    ///     b. p以a*开头字符不同, 那么*代表0次匹配前面字符, 则p去掉a*部分, 剩下部分和s继续匹配；
     ///     c. p以.或x且x相匹配, 则需要看s和p剩下的部分subs, subp是否匹配;
     ///     d. p为空, 则取决于s是否也为空;
     ///     e. 其他情况都不匹配;
     pub fn is_match(s: String, p: String) -> bool {
+        /// s,p字节数组是否匹配
+        fn _is_match(s: &[u8], p: &[u8]) -> bool {
+            match (p, s) {
+                // p为空
+                ([], _) => s.is_empty(),
+                // p: a*开头
+                ([a, b'*', ..], _) => {
+                    (s.len() > 0 && (*a == b'.' || *a == s[0]) && _is_match(&s[1..], p))
+                        || _is_match(s, &p[2..])
+                }
+                // p: .或单字符匹配
+                ([a, ..], [b, ..]) if (*a == b'.' || a == b) => _is_match(&s[1..], &p[1..]),
+                //其他情况
+                _ => false,
+            }
+        }
+
         _is_match(s.as_bytes(), p.as_bytes())
     }
 }
 
-/// s,p字节数组是否匹配
-fn _is_match(s: &[u8], p: &[u8]) -> bool {
-    match (s, p) {
-        // ("y<subs>", ".*subp") || ("xsubs", "x*subp"), 
-        ([sc, subs @ ..], [pc, b'*', ..]) if *pc == b'.' || pc == sc => _is_match(subs, p),
-        // ("ysubs", "x*subp")
-        (_, [_, b'*', subp @ ..]) => _is_match(s, subp),
-        // ("scsubs", ".subp") || ("xsubp", "xsubs")
-        ([sc, subs @ ..], [pc, subp @ ..]) if *pc == b'.' || pc == sc => _is_match(subs, subp),
-        // ("s", "")
-        (s, []) => s.is_empty(),
-        _ => false,  //其他情况不匹配
-    }
-}
 // @lc code=end
 //
 struct Solution;
@@ -118,8 +121,19 @@ pub mod tests {
         assert_eq!(Solution::is_match("aa".to_string(), "a".to_string()), false);
         assert_eq!(Solution::is_match("aa".to_string(), "a*".to_string()), true);
         assert_eq!(
+            Solution::is_match("aaa".to_string(), "a*a".to_string()),
+            true
+        );
+        assert_eq!(
             Solution::is_match("mississippi".to_string(), "mis*is*p*.".to_string()),
             false
+        );
+        assert_eq!(
+            Solution::is_match(
+                "aabcbcbcaccbcaabc".to_string(),
+                ".*a*aa*.*b*.c*.*a*".to_string()
+            ),
+            true
         );
     }
 }

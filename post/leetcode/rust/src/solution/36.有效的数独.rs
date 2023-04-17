@@ -80,6 +80,10 @@
 
 // @lc code=start
 impl Solution {
-    pub fn is_valid_sudoku(board: Vec<Vec<char>>) -> bool {}
+    pub fn is_valid_sudoku(board: Vec<Vec<char>>) -> bool {
+        todo!()
+    }
 }
 // @lc code=end
+
+struct Solution;
