@@ -66,19 +66,47 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    ///
+    /// 1. 动态规划
+    /// 2. 递归
     pub fn is_match(s: String, p: String) -> bool {
-        fn _is_match(s: &[u8], p: &[u8]) -> bool {
+        /// - 递归
+        fn _is_match_rec(s: &[u8], p: &[u8]) -> bool {
             match (p, s) {
                 ([], _) => s.is_empty(),
-                ([b'*', ..], _) => (s.len() > 0 && _is_match(&s[1..], p)) || _is_match(s, &p[1..]),
-                ([b'?', ..], [_, ..]) => _is_match(&s[1..], &p[1..]),
-                ([a, ..], [b, ..]) if a == b => _is_match(&s[1..], &p[1..]),
+                ([b'*', ..], _) => {
+                    (s.len() > 0 && _is_match_rec(&s[1..], p)) || _is_match_rec(s, &p[1..])
+                }
+                ([b'?', ..], [_, ..]) => _is_match_rec(&s[1..], &p[1..]),
+                ([a, ..], [b, ..]) if a == b => _is_match_rec(&s[1..], &p[1..]),
                 _ => false,
             }
         }
 
-        _is_match(s.as_bytes(), p.as_bytes())
+        /// - 动态规划
+        fn _is_match_dp(s: &[u8], p: &[u8]) -> bool {
+            let mut dp = vec![vec![false; p.len() + 1]; s.len() + 1];
+            dp[0][0] = true;
+
+            // s为空时
+            for i in 0..p.len() {
+                dp[0][i + 1] = dp[0][i] && p[i] == b'*'
+            }
+
+            for i in 0..s.len() {
+                for j in 0..p.len() {
+                    dp[i + 1][j + 1] = match p[j] {
+                        b'?' => dp[i][j],                     //'?'匹配任意单字符
+                        b'*' => dp[i + 1][j] || dp[i][j + 1], //'*'匹配0次或多次任意字符
+                        a => a == s[i] && dp[i][j],           //普通字符
+                    }
+                }
+            }
+
+            dp[s.len()][p.len()]
+        }
+
+        //_is_match_rec(s.as_bytes(), p.as_bytes())
+        _is_match_dp(s.as_bytes(), p.as_bytes())
     }
 }
 // @lc code=end
