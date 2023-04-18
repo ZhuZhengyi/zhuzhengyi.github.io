@@ -69,14 +69,13 @@ impl Solution {
     /// 1. 动态规划
     /// 2. 递归
     pub fn is_match(s: String, p: String) -> bool {
-        /// - 递归
+        /// - 递归(time limit exceeded)
         fn _is_match_rec(s: &[u8], p: &[u8]) -> bool {
             match (p, s) {
                 ([], _) => s.is_empty(),
-                ([b'*', ..], _) => {
-                    (s.len() > 0 && _is_match_rec(&s[1..], p)) || _is_match_rec(s, &p[1..])
-                }
-                ([b'?', ..], [_, ..]) => _is_match_rec(&s[1..], &p[1..]),
+                ([a, ..], []) => *a == b'*' && _is_match_rec(s, &p[1..]),
+                ([b'?', ..], _) => _is_match_rec(&s[1..], &p[1..]),
+                ([b'*', ..], _) => _is_match_rec(&s[1..], p) || _is_match_rec(s, &p[1..]),
                 ([a, ..], [b, ..]) if a == b => _is_match_rec(&s[1..], &p[1..]),
                 _ => false,
             }
@@ -105,8 +104,8 @@ impl Solution {
             dp[s.len()][p.len()]
         }
 
-        //_is_match_rec(s.as_bytes(), p.as_bytes())
-        _is_match_dp(s.as_bytes(), p.as_bytes())
+        _is_match_rec(s.as_bytes(), p.as_bytes())
+        //_is_match_dp(s.as_bytes(), p.as_bytes())
     }
 }
 // @lc code=end
