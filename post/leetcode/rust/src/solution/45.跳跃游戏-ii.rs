@@ -55,7 +55,7 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// * 贪心法
+    /// - 贪心法
     /// 1. cur_jump_max_pos：每跳能到达的最远位置；
     /// 2. fur_max_pos：每步能达到的最远位置
     /// 2. 如果当前步达到
