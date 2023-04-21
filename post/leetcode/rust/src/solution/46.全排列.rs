@@ -14,9 +14,9 @@
  * Testcase Example:  '[1,2,3]'
  *
  * 给定一个 没有重复 数字的序列，返回其所有可能的全排列。
- * 
+ *
  * 示例:
- * 
+ *
  * 输入: [1,2,3]
  * 输出:
  * [
@@ -27,7 +27,7 @@
  * ⁠ [3,1,2],
  * ⁠ [3,2,1]
  * ]
- * 
+ *
  */
 
 struct Solution;
@@ -35,32 +35,31 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// * 回溯法
-    /// 1. 
+    /// - 回溯法
     pub fn permute(nums: Vec<i32>) -> Vec<Vec<i32>> {
         let mut res: Vec<Vec<i32>> = vec![];
-        let mut tmp: Vec<i32> = vec![];
 
-        Self::_permute(nums, &mut res, &mut tmp);
+        /// 回溯
+        fn _permute(nums: &[i32], tmp: &[i32], res: &mut Vec<Vec<i32>>) {
+            // 终止条件
+            if nums.is_empty() {
+                res.push(tmp.to_vec());
+                return;
+            }
+
+            // 遍历
+            for (i, &val) in nums.iter().enumerate() {
+                let (mut nums_v, mut tmp_v) = (nums.to_vec(), tmp.to_vec());
+                nums_v.remove(i);
+                tmp_v.push(val);
+                // 
+                _permute(&nums_v, &tmp_v, res);
+            }
+        }
+
+        _permute(&nums, &vec![], &mut res);
 
         res
     }
-
-    fn _permute(nums: Vec<i32>, res: &mut Vec<Vec<i32>>, tmp: &mut Vec<i32>) {
-        if nums.is_empty() {
-            res.push(tmp.to_vec());
-            return;
-        }
-
-        for (i, &val) in nums.iter().enumerate() {
-            tmp.push(val);
-            let mut nums2 = nums.clone();
-            nums2.remove(i);
-            Self::_permute(nums2, res, tmp);
-            tmp.pop();
-        }
-    }
-
 }
 // @lc code=end
-

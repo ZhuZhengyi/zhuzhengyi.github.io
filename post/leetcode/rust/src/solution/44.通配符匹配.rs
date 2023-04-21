@@ -104,8 +104,8 @@ impl Solution {
             dp[s.len()][p.len()]
         }
 
-        _is_match_rec(s.as_bytes(), p.as_bytes())
-        //_is_match_dp(s.as_bytes(), p.as_bytes())
+        //_is_match_rec(s.as_bytes(), p.as_bytes())
+        _is_match_dp(s.as_bytes(), p.as_bytes())
     }
 }
 // @lc code=end

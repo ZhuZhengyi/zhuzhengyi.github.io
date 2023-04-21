@@ -56,25 +56,26 @@ struct Solution;
 impl Solution {
     /// ## 解题思路
     /// - 贪心法
-    /// 1. cur_jump_max_pos：每跳能到达的最远位置；
-    /// 2. fur_max_pos：每步能达到的最远位置
-    /// 2. 如果当前步达到
+    /// 1. 依次遍历各个位置;
+    /// 2. 记录每个位置时可到到达的最远位置next_max_pos;
+    /// 3. 如果当前位置是上一次能跳到的最远位置,则跳到当前位置, 同时总跳的步数+1;
     pub fn jump(nums: Vec<i32>) -> i32 {
-        let mut step = 0; //已跳的步数
-        let last_jump_max_pos = 0; //能跳到的最远位置
-        let mut fur_max_pos = 0; //当前格能跳到的最远位置
-        let mut cur_max_pos = 0; //当前格能跳到的最远位置
-        for i in 0..nums.len() - 1 {
-            // 记录当前可以跳到的最远的位置
-            fur_max_pos = fur_max_pos.max(i + nums[i] as usize);
-            if i == cur_max_pos {
+        let mut steps = 0; //已跳的步数
+        let mut next_max_pos = 0; //下一步能跳到的最远位置
+        let mut last_max_pos = 0; //上一次跳到的最远位置
+
+        for pos in 0..nums.len() - 1 { //从起始位置开始一个一个条
+            // 下一步可以跳到的最远的位置
+            next_max_pos = next_max_pos.max(pos + nums[pos] as usize);
+            // 如果可以从上一步跳最远距离到达当前位置
+            if pos == last_max_pos {
+                steps += 1; //跳一步
                 //到达当前步能跳到的最远位置，则必须跳下一步
-                cur_max_pos = fur_max_pos; //更新当前步最远能跳的位置
-                step += 1; //跳一步
+                last_max_pos = next_max_pos; //更新当前步最远能跳的位置
             }
         }
 
-        step as i32
+        steps as i32
     }
 }
 // @lc code=end

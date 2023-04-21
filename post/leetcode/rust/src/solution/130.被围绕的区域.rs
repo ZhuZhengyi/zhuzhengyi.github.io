@@ -74,8 +74,8 @@ impl Solution {
 
                 while let Some((r, c)) = stack.pop() {
                     // 将该点的前后左右四个元素都
-                    for (ra, ca) in vec![(-1, 0), (1, 0), (0, -1), (0, 1)] {
-                        let (rp, cp) = ((r as i32 + ra) as usize, (c as i32 + ca) as usize);
+                    for (ra, ca) in [(!0, 0), (1, 0), (0, !0), (0, 1)] {
+                        let (rp, cp) = (r.wrapping_add(ra), c.wrapping_add(ca));
                         if rp < m && cp < n && board[rp][cp] == 'O' {
                             stack.push((rp, cp));
                         }
@@ -89,10 +89,11 @@ impl Solution {
         // 恢复标记
         board
             .iter_mut()
-            .for_each(|row| {
+            .map(|row| {
                 row.iter_mut()
                     .for_each(|e| *e = if *e == 'M' { 'O' } else { 'X' })
             })
+            .for_each(drop)
     }
 }
 // @lc code=end
