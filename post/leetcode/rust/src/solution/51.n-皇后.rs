@@ -52,6 +52,8 @@
  *
  */
 
+use std::vec;
+
 struct Solution;
 
 // @lc code=start
@@ -59,40 +61,66 @@ impl Solution {
     /// ## 解题思路
     /// - 回溯法+bitmap
     pub fn solve_n_queens(n: i32) -> Vec<Vec<String>> {
-        let mut res = vec![vec![]];
-
         /// - 深度优先搜索回溯
-        ///
-        fn dfs(n: i32, mut tmp_queens: Vec<usize>, mut res: Vec<Vec<String>>) {
-            // 终止条件
-            if n == tmp_queens.len() as i32 {
-                //
-                let mut t = vec![];
-                for i in tmp_queens {
-                    let mut s = String::new();
-                    t.push(s);
-                }
-                //
-                res.push(t);
-                return;
+        fn dfs(
+            n: usize,
+            board: &mut Vec<usize>,
+            states: (i32, i32, i32),
+            res: &mut Vec<Vec<String>>,
+        ) {
+            let (col_mask, diagonal_45, diagonal_135) = states;
+            // 所有行(n行)都已放置了'Q'
+            if col_mask == (1 << n) - 1 {
+                res.push(decode(n, board)); //记录本轮棋谱
+                return; //结束本轮
             }
 
-            //
+            // 依次尝试当前行的各个列位置
             for i in 0..n {
-                if is_valid(n, i) {
-                    tmp_queens.push(i as usize);
-                    dfs(n, tmp_queens, res);
-                    tmp_queens.pop();
+                let bit_info = 1 << i; // 下在当前行的第i列
+
+                // 如果当前行所在的列,两条对角线已经有'Q'了, 则跳过当前位置
+                if bit_info & (col_mask | diagonal_45 | diagonal_135) != 0 {
+                    continue;
                 }
+
+                board.push(i); //在当前行第i列放置一个'Q'
+
+                // 继续试探下一步下法
+                dfs(
+                    n,
+                    board,
+                    (
+                        (col_mask | bit_info),
+                        (diagonal_45 | bit_info) << 1, //整体往右下移一位
+                        (diagonal_135 | bit_info) >> 1, //整体往左下移一位
+                    ),
+                    res,
+                );
+
+                // 撤消当前位置的棋(以尝试下一个位置)
+                board.pop();
             }
         }
 
-        // 
-        fn is_valid(n: i32, tmp_q) -> bool {
+        /// 解码,将棋盘从Vec<usize>转化为Vec<String>
+        fn decode(n: usize, board: &Vec<usize>) -> Vec<String> {
+            use std::iter::FromIterator;
 
+            board
+                .iter()
+                .enumerate()
+                .fold(vec![vec!['.'; n]; n], |mut brd, (i, &j)| {
+                    brd[i][j] = 'Q';
+                    brd
+                })
+                .iter()
+                .map(|x| String::from_iter(x))
+                .collect()
         }
 
-        dfs(n, vec![], res);
+        let mut res = vec![];
+        dfs(n as usize, &mut vec![], (0, 0, 0), &mut res);
 
         res
     }
