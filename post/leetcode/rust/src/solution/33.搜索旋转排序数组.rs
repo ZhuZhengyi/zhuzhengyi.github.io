@@ -70,10 +70,10 @@ impl Solution {
     pub fn search(nums: Vec<i32>, target: i32) -> i32 {
         let (mut l, mut r) = (0, nums.len() - 1);
         if nums.len() == 1 {
-            if nums[0] == target { 
+            if nums[0] == target {
                 return 0;
             } else {
-                -1;
+                return -1;
             }
         }
         while l < r {
@@ -83,18 +83,22 @@ impl Solution {
             if nums[r] == target {
                 return r as i32;
             }
-            let mid = (l + r + 1) / 2; 
+            let mid = (l + r + 1) / 2;
             if nums[mid] == target {
                 return mid as i32;
             }
-            if nums[mid] > nums[l] { //左边长, 右边短
-                if nums[mid] > target && target > nums[l] { //中间值>target
+            if nums[mid] > nums[l] {
+                //左边长, 右边短
+                if nums[mid] > target && target > nums[l] {
+                    //中间值>target
                     r = mid - 1;
-                } else {   
+                } else {
                     l = mid + 1;
                 }
-            } else { //左边短,右边长
-                if nums[mid] < target && target < nums[l] { //中间值<target
+            } else {
+                //左边短,右边长
+                if nums[mid] < target && target < nums[l] {
+                    //中间值<target
                     l = mid + 1;
                 } else {
                     r = mid - 1;

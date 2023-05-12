@@ -81,7 +81,7 @@ impl Solution {
     /// 2. 设置2个指针, 一前一后遍历链表, 前指针提前n个节点;
     /// 3. 然后将前后指针同时遍历,直到前指针到达尾节点;
     /// 4. 将前指针next指向其next->next;
-    pub fn remove_nth_from_end(mut head: Option<Box<ListNode>>, n: i32) -> Option<Box<ListNode>> {
+    pub fn remove_nth_from_end(head: Option<Box<ListNode>>, n: i32) -> Option<Box<ListNode>> {
         // 设置dummy节点
         let mut dummy = Box::new(ListNode::new(0));
         dummy.next = head;

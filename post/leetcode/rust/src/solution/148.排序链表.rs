@@ -81,10 +81,10 @@ impl Solution {
     /// 2. 排序vals数组;
     /// 3. 遍历排序后的vals数组,生成有序的新链表;
     pub fn sort_list(head: Option<Box<ListNode>>) -> Option<Box<ListNode>> {
-        let mut vals = Vec::new();  //记录个节点值
+        let mut vals = Vec::new(); //记录个节点值
 
         let mut p = head.as_ref(); //设置遍历指针
-        while let Some(mut node) = p {
+        while let Some(node) = p {
             vals.push(node.val);
             p = node.next.as_ref();
         }
