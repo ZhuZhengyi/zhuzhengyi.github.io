@@ -70,6 +70,8 @@ impl Solution {
             }
             if right > left {
                 right -= 1;
+            } else {
+                break;
             }
 
             // 右->左
