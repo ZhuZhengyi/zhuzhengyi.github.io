@@ -55,8 +55,9 @@ impl Solution {
             for col in l..=r {
                 res.push(matrix[u][col]);
             }
-            u += 1; // u向下移一行
-            if u > d {
+            if u < d {
+                u += 1; // u向下移一行
+            } else {
                 break;
             }
 
@@ -64,11 +65,9 @@ impl Solution {
             for row in u..=d {
                 res.push(matrix[row][r]);
             }
-            if r == 0 {
-                break;
-            }
-            r -= 1; // r左移一列
-            if l > r {
+            if r > l {
+                r -= 1; // r左移一列
+            } else {
                 break;
             }
 
@@ -76,11 +75,9 @@ impl Solution {
             for col in (l..=r).rev() {
                 res.push(matrix[d][col]);
             }
-            if d == 0 {
-                break;
-            }
-            d -= 1; //
-            if d < u {
+            if d > u {
+                d -= 1; //
+            } else {
                 break;
             }
 
@@ -88,8 +85,9 @@ impl Solution {
             for row in (u..=d).rev() {
                 res.push(matrix[row][l]);
             }
-            l += 1; //
-            if l > r {
+            if l < r {
+                l += 1; //
+            } else {
                 break;
             }
         }

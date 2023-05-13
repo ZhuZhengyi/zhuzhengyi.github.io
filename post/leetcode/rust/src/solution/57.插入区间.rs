@@ -80,7 +80,6 @@ impl Solution {
     ///   3. new_interval和vals有重叠, 此时为一个重叠区间,区间左右边界是[min(new_interval[0], val[0]), max(new_interval[1], val[1])];
     pub fn insert(intervals: Vec<Vec<i32>>, new_interval: Vec<i32>) -> Vec<Vec<i32>> {
         let mut res: Vec<Vec<i32>> = vec![];
-        let mut intervals = intervals;
         let mut overlay_interval = new_interval;
         let mut placed = false;
 
