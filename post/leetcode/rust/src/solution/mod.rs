@@ -44,4 +44,29 @@ impl ListNode {
     fn new(val: i32) -> Self {
         ListNode { next: None, val }
     }
+
+    pub fn get_list_node_count(head: &Option<Box<ListNode>>) -> i32 {
+        let mut ptr = head.as_ref();
+        let mut node_count: i32 = 0;
+        //遍历获取总结点数
+        while let Some(node) = ptr {
+            node_count += 1;
+            ptr = node.next.as_ref();
+        }
+
+        node_count
+    }
+
+    //获取单链表最后节点引用
+    pub fn get_list_last_node_ref(head: &mut Option<Box<ListNode>>) -> Option<&mut Box<ListNode>> {
+        let mut ptr: Option<&mut Box<ListNode>> = head.as_mut();
+        while let Some(node) = ptr {
+            if node.next.is_none() {
+                ptr = Some(node);
+                break;
+            }
+            ptr = node.next.as_mut();
+        }
+        ptr
+    }
 }
