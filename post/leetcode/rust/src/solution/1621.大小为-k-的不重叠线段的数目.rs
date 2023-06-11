@@ -84,7 +84,8 @@ impl Solution {
     ///       dp[i][j] = dp[i-1][j] + sum_dp[i-1][j-1]
     ///       sum_dp[i][j] = sum_dp[i-1][j] + dp[i][j]  
     /// 5. 初始条件: 
-    ///       dp[i][1] = dp[i-1][1] + (i - 1)   (i=1..=n)
+    ///       dp[1][j] = 0,  1个端点无法组成线段
+    ///       dp[i][1] = dp[i-1][1] + (i - 1)   (i in 2..=n)
     ///                      |           |-- 线段右端点为i, 因为总共只有一条线段,所以前面部分不是线段, 
     ///                      |               以i为右端点的线段总共有i-1条
     ///                      |-- 线段右端点不是i, 第i-1个端点组成1条线段的方案数
@@ -95,13 +96,14 @@ impl Solution {
         const MOD: i32 = 1000_000_000 + 7;
         let mut dp = vec![vec![0_i32; k+1]; n+1];
         let mut sum_dp = vec![vec![0_i32; k+1]; n+1];
-        // 初始化, k=1时, 
-        for i in 1..=n {
+        // 初始条件 
+        for i in 2..=n {
             dp[i][1] = (dp[i-1][1] + ( i as i32 - 1 )) % MOD ;
             sum_dp[i][1] = (sum_dp[i-1][1] + dp[i][1] ) % MOD;
         }
 
-        for i in 1..=n {
+        // 递推求解
+        for i in 2..=n {
             for j in 2..=k {
                 dp[i][j] = (dp[i-1][j] + sum_dp[i-1][j-1] ) % MOD;
                 sum_dp[i][j] = (sum_dp[i-1][j] + dp[i][j]) % MOD;
