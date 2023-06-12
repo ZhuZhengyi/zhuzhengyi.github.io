@@ -87,6 +87,17 @@
 impl Solution {
     /// ## 解题思路
     /// - hashmap + btreeset
+    /// 1. 使用hashmap  rain_dates记录每个湖下雨的日期;
+    ///    btreeset dry_dates记录可以排水的日期(rains[i] == 0);
+    /// 2. 依次检查每天的下雨记录;
+    /// 3. 如果未下雨(rains[i] == 0), 则将当天日期i记录到dry_dates中;
+    /// 4. 否则, 说明当天lake = rains[i]下雨了;
+    /// 5. 此时先通过rain_dates检查该lake以前是否下过雨;
+    /// 6. 如果该lake之前下过, 则在day_dates中检查之前下雨后到当前时间前是否有可以排水的适当日期;
+    /// 6.1. 如果没有,则湖水将溢出泛滥, 返回空;
+    /// 6.2. 否则有, 则在该日期排出之前的湖水, 并更新;
+    /// 7. 更新rain_dates中的记录;
+    /// 8. 设置当天不排水;
     pub fn avoid_flood(rains: Vec<i32>) -> Vec<i32> {
         use std::collections::BTreeSet;
         use std::collections::HashMap;
@@ -94,34 +105,36 @@ impl Solution {
 
         let mut dry = vec![1; rains.len()]; //记录排水计划
         let mut dry_dates = BTreeSet::new(); //可排水的日期
-        let mut lakes_rain = HashMap::new(); //湖的下雨记录
+        let mut rain_dates = HashMap::new(); //湖的下雨日期
 
-        for (i, &l) in rains.iter().enumerate() {
+        // 检查每天下雨的记录
+        for (day, &lake) in rains.iter().enumerate() {
             // 未下雨
-            if l == 0 {
-                dry_dates.insert(i); //记录当前可排水的日期
+            if lake == 0 {
+                dry_dates.insert(day); //记录当前可排水的日期
                 continue;
             }
-            // 下雨了
 
-            // 如果湖里已经下过雨了
-            if lakes_rain.contains_key(&l) {
-                // 如果存在该湖以前可排水的日期
-                if let Some(j) = dry_dates
-                    .range((Excluded(lakes_rain[&l]), Excluded(i)))
-                    .next()
+            // 否则,当天下雨了
+
+            // 如果该湖之前下过雨
+            if rain_dates.contains_key(&lake) {
+                // 如果存在可供排水的适当日期(在之前湖下雨后, 今天之前)
+                if let Some(old_day) = dry_dates
+                    .range((Excluded(rain_dates[&lake]), Excluded(day))) //该湖前一次下雨日期之后, 今天之前
+                    .next() // 存在可排水的日子
                     .copied()
                 {
-                    dry[j] = l; //之前日期j抽干l中的水
-                    dry_dates.remove(&j); //移除已排过水的日期记录
+                    dry[old_day] = lake; //在可排水的日子j时, 抽干湖中的水
+                    dry_dates.remove(&old_day); //移除已排过水的日期记录
                 } else {
                     // 湖里已经有水且没有适合排水的日期, 则发生洪水
                     return vec![];
                 }
             }
 
-            lakes_rain.insert(l, i); //记录已下过雨的lake
-            dry[i] = -1; // 当前天不用抽水
+            rain_dates.insert(lake, day); //记录已下过雨的lake
+            dry[day] = -1; // 当前天不用抽水
         }
 
         dry
