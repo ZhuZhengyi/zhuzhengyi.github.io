@@ -93,7 +93,8 @@ impl Solution {
     /// 2. 因此可以分两步:
     ///    a. 求出可以组成目标值的数字的最大位数;
     ///    b. 尽量将大的数位排在最大位数数字的高位;
-    /// 3. 则 `dp[target]` 为
+    /// 3. 设`dp[t]`: 表示目标值为t的最大位数;
+    /// 4. 则 `dp[t] = max(dp[t-ci] + 1)`
     pub fn largest_number(cost: Vec<i32>, target: i32) -> String {
         let target = target as usize;
         let mut dp = vec![i32::MIN; target + 1];
@@ -117,7 +118,7 @@ impl Solution {
             let c = c as usize;
             //找到适合的数字
             while t >= c && dp[t] == dp[t - c] + 1 {
-                res = format!("{}{}", res, i + 1);
+                res = format!("{}{}", res, i + 1); //将数位加入结果字符串中
                 t -= c;
             }
         }
