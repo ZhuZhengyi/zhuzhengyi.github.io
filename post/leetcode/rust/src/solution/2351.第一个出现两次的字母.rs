@@ -59,15 +59,15 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// - hashset
+    /// - bit
     pub fn repeated_character(s: String) -> char {
-        use std::collections::HashSet;
-        let mut sc = HashSet::new();
+        let mut seen = 0_i32;
         for c in s.chars() {
-            if sc.contains(&c) {
+            let off = c as u32 - 'a' as u32;
+            if seen & (1 << off) != 0 {
                 return c;
             } else {
-                sc.insert(c);
+                seen |= 1 << off;
             }
         }
         return ' ';
