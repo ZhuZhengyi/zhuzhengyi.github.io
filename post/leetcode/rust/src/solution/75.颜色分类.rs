@@ -70,9 +70,7 @@ impl Solution {
         while i < off_2 {
             match nums[i] {
                 0 => {
-                    if i != off_1 || nums[off_1] != 0 {
-                        nums.swap(i, off_1); // 将当前的0放置到0区间后面
-                    }
+                    nums.swap(i, off_1); // 将当前的0放置到0区间后面
                     off_1 += 1; // 0区间元素增多, 1区间左边界右移
                     i += 1; //
                 }
