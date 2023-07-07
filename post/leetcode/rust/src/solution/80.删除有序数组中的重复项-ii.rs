@@ -72,8 +72,17 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// - 双指针
     pub fn remove_duplicates(nums: &mut Vec<i32>) -> i32 {
-        todo!()
+        let mut last = (0, -1);
+        nums.retain(|&n| {
+            let is_dup2 = last.0 == last.1 && last.1 == n; // 当前元素是否重复出现了2次
+            last = (last.1, n);
+            !is_dup2 // 保留没有出现2次重复的元素
+        });
+
+        nums.len() as i32
     }
 }
 // @lc code=end
