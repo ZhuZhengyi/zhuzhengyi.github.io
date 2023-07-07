@@ -64,11 +64,14 @@ impl Solution {
     /// ## 解题思路
     /// - 二分查找
     /// 1. 旋转数组的旋转点(nums[i] < nums[i-1]的点)将数组分为左右两个有序部分;
-    /// 2. 根据左右两部分的长度不同, 分两种情况分别处理;
-    /// 3. 当nums[mid]>nums[l]时, 表明左边的比较长, 否则右边比较长;
-    /// 4. nums[mid]和target比较时, 根据左右长度的不同,分情况判断丢弃的部分;
+    /// 2. 二分查找时, 首先根据中间数值nums[mid]和左端点nums[l]来判断旋转点在左半区间还是右半区间;
+    /// 3. 当nums[mid]>nums[l]时, 旋转点落在右半区间, 此时左半区间[l, mid]是单调递增的;
+    ///    此时如果target落在[l, mid]之间, 则缩减右半区间(r=mid-1);
+    ///    否则, 收缩左半区间(l=mid+1);
+    /// 4. 否则,当nums[mid]<nums[l]时, 此时旋转点落在左边,右半区间[mid, r]单调递增;
+    ///    此时如果 target 落在[mid, r]之间, 则可以收缩左半区间(l=mid+1);
+    ///    否则, 收缩右半区间(r=mid-1);
     pub fn search(nums: Vec<i32>, target: i32) -> i32 {
-        let (mut l, mut r) = (0, nums.len() - 1);
         if nums.len() == 1 {
             if nums[0] == target {
                 return 0;
@@ -76,6 +79,7 @@ impl Solution {
                 return -1;
             }
         }
+        let (mut l, mut r) = (0, nums.len() - 1);
         while l < r {
             if nums[l] == target {
                 return l as i32;
@@ -87,20 +91,22 @@ impl Solution {
             if nums[mid] == target {
                 return mid as i32;
             }
+            //中间数的值>左端的数的值, 则左边长, 右边短
             if nums[mid] > nums[l] {
-                //左边长, 右边短
-                if nums[mid] > target && target > nums[l] {
-                    //中间值>target
-                    r = mid - 1;
+                //target落在(l..mid)之间
+                if target > nums[l] && target < nums[mid] {
+                    r = mid - 1; // 缩减右边
                 } else {
+                    // 否则, target落在(mid..r)之间
                     l = mid + 1;
                 }
             } else {
-                //左边短,右边长
-                if nums[mid] < target && target < nums[l] {
-                    //中间值<target
+                //中间数的值<左端点数的值, 则中点左边短,右边长
+                // target 落在(mid..r)之间
+                if target > nums[mid] && target < nums[r] {
                     l = mid + 1;
                 } else {
+                    // 否则, target落在(l..mid)之间
                     r = mid - 1;
                 }
             }
