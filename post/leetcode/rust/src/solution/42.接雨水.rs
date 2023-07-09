@@ -61,10 +61,10 @@ impl Solution {
     ///    否则对与i=r的列, 桶边界为:
     ///     $ h_edge = max(height[r+1..], height[r]) $
     /// 4. 综合以上2种情况,当l,r都从外向内移动时,可以用一个变量来记录h_edge;
-    pub fn trap(height: Vec<i32>) -> i32 {
+    pub fn trap2(height: Vec<i32>) -> i32 {
         let (mut l, mut r) = (0, height.len() - 1);
-        let mut h_edge = 0; //当前列的桶边界
-        let mut water = 0;
+        let mut h_edge = 0; // 当前列的桶边界
+        let mut total = 0; // 总水量
         while l < r {
             let hi = if height[l] < height[r] {
                 l += 1;
@@ -74,10 +74,39 @@ impl Solution {
                 height[r + 1]
             };
             h_edge = h_edge.max(hi);
-            water += h_edge - hi;
+            total += h_edge - hi;
         }
 
-        water
+        total
+    }
+
+    /// ## 解题思路2
+    /// - 单调栈
+    /// 1. 设置单调递减栈desc_wall, 用于保存height中;
+    /// 2. 从左->右遍历height;
+    /// 3. 如果栈为空或当前柱子height[i] < 栈顶柱子高度, 则当前柱子可能会积水. 将当前柱子索引i入栈;
+    /// 4. 如果当前柱子高度height[i] > 栈顶柱子高度, 则
+    pub fn trap(height: Vec<i32>) -> i32 {
+        let mut total = 0;
+        let mut desc_wall = Vec::with_capacity(height.len());
+        for (i, &h) in height.iter().enumerate() {
+            // 如果栈不为空, 且当前柱子高度 > 栈顶柱子高度, 则可能会积水
+            while !desc_wall.is_empty() && h > height[*desc_wall.last().unwrap()] {
+                let bottom_i = desc_wall.pop().unwrap(); // 栈顶为积水底部
+
+                // 如果左侧有更高的柱子, 则可以积水
+                if let Some(&left_i) = desc_wall.last() {
+                    let width = (i - left_i - 1) as i32; // 积水区宽度为:当前柱子 到 左边高柱子之间的部分
+                    let min_wall = h.min(height[left_i]); // 积水区高度为: 左右两侧高度中较低的
+                    total += width * (min_wall - height[bottom_i]);
+                }
+            }
+            // 栈中所有低于当前高度的柱子已经处理完
+            // 栈顶柱子高度 > 当前柱子高度, 则可能会积水(当后面有柱子高于当前柱子时)
+            desc_wall.push(i); // 入栈, 等后续出现高于当前高度的柱子时处理
+        }
+
+        total
     }
 }
 // @lc code=end
