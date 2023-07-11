@@ -51,7 +51,7 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// - 单调栈
+    /// - 单调栈(单调递增栈)
     /// 1. 对于heights中的每一个heights[i], 最大面积矩形为: `heights[i] * ( right[i] - left[i] + 1 )`,
     ///    题目需要找出所有这些面积中最大的, 即 `max(heights[i] * (right[i] - left[i] + 1) )`.
     ///    其中:
@@ -70,15 +70,18 @@ impl Solution {
         let mut inc_stack: Vec<usize> = Vec::with_capacity(heights.len());
         let mut max_area = 0;
         for (i, &hs) in heights.iter().enumerate() {
+            // 如果当前矩形高度 < 栈顶矩形高度
             while !inc_stack.is_empty() && hs < heights[*inc_stack.last().unwrap()] {
-                let cur = inc_stack.pop().unwrap();
-                let h = heights[cur]; // 栈顶元素高度
-                let l = inc_stack.last().unwrap(); // 栈顶元素左边界为栈次顶元素id
-                let r = i; // 栈顶元素右边界为当前元素id;
-                max_area = max_area.max(h * ((r - l - 1) as i32));
+                //
+                if let Some(cur) = inc_stack.pop() {
+                    let h = heights[cur]; // 栈顶元素高度
+                    let l = inc_stack.last().unwrap(); // 栈顶元素左边界为栈次顶元素id
+                    let r = i; // 栈顶元素右边界为当前元素id;
+                    max_area = max_area.max(h * ((r - l - 1) as i32));
+                }
             }
-            // 此时栈中所有元素高度已经 < 当前遍历元素高度
-            inc_stack.push(i); // 将当前高度id入栈
+            // 此时栈中(左边)高度>当前的矩形都已经出栈, 计算完了
+            inc_stack.push(i); // 将当前矩形id入栈
         }
 
         max_area
