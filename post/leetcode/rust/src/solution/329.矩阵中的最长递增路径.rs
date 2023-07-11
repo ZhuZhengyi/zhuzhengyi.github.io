@@ -57,6 +57,7 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - dfs
     pub fn longest_increasing_path(matrix: Vec<Vec<i32>>) -> i32 {
         //
         fn dfs(matrix: &[Vec<i32>], step: (usize, usize), stat: &mut Vec<Vec<Option<i32>>>) -> i32 {

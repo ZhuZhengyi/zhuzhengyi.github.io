@@ -68,6 +68,7 @@
 impl Solution {
     /// ## 解题思路
     /// - 栈
+    /// 1.
     pub fn decode_string(s: String) -> String {
         let mut stack: Vec<(String, usize)> = Vec::new(); // 栈, 保存遍历时已经解码的字符串和当前`[]`区间的times
         let mut decoded_str = String::new(); // 已解码的字符串
@@ -75,9 +76,10 @@ impl Solution {
         for c in s.chars() {
             match c {
                 '[' => {
-                    //进入[]区间，
-                    stack.push((decoded_str.clone(), times)); //将之前已解码字符串和当前区间的times入栈
-
+                    //进入区间
+                    //入栈, 暂存已解码字符串和当前区间的times
+                    stack.push((decoded_str.clone(), times));
+                    // 重置当前区间times 和 已解码字符串
                     times = 0; //重置区间计数
                     decoded_str.clear(); //重置已解码字符串
                 }
