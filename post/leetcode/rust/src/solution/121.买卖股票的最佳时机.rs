@@ -36,10 +36,7 @@
  *
  */
 
-use super::*;
-
 // @lc code=start
-
 impl Solution {
     /// ## 解题思路：
     /// - 动态规划+贪心
@@ -84,3 +81,4 @@ impl Solution {
     }
 }
 // @lc code=end
+struct Solution;
