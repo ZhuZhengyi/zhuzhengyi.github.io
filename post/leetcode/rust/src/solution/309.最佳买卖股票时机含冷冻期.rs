@@ -54,107 +54,36 @@
 impl Solution {
     /// ## 解题思路
     /// - 动态规划
-    /// 1. 投资者在整个过程中的每天存在3种状态:
-    ///    a. 未投资(uninvested): 此时投资者手中没有股票, 且不在冷静期中, 那么当天(day)投资者有两种策略:
-    ///       a1. 不买入. 此时投资收益不变, 第二天状态保持为未投资(invested)状态;
-    ///       a2. 买入当天股票, 此时收益 -prices[day]. 第二天状态变为已投资状态(invested);
-    ///    b. 已投资(invested): 此时投资者手中已经有了一支股票, 那么此时投资者也有两种策略:
-    ///       b1. 不卖出. 此时投资收益不变, 收益profile维持不变, 第二天状态继续维持已投资状态(invested);
-    ///       b2. 卖出手中股票. 此时投资收益 +prices[day]. 第二天状态将变为冷静期(cooldown);
-    ///    c. 冷静期(cooldown): 此时投资者处于冷静期,此时只有一个策略:
-    ///       c1. 无法买卖. 此时投资收益维持不变. 第二天状态变为未投资(uninvested)状态;
-    pub fn max_profit0(prices: Vec<i32>) -> i32 {
-        use std::collections::HashMap;
-
-        #[derive(PartialEq, Eq, Hash, Copy, Clone)]
-        enum Invested {
-            Yes,
-            No,
-            Cooldown,
-        }
-        fn dp(
-            prices: &[i32],
-            day: usize,
-            invested: Invested,
-            memo: &mut HashMap<(usize, Invested), i32>,
-        ) -> i32 {
-            if day == prices.len() {
-                0
-            } else if let Some(profit) = memo.get(&(day, invested)) {
-                *profit
-            } else {
-                let rez = match invested {
-                    Invested::Yes => dp(prices, day + 1, invested, memo)
-                        .max(prices[day] + dp(prices, day + 1, Invested::Cooldown, memo)),
-                    Invested::No => dp(prices, day + 1, invested, memo)
-                        .max(-prices[day] + dp(prices, day + 1, Invested::Yes, memo)),
-                    Invested::Cooldown => dp(prices, day + 1, Invested::No, memo),
-                };
-                memo.insert((day, invested), rez);
-                rez
-            }
-        }
-
-        dp(&prices, 0, Invested::No, &mut HashMap::new())
-    }
-
-    /// 优化2:
-    pub fn max_profit1(prices: Vec<i32>) -> i32 {
-        #[derive(Default, Clone)]
-        struct Profit {
-            invested: i32,
-            uninvested: i32,
-            cooldown: i32,
-        }
-        let n = prices.len();
-        let mut profits = vec![Profit::default(); n + 1];
-        for day in (0..n).rev() {
-            profits[day] = Profit {
-                invested: profits[day + 1]
-                    .invested
-                    .max(prices[day] + profits[day + 1].cooldown),
-                uninvested: profits[day + 1]
-                    .uninvested
-                    .max(-prices[day] + profits[day + 1].invested),
-                cooldown: profits[day + 1].uninvested,
-            }
-        }
-
-        profits[0].uninvested
-    }
-
-    /// 优化3: 实用一个变量代替数组
-    pub fn max_profit2(prices: Vec<i32>) -> i32 {
-        #[derive(Default, Clone)]
-        struct Profit {
-            invested: i32,
-            uninvested: i32,
-            cooldown: i32,
-        }
-        prices
-            .into_iter()
-            .rev()
-            .fold(Profit::default(), |profit, price| Profit {
-                invested: profit.invested.max(price + profit.cooldown),
-                uninvested: profit.uninvested.max(-price + profit.invested),
-                cooldown: profit.uninvested,
-            })
-            .uninvested
-    }
-
-    /// 优化4: 实用元组代替结构体定义
+    /// 1. 设 profit[i]: 表示第i天
+    /// 2. 投资者在整个过程中的每天存在3种状态:
+    ///    - 未投资(uninvested): 此时投资者有两种策略:
+    ///       a1. 不操作. 当天收益为: 0, 后续收益为: profit[i+1].未投资;
+    ///       a2. 买入, 当天收益为: -prices[i]. 后续收益为: profit[i+1].已投资;
+    ///      此时最终最大收益为:
+    ///        profit[i].未投资 = max(0 + profit[i+1].未投资, -prices[i] + profit[i+1].已投资);
+    ///    - 已投资(invested): 此时投资者也有两种策略:
+    ///       b1. 不操作. 当天收益为: 0, 后期收益为: profit[i+1].已投资;
+    ///       b2. 卖出. 当天收益为: +prices[i]. 后期收益为: profit[i+1].冷静期;
+    ///      此时最终最大收益为:
+    ///        profit[i].已投资 = max(0+profit[i+1].已投资, prices[i]+profit[i+1].冷静期)
+    ///    - 冷静期(cooldown): 此时投资者处于冷静期,此时只有一个策略:
+    ///       - 无法买卖. 当天收益为: 0. 后期收益为: profit[i+1].未投资;
+    ///      此时最终最大收益为:
+    ///        profit[i].冷静期 = 0 + profit[i+1].未投资
+    /// * 优化:
+    ///    - profit[i] 只和profit[i+1], prices[i] 相关, 使用滚动变量代替数组;
     pub fn max_profit(prices: Vec<i32>) -> i32 {
         prices
-            .into_iter()
+            .iter()
             .rev()
-            .fold((0, 0, 0), |profit, price| {
+            .fold((0, 0, 0), |profit, &p| {
                 (
-                    profit.0.max(price + profit.2),
-                    profit.1.max(-price + profit.0),
-                    profit.1,
+                    profit.0.max(-p + profit.1),
+                    profit.1.max(p + profit.2),
+                    profit.0,
                 )
             })
-            .1
+            .0
     }
 }
 // @lc code=end
