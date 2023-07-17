@@ -50,25 +50,25 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// ### 动态规划
-    /// - 设`dp[t]`表示`target == t`的组合总数；
-    /// - 则对于nums中的任何一个n, dp[t-n]表示target == t-n的组合总数；
-    ///   如果在该组合数组中增加一个n, 则target == t;
-    /// - 故:  `dp[t] = sum(dp[t-n]), (n为nums中的所有数)`
-    /// - 初始条件:    `dp[0] = 1`
-    /// - 终止条件:    `dp[target]`
+    /// - 动态规划
+    /// 1. 设 dp[t]: 表示目标数为 t 的组合总数；
+    /// 2. 则对于nums中的任何一个n, dp[t-n]表示目标为t-n的组合总数；
+    /// 3. 有 dp[t] = sum(dp[t-n]) (n in nums, 且n<=t)
+    /// 4. 初始条件: dp[0] = 1, (当目标为0时, )
+    /// 5. 终止条件: dp[target]
     pub fn combination_sum4(nums: Vec<i32>, target: i32) -> i32 {
         let mut dp = vec![0; target as usize + 1];
         dp[0] = 1;
+        let target = target as usize;
         for t in 1..=target {
             for &n in &nums {
-                if n <= t {
-                    dp[t as usize] += dp[(t - n) as usize];
+                if n as usize <= t {
+                    dp[t] += dp[(t - n as usize)];
                 }
             }
         }
 
-        dp[target as usize]
+        dp[target]
     }
 }
 // @lc code=end
