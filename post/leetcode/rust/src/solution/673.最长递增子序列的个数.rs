@@ -51,9 +51,41 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    ///
+    /// - 动态规划
+    /// 1. 设 length[i]: nums[0..i]序列的最长递增子序列;
+    ///       count[i]: nums[0..i]最长递增子序列的个数;
+    /// 2. lenght[i] = max(length[j]) + 1 (0=<j<i, nums[i]>nums[j])
+    ///    count[i] =
     pub fn find_number_of_lis(nums: Vec<i32>) -> i32 {
-        todo!()
+        let mut res = 1;
+        let mut length = vec![1; nums.len()];
+        let mut count = vec![1; nums.len()];
+        let mut max_length = 1;
+        for i in 1..nums.len() {
+            for j in 0..i {
+                // 遇到递增的两个数
+                if nums[j] < nums[i] {
+                    // 在原有以nums[j]为尾的递增序列上, 增加nums[i]形成以nums[i]为尾的新递增序列
+                    if length[j] + 1 > length[i] {
+                        length[i] = length[j] + 1; //记录length[i]
+                        count[i] = count[j]; //
+                    } else if length[j] + 1 == length[i] {
+                        //和现有递增序列长度相等的另一递增序列
+                        count[i] += count[j];
+                    }
+                }
+            }
+            // 更新max_length
+            if length[i] > max_length {
+                max_length = length[i];
+                res = count[i];
+            } else if length[i] == max_length {
+                //统计相同长度的最长递增子序列次数和
+                res += count[i];
+            }
+        }
+
+        res
     }
 }
 // @lc code=end
