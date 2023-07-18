@@ -64,42 +64,48 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// - 二分查找
-    /// 1. 设lis[i]: nums[0..i]的最长递增子序列;
-    /// 2. 则：
-    ///    2.1 if nums[i+1] > lis.last() => lis.push(nums[n])
-    ///    2.2 else lis[i] = nums[n]
-    ///    (i为第一个大于nums[n]的数)
-    ///
-    pub fn length_of_lis(nums: Vec<i32>) -> i32 {
-        if nums.len() < 1 {
-            return 0;
-        }
-        let mut lis = vec![nums[0]]; //最长递增子序列
-        nums[1..].iter().for_each(|n| {
-            //顺序遍历序列
-            if n > lis.last().unwrap() {
-                // 如果当前元素大于lis最后元素
-                lis.push(*n); //将当前元素追加到lis尾部
-            } else {
-                // 否则，lis中的一定存在元素大于当前元素
-                // 查找lis中第一个大于当前元素值的元素
-                // 由于lis为有序数组，可以用二分法加速查找
-                let (mut l, mut r) = (0, lis.len());
-                //let mut i = 0;
-                while l < r {
-                    let i = l + (r - l) / 2;
-                    if lis[i] >= *n && (i == 0 || lis[i - 1] < *n) {
-                        lis[i] = *n;
-                        break;
-                    } else if lis[i] < *n {
-                        l = i + 1;
-                    } else {
-                        r = i;
-                    }
+    /// - 动态规划
+    /// 1. 设dp[i]: 表示以nums[i]为尾的最长递增序列的长度
+    /// 2. 递推关系: dp[i] = max(dp[j]) + 1 (0=<j<i, nums[j]<nums[i])
+    /// 3. 初始条件: dp[i] = 1 (i=0..n-1)
+    /// 4. 目标: dp[nums.len()-1]
+    pub fn length_of_lis0(nums: Vec<i32>) -> i32 {
+        let mut dp = vec![1; nums.len()];
+        let mut res = 1;
+        for i in 1..nums.len() {
+            for j in 0..i {
+                if nums[i] > nums[j] {
+                    dp[i] = dp[i].max(dp[j] + 1);
                 }
             }
-        });
+            res = res.max(dp[i] as i32);
+        }
+
+        res
+    }
+
+    /// ## 解题思路2
+    /// - 贪心+二分查找
+    /// 1. 设 lis[i]: nums[0..i]的最长递增子序列;
+    /// 2. 初始化 lis[0] = nums[0];
+    /// 3. 从左至右, 依次遍历nums[1..]
+    /// 4. 如果 nums[i] > lis.last(), 则将nums[i]加入到lis[]末尾;
+    /// 5. 否则, nums[i] < lis.last(),
+    ///    在lis[]中查找第一个大于nums[i]的数lis[j](0=<j<i), 将其替换为nums[i];
+    /// 6. 由于lis[]为递增序列, 则可使用二分法快速查找lis[j]
+    pub fn length_of_lis(nums: Vec<i32>) -> i32 {
+        let mut lis = vec![]; //最长递增子序列
+        for n in nums {
+            match lis.last() {
+                None => lis.push(n),
+                Some(&l) if l < n => lis.push(n),
+                _ => match lis.binary_search(&n) {
+                    Err(j) => lis[j] = n,
+                    _ => {}
+                },
+            }
+        }
+
         return lis.len() as i32;
     }
 }
