@@ -65,18 +65,18 @@ impl Solution {
             for j in 0..i {
                 // 遇到递增的两个数
                 if nums[j] < nums[i] {
-                    // 在原有以nums[j]为尾的递增序列上, 增加nums[i]形成以nums[i]为尾的新递增序列
-                    if length[j] + 1 > length[i] {
-                        length[i] = length[j] + 1; //记录length[i]
-                        count[i] = count[j]; //
-                    } else if length[j] + 1 == length[i] {
-                        //和现有递增序列长度相等的另一递增序列
-                        count[i] += count[j];
+                    // 更新length[i], 为max(length[j]) + 1
+                    if length[i] < length[j] + 1 {
+                        length[i] = length[j] + 1; 
+                        count[i] = count[j]; // 记录最新的count[i]为对应的count[j]
+                    } else if length[i] == length[j] + 1 {
+                        // 找到同样长度的递增子序列
+                        count[i] += count[j]; // 合并count[i]
                     }
                 }
             }
-            // 更新max_length
             if length[i] > max_length {
+                // 更新max_length
                 max_length = length[i];
                 res = count[i];
             } else if length[i] == max_length {

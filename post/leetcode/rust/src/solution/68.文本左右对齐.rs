@@ -98,20 +98,60 @@ impl Solution {
     /// ## 解题思路
     pub fn full_justify(words: Vec<String>, max_width: i32) -> Vec<String> {
         let mut res = vec![];
-        let mut tmp_len = 0;
-        let mut tmp_words = vec![];
+        let mut line_words: Vec<String> = vec![];
+        let mut output_lines = vec![];
         for word in words {
-            let wl = word.len() as i32;
-            if wl + tmp_len >= max_width {
-                //
+            let words_len = line_words.iter().fold(0, |mut len, w| {
+                len += w.len();
+                len
+            });
+            if words_len + line_words.len() + word.len() <= max_width as usize {
+                line_words.push(word);
             } else {
-                if tmp_words.len() > 0 {
-                    tmp_len += 1;
-                }
-                tmp_words.push(word);
-                tmp_len += wl;
+                output_lines.push(line_words.clone());
+
+                res.push(format_line_words(&mut line_words, max_width));
+
+                line_words.clear();
+                line_words.push(word);
             }
         }
+        if line_words.len() > 0 {
+            let word_len = line_words.iter().fold(0, |mut len, word| {
+                len += word.len();
+                len
+            });
+            let last_line = line_words.join(&" ");
+            let remain_space = (max_width as usize) - last_line.len();
+            if remain_space > 0 {
+                res.push(format!("{}{}", last_line, " ".repeat(remain_space)));
+            } else {
+                res.push(last_line);
+            }
+        }
+
+        fn format_line_words(line_words: &mut [String], max_width: i32) -> String {
+            let word_count = line_words.len();
+            if word_count == 0 {
+                return String::new();
+            }
+            let word_len = line_words.iter().fold(0, |mut len, word| {
+                len += word.len();
+                len
+            });
+            let need_spaces = (max_width as usize) - word_len;
+            if word_count == 1 {
+                return format!("{}{}", line_words[0], &" ".repeat(need_spaces));
+            } else {
+                let mut i = 0;
+                while i < need_spaces {
+                    line_words[i % (word_count - 1)].push_str(" ");
+                    i += 1;
+                }
+                return format!("{}", line_words.join(&""));
+            }
+        }
+
         res
     }
 }
