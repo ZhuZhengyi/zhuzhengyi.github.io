@@ -67,7 +67,7 @@ impl Solution {
                 if nums[j] < nums[i] {
                     // 更新length[i], 为max(length[j]) + 1
                     if length[i] < length[j] + 1 {
-                        length[i] = length[j] + 1; 
+                        length[i] = length[j] + 1;
                         count[i] = count[j]; // 记录最新的count[i]为对应的count[j]
                     } else if length[i] == length[j] + 1 {
                         // 找到同样长度的递增子序列

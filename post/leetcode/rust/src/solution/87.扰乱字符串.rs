@@ -76,8 +76,107 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - 递归+merge
+    /// 1. 设 f(s1, s2) 表示s1, s2是否为扰乱字符串;
+    /// 2. 则 如果存在 划分 i,
+    ///         将s1 划分为 s1[..i], s1[i..]
+    ///         将s2 划分为 s2[..i], s2[i..]
+    ///    如果 f(s1[..i], s2[..i]) && f(s1[i..], s2[i..]) => f(s1, s2) is true
+    ///    或者划分后交换,
+    ///        f(s1[..i], s2[-i..]) && f(s1[-i..], s2[..i])
+    ///        
+    pub fn is_scramble0(s1: String, s2: String) -> bool {
+        use std::collections::HashMap;
+        fn is_scramble_<'a>(
+            s1: &'a str,
+            s2: &'a str,
+            cache: &mut HashMap<(&'a str, &'a str), bool>,
+        ) -> bool {
+            if let Some(&b) = cache.get(&(s1, s2)) {
+                return b;
+            }
+            cache.insert((s1, s2), false);
+            // 长度不相等, false
+            if s1.len() != s2.len() {
+                return false;
+            }
+
+            // 两个字符串相等时, 为true
+            if s1 == s2 {
+                cache.insert((s1, s2), true);
+                return true;
+            }
+            // 一个字符串中的任何一个字符不在另一个字符串中, 为false
+            if s1
+                .as_bytes()
+                .iter()
+                .any(|&s1b| s2.as_bytes().iter().all(|&s2b| s1b != s2b))
+                || s2
+                    .as_bytes()
+                    .iter()
+                    .any(|&s1b| s1.as_bytes().iter().all(|&s2b| s1b != s2b))
+            {
+                return false;
+            }
+
+            let n = s1.len();
+            for i in 1..n {
+                // 存在一个划分i不交换, 使s1, s2经过i划分后对应的子字符串 为扰乱字符串
+                if is_scramble_(&s1[..i], &s2[..i], cache)
+                    && is_scramble_(&s1[i..], &s2[i..], cache)
+                {
+                    cache.insert((s1, s2), true);
+                    return true;
+                }
+                // 存在一个划分i并交换, 使s1, s2经过i划分后对应的子字符串 为扰乱字符串
+                if is_scramble_(&s1[..i], &s2[(n - i)..], cache)
+                    && is_scramble_(&s1[i..], &s2[..(n - i)], cache)
+                {
+                    cache.insert((s1, s2), true);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        let mut cache = HashMap::new();
+        is_scramble_(&s1, &s2, &mut cache)
+    }
+
+    /// ## 解题思路2
+    /// - 动态规划
+    /// 1. 设 dp[i][j][l]: 表示s1[i..(i+l)], s[j..(j+l)]是否为合法扰乱字符串
+    /// 2. 递推关系:
+    ///    dp[i][j][l] = dp[i][j][k]&&dp[i+k][j+k][l-k]
+    ///                or dp[i][j+l-k][k]&&dp[i+l-k][j][l-k]
+    ///                 ( 0<k<l)
+    /// 3. 初始条件: dp[i][j][1] = s[i] == s[j] (0<=i, j < n),
+    /// 4. 目标值: dp[0][0][n]
     pub fn is_scramble(s1: String, s2: String) -> bool {
-        todo!()
+        let n = s1.len();
+        let mut dp = vec![vec![vec![false; n + 1]; n + 1]; n + 1];
+        for i in 0..n {
+            for j in 0..n {
+                dp[i][j][1] = &s1[i..i + 1] == &s2[j..j + 1];
+            }
+        }
+        for l in 2..=n {
+            for i in 0..=n - l {
+                for j in 0..=n - l {
+                    for k in 1..l {
+                        if (dp[i][j][k] && dp[i + k][j + k][l - k])
+                            || (dp[i][j + l - k][k] && dp[i + k][j][l - k])
+                        {
+                            dp[i][j][l] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        dp[0][0][n]
     }
 }
 // @lc code=end

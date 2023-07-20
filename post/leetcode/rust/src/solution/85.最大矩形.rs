@@ -69,7 +69,7 @@
 
 // @lc code=start
 impl Solution {
-    /// ## 解题思路1
+    /// ## 解题思路
     /// - 动态规划
     /// 1. 令 heights[i][j]: matrix[i][j]从上到下连续'1'的个数(高度);
     /// 2. 如果 matrix[i][j] == '0', => heights[i][j] = 0;

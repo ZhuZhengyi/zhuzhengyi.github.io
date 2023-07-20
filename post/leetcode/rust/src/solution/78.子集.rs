@@ -53,13 +53,16 @@ impl Solution {
         // 遍历
         fn dfs(nums: &Vec<i32>, from: usize, tmp: &mut Vec<i32>, res: &mut Vec<Vec<i32>>) {
             // 终止条件
-            if from >= nums.len() {
+            if from > nums.len() {
                 return;
             }
-            // 遍历下一个
+
+            // 处理当前
+            res.push(tmp.clone());
+
+            // 下一个
             for i in from..nums.len() {
                 tmp.push(nums[i]);
-                res.push(tmp.clone());
                 dfs(nums, i + 1, tmp, res);
                 tmp.pop();
             }
@@ -67,7 +70,6 @@ impl Solution {
 
         let mut tmp = Vec::new();
         let mut res = Vec::new();
-        res.push(tmp.clone());
         dfs(&nums, 0, &mut tmp, &mut res);
 
         res

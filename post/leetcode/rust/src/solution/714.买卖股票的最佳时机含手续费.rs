@@ -54,7 +54,6 @@
  *
  */
 
-struct Solution;
 
 // @lc code=start
 impl Solution {
@@ -77,3 +76,5 @@ impl Solution {
     }
 }
 // @lc code=end
+
+struct Solution;
