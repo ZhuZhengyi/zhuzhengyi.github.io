@@ -1,0 +1,213 @@
+# vim
+
+## 简介
+
+## 基本操作
+
+### 设置
+
+```
+## 查看设置 
+:set shiftwidth?
+:echo &option
+
+## 重置为默认值
+:set option& 
+
+## 查看option设置 在哪里配置
+:verbose set option?
+```
+
+### 增加markdown tagbar
+
+1. ~/.ctags 中增加:
+   
+   ```
+    --langdef=markdown
+    --langmap=markdown:.md
+    --regex-markdown=/^#{1}[ \t]*([^#]+.*)/. \1/h,headings/
+    --regex-markdown=/^#{2}[ \t]*([^#]+.*)/.   \1/h,headings/
+    --regex-markdown=/^#{3}[ \t]*([^#]+.*)/.     \1/h,headings/
+    --regex-markdown=/^#{4}[ \t]*([^#]+.*)/.       \1/h,headings/
+    --regex-markdown=/^#{5}[ \t]*([^#]+.*)/.         \1/h,headings/
+    --regex-markdown=/^#{6}[ \t]*([^#]+.*)/.           \1/h,headings/
+   ```
+
+vimrc tagbar中增加如下设置:
+
+```vim
+    let g:tagbar_type_markdown = {
+                \ 'ctagstype' : 'markdown',
+                \ 'kinds' : [
+                \ 'h:headings',
+                \ ],
+                \ 'sort' : 0
+                \ }
+```
+
+### 大小写转换
+
+```
+转换小写：u
+
+转换大写：U
+```
+
+## 错误排查
+
+```bash
+$ nvim -u NORC
+  :CheckHealth
+
+$ vim --startuptime tmp.txt           #查看启动时间
+$ strace -f -T -o vim.strace vim      #
+```
+
+### 去掉JSON自动隐藏引号
+
+**: set cole&**
+
+### 去掉`^M`
+
+```vim
+
+```
+
+---
+
+## 基本操作
+
+### 光标命令
+
+```ada
+h 左移一个字符
+l 右移一个字符
+j 下移一行
+k 上移一行
+w 前移一个单词，光标停在下一个单词开头
+W 移动下一个单词开头，但忽略一些标点
+e 前移一个单词，光标停在下一个单词末尾
+E 移动到下一个单词末尾，如果词尾有标点，则移动到标点
+b 后移一个单词，光标停在上一个单词开头
+B 移动到上一个单词开头，忽略一些标点
+( 前移1句
+) 后移1句
+{ 前移1段
+} 后移1段
+```
+
+### 滚屏命令
+
+```ada
+ctrl+f 下翻一屏
+ctrl+b 上翻一屏
+ctrl+d 下翻半屏
+ctrl+u 上翻半屏
+ctrl+e 向下滚动一行
+ctrl+y 向上滚动一行
+n% 到文件n%的位置
+zz 将当前行移动到屏幕中央
+zt 将当前行移动到屏幕顶端
+zb 将当前行移动到屏幕底端
+```
+
+### 插入命令
+
+```ada
+第一部分 基本插入
+I 在当前行第一个非空字符前插入
+gI 在当前行第一列插入
+a 在光标后插入
+A 在当前行最后插入
+o 在下面新建一行插入
+O 在上面新建一行插入
+
+第二部分 改写插入
+c[n]w 改写光标后1(n)个词
+c[n]l 改写光标后n个字母,l (vim中光标右移一个字符命令)
+c[n]h 改写光标前n个字母, h (vim中光标左移一个字符命令)
+[n]cc 修改当前[n]行
+[n]s 以输入的文本替代光标之后1(n)个字符，相当于c[n]l
+[n]S 删除指定数目的行，并以所输入文本代替之
+```
+
+### 复制命令
+
+```ada
+y 复制在可视模式下选中的文本
+yy or Y 复制整行文本
+y[n]w 复制一(n)个词
+y[n]l 复制光标右边1(n)个字符
+y[n]h 复制光标左边1(n)个字符
+y$ 从光标当前位置复制到行尾
+y0 从光标当前位置复制到行首
+```
+
+### 剪切和粘贴命令
+
+```ada
+[n]x 剪切光标右边n个字符，相当于d[n]l
+[n]X 剪切光标左边n个字符，相当于d[n]h
+
+p 在光标之后粘贴
+P 在光标之前粘贴
+```
+
+### 删除命令
+
+```ada
+d 删除（剪切）在可视模式下选中的文本
+d$ or D 删除（剪切）当前位置到行尾的内容
+d[n]w 删除（剪切）1(n)个单词
+d[n]l 删除（剪切）光标右边1(n)个字符
+d[n]h 删除（剪切）光标左边1(n)个字符
+d0 删除（剪切）当前位置到行首的内容
+[n] dd 删除（剪切）1(n)行
+```
+
+### 撤销命令
+
+```ada
+u 撤销最后执行的命令
+U 撤销对整行的修改
+```
+
+### 查找命令
+
+```ada
+/word 在后面的文本中查找word
+?word 在前面的文本中查找word
+/pattern/+number 将光标停在包含pattern的行后面第number行上
+/pattern/-number 将光标停在包含pattern的行前面第number行上
+n 向后查找下一个
+N 向前查找下一个
+```
+
+### 替换命令
+
+```ada
+:s/old/new/g     #可以替换 old 为 new
+
+替换两行之间出现的每个匹配串，操作如下
+:#,#s/old/new/g   #其中 #,# 代表的是替换操作的若干行中首尾两行的行号。
+:%s/old/new/g     #则是替换整个文件中的每个匹配串。
+:%s/old/new/gc    #会找到整个文件中的每个匹配串，并且对每个匹配串提示是否进行替换。
+```
+
+### 排版命令
+
+```ada
+<< #向左缩进一个shiftwidth
+>> #向右缩进一个shiftwidth
+:ce(nter) #本行文字居中
+:le(ft) #本行文字靠左
+:ri(ght) #本行文字靠右
+```
+
+# 
+
+## 参考
+
+1. https://zhuanlan.zhihu.com/p/24484514
+
+2. 

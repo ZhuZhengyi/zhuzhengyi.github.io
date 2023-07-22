@@ -1,0 +1,113 @@
+# Java锁
+
+## 简介
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/04/15-22-29-07-2022-04-15-22-29-00-image.png)
+
+## Synchronized
+
+* synchronized是悲观锁；
+
+* synchronized通过java对象头中的monitor来实现线程同步；
+
+* Monitor是依赖于底层的操作系统的Mutex Lock（互斥锁）来实现的线程同步；
+
+* 
+
+```java
+  // 1.用于代码块
+  synchronized (this) {}
+  // 2.用于对象
+  synchronized (object) {}
+  // 3.用于方法
+  public synchronized void test () {}
+  // 4.可重入
+  for (int i = 0; i < 100; i++) {
+    synchronized (this) {}
+  }
+  // **************************ReentrantLock的使用方式**************************
+  public void test () throw Exception {
+    // 1.初始化选择公平锁、非公平锁
+    ReentrantLock lock = new ReentrantLock(true);
+    // 2.可用于代码块
+    lock.lock();
+    try {
+        try {
+            // 3.支持多种加锁方式，比较灵活; 具有可重入特性
+            if(lock.tryLock(100, TimeUnit.MILLISECONDS)){ }
+        } finally {
+            // 4.手动释放锁
+            lock.unlock()
+        }
+    } finally {
+        lock.unlock();
+    }
+  }
+```
+
+## AQS(Acquired )
+
+* 如果共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；
+
+* 如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配;
+
+* AQS使用一个Volatile的int类型的成员变量来表示同步状态;
+
+* 通过内置的FIFO队列来完成资源获取的排队工作;
+
+* 通过CAS完成对State值的修改;
+
+## ReentrantLock
+
+* 可重入锁；同一线程可多次加锁，包含一个计数器，如果是同一个线程再次加锁，计数器+1；
+
+* 可以设置为公平锁还是非公平锁；
+
+* 公平锁(FairLock)：等待线程按序加入队列排队，按序公平获得锁；
+
+* 非公平锁(NoFairLock): 不排队，乱序选择在等线程；
+
+## 乐观锁/悲观锁
+
+* 悲观锁：并发操作时，认为数据更有可能被修改，为保证数据操作的正确性，所以要先加锁；
+
+* 乐观锁：对数据并发操作时，认为数据更极少可能被修改，所以可以先不加锁，而在更新时再去检测数据是否被更改，再进行不同的处理；
+- 悲观锁适合写操作多的场景，先加锁可以保证写操作时数据正确。
+
+- 乐观锁适合读操作多的场景，不加锁的特点能够使其读操作的性能大幅提升。
+
+- synchronized关键字和Lock的实现类都是**悲观锁**；
+
+- 乐观锁在一般通过使用无锁编程来实现；
+
+## CAS
+
+* CAS全称 Compare And Swap（比较与交换），是一种无锁算法。
+
+* 在不使用锁（没有线程被阻塞）的情况下实现多线程之间的变量同步。
+
+* java.util.concurrent包中的原子类就是通过CAS来实现了乐观锁。
+
+CAS算法涉及到三个操作数：
+
+- 需要读写的内存值 V。
+
+- 进行比较的值 A。
+
+- 要写入的新值 B。
+
+当且仅当 V 的值等于 A 时，CAS通过原子方式用新值B来更新V的值（“比较+更新”整体是一个原子操作），否则不会执行任何操作。一般情况下，“更新”是一个不断重试的操作。
+
+## 自旋锁 VS 适应性自旋锁
+
+### 自旋锁
+
+### 自适应自旋锁
+
+## 无锁 VS 偏向锁 VS 轻量级锁 VS 重量级锁
+
+## 参考
+
+1. [不可不说的Java“锁”事](https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=3&sn=5ffa63ad47fe166f2f1a9f604ed10091&chksm=bd12a5778a652c61509d9e718ab086ff27ad8768586ea9b38c3dcf9e017a8e49bcae3df9bcc8&scene=38#wechat_redirect)
+2. [Java多线程之ReentrantLock与Condition - 平凡希 - 博客园](https://www.cnblogs.com/xiaoxi/p/7651360.html)
+3. [从ReentrantLock的实现看AQS的原理及应用 - 美团技术团队](https://tech.meituan.com/2019/12/05/aqs-theory-and-apply.html)

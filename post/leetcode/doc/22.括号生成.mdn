@@ -1,0 +1,132 @@
+# [括号生成](https://leetcode-cn.com/problems/generate-parentheses/description/ "https://leetcode-cn.com/problems/generate-parentheses/description/")
+
+| Category   | Difficulty      | Likes | Dislikes |
+| ---------- | --------------- | ----- | -------- |
+| algorithms | Medium (73.37%) | 770   | -        |
+
+**Tags**
+
+[`string`](https://leetcode.com/tag/string "https://leetcode.com/tag/string") | [`backtracking`](https://leetcode.com/tag/backtracking "https://leetcode.com/tag/backtracking")
+
+**Companies**
+
+`google` | `uber` | `zenefits`
+
+给出 *n* 代表生成括号的对数，请你写出一个函数，使其能够生成所有可能的并且**有效的**括号组合。
+
+例如，给出 *n*=3，生成结果为：
+
+```
+[
+  "((()))",
+  "(()())",
+  "(())()",
+  "()(())",
+  "()()()"
+]
+```
+
+---
+
+[Discussion](https://leetcode-cn.com/problems/generate-parentheses/comments/ "https://leetcode-cn.com/problems/generate-parentheses/comments/") | [Solution](https://leetcode-cn.com/problems/generate-parentheses/solution/ "https://leetcode-cn.com/problems/generate-parentheses/solution/")
+
+## 解法
+
+* 思路:
+
+不考虑有效的括号序列，对应所有由n个'(', ')'组成的不重复序列，可由如下递归表示：
+
+* f(l, r):  由l个'(', r个')'组成的序列；
+
+* f(l, r) = [ f(l-1, r) + '(' , f(l, r-1) + ')' ]
+
+所有上述序列中，有效的'()'序列是：
+
+```
+                                                                        ''
+                                                    (                                         ')'
+                             ((                                      "()"
+               (((                    (()                      ()(                 '())'
+       ((((            ((()    "(())"         (()(      "()()"       ()((                                                                         
+```
+
+![](https://pic.leetcode-cn.com/89828d1a1b06ea7cb2bba618b29122ae5b474c81a5efcd307119cea86415c094-%E5%8A%A8%E6%80%81%E5%9B%BE.gif)
+
+使用
+
+#### 
+
+```rust
+impl Solution {
+    /// l, r: 剩余左右括号数
+    fn travel(p: String, l: i32, r: i32, ans: &mut Vec<String>) {
+        if l > r {  //剩余'(' 多于 ')', 剪支
+            return
+        }
+        if l==0 && r == 0 {     //左右都为0， 存入结果集
+            ans.push(p);
+            return
+        }
+        if l > 0 {
+            Solution::travel(format!("{}{}", p, "("), l - 1, r, ans);
+        }
+        if r > l {
+            Solution::travel(format!("{}{}", p, ")"), l, r - 1, ans);
+        }
+    }
+
+    pub fn generate_parenthesis(n: i32) -> Vec<String> {
+        let mut ans: Vec<String> = Vec::new();
+        Solution::travel(String::new(), n, n, &mut ans);
+        ans
+    }
+}
+```
+
+```cpp
+class Solution {
+    vector<string> result;
+
+public:
+    /*
+    * ## 解题思路
+    * * 回溯法
+    * 1. 依次往path中放入'(',')'；
+    * 2. 合法的parenthesis中，每次需保证先入'(', 
+    *    因此有效的串中，每次入'(',')'中之一时，
+    *    需要保证parenthesis中的'('个数大于等于')';
+    * 3. 递归时，使用l, r分别记录剩余的'(',')数；
+    */
+    vector<string> generateParenthesis(int n) {
+        if (n==0) {
+            return result;
+        }
+
+        string path = "";
+        dfs(path, n, n);
+
+        return result;
+    }
+
+    void dfs(string& path, int l, int r) {
+        if (l>r) {
+            return;
+        }
+        if (l == 0 && r == 0) {
+            result.push_back(path);
+            return;
+        }
+
+        if (l>0) {
+            path.push_back('(');
+            dfs(path, l-1, r);
+            path.pop_back();
+        } 
+        if (r>l) {
+            path.push_back(')');
+            dfs(path, l, r-1);
+            path.pop_back();
+        }
+    }
+};
+```

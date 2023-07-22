@@ -1,0 +1,173 @@
+# ES存储详解
+
+## Elasticsearch路径
+
+Elasticsearch配置了多个路径：
+
+* `path.home`：运行Elasticsearch进程的用户的主目录。默认为Java系统属性user.dir，它是进程所有者的默认主目录。
+
+* `path.conf`：包含配置文件的目录。这通常通过设置Java系统属性es.config来设置，因为在找到配置文件之前它必然会被解析。
+
+* `path.plugins`：子文件夹为Elasticsearch插件的目录。这里支持Sym-links，当从同一个可执行文件运行多个Elasticsearch实例时，可以使用它来有选择地启用/禁用某个Elasticsearch实例的一组插件。
+
+* `path.logs`：存储生成的日志的位置。如果其中一个卷的磁盘空间不足，则将它放在与数据目录不同的卷上可能是有意义的。  
+
+* `path.data`：包含Elasticsearch存储的数据的文件夹的路径。
+
+在本文中，我们将仔细研究数据目录（path.data）的实际内容，并尝试了解所有文件的用途。
+
+### 2、文件从哪里来？
+
+由于Elasticsearch使用Lucene来处理分片级别的索引和查询，因此数据目录中的文件由Elasticsearch和Lucene写入。  
+两者的职责都非常明确：
+
+- Lucene负责写和维护Lucene索引文件，
+
+- 而Elasticsearch在Lucene之上写与功能相关的元数据，例如字段映射，索引设置和其他集群元数据。最终用户和支持功能
+
+- 在低级Lucene中不存在，由Elasticsearch提供。
+
+在深入研究并最终找到Lucene索引文件之前，让我们看看Elasticsearch编写的外部级别数据。
+
+### 3、节点数据
+
+只需从空数据目录启动Elasticsearch即可生成以下目录树：
+
+![](https://img0.tuicool.com/AbYBVra.png)
+
+- node.lock文件用于确保一次只能从一个数据目录读取/写入一个Elasticsearch相关安装信息。
+
+- 有趣的是global-0.st文件。global-前缀表示这是一个全局状态文件，
+
+- 而.st扩展名表示这是一个包含元数据的状态文件。您可能已经猜到，此二进制文件包含有关您的集群的全局元数据，前缀后的数字表示集群元数据版本，遵循跟随您的集群严格增加的版本控制方案。
+
+注意：虽然在紧急情况下使用十六进制编辑器在技术上可以编辑这些文件，但强烈建议不要这样做，因为它很快就会导致数据丢失。
+
+### 4、索引数据
+
+让我们创建一个分片索引并查看Elasticsearch更改的文件。
+
+![](https://img2.tuicool.com/J3uuInA.png)
+
+我们看到已经创建了与索引名称对应的新目录。此目录有两个子文件夹：_state和0.
+
+1. 前者*state包含所谓的索引状态文件（indices / {index-name} /* state / state- {version} .st），  
+   其中包含有关索引的元数据，例如它的创建时间戳。它还包含唯一标识符以及索引的设置和映射。
+
+2. 后者0包含与索引的第一个（也是唯一的）分片相关的数据（分片0）。
+
+接下来，我们将仔细研究一下。
+
+### 5、分片数据
+
+分片数据目录包含分片的状态文件，其中包括版本控制以及有关分片是主分片还是副本的信息。
+
+![](https://img2.tuicool.com/JVvmymQ.png)
+
+在早期的Elasticsearch版本中，还在分片数据目录中找到了单独的{shard_id} / index / _checksums-文件（和.cks-files）。在当前版本中，这些校验和现在可以在Lucene文件的页脚中找到，因为Lucene已经为其所有索引文件添加了端到端校验和。
+
+{shard_id} / index目录包含Lucene拥有的文件。Elasticsearch通常不直接写入此文件夹（除了早期版本中的旧校验和实现）。这些目录中的文件构成了任何Elasticsearch数据目录的大小。
+
+在我们进入Lucene的世界之前，我们将看一下Elasticsearch 事务日志，这在每个分片translog目录中的前缀translog-中存在。Translog日志对于Elasticsearch的功能和性能非常重要，因此我们将在下一节中更详细地解释它的用法。
+
+### 6、每个分片的事务日志（Transaction Log）
+
+Elasticsearch事务日志确保可以安全地将数据索引到Elasticsearch，而无需为每个文档执行低级Lucene提交。提交Lucene索引会在Lucene级别创建一个新的segment，即执行fsync（），会导致大量磁盘I / O影响性能。
+
+为了接受索引文档并使其可搜索而不需要完整的Lucene提交，Elasticsearch将其添加到Lucene IndexWriter并将其附加到事务日志中。在每个refresh_interval之后，它将在Lucene索引上调用reopen（），这将使数据可以在不需要提交的情况下进行搜索。这是Lucene Near Real Time API的一部分。当IndexWriter最终由于自动刷新事务日志或由于显式刷新操作而提交时，先前的事务日志将被丢弃并且新的事务日志将取代它。
+
+如果需要恢复，将首先恢复在Lucene中写入磁盘的segments，然后重放事务日志，以防止丢失尚未完全提交到磁盘的操作。
+
+### 7、Lucene索引文件
+
+Lucene在记录Lucene索引目录中的文件方面做得很好，为了方便起见，这里重现了这些文件（Lucene中的链接文档也详细介绍了这些文件从Lucene 2.1返回后所经历的变化，所以检查一下出来）：
+
+![](https://img1.tuicool.com/jymmIjJ.jpg)
+
+通常，您还会在Lucene索引目录中看到一个`segments.gen`文件，该文件是一个帮助文件，其中包含有关当前/最新segments_N文件的信息，并用于可能无法通过目录列表返回足够信息的文件系统，以确定最新一代段文件。在较旧的Lucene版本中，您还可以找到带有.del后缀的文件。它们与Live Documents（.liv）文件的用途相同- 换句话说，这些是删除列表。
+
+### 8、修复有问题的碎片
+
+由于Elasticsearch分片包含Lucene索引，我们可以使用Lucene的强大的CheckIndex工具（http://t.cn/Rs0gKjCl），这使我们能够扫描和修复有问题的段，通常只需要很少的数据丢失。我们通常会建议Elasticsearch用户简单地重新索引数据（re-index），但如果由于某种原因这是不可能的并且数据非常重要，那么这是一条可以采取的路线，即使它需要相当多的手工工作和时间， 取决于碎片的数量和它们的大小。
+
+Lucene CheckIndex工具包含在默认的Elasticsearch发行版中，无需额外下载。
+
+```
+# change this to reflect your shard path, the format is 
+# {path.data}/{cluster_name}/nodes/{node_id}/indices/{index_name}/{shard_id}/index/ 
+
+$ export SHARD_PATH=data /elasticsearch/nodes/ 0 /indices/foo/ 0 /index/ 5 
+$ java -cp lib/elasticsearch-*. jar: lib/* :lib/sigar/* - ea: org.apache.lucene... org. apache.lucene.index.CheckIndex $SHARD_PATH 
+```
+
+如果CheckIndex检测到问题并且其建议修复它看起来很合理，您可以通过添加-fix命令行参数吿诉CheckIndex应用修复程序。
+
+### 9、存储快照
+
+您可能想知道所有这些文件如何转换为快照存储库使用的存储。不用再想了：拿这个集群，将它作为我的快照快照到基于文件系统的网关，并检查存储库中的文件，我们会找到这些文件（为简洁起见省略了一些文件）：
+
+![](https://img2.tuicool.com/ye6NnaQ.png)
+
+在根目录下，我们有一个索引文件，其中包含有关此存储库中所有快照的信息，每个快照都有一个关联的快照和元数据文件。 
+
+根目录下的快照文件包含有关快照状态，快照包含的索引等信息。根目录下的元数据文件包含快照时的群集元数据。
+
+当设置compress：true时，使用LZF压缩元数据和快照文件，LZF专注于压缩和解压缩速度，这使其非常适合Elasticsearch。
+
+数据存储有标题：ZV + 1字节，指示数据是否被压缩。在标题之后，格式上将存在一个或多个压缩的64K块：2字节块长度+2字节未压缩大小+压缩数据。使用此信息，您可以使用任何兼容LibLZF的解压缩程序。
+
+在索引级别，还有另一个文件indices / {index_name} / snapshot- {snapshot_name}，其中包含索引元数据，例如快照时索引的设置和映射。
+
+在分片级别，您将找到两种文件：重命名的Lucene索引文件和分片快照文件：indices / {index_name} / {shard_id} / snapshot- {snapshot_name}。此文件包含有关快照中使用的分片目录中的哪些文件的信息，以及从快照中的逻辑文件名到具体文件名的映射，这些文件名在还原时应存储为磁盘。它还包含可用于检测和防止数据损坏的所有相关文件的校验和，Lucene版本控制和大小信息。.
+
+您可能想知道为什么这些文件已被重命名而不是仅保留其原始文件名，这可能更容易直接在磁盘上使用。
+
+原因很简单：可以在再次快照之前对索引进行快照，删除并重新创建它。在这种情况下，几个文件最终会有相同的名称，但内容不同。
+
+### 10、小结
+
+1. 在本文中，我们查看了各种级别的Elasticsearch写入数据目录的文件：节点，索引和分片级别。  
+   我们已经看到了Lucene索引存储在磁盘上的位置，并简要描述了如何使用Lucene CheckIndex工具来验证和修复有问题的碎片。
+
+2. 希望您不需要对Elasticsearch数据目录的内容执行任何操作，但是了解您最喜欢的基于搜索的数据库将哪种数据写入文件系统总是有帮助的！
+
+3. 不需要完整记住每个文件的确切含义，关键的时候知道去哪里更快的查找最重要。
+
+### 11、补充认知
+
+一份数据写入es会产生多份数据用于不同查询方式，会比原数据占用更多磁盘空间。而索引setting里"codec": "best_compression"是针对_source进行压缩的，压缩算法是deflate压缩比为6。
+
+对照上面的lucene表进行如下的关联。
+
+- 原文_source 的文件: .fdt .fdm .fdx;
+
+- 倒排索引 的文件: .tim .tip .doc;
+
+- 聚合排序 的列存文件: .dvd .dvm;
+
+- 全文检索文件: . pos .pay .nvd .nvm等。
+
+- 加载到内存 中的文件有: .fdx .tip .dvm，
+
+其中.tip占用内存最大，而.fdt . tim .dvd文件占用磁盘最大，例如
+
+```
+11 .5M     _ ap9_1w3 .liv 
+25 .0G     _ ap9 .fdt 
+31 .9M     _ ap9 .fdx 
+444 K      _ ap9 .fnm 
+53 .1G     _ ap9_Lucene50_0 .doc 
+64 .2G     _ ap9_Lucene50_0 .tim 
+781 M      _ ap9_Lucene50_0 .tip 
+87 .7G     _ ap9_Lucene54_0 .dvd 
+920 K      _ ap9_Lucene54_0 .dvm 
+104 .0K    _ ap9 .si
+```
+
+另外segment较小时文件内容是保存在.cfs文件中，.cfe文件保存Lucene各文件在.cfs文件的位置信息，这是为了减少Lucene打开的文件句柄数。
+
+es节点上shard过多了会导致内存不够，可以对静态的索引进行
+
+```
+POST {indexName}/_forcemerge?max_num_segments=1
+```

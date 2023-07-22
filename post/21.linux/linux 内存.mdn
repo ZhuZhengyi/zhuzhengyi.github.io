@@ -1,0 +1,85 @@
+# Linux内存基础
+
+## Linux内核地址类型
+
+- **物理地址**：CPU和MM之间使用。（内存在总线上的编号）
+- **总线地址**：外围总线和内存之间。（外部总线到内存总线间的映射）
+- **内核逻辑地址**：kmalloc返回的为内核逻辑地址。内核的常规地址空间。unsigned long 或 void * 类型，大小为硬件内建的指针大小，在大内存32位系统中，无法 寻址全部物理地址。与物理地址1对1映射。
+- **用户虚拟地址**：用户空间进程所用的常规地址。每个进程均拥有自己的虚拟地址空间。
+- **内核虚拟地址**：vmalloc,kmap返回的为内核虚拟地址。
+  - __pa(): 将逻辑地址物理地址;
+  - va()：将物理地址逻辑地址
+
+## 地址类型
+
+- 逻辑地址
+- 线性地址（虚拟地址）
+- 物理地址
+
+```
+逻辑地址 ---[分段]---> 线性地址 ---[分页]---> 物理地址
+```
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/11-10-54-57-2020-12-11-10-54-53-image.png)
+
+## 2. 低端内存和高端内存
+
+- 低端内存：存在于内核空间上的逻辑地址内存。
+- 高端内存：不存在逻辑地址的内存，位于内核虚拟地址之上。
+
+## 3. 用户进程内存区
+
+- **代码段**：存放可执行程序内存映像。只读；
+- **数据段**：已初始化的全局变量和静态变量。
+- **BSS段**：未初始化的全局变量；
+- **堆**：动态分配内存段。大小不固定。Malloc分配的内存
+- **栈**：局部变量，调用参数等临时
+
+## 4. /proc/meminfo解读
+
+```shell
+# cat /proc/meminfo 
+MemTotal:       16295444 kB 所有可用RAM大小（物理内存-预留位-内核二进制代码大小） 
+MemFree:        15749720 kB 被系统预留未使用的内存（LowFree+HighFree） 
+Buffers:           31700 kB 文件缓冲大小 
+Cached:           177668 kB 被高速缓存用的内存大小 
+SwapCached:            0 kB 被高速缓冲存储器用的交换空间的大小 
+Active:           108496 kB     
+Inactive:         171732 kB 
+Active(anon):      71148 kB 
+Inactive(anon):     1096 kB 
+Active(file):      37348 kB 
+Inactive(file):   170636 kB 
+Unevictable:           0 kB 
+Mlocked:               0 kB 
+SwapTotal:       8388600 kB    交换空间总大小 
+SwapFree:        8388600 kB 
+Dirty:               128 kB 
+Writeback:             0 kB 
+AnonPages:         70956 kB 
+Mapped:            36944 kB 
+Shmem:              1292 kB 
+Slab:              58240 kB 
+SReclaimable:      16796 kB 
+SUnreclaim:        41444 kB 
+KernelStack:        2344 kB 
+PageTables:        11704 kB 
+NFS_Unstable:          0 kB 
+Bounce:                0 kB 
+WritebackTmp:          0 kB 
+CommitLimit:    16536320 kB 
+Committed_AS:     257632 kB 
+VmallocTotal:   34359738367 kB 
+VmallocUsed:      305356 kB 
+VmallocChunk:   34359426528 kB 
+HardwareCorrupted:     0 kB 
+AnonHugePages:     18432 kB 
+HugePages_Total:       0 
+HugePages_Free:        0 
+HugePages_Rsvd:        0 
+HugePages_Surp:        0 
+Hugepagesize:       2048 kB 
+DirectMap4k:        6144 kB 
+DirectMap2M:     2074624 kB 
+DirectMap1G:    14680064 kB
+```

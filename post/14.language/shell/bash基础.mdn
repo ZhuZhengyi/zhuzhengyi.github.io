@@ -1,0 +1,315 @@
+# Bash基础
+
+## 简介
+
+## 特殊变量
+
+```bash
+$#        # 参数个数
+$@        # 所有参数, 每个参数分别用""包含
+$*        # 所有参数，所有参数使用一个外层" "包含
+$0        # 文件名
+$1        # 第1个参数
+$?        # 上一个命令的退出状态
+$!        # 进程ID
+```
+
+## 参数替换
+
+```bash
+${var:-value}         # 若var已设置，则不进行赋值， 否则，var=value
+${var:=value}         # 总取value
+${var:?mesg}          # 若var未设置，则显示mesg
+${var:+value}         # 若var未设置，则var为空， 否则，var=value
+${var%pattern}        # 从var右边去掉最短的pattern%%
+${var%%pattern}       # 从var右边去掉最长的pattern
+${var#pattern}        # 从var左边去掉最短的pattern
+${var##pattern}       # 从var左边去掉最长的pattern
+${word:pos:size}      # chars at pos(>0,from left; <0, from right ) len of size
+${var/ABC/DEFG}       # replace ABC with DEFG
+```
+
+## 字符串
+
+```shell
+str="abcdef"
+expr length $str   # 4
+echo ${#str}       #获取字符串长度 4
+## 获取子串index
+expr index $str "b"  # 2
+echo ${str:2:3}    #从第二个位置开始提取3个字符, bcd
+
+## 左边截取掉最短的匹配 
+str="abbc,def,ghi,abcjkl"
+echo ${str#a*c}     # #从左边截取掉最短的匹配， 输出： ,def,ghi,abcjkl
+echo ${str##a*c}    # ##从左边截取掉最长的匹配， 输出：jkl
+echo ${str#"a*c"}   # 输出abbc,def,ghi,abcjkl 因为str中没有"a*c"子串
+echo ${str##"a*c"}  # 输出abbc,def,ghi,abcjkl 同理
+echo ${str#*a*c*}   # 空
+echo ${str##*a*c*}  # 空
+echo ${str#d*f}     # 输出abbc,def,ghi,abcjkl, 
+echo ${str#*d*f}    # 输出,ghi,abcjkl   
+## 从右边截取最短的匹配
+echo ${str%a*l}     # %表示从右边截取最短的匹配， abbc,def,ghi   
+echo ${str%%b*l}    # %%)表示从右边截取最长的匹配， a             
+echo ${str%a*c}     # abbc,def,ghi,abcjkl
+
+## 子串替换
+str="apple, tree, apple tree"
+echo ${str/apple/APPLE}   #/替换第一次出现的apple， APPLE, tree, apple tree
+echo ${str//apple/APPLE}  #//替换所有apple， APPLE, tree, APPLE tree 
+echo ${str/#apple/APPLE}  #/#开头匹配替换， APPLE, tree, apple tree
+echo ${str/%apple/APPLE}  #%末尾匹配替换， 如果字符串str以apple结尾，则用APPLE替换它
+```
+
+## 数组(array)
+
+* bash中的数组index可以不连续；
+
+```bash
+## 定义数组
+declare -a array1  array2=( a b c  d )
+## 数组赋值
+array1[2]=a1
+## 数组所有value             
+${array1[*]}
+${array1[@]}
+## 数组元素个数
+echo ${#array1[*]}
+## 数组元素:        
+echo ${array1[2]}
+
+## 数组元素增加前缀
+array=( ${array[@]/#/prefix_} ) # prefix_a prefix_b prefix_c
+array=( "${array[@]/%/_suffix}" ) # a_suffiix b_suffix c_suffix
+```
+
+### 字典(dict)
+
+bash 4.1.2 版本以上内置dict支持
+
+```shell
+## bash version > 4.1.2
+
+## 字典声明
+declare -A hashmap
+
+hashmap=( ['a']=1
+       ['b']=2
+       ['c']=3 )
+
+## 字典赋值
+hashmap["key"]="value"
+hashmap["key2"]="value2"
+## 获取value
+echo ${hashmap["key"]}
+## 所有key
+echo ${!hashmap[@]}
+## 所有value
+echo ${hashmap[@]} 
+
+## 
+hashmap+=( ["key4"]=val4 ["key5"]=val5 )
+## 删除key
+unset host_panes[$delhost]
+
+## 遍历key
+for key in ${!hashmap[@]}; do echo $key ${hashmap[$key]}; done
+## 遍历value
+for value in ${hashmap[@]}; do echo $value; done
+
+## 关联数组作为函数参数传递
+function print_array {
+    # eval string into a new associative array
+    eval "declare -A func_assoc_array="${1#*=}
+    # proof that array was successfully created
+    declare -p func_assoc_array
+}
+
+# declare an associative array
+declare -A assoc_array=(["key1"]="value1" ["key2"]="value2")
+# show associative array definition
+declare -p assoc_array
+
+# pass associative array in string form to function
+print_array "$(declare -p assoc_array)"
+```
+
+## 引用
+
+```shell
+
+```
+
+## 4. case 语句
+
+```bash
+case $arg in
+    -a|--aaa)  do_a ;;
+    -b|--bbb)  do_b ;;
+    c*)  do_c  ;;
+    *)  ;;
+esac
+```
+
+## 5. read
+
+```bash
+while read line ; do
+    echo "a $line"
+done <filename
+```
+
+## 6. 逻辑操作符
+
+```bash
+[ exp1 -a exp2 ]  #逻辑与
+[ exp1 -o exp2 ]  #逻辑或
+[[ ! exp ]]         #逻辑非
+```
+
+## 7. || 和 &&
+
+```bash
+cmd1 && cmd2                #    if cmd1 == true ; then cmd2    ;
+cmd1 || cmd2                #    if cmd1 == false; then cmd2 ;
+cmd1 && cmd2 || cmd3        #    cmd1 ? cmd2 : cmd3
+```
+
+## 8. 字符串操作符
+
+```bash
+[ $str1  = $str2 ] && echo " str1 == str2 "
+[ $str1 != $str2 ] && echo " str1 != str2 "
+[ $str ] && echo " str 非空 "
+[ -n $str ] && echo " str 不为空"
+[ -z $str ] && echo " str1 空 "
+```
+
+## 9. 整数操作符
+
+```bash
+[ $n1 -eq $n2 ] && echo " n1 == n2 "
+[ $n1 -ne $n2 ] && echo " n1 != n2 "
+[ $n1 -gt $n2 ] && echo " n1 > n2 "
+[ $n1 -ge $n2 ] && echo " n1 >= n2 "
+[ $n1 -lt $n2 ] && echo " n1 < n2 "
+[ $n1 -le $n2 ] && echo " n1 <= n2 "
+```
+
+## 10. 文件操作符
+
+```bash
+[ -e $file ] && echo " $file 存在 "
+[ -s $file ] && echo " $file 长度不为0 "
+[ -f $file ] && echo " $file 普通文件 "
+[ -d $file ] && echo " $file 目录 "
+[ -L $file ] && echo " $file 链接文件 "
+[ -r $file ] && echo " $file 可读 "
+[ -w $file ] && echo " $file write "
+[ -x $file ] && echo " $file excute "
+```
+
+## 11. for
+
+```bash
+### 遍历列表
+for var in var1 var2 ... varn ; do
+    echo $var
+done
+
+### 遍历数组
+array=( var1 var2 ... varn )
+for var in ${array[@]}; do
+    echo $var
+done
+```
+
+## 12. 算术运算
+
+```bash
+size=512
+cnt=8
+total=$(($size*$cnt))
+```
+
+## 13. seq
+
+```bash
+$ seq LastNum
+$ seq FirstNum LastNum
+$ seq FirstNum Step LastNum
+```
+
+## 16 echo
+
+```bash
+### 输出颜色字符
+$ echo -ne "\E[BACK_GROUND_NUM;FOREGROUND_NAME m"  TEXT
+$ echo -ne "\E[0m"
+
+### 输出到（x,y）坐标处
+$ echo -ne "\E[x;yH""TEXT"
+```
+
+## 判断
+
+```bash
+[[ -L "/path/to/link" ]] && echo "true" || echo "false"
+[[ -F "/path/to/file" ]] && echo "true" || echo "false"
+```
+
+## 数组
+
+## 常用操作
+
+1. 批量创建目录
+   
+   ```bash
+   mkdir -p /data{0..10}/hdfs/{name,data}
+   ```
+* 合并行
+
+```bash
+sed -n '/Throught*/,/Test*/p' /tmp/hdfs_io_test.txt  | awk -F": " '{print $2}' | sed -n 'N;N;N;s/\n/\t/gp'
+```
+
+* 输出奇数/偶数行
+
+```sh
+sed -n 'n;p' /filename   #输出偶数行
+sed -n 'p;n' /filename   #输出奇数行
+```
+
+## 变量替换
+
+```bash
+## 从变量 var 的**开头**删除最短或最长匹配 Pattern 的子串
+## ${var#Pattern}, ${var##Pattern}
+var="abc:123:456"
+echo ${var#*:}   #123:456
+echo ${var##*:}  #456
+
+## 从变量 $var 的结尾删除最短或最长匹配 $Pattern 的子串
+echo ${var%:*}   #abc:123
+echo ${var%%:*}  #abc
+```
+
+```bash
+set -euo pipefail  #pipe fail if any reture not 0
+```
+
+## 模板文件变量替换
+
+```bash
+#!/bin/sh
+
+# render a template configuration file
+# expand variables + preserve formatting
+render_template() {
+  eval "echo \"$(cat $1)\"" 2>/dev/null
+}
+
+user="Gregory"
+render_template /path/to/template.txt > path/to/configuration_file
+```

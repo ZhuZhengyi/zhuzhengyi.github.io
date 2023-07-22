@@ -1,0 +1,72 @@
+# HBase 启动
+
+## 启动命令
+
+```shell
+$HBASE_HOME/bin/hbase-daemon.sh start master
+$HBASE_HOME/bin/hbase-daemon.sh start regionserver
+```
+
+## Master
+
+HBase master 源码主要位于`hbase-server/org.apache.hadoop.hbase.master`路径下，入口类为`HMaster`, 继承了`HRegionServer`类，实现`MasterServices`接口。
+
+```java
+public class HRegionServer extends HasThread implements
+    RegionServerServices, LastSequenceId, ConfigurationObserver
+```
+
+## Regionserver
+
+HBase regionserver 源码主要位于`hbase-server/org.apache.hadoop.hbase.regionserver`路径下，入口类为`HRegionServer`, 继承了`HasThread`类，实现`RegionServices`,`LastSequenceId`, `ConfigurationObserver`接口。
+
+```java
+public class HRegionServer extends HasThread implements
+    RegionServerServices, LastSequenceId, ConfigurationObserver
+```
+
+## 启动
+
+1. `$HBASE_HOME/bin/hbase-daemon.sh start master` 会调用`$HBASE_HOME/bin/hbase`启动`org.apache.hadoop.hbase.master.HMaster`
+
+2. `HMaster`入口函数在`HMaster.main()`
+
+3. `HMaster.main()`通过`HmasterCommandLine.run()`执行`HmasterCommandLine.startMaster()`,`startMaster()`通过`Hmaster.constructMaster()`创建master实例；master实例通过`startActiveMasterManager()`设置守护线程来阻塞执行成为试图成为活动Master，成功后，执行`finishActiveMasterInitialization()`;
+
+4. `Hmaster.finishActiveMasterInitialization()`完成如下操作：
+   
+   1. 启动监控线程InitializationMonitor；
+   
+   2. 加载meta 表；
+   
+   3. 设置zk中clusterID；
+   
+   4. 创建serverManager；
+   
+   5. 创建clusterConnection；
+   
+   6. 初始化zk结构；
+   
+   7. 初始化MasterCoprocessor；
+   
+   8. 启动服务线程；
+      
+      1. 
+   
+   9. serverManager等待rs注册；
+   
+   10. 
+
+5. 
+
+## 参考
+
+1. http://09itblog.site/?p=72
+
+2. [hbase源码系列（六）HMaster启动过程 - 云+社区 - 腾讯云](https://cloud.tencent.com/developer/article/1047962)
+
+3. [HBase源码分析3—HMaster启动过程 - Yiz96](https://blog.yiz96.com/hbase-src-3-master/)
+
+4. [（二）HBase集群启动流程分析 - 简书](https://www.jianshu.com/p/8821b2845830)
+
+5. https://blog.csdn.net/yueyedeai/article/details/16927795

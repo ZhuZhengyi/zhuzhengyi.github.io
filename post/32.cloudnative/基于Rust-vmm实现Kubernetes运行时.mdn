@@ -1,0 +1,166 @@
+# 基于Rust-vmm实现Kubernetes运行时
+
+随着容器及K8s的广泛使用，越来越多的容器安全与隔离问题被暴露出来，如：容器逃逸、水平攻击、DDos攻击等严重威胁了办公和生产环境的安全与稳定，影响了业务的正常运行。安全容器技术孕育而生，产生了kata、gVisor、unikernel等多种安全容器方案。本文旨在介绍各种安全容器方案，分析各方案特点，结合腾讯在容器安全领域的实践，帮助读者选择适合自身特性的容器运行时。同时引入Rust-VMM项目，介绍 Rust-VMM 技术和生态，演示如何使用K8s调度和启用Rust-VMM安全容器运行时，展望以Rust语言实现的容器运行时的广阔前景。
+
+## 容器安全与隔离
+
+一个基于K8s集群构建的基础设施中，内部存在不同层次的隔离，从容器到Pod再到节点最后到cluster，每一层隔离都有它的特点和特性，我们尤其关注Pod级别的隔离特性。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152741563-235525556.png)
+
+相比其他层次的安全隔离，Pod及容器级别的隔离对我们的挑战非常大。容器在运行时使用root运行进程，尽管使用namespace技术为容器空间内的pid、uts、fib等进行了隔离，但由于各个容器共享系统内核，容器与内核间缺乏隔离保护，容易引发容器逃逸等安全问题，典型容器逃逸攻击如：CVE-2018-14634、CVE-2016-5195、CVE-2019-5736 及 CVE-2019-14271等。
+
+```
+docker.vh.neargle.com:8888/?command_exec=python3 -c "import docker;client = docker.DockerClient(base_url='unix:///var/run/docker.sock');data = client.containers.run('alpine:latest', r'''sh -c \"echo 'ssh-rsa xxxxx root@620e839e9b02' >> /tmp/root/root/.ssh/authorized_keys\" ''', remove=True, volumes={'/': {'bind': '/tmp/root', 'mode': 'rw'}})"
+```
+
+上述脚本是一个简单的例子，这段代码会向docker.sock的端口发起请求，拉起一个alpine的容器，容器内进程会向所在主机注入一段SSH的公钥。在容器里的恶意用户或者攻击者，就可以获轻松得这个容器所在host主机的SSH的登录权限，从而能够非法查看同主机其他容器空间的信息，篡改关键文件或记录，甚至以主机为跳板攻击整个集群。
+
+还有一个就是Noisy Neighbor，就是吵闹邻居问题。关于Noisy Neighbor，容器方面已经有了很多进展，比如对于CPU、memory、bandwidth甚至是buffer IO，基于Cgroup对这些资源已经有了一些隔离和限制，但是这些限制并不能完全解决Noisy Neighbor的问题，还是有一些吵闹的进程会影响到正常的业务进程的运行。
+
+```
+# kubectl run --rm -it bb --image=busybox sh
+/ #  f(){ f|f& };f                   # WARNING: Don't try this!
+```
+
+上面是一个简单的例子，启动一个busybox的容器，在里面执行一个嵌套循环的指令，会把这台主机上所有的file descriptor全部耗尽，造成这台主机上正常运行的业务进程工作不正常，这个是Noisy Neighbor的风险和问题。
+
+对于上述问题，建议用户关注官方的漏洞报告，升级操作系统或docker的版本，根据安全指引配置容器环境，同时可以参考以下措施增强容器集群的安全防护级别。
+
+- 在物理层面上隔离，为不同的租户之间划分不同的Hardware Isolation域，让不同的租户使用不同的硬件空间，从物理上、网络上以及存储上彻底的隔离，这也是最直接最有效的方法。
+- 利用一些Security Tools，包括经常用的SElinux或者Cgroup隔离，划分不同的资源访问和安全规则，但是这些安全规则需要编写大量的profile文件，实现起来难度颇大。
+- 入侵检测机制，主机防御的一种手段。入侵检测的软件或者进程会监控这台主机上有风险的进程或者有风险的文件，对于这些文件的读写操作都会有安全方面的记录，会即时预警，即时响应。比如对于containerd-shim/busybox/docker-runc的关键进程，比如docker-runc对于bash、init或者对于fd的访问都可以做到即时的预警和标记。对于上面提到的容器逃离漏洞，通过入侵检测的机制，就可以有一个比较有效的防御。
+- 定制Linux Kernel Patch，一些特殊的资源隔离或者安全漏洞，也可以为kernel打一些自身特有的patch来加以防范，但是这里的patch面临的问题是多种多样的，所以这里就不再展开细讲了，如果有关注的同学可以参考一下腾讯对于Linux Kernel方面的一些文章和报道。
+
+## 容器运行时
+
+上述安全实践方案和措施能够很大程度的减少对外提供服务时受攻击的范围，提高容器服务的安全能力。但我们仍然想要寻找一种简单的、有效的、统一的runtime解决方法，我们把眼光投入到CNCF runtime landscape，可以看到有多种解决方案。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152742121-1302756782.png)
+
+简单梳理一下这些解决方案，都是按照两大标准划分的。一个就是CRI的标准，偏向于kubelet或者K8s这一侧的标准。还有一侧的标准就是OCI，就是偏向于容器底层基础实现。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152742535-34860949.png)
+
+可以看到OCI这边有很多种实现方案，简单梳理一下，划分了一个表格：
+
+| OCI Solution                         | OCI Compatible | Dedicated Docker Image | Implementation Language | Open source | Hot plug | Direct access to HW | Required Hypervisors | Backed by |
+| ------------------------------------ | -------------- | ---------------------- | ----------------------- | ----------- | -------- | ------------------- | -------------------- | --------- |
+| Runc                                 | yes            | yes                    | golang                  | yes         | no       | yes                 | None                 | Docker    |
+| gVisor + runsc                       | yes            | yes                    | golang                  | yes         | no       | no                  | none or kvm          | Google    |
+| Kata + qemu                          | yes            | yes                    | golang,C                | yes         | yes      | yes                 | kvm                  | Hyper     |
+| Firecracker + Firecracker containerd | no             | yes                    | Rust,golang             | yes         | no       | no                  | kvm                  | Amazon    |
+| Nabla + runnc                        | yes            | no                     | C,golang                | yes         | no       | no                  | None                 | IBM       |
+
+简单介绍一下，比如有runc的方案，就是基于原生namespace的容器方案，docker使用的，containerd直接对接的runc的方案。GVisor是谷歌开源出来的一种基于用户态的内核进程的安全沙箱技术的方案。Kata和qemu的基于虚拟化实现安全容器，这个现在也是比较热门，使用比较广泛的一种方案。Firecracker，由AWS开源出来的，Firecracker Containerd是对接OCI标准的组件，但现在还没有完全对接OCI标准，所以这里是有所欠缺的。最后是Nabla, runnc是Nabla对接OCI实现的一个组件，Nabla是IBM开源的一套安全容器的方案，但是它跟上述的一些方案有所区别，它是一个基于unikernel的方案，把业务应用和内核完全编译在了一起，直接运行在host上面，所以可以看到它跟其他的方案不一样的就是它不能直接使用容器的镜像，需要自己编译一个带着内核的特殊镜像，所以用起来不太符合容器的标准。
+
+比较下来，典型的三种安全容器方案就是runc，kata-runtime，以及 gvisor 方案。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152742858-1802008601.png)
+
+三种方案各有优缺点，从架构来说，runc的方案最简单，直接用原生的namespace的方案。kata是基于hypervisor的方案，就是基于虚拟化的方案，所以它的每一个容器或者它的容器是运行在一个一个guest kernel上面，就是guest的虚拟机里，然后会有一个kata agent负责runtime跟底层真正跑的container的进行通信。GVisor是介于runc和kata runtime之间，它不像Kata有一个虚拟化的Guest Kernel的存在，它是把Guest Kernel变成了一个运行于用户态的一个内核的进程叫做Sentry，Gofer是它IO的组件，核心的sentry负责的就是拦截和劫持所有运行在它的沙箱里面容器的所有的Syscall，对系统调用进行过滤和保护。
+
+| Solution                         | Typical Software | Bullet Point                                          |
+| -------------------------------- | ---------------- | ----------------------------------------------------- |
+| Rule-based Sandbox               | RunC             | Needs to work with SELinux, AppArmor, Seccomp, cgroup |
+| VM-based Sandbox                 | Kata-container   | BareMetal Only, Heavy control logic                   |
+| Application kernel based Sandbox | gVisor           | Compatibility problem, Bottleneck in Sentry           |
+
+最后汇总比较一下，runc的方案实现最简单，而且它的性能也是最好的。但是一大缺点就是安全隔离的特性不够安全，所以需要大量的外部Security Tools的保护。  
+基于kata的虚拟化的沙箱方案，它只能运行在支持KVM虚拟化的环境上面，因为他的虚拟层是基于KVM实现的。Kata的逻辑的链路很长，调用的路径也非常长，会造成一些性能上的损耗，也会有一些问题。  
+GVisor介于两者之间，但是GVisor现在的问题就是它的兼容性不够，300多个系统调用只能兼容里面的一部分，并且Sentry的作为核心会有一些性能瓶颈。
+
+腾讯云在安全容器上融合和上述方案的优点，结合腾讯云在虚拟化，存储和网络方面的优势，  
+选择使用mVMd + QEMU + EKLET的方案，实现一个弹性的Kubernetes的服务，即EKS，大家可以访问一下腾讯云的官网，看一下EKS的介绍。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152743279-1189442692.png)
+
+EKS是基于Hypervisor的虚拟化的解决方案，不同于Kata，EKS使用的containerd + mVMd组件更加轻量，调用路径更短。通过containrtd + mVMd来实现对于上层K8s调用的CRI的解析，并且把它转化成真正对于底层一个一个Guest VM或者QEMU的控制指令，在guest VM里会启动相应的containers容器。
+
+在整个的架构中，在Runtime方面最大的瓶颈是QEMU，因为QEMU有几十年的历史了，所以存在着它比较臃肿，反应慢，占用的资源多等等问题。所以让QEMU作为底层Runtime还不够快，不够安全。为了增强QEMU的性能和安全特性，我们很自然把眼光投向了Rust-Vmm。
+
+## Rust-Vmm 介绍
+
+Rust-Vmm是一个开源工程，是一个可以自由定制的VMM（virtual machine monitor）虚拟机管理器，用户可以按照自己的方式订制它。它是基于Rust语言实现的VMM，有着Rust语言带来的优点和特性。
+
+首先，Rust语言一个内存安全的语言，相比于用C或者C++会频繁遇到的各种内存的问题，比如内存的溢出、空指针、野指针、越界访问等等，更进一步会造成安全的问题、性能的问题，以及各种崩溃的问题。Rust语言很好地解决了这一点，从它的语法、编译规则等杜绝了内存级别访问的漏洞以及风险，所以用Rust写的Rust-Vmm天然的就是内存安全的。
+
+第二，Rust-Vmm是不易被攻击的，Rust-VMM是从零开始的，它是从最小的硬件虚拟化出发的，最小的硬件虚拟化意味着它有着最小的攻击面，被攻击的面就非常少，所以它会很安全。
+
+第三，Rust-Vmm能够很灵活的定制。Rust-VMM可以灵活定制它的每一个组件，所有的对于设备的模拟或者关键特性的处理都是封装成了一个一个的Rust-Vmm crates包，比如有VCPU，有linuxloader，vm-virtIO等等。其中crates是Rust语言中的包管理工具，可以理解JAVA或golang里面的package，它是以发行不同的包或者库的形式对外发布它的feature。
+
+第四，Rust-Vmm有非常高的性能，基于Rust语言的without garbage collection特性，它是没有GC回收检查机制的，不像JAVA或者其他更高级的语言会有一个runtime，Rust-Vmm的性能上会更好，同时基于KVM实现的虚拟化方案也是性能的保证。
+
+简单介绍一下Rust-Vmm的一个历史，它是由谷歌首先实现的，谷歌首先实现一个Rust based的轻量级的VMM，它叫做crosVM，大家也可以从链接里面看到，它是一个为chrome浏览器做的一个微内核。然后AWS，亚马逊基于谷歌开源出来的crosVM，实现了自己的基于rust的VMM叫Firecracker。两个项目的开发人员会发现做这两个项目的时候，会有很多重复的重叠的通用的代码，很自然的把可以开源的、通用的部分结合到一块，就有了Rust-Vmm的项目。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152744047-2026623938.png)
+
+从这个全景图里面可以看到，Rust-Vmm应用在多个项目和产品中。从最开始的谷歌开源的crosVM里面会有Rust-Vmm，比如AWS的Firecracker、以及其它CSP云服务器厂商，比如QEMU里面会把一些耗时的或者内存访问的部分也用Rust-Vmm实现，还有开源的Cloud Hypervisor项目。
+
+Cloud Hypervisor是Intel开源出来的一套框架，把Rust-Vmm的组件组合在一起，能够对外提供一个VMM的完整服务。用户可以配置使用已公开发布的crates包，或集成自己的开发的crates包，通过将各种crates包组合在一起，就可以生成一个订制的安全的高性能的VMM。
+
+## 基于 Rust-Vmm 实现 K8s Runtime
+
+讲到这里，基于Rust-VMM的一个实现，组件、原料和所有的知识都已经具备了，接下来就是如何对接K8s，基于Rust-VMM实现Kubernetes runtime，运行一个Kubernetes的Pod。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152744656-1532690951.png)
+
+测试环境如图所示，用到了包括K8s, containerd, Kata, Rust-Vmm, Cloud Hypervisor等开源项目，首先我们配置Kubernetes节点上的kubelet使用的runtime为containerd, 在containerd上配置了Kata-runtime作为容器的运行时，再配置了Kata-runtime使用的vmm为基于Rust-Vmm crates构建的Cloud Hypervisor，同时为了提升性能，这里也是用了virtos-fs技术来承载物理机上的容器镜像到子机内容器的imagefs的共享，所以在物理机上需要额外开启virtiofsd的进程，在guest os的内核上也是使用最新的包含virtio-fs支持的内核版本。
+
+在K8s上创建一个Pod后，调度器调度这个Pod到我们这个环境上的一个worker节点，节点上的kubelet进程根据我们的配置调用containerd，containerd的runtime插件kata来创建Cloud Hypervisor的vmm（virtual machine monitor），在子机内预置的Guest OS操作系统启动后，kata-agent也随之启动，成功建立母机与子机的通道，后续cri协议中的createcontainer，startcontainer以及停止容器等接口也由这个通道传递到子机内的kata-agent，由其来调用子机内真正的容器运行时，从而完成整个pod的生命周期。
+
+![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152745549-1637303293.png)
+
+我们来看一下最终我们达到的一个效果，如图中第一条指令，我们执行kubectl get pod命令可以看到pod的状态为运行中，同样的，我们也可以通过crictl pods命令查询到这个Pod的状态。通过ps查询进程列表，可以看到包含这个pod id的kata shim进程，virtiofsd进程以及cloud-hypervisor这个vmm的进程。最后我们也可以通过kubectl exec -it交互式的进入pod的container内，通过uname返回此容器使用的内核版本为5.6，物理机的内核版本为5.4。
+
+## 总结与展望
+
+最后是对未来的展望，基于Rust-Vmm我们想要做得更多。比如希望扩展一下Rust-Vmm在网络以及存储方面的一些特性，尤其是在腾讯云的环境里面，通过结合CBS和VPC，提升Runtime的性能。
+
+第二，会结合入侵检测、主机安全、安全工具等，把它们融合在一起，构建起一个多维的、多重防护的一套全维度安全的容器服务平台，Rust-VMM会实现里面的一部分。
+
+第三，扩展Rust Runtime，尤其在边缘计算领域，在边缘端能够实现K8s以下完全由Rust接管，由Rust语言全部重写，比如底层的Containerd、 shim等组件，变成一个Full Stack Rust的实现。
+
+最后，因为Rust-VMM也是基于hypervisor的一个实现，所以基于hypervisor的一些特性，比如热迁移、备份、回滚这些机制，未来都可以在Rust-Vmm上有所实现，这个也是我们的未来的一个设想。
+
+最后大家如果想要了解更多关于我刚才介绍的K8s Runtime，Rust-Vmm以及EKS方面的知识，大家可以扫描下方的二维码加入腾讯云容器团队的公众号。
+
+或者点击下方的网址了解TKE的公有云产品。腾讯云对外也有一个开源出来的项目叫做TKEstack，大家可以从下方的github网址访问得到，也希望大家多多支持。
+
+- Learn more about TKE:
+  
+  [https://cloud.tencent.com/product/tke](https://cloud.tencent.com/product/tke)
+  
+  [https://github.com/tkestack/tke](https://github.com/tkestack/tke)
+
+- Join us:
+  
+  [https://careers.tencent.com/home.html](https://careers.tencent.com/home.html)
+
+最后如果大家有兴趣，立志于开源事业，立志于CNCF的云原生事业，也欢迎大家加入腾讯的团队。链接就在上方，欢迎大家加入我们。
+
+## Q&A
+
+1. 现在的Rust-VMM项目开源了，哪里可以看到项目相关的信息？
+   
+   Rust-VMM是有谷歌，也有亚马逊、英特尔，也有业内的厂商共同开源出来的一个项目，相关的信息大家可以从github([https://github.com/rust-vmm](https://github.com/rust-vmm))上面找到它们开源的项目，另外google一下就可以找到这个项目更多的信息。
+
+2. 基于Rust-Vmm成熟度如何，基于Rust-Vmm构建的安全容器主要解决了哪些难题。
+   
+   大家可以对比一下AWS开源的Firecracker，它就是基于Rust-Vmm实现的一套亚马逊自己的方案，而且这套方案已经应用在了亚马逊fargate以及lambda的项目，serverless的解决方案里面。所以基于Rust-Vmm这种项目的成熟度，亚马逊已经把它做到商用了，这一点是有所保证的。
+   
+   但是Rust-Vmm本身又是开源的项目，它是跟AWS的firecracker有不太一样的地方，成熟度方面肯定是有所欠缺的，需要厂商自己维护和保证质量问题或者安全问题。
+   
+   因此我想说基于Rust-Vmm实现的方案，亚马逊已经帮我们做了前驱的工作，已经帮我们做了一个商业上的试水，所以这个是没有问题的。
+
+3. 是否现在的公有云容器运行时都不倾向于使用runc。
+   
+   不是不使用runc，使用runc有一些隔离的问题。比如两个租户共用一个物理资源池，或者两个租户的容器运行在一个物理节点上，这个时候就带来了容器逃离以及吵闹邻居的问题，多租户的场景下或者serverless的场景下就会有这种问题。
+   
+   所以大部分的公有云厂商的解决方案其实就是物理隔离。一个租户所在的物理主机都是属于自己的，属于同一个租户的，所以你会发现某一个用户假如从一个容器里面逃离出去之后，逃离出去的这台主机还是自己的，所以这样逃出去，从物理上面还有安全防护的。
+   
+   但是这种面对于serverless的场景，serverless天然的就是要脱离主机的管理、脱离主机的隔离，所以serverless场景下，跟公有云的容器服务就有所区别，它就不能简单靠物理隔离的方式实现的，它就要考虑沙箱(安全容器)的技术，比如像刚才我也介绍了多种多样的沙箱隔离的技术，我们可能选择的就是这种基于hypervisor的实现方案。
+   
+   如果感兴趣，您可以访问一下腾讯云的官网，看一下里面EKS相关的介绍，这个就是腾讯对于这一领域的解决方案和贡献。  
+   【腾讯云原生】云说新品、云研新术、云游新活、云赏资讯，扫码关注同名公众号，及时获取更多干货！！  
+   ![](https://img2020.cnblogs.com/other/2041406/202008/2041406-20200825152746220-411727604.png)

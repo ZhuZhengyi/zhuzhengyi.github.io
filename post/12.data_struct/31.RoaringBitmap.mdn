@@ -1,0 +1,83 @@
+# RoaringBitmap
+
+## 简介
+
+* RoaringBitmap（简称为 RBM）是 2016 年由 S. Chambi、D. Lemire、O. Kaser 等人在论文中提出的一种高效位图压缩算法;
+
+* 用于解决稀疏位图空间占用效率问题。
+
+## 主要思想
+
+将 32 位无符号整数按照高 16 位分桶，即最多可能有 216=65536 个桶，称为`container`。存储数据时，按照数据的高 16 位找到 container（找不到就会新建一个），再将低 16 位放入 container 中。也就是说，一个 RBM 就是很多 container 的集合。如下所示。
+
+![](https://upload-images.jianshu.io/upload_images/195230-7b71d0d9abe6e906.png?imageMogr2/auto-orient/strip|imageView2/2/w/998/format/webp)
+
+图中示出了三个 container：
+
+- 高 16 位为 0000H 的 container，存储有前 1000 个 62 的倍数。
+- 高 16 位为 0001H 的 container，存储有[216, 216+100)区间内的 100 个数。
+- 高 16 位为 0002H 的 container，存储有[2×216, 3×216)区间内的所有偶数，共 215 个。
+
+container 是 RBM 新创造的概念，自然也是提高效率的核心。为了更高效地存储和查询数据，不同情况下会采用不同类型的 container，下面深入讲解一下 container 的细节。
+
+### Container
+
+- ArrayContainer: 当桶内数据的基数不大于 4096 时，会采用它来存储，其本质上是一个 unsigned short 类型的有序数组。数组初始长度为 4，随着数据的增多会自动扩容（但最大长度就是 4096）。另外还维护有一个计数器，用来实时记录基数。上图中的前两个 container 基数都没超过 4096，所以均为 ArrayContainer。
+
+- BitmapContainer: 当桶内数据的基数大于 4096 时，会采用它来存储，其本质就是上一节讲过的普通位图，用长度固定为 1024 的 unsigned long 型数组表示，亦即位图的大小固定为 216 位（8KB）。它同样有一个计数器。上图中的第三个 container 基数远远大于 4096，所以要用 BitmapContainer 存储。
+
+- RunContainer: RunContainer 在图中并未示出，初始的 RBM 实现中也没有它，而是在本节开头的第二篇论文中新加入的。它使用可变长度的 unsigned short 数组存储用行程长度编码（RLE）压缩后的数据。举个例子，连续的整数序列`11, 12, 13, 14, 15, 27, 28, 29`会被 RLE 压缩为两个二元组`11, 4, 27, 2`，表示 11 后面紧跟着 4 个连续递增的值，27 后面跟着 2 个连续递增的值。由此可见，RunContainer 的压缩效果可好可坏。考虑极端情况：如果所有数据都是连续的，那么最终只需要 4 字节；如果所有数据都不连续（比如全是奇数或全是偶数），那么不仅不会压缩，还会膨胀成原来的两倍大。所以，RBM 引入 RunContainer 是作为其他两种 container 的折衷方案。
+
+来简要看看它们的复杂度和转换方法。
+
+## 时空分析
+
+增删改查的时间复杂度方面，BitmapContainer 只涉及到位运算，显然为 O(1)。而 ArrayContainer 和 RunContainer 都需要用二分查找在有序数组中定位元素，故为 O(logN)。
+
+空间占用（即序列化时写出的字节流长度）方面，BitmapContainer 是恒定为 8192B 的。ArrayContainer 的空间占用与基数（c）有关，为(2 + 2c)B；RunContainer 的则与它存储的连续序列数（r）有关，为(2 + 4r)B。以上节图中的 RBM 为例，它一共存储了 33868 个 unsigned int，只占用了 10396 个字节的空间，可以说是非常高效了。
+
+#### Container 的创建与转换
+
+在创建一个新 container 时，如果只插入一个元素，RBM 默认会用 ArrayContainer 来存储。如果插入的是元素序列的话，则会先根据上面的方法计算 ArrayContainer 和 RunContainer 的空间占用大小，并选择较小的那一种进行存储。
+
+当 ArrayContainer 的容量超过 4096 后，会自动转成 BitmapContainer 存储。4096 这个阈值很聪明，低于它时 ArrayContainer 比较省空间，高于它时 BitmapContainer 比较省空间。也就是说 ArrayContainer 存储稀疏数据，BitmapContainer 存储稠密数据，可以最大限度地避免内存浪费。
+
+RBM 还可以通过调用特定的 API（名为 optimize）比较 ArrayContainer/BitmapContainer 与等价的 RunContainer 的内存占用情况，一旦 RunContainer 占用较小，就转换之。也就是说，上图例子中的第二个 ArrayContainer 可以转化为只有一个二元组`0, 100`的 RunContainer，占用空间进一步下降到 10200 字节。
+
+## 应用场景
+
+官方提供了 RBM 的多种语言实现，Java、C/C++、Python、Go、C#等等一应俱全。Java 版本的 GitHub repo 见[这里](https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Flemire%2FRoaringBitmap)。代码比较多，但思路很清晰，看官如果对位运算比较熟悉的话读起来不难，故本文就不再长篇大论地讲源码了。值得注意的几点如下：
+
+- 两个 RBM 做集合操作时，不同种类 container 之间位运算的处理方式，如 ArrayContainer AND BitmapContainer，BitmapContainer OR RunContainer 等；
+- 对 64 位整数的支持（32 位有时会不够用哈）；
+- 能够将 RBM 数据写到堆外，即内存映射；
+- 支持 Kryo 序列化方式。
+
+RBM 的应用范围极广，下面只简单列举几个有代表性的应用，并给出 reference。
+
+#### Lucene
+
+为了加速搜索，Lucene 会将常用的查询过滤条件产生的结果集缓存到内存中，方便复用，称为 filter cache。结果集其实就是文档 ID（整形数）的集合。从 Lucene 5 开始，使用了 RBM 优化过的文档 ID 集合 RoaringDocIdSet 作为 filter cache，详情可以参见[《Frame of Reference and Roaring Bitmaps》](https://links.jianshu.com/go?to=https%3A%2F%2Fwww.elastic.co%2Fblog%2Fframe-of-reference-and-roaring-bitmaps)。该文除了介绍 RBM 外，还介绍了压缩倒排索引的 Frame of Reference（FOR）编码，值得一读。
+
+#### Spark
+
+在 Spark Core 的 MapStatus 组件（用来跟踪 ShuffleMapTask 的输出结果块）中，利用了 RBM 来存储块是否非空的状态。今后会在 Spark 连载里讲到它，所以现在看看[该类的源码](https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Fapache%2Fspark%2Fblob%2Fmaster%2Fcore%2Fsrc%2Fmain%2Fscala%2Forg%2Fapache%2Fspark%2Fscheduler%2FMapStatus.scala)就可以了，不难理解。
+
+#### Greenplum
+
+我司是 Greenplum 大户，虽然本鶸现在不负责数仓相关的事情了，但是偶尔还是要向 GP 提供一些数据。GP 配合 RoaringBitmap 非常适合做海量用户的近实时画像，每个 RBM 代表一维标签即可，根据标签圈选用户也很方便。GP 原生并未支持 RBM 类型数据，需要安装一个扩展插件，见[这里](https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Fzeromax007%2Fgpdb-roaringbitmap%3Fspm%3Da2c4e.10696291.0.0.a68919a4RFqCuW)。关于 GP 与 RBM 的整合与使用，有两篇不错的参考文章：
+
+- [https://yq.aliyun.com/articles/405191](https://links.jianshu.com/go?to=https%3A%2F%2Fyq.aliyun.com%2Farticles%2F405191)
+- [http://mysql.taobao.org/monthly/2018/08/09](https://links.jianshu.com/go?to=http%3A%2F%2Fmysql.taobao.org%2Fmonthly%2F2018%2F08%2F09)
+
+#### Redis
+
+我们在 Redis 里经常使用位图存储数据（Redis 原生以字符串的形式支持位图），当然也就会遇到稀疏位图浪费存储空间的问题。但要让 Redis 支持 RBM，需要引入专门的 module，项目地址见[这里](https://links.jianshu.com/go?to=https%3A%2F%2Fgithub.com%2Faviggiano%2Fredis-roaring)。它的设计思想与 Java 版 RBM 几乎相同，不再废话了。
+
+## 参考
+
+1. https://roaringbitmap.org/
+
+2. [《Better bitmap performance with Roaring bitmaps》](https://links.jianshu.com/go?to=https%3A%2F%2Farxiv.org%2Fpdf%2F1402.6407.pdf)与
+
+3. [《Consistently faster and smaller compressed bitmaps with Roaring》](https://links.jianshu.com/go?to=https%3A%2F%2Farxiv.org%2Fpdf%2F1603.06549.pdf)中提出，

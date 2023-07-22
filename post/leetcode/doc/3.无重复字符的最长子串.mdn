@@ -1,0 +1,72 @@
+# [无重复字符的最长子串](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/ "https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/description/")
+
+| Category   | Difficulty      | Likes | Dislikes |
+| ---------- | --------------- | ----- | -------- |
+| algorithms | Medium (32.18%) | 2861  | -        |
+
+**Tags**
+
+[`hash-table`](https://leetcode.com/tag/hash-table "https://leetcode.com/tag/hash-table") | [`two-pointers`](https://leetcode.com/tag/two-pointers "https://leetcode.com/tag/two-pointers") | [`string`](https://leetcode.com/tag/string "https://leetcode.com/tag/string") | [`sliding-window`](https://leetcode.com/tag/sliding-window "https://leetcode.com/tag/sliding-window")
+
+**Companies**
+
+`adobe` | `amazon` | `bloomberg` | `yelp`
+
+给定一个字符串，请你找出其中不含有重复字符的 **最长子串 **的长度。
+
+**示例 1:**
+
+```
+输入: "abcabcbb"
+输出: 3 
+解释: 因为无重复字符的最长子串是 "abc"，所以其长度为 3。
+```
+
+**示例 2:**
+
+```
+输入: "bbbbb"
+输出: 1
+解释: 因为无重复字符的最长子串是 "b"，所以其长度为 1。
+```
+
+**示例 3:**
+
+```
+输入: "pwwkew"
+输出: 3
+解释: 因为无重复字符的最长子串是 "wke"，所以其长度为 3。
+     请注意，你的答案必须是 子串 的长度，"pwke" 是一个子序列，不是子串。
+```
+
+---
+
+[Discussion](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/comments/ "https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/comments/") | [Solution](https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/ "https://leetcode-cn.com/problems/longest-substring-without-repeating-characters/solution/")
+
+## 解法
+
+* rust
+
+```rust
+use std::collections::HashMap;
+
+impl Solution {
+    /// ## 解题思路
+    /// * 滑动窗口法
+    ///   - 使用一个滑动窗口来记录每个无重复字符子串；
+    ///   - 窗口的右边界`r`为遍历时当前字符数组下标；
+    ///   - 窗口的左边界`l`在出现重复字符`c`时，向右滑动一格；
+    ///   - 最长子串长度为所有滑动窗口长度`m`的最大值；
+    ///   - 为了快速判断是否出现重复字符，使用map来记录每个已经遍历过的字符c的最后一次出现的下标；
+    pub fn length_of_longest_substring(s: String) -> i32 {
+        let mut map = HashMap::new();
+        let (mut l, mut m) = (0, 0);
+        for (i, c) in s.chars().enumerate() {
+            l = l.max(*map.get(&c).unwrap_or(&0));
+            m = m.max(i - l + 1);
+            map.insert(c, i+1);
+        }
+        m as i32
+    }
+}
+```

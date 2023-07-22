@@ -1,0 +1,144 @@
+# 查找算法
+
+## 简介
+
+查找算法是计算机科学中最基本的算法之一，其用途在查找给定序列中的特定值。
+
+## 二分查找
+
+* 二分查找法是对有序序列的快速查找方法，其时间复杂度为$O(log(n))$级别；
+
+* 其主要思想：在有序序列中每次比较待查找序列中的中间值和目标值的大小，从而根据有序序列特点，将其中一半排除，从而对数级减小待查询序列的范围；
+
+* 二分查找法的前提是序列已经有序；
+
+### 算法步骤
+
+### 复杂度分析
+
+| 最差   | O(logn)O(log⁡n) |
+| ---- | --------------- |
+| 最好   | O(1)O(1)        |
+| 平均   | O(logn)O(log⁡n) |
+| 最坏空间 | O(1)            |
+
+### 代码
+
+```python
+def binary_search(self, A, target):
+    '''
+    二分查找法
+    '''
+    # 检查输入
+    if len(A) < 1 or target < A[0] or target > A[-1]:
+        return -1
+
+    l, r = 0, len(A)-1
+    while l < r:                #退出条件，注意不要用l == r判断
+        m = (l + （ r - l )) >> 1  #计算二分点, 要防止溢出
+        if A[m] == target:      #find
+            return m
+        elif target < A[m]:     # l....target....m............r
+            r = m               # 右边界直接移动
+        else:
+            l = m + 1           # 左边界移动时要+1
+    return -1
+```
+
+## 插值查找
+
+* 插值查找法是二分查找法的一种变种，
+
+* 
+
+| Worst       | O(n)                                     |
+| ----------- | ---------------------------------------- |
+| Best        | O(1)                                     |
+| Average     | O(n)                                     |
+| Average     | O(log⁡log⁡n) on uniform distributed data |
+| Worst space | O(1)                                     |
+
+```rust
+pub fn interpolation_search(
+    arr: &[i32],
+    target: &i32,
+) -> Result<usize, usize> {
+    // 1. Handle empty sequence.
+    if arr.is_empty() {
+        return Err(0)
+    }
+
+    // 2. Setup variable storing iteration informaion.
+    let mut hi = arr.len() - 1;
+    let mut lo = 0_usize;
+
+    let mut interpolant = 0_usize;
+
+    // 3. Main loop to calculate the interpolant.
+    loop {
+        let lo_val = arr[lo];
+        let hi_val = arr[hi];
+
+        // 3.1. Three condition to exit the loop
+        if hi <= lo || *target < lo_val || *target > hi_val {
+            break
+        }
+
+        // 3.2. The linear interpolation part
+        let offset = (*target - lo_val) * (hi - lo) as i32 / (hi_val - lo_val);
+        interpolant = lo + offset as usize;
+
+        let mid_val = arr[interpolant];
+
+        // 3.3. Comparison between the interpolant and targert value.
+        if mid_val > *target {
+            hi = interpolant - 1;
+        } else if mid_val < *target {
+            lo = interpolant + 1;
+        } else {
+            break
+        }
+    }
+
+    // 4. Determine whether the returning interpolant are equal to target value.
+    if *target > arr[hi] {
+        Err(hi + 1)
+    } else if *target < arr[lo] {
+        Err(lo)
+    } else {
+        Ok(interpolant)
+    }
+}
+```
+
+## 指数查找
+
+```rust
+use crate::searching::binary_search;
+
+pub fn exponential_search<T>(arr: &[T], target: &T) -> Result<usize, usize>
+    where T: PartialOrd
+{
+    // 1. Handle empty scenario.
+    let size = arr.len();
+    if size == 0 {
+        return Err(0);
+    }
+
+    // 2. Determine searching boundaries.
+    let mut hi = 1_usize; // Upper bound.
+    while hi < size && arr[hi] < *target {
+        hi <<= 1;
+    }
+    let lo = hi >> 1; // Lower bound.
+
+    // 3. Do binary search.
+    binary_search(&arr[lo..size.min(hi + 1)], target)
+        .map(|index| lo + index)
+        .map_err(|index| lo + index)
+}
+```
+
+## 参考
+
+1. [線性搜尋 Linear search - Rust Algorithm Club](https://rust-algo.club/searching/linear_search/index.html)

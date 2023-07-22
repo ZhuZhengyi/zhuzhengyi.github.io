@@ -1,0 +1,285 @@
+# UIO
+
+## 简介
+
+UIO（Userspace I/O,用户空间IO）是运行在用户空间的[I/O](http://baike.baidu.com/subview/300881/11169495.htm)技术。UIO将驱动的很少一部分运行在内核空间，而在用户空间实现驱动的绝大多数功能！使用UIO可以避免设备的驱动程序需要随着内核的更新而更新的问题。
+
+## 优势
+
+* 简单。用户态便于调测；
+
+* 可以使用**C++**、**Java**等高级语言进行开发；
+
+* 即便用户空间驱动程序挂了，也不会影响系统的正常运行。
+
+### **工作原理**
+
+设备驱动主要完成2件事：
+
+* 处理设备产生的硬中断和存取设备内存；
+
+* 硬中断处理必须在内核空间进行，而设备内存的存取可以在用户空间进行。
+
+UIO框架分为2部分：
+
+* 内核部分： 主要实现硬件寄存器的内存映射及读写操作，
+
+* 用户空间部分： 负责将**UIO**设备的**uio_mem**映射到本地，*实现用户空间程序能够访问硬件设备寄存器。
+  
+  UIO驱动模型请参考图1所示：
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/10-13-41-29-2020-11-10-13-41-15-image.png)
+
+## 实现原理
+
+**UIO内核部分**
+
+UIO内核驱动做的事情相对来说比较少，主要的任务是：
+
+* 分配和记录设备所需的资源*（使能PCI设备、申请资源、读取并记录配置信息）、
+
+* *注册**UIO**设备*（uio_register_device()）
+
+* 实现硬中断处理函数。
+
+接下来我们将从代码角度，重点介绍UIO内核驱动实现涉及的重要数据结构和调用的函数。
+
+```c
+struct uio_portio {
+    struct kobjectkobj;
+    structuio_port *port;
+};
+
+/** * struct uio_port - description of a UIO port region
+* @name: name of the port region for identification 
+* @start: start of portregion 
+* @size: size of port region 
+* @porttype: type of port (see UIO_PORT_*below) 
+* @portio: for use by the UIO core only. */
+struct uio_port {
+    const char      *name;
+    unsigned long       start;
+    unsigned long       size;
+    int         porttype;
+    structuio_portio   *portio;
+};
+
+/* defines for uio_port->porttype */
+#define UIO_PORT_NONE 0
+#define UIO_PORT_X86 1
+#define UIO_PORT_GPIO 2
+#define UIO_PORT_OTHER 3
+
+/** * struct uio_mem - description of a UIO memoryregion 
+* @name: name of the memory region for identification 
+* @addr: addressof the device's memory * @size: size of IO 
+* @memtype: type of memory addrpoints to 
+* @internal_addr: ioremap-ped version of addr, for driver internaluse 
+* @map: for use by the UIO core only. */
+struct uio_mem {
+    const char      *name;
+    unsigned long       addr;
+    unsigned long       size;
+    int         memtype;
+    void __iomem       *internal_addr;
+    structuio_map      *map;
+};
+
+
+struct uio_map {
+    struct kobjectkobj;
+    struct uio_mem*mem;
+};
+
+static const struct vm_operations_struct uio_vm_ops = {
+    .open =uio_vma_open,
+    .close =uio_vma_close,
+    .fault =uio_vma_fault,
+};
+
+static struct device_attribute uio_class_attributes[] ={
+    __ATTR(name,S_IRUGO, show_name, NULL),
+   __ATTR(version, S_IRUGO, show_version, NULL),
+    __ATTR(event,S_IRUGO, show_event, NULL),
+    {}
+};
+/* UIO class infrastructure */
+static struct class uio_class = {
+    .name = "uio",///sys/class/uio
+    .dev_attrs =uio_class_attributes,
+};
+
+
+static const struct file_operations uio_fops = {
+    .owner      = THIS_MODULE,
+    .open       = uio_open,
+    .release    = uio_release,
+    .read       = uio_read,
+    .write      = uio_write,
+    .mmap       = uio_mmap,
+    .poll       = uio_poll,
+    .fasync     = uio_fasync,
+    .llseek     = noop_llseek,
+};
+
+
+/* Protect idr accesses */
+static DEFINE_MUTEX(minor_lock);
+static DEFINE_IDR(uio_idr);
+
+struct uio_device {
+    structmodule       *owner;
+    structdevice       *dev;
+    int         minor;
+    atomic_t        event;
+    structfasync_struct    *async_queue;
+    wait_queue_head_t   wait;
+    int         vma_count;
+    structuio_info     *info;
+    structkobject      *map_dir;
+    structkobject      *portio_dir;
+};
+
+
+/* * struct uio_info - UIO device capabilities 
+  *@uio_dev: the UIO device this info belongs to 
+ * @name: device name 
+ * @version:device driver version 
+ * @mem: list of mappable memory regions, size==0 for endof list 
+* @port: list of port regions, size==0 for end of list 
+* @irq:interrupt number or UIO_IRQ_CUSTOM 
+* @irq_flags: flags for request_irq() 
+*@priv: optional private data * @handler: the device's irq handler 
+* @mmap: mmapoperation for this uio device * @open: open operation for this uio device 
+*@release: release operation for this uio device 
+* @irqcontrol: disable/enableirqs when 0/1 is written to /dev/uioX 
+*/    
+struct uio_info {
+    structuio_device   *uio_dev;
+    const char      *name;
+    const char      *version;
+    structuio_mem      mem[MAX_UIO_MAPS];
+    structuio_port     port[MAX_UIO_PORT_REGIONS];
+    long            irq;
+    unsigned long       irq_flags;
+    void            *priv;
+    irqreturn_t(*handler)(int irq, struct uio_info *dev_info);
+    int (*mmap)(structuio_info *info, struct vm_area_struct *vma);
+    int (*open)(structuio_info *info, struct inode *inode);
+    int(*release)(struct uio_info *info, struct inode *inode);
+    int(*irqcontrol)(struct uio_info *info, s32 irq_on);
+};
+```
+
+**UIO用户空间部分**
+
+*用户空间驱动*主要完成2个关键任务:
+
+* 响应硬件中断;
+
+* 从存取设备内存。
+  
+  下面将使用理论 + 代码对用户空间驱动的能力进行介绍。
+
+响应硬中断通常有2种处理方式，
+
+1. 调用**read()**，*阻塞/dev/uioX，*当设备产生中断时，**read()**操作立即返回；
+
+2. 调用**poll()**，使用**select()**等待中断发生*（select()有一个超时参数可用来实现有限时间内等待中断）。 
+
+下面用一段代码说明如何完成硬中断响应处理*（阻塞**/dev/uio0**，调用**read()**处理硬中断信号）。*
+
+```c
+int32_t irq_count;
+int fd = open("/dev/uio0", O_RDWR);
+
+/* Map the register regions to proccess's virtual memspace */
+void * access = mmap(NULL, 4096,PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+while (read(fd, &irq_count, 4) == 4) 
+{
+    printf("Interrupt number %dn", irq_count);
+}
+```
+
+对于如何存取设备内存呢？通过读写`/sys/class/uioX`下的各个文件（注册的UIO设备在该目录下），完成对设备内存的读写。
+
+比如UIO设备为uio0，那么映射的设备内存将在/sys/class/uio/uio0/maps下，对该文件的读写就是对设备内存的读写。
+
+下面用一段代码说明如何存取设备内存（将设备信息**mmap**到用户空间，用户空间程序便可直接操作设备内存空间）。
+
+```c
+char uio_addr_buf[16]={0};
+char uio_size_buf[16]={0};
+
+int uio_fd,addr_fd,size_fd;
+int uio_size;
+void *uio_addr, *access_address;
+int n=0;
+
+uio_fd = open("/dev/uio0",O_RDWR);
+addr_fd = open("/sys/class/uio/uio0/maps/map0/addr",O_RDONLY);
+size_fd = open("/sys/class/uio/uio0/maps/map0/size",O_RDONLY);
+
+if (addr_fd < 0 || size_fd < 0 || uio_fd < 0)
+{
+    fprintf(stderr,"mmap:%s\n",strerror(errno));
+    exit(-1);
+}
+
+n=read(addr_fd,uio_addr_buf,sizeof(uio_addr_buf));
+if (n<0)
+{
+    fprintf(stderr,"%s\n", strerror(errno));
+    exit(-1);
+}
+
+n=read(size_fd,uio_size_buf,sizeof(uio_size_buf));
+if (n<0)
+{
+    fprintf(stderr,"%s\n", strerror(errno));
+    exit(-1);
+}
+
+uio_addr = (void*)strtoul(uio_addr_buf,NULL,0);
+uio_size = (int)strtol(uio_size_buf,NULL,0);
+
+access_address = mmap(NULL,uio_size,PROT_READ |PROT_WRITE,
+                           MAP_SHARED,uio_fd,0);
+if(access_address == (void*)-1)
+{
+    fprintf(stderr,"mmap:%s\n",strerror(errno));
+    exit(-1);
+}
+
+printf("The device address %p (lenth %d)\n"
+        "canbe accessed over\n"
+       "logical address %p\n",uio_addr,uio_size,access_address);
+```
+
+### **UIO涉及的函数**
+
+最后一章节，***对******UIO******框架主要涉及函数定义及功能描述进行汇总***，具体的内容请参考如下表信息。
+
+| **函数定义**                                                                                         | **功能描述**                                                              |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| static int __init uio_init(void)                                                                 | 申请字符设备号和设备，并注册到系统中，注册uio_class到系统中                                    |
+| staticvoid__exituio_exit(void)                                                                   | 注销uio_class,注销字符设备编号和删除设备                                             |
+| static void release_uio_class(void)                                                              | 注销uio_class,注销字符设备编号和删除设备                                             |
+| static int init_uio_class(void)                                                                  | 申请字符设备号和设备，并注册到系统中，注册uio_class到系统中                                    |
+| static int uio_major_init(void)                                                                  | 申请字符设备编号和设备，并初始化                                                      |
+| static void uio_major_cleanup(void)                                                              | 注销字符设备编号，删除设备                                                         |
+| static int uio_open(struct inode *inode,  struct file *filep)                                    | 获得和次设备号关联的uio_device指针，创建一个辅助变量listener, 并调用info指向的uio_info结构中的open方法 |
+| static int uio_release(struct inode  *inode, struct file *filep)                                 | 调用uio_device的字段info指向的uio_info中的release方法，释放辅助结构体listener             |
+| static int uio_fasync(int fd, struct file  *filep, int on)                                       | 管理uio_device的async_queue                                              |
+| static unsigned int uio_poll(struct file  *filep, poll_table *wait)                              | 使进程在传递到该系统调用的所有文件描述符对应的等待队列上等待，并返回一个是否可以立即无阻塞执行的位掩码                   |
+| static ssize_t uio_read(struct file  *filep, char __user *buf, size_t count, loff_t *ppos)       | 复制uio设备中断事件计数器的值到用户空间                                                 |
+| int __uio_register_device(struct module *owner,  struct device *parent, struct uio_info *info)   | 调用uio_info中注册的handler中断处理函数，对设备的中断事件计数器增一并通知各读进程，有数据可读                |
+| void uio_event_notify(struct uio_info  *info)                                                    | “触发”一个中断事件，对设备的中断事件计数器增一，并通知各读进程，有数据可读                                |
+| static ssize_t uio_write(struct file  *filep, const char __user *buf,size_t count, loff_t *ppos) | 读取用户空间的值，并调用uio_device注册的irqcontrol函数                                 |
+| static int uio_mmap(struct file *filep,  struct vm_area_struct *vma)                             | 对uio设备进行mmap处理                                                        |
+
+## 参考
+
+1. [dpdk中uio技术 - 笑侃码农 - 博客园](https://www.cnblogs.com/kb342/p/5168197.html)
+2. 

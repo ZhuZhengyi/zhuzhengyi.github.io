@@ -1,0 +1,689 @@
+# vlang 基础
+
+## 简介
+
+## 特点
+
+- 简单（作者声称可以在不到一小时内学习 V）
+
+- 快速编译（编译器只有 400kb，而且无第三方依赖）
+
+- 易于开发：V 在不到一秒钟的时间内完成编译
+
+- 安全：没有 null、没有全局变量、没有未定义的值、边界检测、默认使用 Immutable 结构体
+
+- 支持 C/C++ 转换
+
+- 方便使用的交叉编译
+
+- 提供跨平台 UI 库
+
+- 内置图形库
+
+- 内置 ORM
+
+- 内置 Web 框架
+
+## 关键字
+
+21 个关键字
+
+`break`, `const`, `continue`, `defer`, `else` ,`enum` ,`fn` `for` `go` 
+
+`goto` `if` `import` `in` `interface` `match` `module` `mut` 
+
+`or` `return` `struct` ,`type`
+
+## 函数
+
+* 函数以`fn`开头声明；
+
+* 参数类型位于参数名之后；
+
+* 不能重载；
+
+* 可后声明；
+
+```rust
+fn add(x int, y int) int {
+    return x + y
+}
+```
+
+## 变量
+
+* `:=` 是变量声明和初始化的唯一方式；
+
+* `T(v)` 强制转换；
+
+* 只可在函数中定义变量，无全局变量；
+
+* 默认为不可变量；
+
+* `mut`声明可变量；
+
+* `=` 用来赋值；
+
+```go
+name := 'Bob'  //声明并初始化不可变变量
+age := 20  
+large_number := i64(9999999999)
+mut age2 := 20 //可变量
+age2 = 21      //变量赋值
+```
+
+## 基本类型
+
+```go
+bool
+
+string
+
+i8  i16  i32  i64
+u8  u16  u32  u64
+
+byte // alias for u8
+int  // alias for i32
+rune // alias for i32, represents a Unicode code point
+
+f32 f64
+```
+
+## 字符串
+
+* 字符串为只读的字节数组；
+
+* 字符串数据使用 utf-8 编码；
+
+* 不可变；
+
+* 子字符串无需拷贝，没有额外分配空间；
+
+* `+` 字符串连接，左右两边均为字符串；
+
+* `$v` 变量引用；
+
+```go
+//字符串连接
+age := 10
+println('age = ' + age.str())
+println('age = $age')
+//子串
+println(bobby.substr(1, 3)) // ==> "ob"
+// println(bobby[1:3])
+name := 'Bob'
+println('Hello, $name!')
+println(name.len)
+```
+
+## 数组
+
+* 下标 0 开始；
+
+* 数组类型由数组第一个元素决定；
+
+* 所有元素类型必须相同；
+
+* `<<` : 将元素加入到数组末尾；
+
+* `len`：数组长度；
+
+* `in`操作符：元素是否在素组中；
+
+* `mut` 声明可变数组；
+
+```go
+nums := [1, 2, 3] //定义不可变数组
+println(nums)
+println(nums[1]) // ==> "2"
+
+mut names := ['John']    //定义可变数组
+names << 'Peter'
+names << 'Sam'
+// names << 10  <-- This will not compile. `names` is an array of strings.
+println(names.len) // ==> "3"
+println('Alex' in names) // ==> "false"
+
+// We can also preallocate a certain amount of elements.
+nr_ids := 50
+mut ids := [0 ; nr_ids] // This creates an array with 50 zeroes
+```
+
+## Map
+
+* 暂时 key 只能为 string；
+
+```go
+mut m := map[string]int{} // Only maps with string keys are allowed for now
+m['one'] = 1
+println(m['one']) // ==> "1"
+println(m['bad_key']) // ==> "0"
+// TODO: implement a way to check if the key exists
+
+numbers := { // TODO: this syntax is not implemented yet
+    'one': 1,
+    'two': 2,
+}
+```
+
+## if
+
+* 条件语句不需要括号；
+
+* 可作表达式；
+
+```go
+a := 10
+b := 20
+if a < b {
+    println('$a < $b')
+} else if a > b {
+    println('$a > $b')
+} else {
+    println('$a == $b')
+}
+num := 777
+// if语句表达式
+s := if num % 2 == 0 {
+    'even'
+}
+else {
+    'odd'
+}
+println(s) // ==> "even"
+```
+
+## for
+
+* 只支持 for 循环；
+
+* 可选择是否带 index；
+
+* for 跟判断语句代替 while;
+
+* 支持无限循环；
+
+* 支持 c 类型循环，循环变量默认为 mut；
+
+```go
+numbers := [1, 2, 3, 4, 5]
+//遍历
+for num in numbers {
+    println(num)
+}
+names := ['Sam', 'Peter']
+for i, name in names {
+    println('$i) $name')  // Output: 0) Sam
+}                             //         1) Peter
+//while
+mut sum := 0
+mut i := 0
+// while
+for i <= 100 {
+    sum += i
+    i++
+}
+//无限循环
+mut num := 0
+for {
+    num++
+    if num >= 10 {
+        break
+    }
+}
+println(num) // ==> "10"
+//
+for i := 0; i < 10; i++ {
+    println(i)
+}
+```
+
+## switch
+
+* 执行第一个匹配语句块；
+
+* 语句块无需 break 结尾；
+
+```go
+os := 'windows'
+print('V is running on ')
+switch os {
+case 'darwin':
+    println('macOS.')
+case 'linux':
+    println('Linux.')
+default:
+    println(os)
+}
+// TODO: replace with match expressions
+```
+
+## 结构体
+
+* 结构体默认分配在栈上；
+
+* `&`前缀可返回堆上结构体的指针；
+
+* 不支持子类，支持嵌入；
+
+```go
+struct Point {
+    x int
+    y int
+}
+
+p := Point{
+    x: 10
+    y: 20
+}
+println(p.x) // Struct fields are accessed using a dot
+pointer := &Point{10, 10}  // 堆上
+println(pointer.x)         // 
+
+// TODO: this will be implemented later in May
+struct Button {
+    Widget        //嵌入
+    title string
+}
+```
+
+## 方法
+
+* v 没有 class，但可为 type 定义方法；
+
+* 方法是拥有特殊接收者参数的函数；
+
+* 接收者位于 fn 和方法名之间；
+
+```go
+struct User {
+    age int
+}
+
+fn (u User) can_register() bool {
+    return u.age > 16
+}
+
+user := User{age: 10}
+println(user.can_register()) // ==> "false"
+
+user2 := User{age: 20}
+println(user2.can_register()) // ==> "true"
+```
+
+## 纯函数
+
+* v 中的函数默认为纯函数（无全局变量，参数默认为不可变量，即使引用）；
+
+* 可在参数中使用 mut 关键字将来改变参数值；
+
+```go
+struct User {
+    is_registered bool
+}
+
+fn (u mut User) register() {
+    u.is_registered = true
+}
+
+mut user := User{}
+println(user.is_registered) // ==> "false"
+user.register()
+println(user.is_registered) // ==> "true"
+
+//
+fn multiply_by_2(arr mut []int) {
+    for i := 0; i < arr.len; i++ {
+        arr[i] *= 2
+    }
+}
+
+mut nums := [1, 2, 3]
+multiply_by_2(mut nums)
+println(nums) // ==> "[2, 4, 6]"
+```
+
+## 常量
+
+* 由`const`声明；
+
+* 首字母必须大写；
+
+* 模块级别，不能在函数内定义常量；
+
+* 常量值无法改变；
+
+* 支持数组、结构体等常量；
+
+```go
+const (
+    PI    = 3.14
+    World = '世界'
+)
+
+println(PI)
+println(World)
+
+struct Color {
+        r int
+        g int
+        b int
+}
+
+fn (c Color) str() string { return '{$c.r, $c.g, $c.b}' }
+
+fn rgb(r, g, b int) Color { return Color{r: r, g: g, b: b} }
+
+const (
+        Numbers = [1, 2, 3]
+
+        Red  = Color{r: 255, g: 0, b: 0}
+        Blue = rgb(0, 0, 255)
+)
+
+println(Numbers)
+println(Red)
+println(Blue)
+```
+
+## 模块
+
+* `module` 关键字声明模块；
+
+* `import`关键字导入模块；
+
+* 不可循环导入；
+
+* 编译时需用 -lib 指明模块路径；
+
+* 编译时，会将所有模块静态编入可执行文件中；
+
+```go
+/*
+cd ~/code/modules
+mkdir mymodule
+vim mymodule/mymodule.v
+*/
+// mymodule.v
+module mymodule
+
+// To export a function we have to use `pub`
+pub fn say_hi() {
+    println('hello from mymodule!')
+}
+/*
+You can have as many .v files in mymodule/ as you want.
+Build it with v -lib ~/code/modules/mymodule.
+
+That's it, you can now use it in your code:
+ */
+//main.v
+module main
+
+import mymodule
+
+fn main() {
+    mymodule.say_hi()
+}
+```
+
+## 接口
+
+* `interface` 关键字声明接口；
+
+* 一个类型如果实现了接口所有方法，将自动实现该接口，无需特别声明；
+
+```go
+struct Dog {}
+struct Cat {}
+
+fn (d Dog) speak() string {
+    return 'woof'
+}
+
+fn (c Cat) speak() string {
+    return 'meow'
+}
+
+interface Speaker {
+    speak() string
+}
+
+fn perform(s Speaker) {
+    println(s.speak())
+}
+
+dog := Dog{}
+cat := Cat{}
+perform(dog) // ==> "woof"
+perform(cat) // ==> "meow"
+```
+
+## 枚举
+
+1.
+
+```go
+enum Color {
+    red green blue
+}
+
+mut color := Color.red
+// V knows that color is a Color. No need to use `Color.green` here.
+color = .green
+println(color) // ==> "1"  TODO: print "green"?
+```
+
+## 返回值及错误处理
+
+* 使用？声明可选返回类型；
+
+* error 无需返回
+
+* 可选类型必须由 or 语句块处理；
+
+* or 语句块必须使用 return，break，continue 返回；
+
+* 可使用？将错误抛出；
+
+* 在 main 中将抛出 painc
+
+```go
+struct User {
+    id int
+}
+
+struct Repo {
+    users []User
+}
+
+fn new_repo() Repo {
+        user := User{id:10}
+        return Repo {
+                users: [user]
+        }
+}
+
+fn (r Repo) find_user_by_id(id int) User? {
+    for user in r.users {
+        if user.id == id {
+            // V automatically wraps this into an option type
+            return user
+        }
+    }
+    return error('User $id not found')
+}
+
+repo := new_repo()
+user := repo.find_user_by_id(10) or { // Option types must be handled by `or` blocks
+    return  // `or` block must end with `return`, `break`, or `continue`
+}
+println(user.id) // ==> "10"
+
+resp := http.get(url)?
+println(resp.body)
+```
+
+## 泛型
+
+1.
+
+```go
+struct Repo<T> {
+    db DB
+}
+
+fn new_repo<T>(db DB) Repo<T> {
+    return Repo<T>{db: db}
+}
+
+// This is a generic function. V will generate it for every type it's used with.
+fn (r Repo<T>) find_by_id(id int) ?T {
+    table_name := T.name // in this example getting the name of the type gives us the table name
+    return r.db.query_one<T>('select * from $table_name where id = ?', id)
+}
+
+db := new_db()
+users_repo := new_repo<User>(db)
+posts_repo := new_repo<Post>(db)
+user := users_repo.find_by_id(1)?
+post := posts_repo.find_by_id(1)?
+```
+
+## 并发
+
+1. 和 golang 一样(2019/7 实现)；
+
+## JSON
+
+1. 内置支持 json
+
+```go
+struct User {
+    name string
+    age  int
+}
+
+data := '{ "name": "Frodo", "age": 25 }'
+user := json.decode(User, data) or {
+    eprintln('Failed to decode json')
+    return
+}
+println(user.name)
+println(user.age)
+```
+
+## 反射
+
+## 操作符重载
+
+* 只能重载`+`, `-`, `*`, `/` 这四个操作符；
+
+* 操作符函数中不能调用其他函数；
+
+* 操作符函数不能修改参数；
+
+```go
+struct Vec {
+    x int
+    y int
+}
+
+fn (a Vec) str() string {
+    return '{$a.x, $a.y}'
+}
+
+fn (a Vec) + (b Vec) Vec {
+    return Vec {
+        a.x + b.x,
+        a.y + b.y
+    }
+}
+
+fn (a Vec) - (b Vec) Vec {
+    return Vec {
+        a.x - b.x,
+        a.y - b.y
+    }
+}
+
+fn main() {
+    a := Vec{2, 3}
+    b := Vec{4, 5}
+    println(a + b) // ==> "{6, 8}"
+    println(a - b) // ==> "{-2, -2}"
+}
+```
+
+## 测试
+
+* 测试函数文件名必须\`*\_test.v`，所有测试函数放在测试文件中；
+
+* 测试函数以`test_`开头；
+
+* `v hello_test.v` 运行单个测试文件；
+
+* `v test module_name`运行模块测试；
+
+```go
+// hello.v
+fn hello() string {
+    return 'Hello world'
+}
+
+// hello_test.v
+fn test_hello() {
+    assert hello() == 'Hello world'
+}
+```
+
+## 内存管理
+
+* vlang
+
+```
+
+```
+
+## 调用 C 模块
+
+```c
+#flag -lsqlite3
+
+#include "sqlite3.h"
+
+struct C.sqlite3
+struct C.sqlite3_stmt
+
+fn C.sqlite3_column_int(C.sqlite_stmt, int) int
+
+fn main() {
+    path := 'sqlite3_users.db'
+    db := &C.sqlite3{}
+    C.sqlite3_open(path.cstr(), &db)
+
+    query := 'select count(*) from users'
+    stmt := &C.sqlite3_stmt{}
+    C.sqlite3_prepare_v2(db, query.cstr(), - 1, &stmt, 0)
+    C.sqlite3_step(stmt)
+    nr_users := C.sqlite3_column_int(res, 0)
+    C.sqlite3_finalize(res)
+    println(nr_users)
+}
+```
+
+## C/C++代码翻译
+
+```
+v translate test.cpp and V will generate test.v:
+```
+
+## 代码热加载
+
+## 交叉编译
+
+```shell
+v -os windows .
+or
+v -os linux .
+```

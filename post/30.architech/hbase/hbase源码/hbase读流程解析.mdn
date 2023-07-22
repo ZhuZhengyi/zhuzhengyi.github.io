@@ -1,0 +1,44 @@
+# HBase读流程解析
+
+### pread
+
+在Scan中，用户可以设置ReadType:
+
+```java
+@InterfaceAudience.Public
+public enum ReadType {
+DEFAULT, STREAM, PREAD
+}
+```
+
+具体到HBase代码中的**HFileBLock#readAtOffset**方法，可以比较好的说明PREAD和STREAM的区别．
+
+1. pread其实就是positional read, 每次都会发一个offset到datanode，让datanode去seek到对应的位置，然后读取数据．　在同一个DFSInputStream上可以跑多个pread操作．pread适合的场景是小数据量的随机读，就是频率高且数据量小的操作，典型的例如**small scan操作**以及**\*读取meta表定位rowKey所在region的操作***，这些操作一般默认都用PREAD．
+2. stream其实是seek + read，就是发一个offset到datanode，然后就不需要你再发offset给datanode了，然后datanode依次吐数据给你．因此，同一个DFSInputStream上跑多个stream的话，吐出来的数据就乱了．**\*stream更适合较大数据量的顺序scan操作***，典型的场景例如业务扫表操作以及Compaction的扫表操作．
+
+## hbase scan 优化
+
+* Lazy-seek optimization  https://issues.apache.org/jira/browse/HBASE-4465 
+
+* Improve performance for small scan https://issues.apache.org/jira/browse/HBASE-9488
+
+* Using pread for non-compaction read request https://issues.apache.org/jira/browse/HBASE-7266
+
+### HDFS-2246 曾经实现的Short-Circuit LocalReads
+
+其关键思想如下：因为客户端和数据在同一个节点，所以没必要再去和DN交互。客户端本身直接就从本地磁盘读出数据。这个性能优化被加入了CDH3u3。
+
+https://www.cnblogs.com/smartloli/p/9462835.html
+
+<configuration>
+  <property>
+​    <name>dfs.client.read.shortcircuit</name>
+​    <value>true</value>
+  </property>
+  <property>
+​    <name>dfs.domain.socket.path</name>
+​    <value>/var/lib/hadoop-hdfs/dn_socket</value>
+  </property>
+</configuration>
+
+如果正在读某个block比较慢，hdfs客户端会启动另一个并行的线程去读此block的副本。

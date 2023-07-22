@@ -1,0 +1,205 @@
+# Goroutine
+
+## 简介
+
+`goroutine`是go中的协程。`goroutine`基于`线程池+任务队列`模型，实现了用户态的任务调度功能。
+
+## 历史演化
+
+历史上几个不同版本的调度器引入了不同的改进，也存在着不同的缺陷:
+
+- 单线程调度器 · [0.x](https://github.com/golang/go/blob/96824000ed89d13665f6f24ddc10b3bf812e7f47/src/runtime/proc.c)
+  - 只包含 40 多行代码；
+  - 程序中只能存在一个活跃线程，由 G-M 模型组成；
+- 多线程调度器 · [1.0](https://github.com/golang/go/blob/go1.0.1/src/pkg/runtime/proc.c)
+  - 允许运行多线程的程序；
+  - 全局锁导致竞争严重；
+- 任务窃取调度器 · [1.1](https://github.com/golang/go/blob/779c45a50700bda0f6ec98429720802e6c1624e8/src/pkg/runtime/proc.c)
+  - 引入了处理器 P，构成了目前的 **G-M-P** 模型；
+  - 在处理器 P 的基础上实现了基于**工作窃取**的调度器；
+  - 在某些情况下，Goroutine 不会让出线程，进而造成饥饿问题；
+  - 时间过长的垃圾回收（Stop-the-world，STW）会导致程序长时间无法工作；
+- 抢占式调度器 · [1.2](https://github.com/golang/go/blob/go1.2/src/pkg/runtime/proc.c) ~ 至今
+  - 基于协作的抢占式调度器 - 1.2 ~ 1.13
+    - 通过编译器在函数调用时插入**抢占检查**指令，在函数调用时检查当前 Goroutine 是否发起了抢占请求，实现基于协作的抢占式调度；
+    - Goroutine 可能会因为垃圾回收和循环长时间占用资源导致程序暂停；
+  - 基于信号的抢占式调度器 - 1.14 ~ 至今
+    - 实现**基于信号的真抢占式调度**；
+    - 垃圾回收在扫描栈时会触发抢占调度；
+    - 抢占的时间点不够多，还不能覆盖全部的边缘情况；
+- 非均匀存储访问调度器 · 提案
+  - 对运行时的各种资源进行分区；
+  - 实现非常复杂，到今天还没有提上日程；
+
+## Goroutine1.0版
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/01/26-11-19-51-2021-01-26-11-19-43-image.png)
+
+###### 
+
+```go
+// G：可运行的任务
+type G interface {
+    Run() 
+}
+
+// Sched: 任务队列
+type Sched struct {
+    allg  []G
+    lock    *sync.Mutex  //
+}
+var sched Sched    //可调度任务队列
+
+// M: 物理线程，machine
+func M() {
+    for {
+        sched.lock.Lock()    //互斥地从就绪G队列中取一个g出来运行
+        if sched.allg > 0 {
+            g := sched.allg[0]
+            sched.allg = sched.allg[1:]
+            sched.lock.Unlock()
+            g.Run()        //运行它
+        } else {
+            sched.lock.Unlock()
+        }
+    }
+}
+
+// 按cpu 核数启动相应个数的物理线程
+for i:=0; i<GOMAXPROCS; i++ {
+    go M()
+}
+
+//进入系统调用时，新建一个M避免系统调用阻塞当前M时，运行的M数量小于物理核数，
+func entersyscall() {
+    go M()
+}
+
+//退出系统调用时，如果当前M大于物理核数，则将该G放入队列中
+func exitsyscall() {
+    if len(allm) >= GOMAXPROCS {
+        sched.lock.Lock()
+        sched.allg = append(sched.allg, g)    //把g放回到队列中
+        sched.lock.Unlock()
+        time.Sleep()    //这个M不再干活
+    }
+}
+```
+
+Go1.0调度设计结构比较简单，代码也比较清晰。但是也存在一些问题：
+
+1. 单个全局锁(Sched.Lock)用来保护所有的goroutine相关的操作(创建，完成，调度等)。
+2. Goroutine切换。工作线程在各自之前切换goroutine，这导致延迟和额外的负担。每个M都必须可以执行任何的G.
+3. 内存缓存MCache是每个M的。而当M阻塞后，相应的内存资源也被一起拿走了。
+4. 过多的线程阻塞、恢复。系统调用时的工作线程会频繁地阻塞，恢复，造成过多的负担。
+
+## Go1.1 GMP模型
+
+go1.0 中的调度模型中存在的最大问题是全局队列中锁的问题，为此，在go1.1中，增加了一个P(Processor)，来将全局队列按M来分解为多个局部队列，解决锁争用的问题。形成了GMP模型：
+
+* `M`指的是`Machine`，一个`M`直接关联了一个内核线程。
+
+* `P`指的是`processor`，代表了`M`所需的上下文环境，也是处理用户级代码逻辑的处理器。  
+
+* `G`指的是`Goroutine`，其实本质上也是一种轻量级的线程。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/01/26-11-09-02-2021-01-26-11-08-54-image.png)
+
+特殊的 M0 和 G0：
+
+* M0：是启动程序后的编号为 0 的主线程，这个 M 对应的实例会在全局变量 runtime.m0 中，不需要在 heap 上分配，M0 负责执行初始化操作和启动第一个 G， 在之后 M0 就和其他的 M 一样了。
+
+* G0： 每次启动一个 M 都会第一个创建的 gourtine，G0 仅用于负责调度的 G，G0 不指向任何可执行的函数，每个 M 都会有一个自己的 G0。在调度或系统调用时会使用 G0 的栈空间，全局变量的 G0 是 M0 的 G0。
+
+### G
+
+* G是goroutine的缩写, 是对goroutine的抽象;
+
+* goroutine是轻量级的`线程`或者称为`协程`，切换时并不必陷入到操作系统内核中，保存过程很轻量;
+
+* 
+
+```go
+struct G
+{
+    uintptr    stackguard;        // 分段栈的可用空间下界
+    uintptr    stackbase;         // 分段栈的栈基址
+    Gobuf      sched;             // 进程切换时，利用sched域来保存上下文
+    uintptr    stack0;
+    FuncVal*   fnstart;           // goroutine运行的函数
+    void*      param;             // 用于传递参数，睡眠时其它goroutine设置param，唤醒时此goroutine可以获取
+    int16      status;            // 状态Gidle,Grunnable,Grunning,Gsyscall,Gwaiting,Gdead
+    int64      goid;              // goroutine的id号
+    G*         schedlink;
+    M*         m;                 // for debuggers, but offset not hard-coded
+    M*         lockedm;           // G被锁定只能在这个m上运行
+    uintptr    gopc;              // 创建这个goroutine的go表达式的pc
+    ...
+};
+```
+
+### M
+
+```go
+struct M
+{
+    G*    g0;        // 带有调度栈的goroutine
+    G*    gsignal;    // signal-handling G 处理信号的goroutine
+    void    (*mstartfn)(void);
+    G*    curg;        // M中当前运行的goroutine
+    P*    p;        // 关联P以执行Go代码 (如果没有执行Go代码则P为nil)
+    P*    nextp;
+    int32    id;
+    int32    mallocing; //状态
+    int32    throwing;
+    int32    gcing;
+    int32    locks;
+    int32    helpgc;        //不为0表示此m在做帮忙gc。helpgc等于n只是一个编号
+    bool    blockingsyscall;
+    bool    spinning;
+    Note    park;
+    M*    alllink;    // 这个域用于链接allm
+    M*    schedlink;
+    MCache    *mcache;
+    G*    lockedg;
+    M*    nextwaitm;    // next M waiting for lock
+    GCStats    gcstats;
+    ...
+};
+```
+
+* M中有两个G: 
+  
+  * curg: 代表M当前绑定的结构体G。
+  
+  * g0: 是带有调度栈的goroutine，g0的栈是M对应的线程的栈。
+
+### P
+
+```c
+struct P {
+    Lock;                    //锁
+
+    uint32    status;          //
+    P*    link;                //P链表
+    uint32    tick;
+    M*    m;                   //持有M
+    MCache*    mcache;          //
+
+    G**    runq;                //可运行G环形队列
+    int32    runqhead;        //队列头
+    int32    runqtail;        //队列尾
+    int32    runqsize;        //队列大小
+
+    G*    gfree;               //
+    int32    gfreecnt;        //
+}
+```
+
+### 抢占式调度器
+
+## 参考
+
+1. [[典藏版] Golang 调度器 GMP 原理与调度全分析 | Go 技术论坛](https://learnku.com/articles/41728)
+
+2. 

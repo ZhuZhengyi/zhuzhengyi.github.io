@@ -1,0 +1,102 @@
+# Rust枚举(enum)
+
+## 简介
+
+* `enum`是rust中用于表示同一个可能拥有可数不同状态对象的结构；
+
+* `enum`包含`枚举类型`和`枚举值`, `枚举类型`是该枚举的类型，包含所有的枚举值，枚举值是枚举类型成员的具体实例；
+
+* `enum`中的`枚举值`可以包含任何类型成员；
+
+* 所有枚举值共享同一块内存空间；
+
+* 一般的enum中为了区分不同的枚举值，在头部有一个枚举标记，枚举类型大小等于枚举标记+最大枚举值类型大小；
+
+```rust
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+
+fn main() {
+    let m1 = Message::Quit;
+    let m2 = Message::Move{x:1,y:1};
+    let m3 = Message::ChangeColor(255,255,0);
+}
+```
+
+## 常用Enum
+
+### Option<T>
+
+* `Option<T>`是rust中最常用的enum，用于表示一个值存在或不存在；
+
+```rust
+enum Option<T> {
+    Some(T),
+    None,
+}
+
+impl<T> Option<T> {
+    pub fn as_ref(&self) -> Option<&T> //从`&Option<T>`转换为`Option<&T>`
+    pub fn as_mut(&mut self) -> Option<&mut T> //从&mut Option<T>转换为Option<&mut T> 
+
+    // unwrap: 当遇到None值时会panic
+    fn unwrap(self) -> T {
+        match self {
+            Option::Some(val) => val,
+            Option::None => panic!("unwrap option None"),
+        }
+    }
+}
+
+//
+fn unwrap_or<T>(option: Option<T>, default: T) -> T {
+    match option {
+        None => default,
+        Some(value) => value,
+    }
+}
+
+//
+fn and_then<F, T, A>(option: Option<T>, f: F) -> Option<A>
+        where F: FnOnce(T) -> Option<A> {
+    match option {
+        None => None,
+        Some(value) => f(value),
+    }
+}
+
+fn ok_or<T, E>(option: Option<T>, err: E) -> Result<T, E> {
+    match option {
+        Some(val) => Ok(val),
+        None => Err(err),
+    }
+}
+```
+
+### as_ref
+
+* 从`&Option<T>`转换为`Option<&T>` 
+
+### as_mut
+
+### Cow
+
+```rust
+pub enum Cow<'a, B> 
+where
+    B: 'a + ToOwned + ?Sized, 
+ {
+    Borrowed(&'a B),
+    Owned(<B as ToOwned>::Owned),
+}
+```
+
+## 参考
+
+1. [枚举 - Rust语言圣经(Rust Course)](https://course.rs/basic/compound-type/enum.html)
+
+2. 

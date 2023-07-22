@@ -1,0 +1,146 @@
+# esrally for es on cfs
+
+## 简介
+
+esrally 是 elastic 官方开源的一款基于 python3 实现的针对 es 的压测工具，主要功能如下：
+
+- 自动创建、压测和销毁 es 集群
+- 可分 es 版本管理压测数据和方案
+- 完善的压测数据展示，支持不同压测之间的数据对比分析，也可以将数据存储到指定的es中进行二次分析
+- 支持收集 JVM 详细信息，比如内存、GC等数据来定位性能问题
+
+## 安装测试
+
+### 测试环境
+
+| 节点类型  | 节点数 | CPU | 内存    | 存储           | 网络      | 备注   |
+| ----- | --- | --- | ----- | ------------ | ------- | ---- |
+| 管理节点  | 3   | 32  | 32 GB | 120 GB SSD   | 10 Gb/s |      |
+| 元数据节点 | 10  | 32  | 32 GB | 16 x 1TB SSD | 10 Gb/s | 混合部署 |
+| 数据节点  | 10  | 32  | 32 GB | 16 x 1TB SSD | 10 Gb/s | 混合部署 |
+
+### cfs配置
+
+* 创建cfs vol
+
+```shell
+#!/bin/sh
+# ./create_vol.sh
+
+VolNames=estest
+leader=10.194.139.42:8080  #cfs master leader节点的ip
+Capacity=1024  #unit GB
+Owner=es01
+DpCount=500
+
+# 创建vol
+curl "http://$leader/admin/createVol?name=$VolName&replicas=3&type=extent&capacity=$Capacity&owner=$Owner&followerRead=true"
+
+# 创建dp
+curl "http://$leader/dataPartition/create?count=$DpCount&name=$VolName&type=extent"
+```
+
+* 挂载cfs vol：
+  
+  在es运行节点运行cfs-client，挂载cfs vol到指定目录：`/mnt/cfs`
+
+```shell
+$ cd $CFS_ROOT
+$ bin/cfs-client -c conf/cfs-client.json
+```
+
+cfs client 配置文件：
+
+```json
+// cfs-client.json
+{
+        "mountPoint": "/mnt/cfs",
+        "volName": "estest",
+        "owner": "es01",
+        "masterAddr": "10.194.139.42:8080,10.194.139.44:8080,10.194.139.45:8080",
+        "logDir": "/export/Logs/cfs",
+        "warnLogDir": "/export/Logs/cfs",
+        "logLevel": "debug",
+        "consulAddr": "http://cbconsul-cfs01.cbmonitor.svc.ht7.n.jd.local",
+        "exporterPort": 9613,
+        "profPort": "11094"
+}
+```
+
+### es配置
+
+修改es配置文件`elasticsearch.yml`中配置项`path.data`为cfs挂载目录:
+
+```yaml
+# elasticsearch.yml
+#...
+path.data: /mnt/cfs/es/<HOST_NAME>   ## HOST_NAME为节点主机名，如果节点运行多个es，每个es需配置不同的目录
+#...
+```
+
+### esrally
+
+* centos7
+
+```shell
+$ yum install -y python3 python3-devel
+# install git
+$ yum install -y http://opensource.wandisco.com/centos/6/git/x86_64/wandisco-git-release-6-1.noarch.rpm
+$ yum install -y git
+$ pip3 install esrally
+
+$ target_hosts=10.194.132.2:20000,10.194.132.5:20000,10.194.132.71:20000,10.194.134.196:20000
+$ esrally --track=pmc \
+    --target-hosts=$target_hosts \
+    --pipeline=benchmark-only
+
+$ esrally --pipeline=benchmark-only \
+ --track=http_logs \
+ --target-hosts=$target_hosts \
+ --report-file=/tmp/report_http_logs.md
+
+# 指定集群，运行测试，test-mode参数只会运行1000条文档 es集群必须处理green状态，否则会被禁止race
+# 去掉--offline --test-mode可以让其把相关文件夹创建，然后结束掉
+esrally --pipeline=benchmark-only --target-hosts=127.0.0.1:9200 --offline --test-mode --client-options="basic_auth_user:'elastic',basic_auth_password:'your_password'"
+
+esrally race --track=geonames --challenge=append-no-conflicts --user-tag="car:1g" --car=1gheap --pipeline=benchmark-only --target-hosts=127.0.0.1:9200 --offline --test-mode --client-options="basic_auth_user:'elastic',basic_auth_password:'your_password'"
+
+esrally race --track=geonames --challenge=append-no-conflicts --user-tag="car:2g" --car=2gheap --pipeline=benchmark-only --target-hosts=127.0.0.1:9200 --offline --test-mode --client-options="basic_auth_user:'elastic',basic_auth_password:'your_password'"
+
+# 对比2次的测试结果，根据esrally list races显示的时间戳当参数值，如果报错就使用Race ID
+esrally compare --baseline='Race ID' --contender='Race ID'
+
+# 修改集群的分片数和副本数
+vim /home/esrally/.rally/benchmarks/tracks/default/geonames/index.json
+vim /home/esrally/.rally/benchmarks/tracks/default/geonames/challenges/default.json
+
+# 常用命令
+esrally list tracks
+esrally list cars
+esrally list races
+esrally list pipelines
+
+$ esrally list races
+$ esrally compare --baseline 30889a15-66d3-4336-b6cb-0304834d853a  --contender 1d1d5a98-54cb-486d-8339-98fe72ff054c
+```
+
+## 测试结果
+
+| metric                                         | local-r0 | local-r1 | local-r2 | cfs-r0  | cfs-r1    | cfs-r2  |
+| ---------------------------------------------- | -------- | -------- | -------- | ------- | --------- | ------- |
+| Cumulative indexing time of primary<br> shards | 48.1956  | 50.1214  | 53.6981  | 61.514  | 60.6874   | 61.6843 |
+| Cumulative merge time of primary shards        | 19.3734  | 19.759   | 16.3446  | 20.7753 | 15.1702   | 5.61673 |
+| Cumulative refresh time of primary shard       | 6.52128  | 5.99413  | 5.61948  | 12.7984 | 10.6824   | 9.8606  |
+| Cumulative flush time of primary shards        | 0.00513  | 0        | 1.67E-05 | 0.0028  | 0.0147333 | 0.03075 |
+
+![](/Users/zhuzhengyi/Documents/gitnote/img/2020-06-03-13-36-05-image.png)
+
+* local-r0、local-r1, local-r2: 分别表示es    `path.data`使用本地磁盘，replica分别为0，1，2时的数据；
+
+* cfs-r0，cfs-r1, cfs-r2分别表示es `path.data`使用cfs 卷，replica分别为0,1,2时esrally的数据；
+
+## 参考
+
+1. https://esrally.readthedocs.io/en/latest/<u>summary_report</u>.html
+2. https://www.jianshu.com/p/c89975b50447
+3. [快速入门 &mdash; Rally 0.9.0 文档](http://esrally.lyremelody.org/zh_CN/latest/quickstart.html)

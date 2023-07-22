@@ -1,0 +1,107 @@
+# Linux IO 多路复用
+
+## select
+
+select把需要监控的fd加入到fd_set（文件描述符集合），通过select监控fd_set里的fd是否有变化。如果有一个fd满足读写事件，就会依次查看每个文件描述符，那些发生变化的描述符在fd_set对应位设为1，表示socket可读或者可写。
+
+Select通过轮询的方式监听，对监听的FD数量 t通过FD_SETSIZE限制。
+
+![](https://box.kancloud.cn/4ddb3f8f232beb837f294c27011cc050_2174x1226.png)
+
+**select**：效率低，性能不太好。不能解决大量并发请求的问题。
+
+两个问题：
+
+1. select初始化时，要告诉内核，关注1000个fd， 每次初始化都需要重新关注1000个fd。前期准备阶段长。
+2. select返回之后，要扫描1000个fd。 后期扫描维护成本大，CPU开销大。
+
+### epoll
+
+**epoll** ：在内核中的实现不是通过轮询的方式，而是通过注册callback函数的方式。当某个文件描述符发现变化，就主动通知。成功解决了select的两个问题，“epoll 被称为解决 C10K 问题的利器。”
+
+1. select的“健忘症”，一返回就不记得关注了多少fd。api 把告诉内核等哪些文件，和最终监听哪些文件，都是同一个api。  
+   而epoll，告诉内核等哪些文件 和具体等哪些文件分开成两个api，epoll的“等”返回后，还是知道关注了哪些fd。
+2. select在返回后的维护开销很大，而epoll就可以直接知道需要等fd。  
+   ![](https://img.kancloud.cn/57/8c/578c893b5086df31bdd5a2d7deee2f2b_2370x1098.png)
+
+图片来自 极客时间-刘超,趣谈网络协议
+
+![](https://box.kancloud.cn/ad9da367133ecef6e129578d78f37673_752x434.png)  
+epoll_create: 创建epoll池子。  
+epoll_ctl：向epoll注册事件。告诉内核epoll关心哪些文件，让内核没有健忘症。  
+epoll_wait：等待就绪事件的到来。专门等哪些文件，第2个参数 是输出参数，包含满足的fd，不需要再遍历所有的fd文件。
+
+![](https://box.kancloud.cn/40b34409c80437841f1706e981809f0a_894x654.png)
+
+如上图，epoll在CPU的消耗上，远低于select，这样就可以在一个线程内监控更多的IO。
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/epoll.h>
+#include <sys/stat.h>
+
+static void call_epoll(void)
+{
+   int epfd, fifofd, pipefd;
+   struct epoll_event ev, events[2];
+   int ret;
+
+   epfd = epoll_create(2);
+   if (epfd < 0) {
+       perror("epoll_create()");
+       return;
+   }
+
+   ev.events = EPOLLIN|EPOLLET;
+
+   fifofd = open("/dev/globalfifo", O_RDONLY, S_IRUSR);
+   printf("fifo fd:%d\n", fifofd);
+   ev.data.fd = fifofd;
+   ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fifofd, &ev);
+
+   pipefd = open("pipe", O_RDONLY|O_NONBLOCK, S_IRUSR);
+   printf("pipe fd:%d\n", pipefd);
+   ev.data.fd = pipefd;
+   ret = epoll_ctl(epfd, EPOLL_CTL_ADD, pipefd, &ev);
+
+   while(1) {
+       ret = epoll_wait(epfd, events, 2, 50000);
+       if (ret < 0) {
+           perror("epoll_wait()");
+       } else if (ret == 0) {
+           printf("No data within 50 seconds.\n");
+       } else {
+           int i;
+           for(i=0;i<ret;i++) {
+               char buf[100];
+               read(events[i].data.fd, buf, 100);
+               printf("%s is available now:, %s\n",
+                       events[i].data.fd==fifofd? "fifo":"pipe", buf);
+           }
+       }
+   }
+_out:
+   close(epfd);
+}
+
+int main()
+{
+   call_epoll();
+   return 0;
+}
+```
+
+总结：epoll是几乎是大规模并行网络程序设计的代名词，一个线程里可以处理大量的tcp连接，cpu消耗也比较低。很多框架模型，nginx, nodejs, 底层均使用epoll实现。
+
+### signal IO
+
+目前在linux中很少被用到，Linux内核某个IO事件ready，通过kill出一个signal，应用程序在signal IO上绑定处理函数。
+
+![](https://box.kancloud.cn/89fe7e92530f6e2f8c366b3fe4c1183e_2048x1304.png)
+
+kernel发现设备读写事件变化，调用一个 kill fa_sync ，应用程序绑定signal_io上的事件。
+
+![](https://box.kancloud.cn/4ddb3f8f232beb837f294c27011cc050_2174x1226.png)

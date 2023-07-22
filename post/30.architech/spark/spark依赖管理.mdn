@@ -1,0 +1,107 @@
+# 管理 Apache Spark 的 Java 和 Scala 依赖项
+
+Spark 应用通常依赖于第三方 Java 或 Scala 库。以下是在向 Cloud Dataproc 集群提交 Spark 作业时添加这些依赖项的建议方法：
+
+1. 使用 [`gcloud dataproc jobs submit`](https://cloud.google.com/dataproc/docs/guides/submit-job?hl=zh-cn#submitting_a_dataproc_name_short_job) 命令从本地机器提交作业时，请使用 `--properties spark.jars.packages=[DEPENDENCIES]` 标志。  
+   
+   **示例：**
+   
+   gcloud dataproc jobs submit spark   
+   --cluster my-cluster   
+   --properties spark.jars.packages='com.google.cloud:google-cloud-translate:1.35.0,org.apache.bahir:spark-streaming-pubsub_2.11:2.2.0'
+
+2. [直接通过集群提交作业](https://cloud.google.com/dataproc/docs/guides/submit-job?hl=zh-cn#submit_a_job_directly_on_your_cluster)时，请使用带有 `--packages=[DEPENDENCIES]` 参数的 `spark-submit`命令。  
+   
+   **示例：**
+   
+   spark-submit --packages='com.google.cloud:google-cloud-translate:1.35.0,org.apache.bahir:spark-streaming-pubsub_2.11:2.2.0'
+
+## 避免依赖项冲突
+
+如果 Spark 应用依赖项与 Hadoop 的依赖项冲突，则上述方法可能会失败。导致这种冲突的原因如下：由于 Hadoop 将其依赖项注入应用的[类路径](https://en.wikipedia.org/wiki/Classpath_(Java))，因此其依赖项的优先级高于应用的依赖项。出现冲突时，可能会产生 `NoSuchMethodError` 或其他错误。
+
+**示例：**  
+[Guava](https://github.com/google/guava) 是 Google 的 Java 核心库，可供多种库和框架（包括 Hadoop）使用。如果作业或其依赖项需要使用的 Guava 版本比 Hadoop 使用的版本更高，则可能出现依赖项冲突。
+
+Hadoop v3.0 [解决了](https://issues.apache.org/jira/browse/HADOOP-11804)这个问题，但依赖早期 Hadoop 版本的应用需要通过以下两个环节的解决方法来避免可能的依赖项冲突。
+
+1. 创建一个单独的“超级”JAR（又名“胖”JAR），其中包含应用的软件包及其所有依赖项。
+2. 重新定位超级 JAR 中冲突的依赖项软件包，以防止其路径名与 Hadoop 的依赖项软件包冲突。可在打包过程中使用插件（请参阅下文）自动执行此重定位（也称为“添加阴影”），而无需修改您的代码。
+
+### 用 Maven 创建一个超级阴影 JAR
+
+[Maven](https://maven.apache.org/) 是用于构建 Java 应用的软件包管理工具。[Maven scala](https://davidb.github.io/scala-maven-plugin/) 插件可用于构建用 Scala（即 Spark 应用使用的语言）编写的应用。[Maven shade](http://maven.apache.org/plugins/maven-shade-plugin/) 插件可用于创建阴影 JAR。
+
+以下是一个示例 `pom.xml` 配置文件，该文件用于为 Guava 库（位于 `com.google.common` 软件包中）添加阴影。此配置文件会指示 Maven 将 `com.google.common` 包重命名为 `repackaged.com.google.common` 并更新原始软件包中所有对类的引用。
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project  xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"> <modelVersion>4.0.0</modelVersion> <properties> <maven.compiler.source>1.8</maven.compiler.source> <maven.compiler.target>1.8</maven.compiler.target> </properties> <groupId><!-- YOUR_GROUP_ID --></groupId> <artifactId><!-- YOUR_ARTIFACT_ID --></artifactId> <version><!-- YOUR_PACKAGE_VERSION --></version> <dependencies> <dependency> <groupId>org.apache.spark</groupId> <artifactId>spark-sql_2.11</artifactId> <version><!-- YOUR_SPARK_VERSION --></version> <scope>provided</scope> </dependency> <!-- YOUR_DEPENDENCIES --> </dependencies> <build> <plugins> <plugin> <groupId>net.alchim31.maven</groupId> <artifactId>scala-maven-plugin</artifactId> <executions> <execution> <goals> <goal>compile</goal> <goal>testCompile</goal> </goals> </execution> </executions> <configuration> <scalaVersion><!-- YOUR_SCALA_VERSION --></scalaVersion> </configuration> </plugin> <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-shade-plugin</artifactId> <executions> <execution> <phase>package</phase> <goals> <goal>shade</goal> </goals> <configuration> <transformers> <transformer  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"> <mainClass><!-- YOUR_APPLICATION_MAIN_CLASS --></mainClass> </transformer> </transformers> <filters> <filter> <artifact>*:*</artifact> <excludes> <exclude>META-INF/maven/**</exclude> <exclude>META-INF/*.SF</exclude> <exclude>META-INF/*.DSA</exclude> <exclude>META-INF/*.RSA</exclude> </excludes> </filter> </filters> <relocations> <relocation> <pattern>com</pattern> <shadedPattern>repackaged.com.google.common</shadedPattern> <includes> <include>com.google.common.**</include> </includes> </relocation> </relocations> </configuration> </execution> </executions> </plugin> </plugins> </build>  
+
+</project>  
+
+要运行该构建，请执行以下操作：
+
+mvn package
+
+**有关 `pom.xml` 的注意事项：**
+
+- [ManifestResourceTransformer](https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ManifestResourceTransformer) 会处理超级 JAR 清单文件 (`MANIFEST.MF`) 中的属性。此外，此清单还可以指定应用的入口点。
+
+- 由于 Spark 安装在 Cloud Dataproc 上，因此 Spark 的[范围](https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Dependency_Scope)是 `provided`。
+
+- 指定 Cloud Dataproc 集群上安装的 Spark 版本（请参阅 [Cloud Dataproc 版本列表](https://cloud.google.com/dataproc/docs/concepts/versioning/dataproc-versions?hl=zh-cn)）。如果您的应用需要使用的 Spark 版本与 Cloud Dataproc 集群中安装的版本不同，您可以编写[初始化操作](https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/init-actions?hl=zh-cn)，或构建一个[自定义映像](https://cloud.google.com/dataproc/docs/guides/dataproc-images?hl=zh-cn)（该映像会安装您的应用使用的 Spark 版本）。
+
+- `<filters>` 条目从依赖项的 `META-INF` 目录中排除了签名文件。如果没有此条目，则可能会发生 `java.lang.SecurityException: Invalid signature file digest for Manifest main attributes` 运行时异常，因为签名文件在超级 JAR 环境中无效。
+
+- 您可能需要为多个库添加阴影。为此，请添加多个路径。以下示例演示了如何为 Guava 和 Protobuf 库添加阴影。
+  
+  <relocation> <pattern>com</pattern> <shadedPattern>repackaged.com</shadedPattern> <includes> <include>com.google.protobuf.**</include> <include>com.google.common.**</include> </includes>  
+  </relocation>  
+
+### 用 SBT 创建一个超级阴影 JAR
+
+[SBT](https://www.scala-sbt.org/) 是用于构建 Scala 应用的工具。要使用 SBT 创建阴影 JAR，请执行以下操作向构建定义中添加 [`sbt-assembly`](https://github.com/sbt/sbt-assembly) 插件。首先，在 `project/` 目录下创建一个名为 `assembly.sbt` 的文件：
+
+├── src/
+└── build.sbt
+└── project/
+    └── assembly.sbt
+
+然后，在 `assembly.sbt` 中添加以下一行内容：
+
+addSbtPlugin("com.eed3si9n"  %  "sbt-assembly"  %  "0.14.6")  
+
+以下是一个示例 `build.sbt` 配置文件，该文件用于为 Guava 库（位于 `com.google.common package` 软件包中）添加阴影。
+
+lazy  val commonSettings =  Seq(organization :=  "YOUR_GROUP_ID",name :=  "YOUR_ARTIFACT_ID",version :=  "YOUR_PACKAGE_VERSION",scalaVersion :=  "YOUR_SCALA_VERSION",  
+)  
+
+lazy  val shaded =  (project in file("."))  
+ .settings(commonSettings)mainClass in (Compile, packageBin)  :=  Some("YOUR_APPLICATION_MAIN_CLASS")libraryDependencies ++=  Seq(  
+ "org.apache.spark"  %  "spark-sql_2.11"  %  "YOUR_SPARK_VERSION"  %  "provided",  
+ // YOUR_DEPENDENCIES  
+)assemblyShadeRules in assembly :=  Seq( ShadeRule.rename("com.google.common.**"  ->  "repackaged.com.google.common.@1").inAll  
+)  
+
+要运行该构建，请执行以下操作：
+
+sbt assembly
+
+**有关 `build.sbt` 的注意事项**：
+
+- 上述示例中的阴影规则可能无法解决所有依赖项冲突，因为 SBT 使用严格的冲突解决策略。因此，您可能需要提供更精细的规则，以使用 `MergeStrategy.first`、`last`、`concat`、`filterDistinctLines`、`rename` 或 `discard` 策略明确合并特定类型的冲突文件。如需了解详情，请参阅 `sbt-assembly` 的[合并策略](https://github.com/sbt/sbt-assembly#merge-strategy)。
+
+- 您可能需要为多个库添加阴影。为此，请添加多个路径。以下示例演示了如何为 Guava 和 Protobuf 库添加阴影。
+  
+  assemblyShadeRules in assembly :=  Seq( ShadeRule.rename("com.google.common.**"  ->  "repackaged.com.google.common.@1").inAll, ShadeRule.rename("com.google.protobuf.**"  ->  "repackaged.com.google.protobuf.@1").inAll  
+  )  
+
+## 向 Cloud Dataproc 提交超级 JAR
+
+在创建包含 Spark 应用及其依赖项的超级阴影 JAR 之后，您就可以向 Cloud Dataproc [提交作业](https://cloud.google.com/dataproc/docs/guides/submit-job?hl=zh-cn)了。
+
+## 后续事项
+
+- 请参阅 Spark 示例应用 [spark-translate](https://github.com/GoogleCloudPlatform/cloud-dataproc/tree/master/spark-translate)，其中包含了 Maven 和 SBT 的配置文件。
+- 在 Cloud Dataproc 上[编写并运行 Spark Scala 作业](https://cloud.google.com/dataproc/docs/tutorials/spark-scala?hl=zh-cn)。请按照快速入门中的说明了解如何在 Cloud Dataproc 集群上编写并运行 Spark Scala 作业。

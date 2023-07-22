@@ -1,0 +1,50 @@
+---
+
+categories:
+
+- system
+
+---
+
+# Ray
+
+## 简介
+
+Ray是UC Berkeley AMP 实验室继 Spark 后又推出一款重磅高性能AI计算引擎，号称支持每秒数百万次任务调度。开发 Ray 的动机始于**强化学习（RL）**，但是由于其计算模型强大表达能力，使用绝不限于 RL。Ray 实现了动态任务图计算模型， 将应用建模为一个在运行过程中动态生成依赖的任务图。在此模型之上，Ray 提供了角色模型（Actor）和并行任务模型（task-parallel）的编程范式。Ray 对混合计算范式的支持使其有别于与像 [CIEL](https://link.zhihu.com/?target=http%3A//www.cs.princeton.edu/courses/archive/fall13/cos518/papers/ciel.pdf) 一样只提供并行任务抽象和像 [Orleans](https://link.zhihu.com/?target=https%3A//github.com/dotnet/orleans) 或 [Akka](https://link.zhihu.com/?target=https%3A//akka.io/)一样只提供角色模型抽象的系统。
+
+## 特点
+
+## 架构
+
+Ray 的架构组成包括两部分：
+
+* **应用层**：实现 API ，现在包括 Python 和 Java分别实现的版本。
+* **系统层**：提供高扩展性和容错的，用 C++ 写的，以CPython的形式嵌入包中。
+
+![image-20190529094915381](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-36-12-image-20190529094915381.png)
+
+### 应用层
+
+应用层包括三种类型的进程：
+
+- **驱动进程（Driver**）： 用来执行用户程序。
+- **工作进程（Worker）**：用来执行 Driver 或者其他 Worker 指派的任务(remote functions，就是用户代码中装饰了[`@ray.remote](mailto:`@ray.remote)` 的那些函数)的**无状态进程**。工作进程在节点启动时被自动启动，一般来说会在每个物理机上启动与 CPU 同样数量的 Worker（这里还有些问题：如果节点是容器的话，获取的仍然是其所在物理机的 CPU 数）。当一个远程函数被声明时，会被注册到全局，并推送到所有 Worker。每个 Worker 顺序的执行任务，并且不维护本地状态。
+- **角色进程（Actor）**：用来执行角色方法的有状态进程。与 Worker 被自动的启动不同，每个 Actor 会根据需求（即被调用时）被工作进程或者驱动进程显示启动。和 Worker 一样，Actor 也会顺序的执行任务，不同的是，下一个任务的执行依赖于前一个任务生成或改变的状态(即 Actor 的成员变量)。
+
+### 系统层
+
+系统层包括三个主要组件，所有组件都可以进行水平扩展并且支持容错。：
+
+* 全局控制存储(GCS，global control store)：
+* 分布式调度器（distributed scheduler）：
+* 分布式对象存储(distributed object store)：
+
+## **语言和计算模型**
+
+## 参考
+
+1. https://zhuanlan.zhihu.com/p/64051646
+2. https://github.com/ray-project/ray
+3. https://ray.readthedocs.io/en/latest/
+4. https://www.jianshu.com/p/a5f8665d84ff
+5. https://www.cnblogs.com/fanzhidongyzby/p/7901139.html

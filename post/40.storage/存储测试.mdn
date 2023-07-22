@@ -1,0 +1,62 @@
+# 文件系统测试
+
+## 简介
+
+```shell
+# 安装mpirun
+```
+
+### openmpi
+
+* 安装rsh
+
+```shell
+#!/bin/sh
+
+yum -y install rsh rsh-server
+systemctl restart rsh.socket
+systemctl restart rlogin.socket
+systemctl restart rexec.socket
+
+cat > /root/.rhosts <<EOF
+192.168.100.210 root
+192.168.100.211 root
+192.168.100.212 root
+192.168.100.213 root
+192.168.100.214 root
+EOF
+
+sed -i "/rsh/d" /etc/securetty
+sed -i "/rexec/d" /etc/securetty
+sed -i "/rlogin/d" /etc/securetty
+cat >> /etc/securetty <<EOF
+rsh
+rexec
+rlogin
+EOF
+```
+
+* 安装mpirun
+
+```shell
+yum install -y openmpi openmpi-devel libevent libevent-devel opal opal-devel
+
+wget https://download.open-mpi.org/release/open-mpi/v1.10/openmpi-1.10.7.tar.gz
+./configure --prefix=/usr/local/openmpi/
+make
+make install
+
+cat > /etc/profile.d/openmpi.sh <<EOF
+export PATH=\$PATH:/usr/local/openmpi/bin/:/usr/local/ior/bin/
+export LD_LIBRARY_PATH=/usr/local/openmpi/lib:\${LD_LIBRARY_PATH}
+export MPI_CC=mpicc
+EOF
+
+source /etc/profile.d/openmpi.sh
+```
+
+### mdtest
+
+### fio
+
+### ior

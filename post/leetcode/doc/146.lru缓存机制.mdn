@@ -1,0 +1,207 @@
+# [LRU缓存机制](https://leetcode-cn.com/problems/lru-cache/description/ "https://leetcode-cn.com/problems/lru-cache/description/")
+
+| Category   | Difficulty      | Likes | Dislikes |
+| ---------- | --------------- | ----- | -------- |
+| algorithms | Medium (44.70%) | 332   | -        |
+
+**Tags**
+
+[`design`](https://leetcode.com/tag/design "https://leetcode.com/tag/design")
+
+**Companies**
+
+`amazon` | `bloomberg` | `facebook` | `google` | `microsoft` | `palantir` | `snapchat` | `twitter` | `uber` | `yahoo` | `zenefits`
+
+运用你所掌握的数据结构，设计和实现一个  [LRU (最近最少使用) 缓存机制](https://baike.baidu.com/item/LRU "https://baike.baidu.com/item/LRU")。它应该支持以下操作： 获取数据 `get` 和 写入数据 `put` 。
+
+获取数据 `get(key)` - 如果密钥 (key) 存在于缓存中，则获取密钥的值（总是正数），否则返回 -1。  
+写入数据 `put(key, value)` - 如果密钥不存在，则写入其数据值。当缓存容量达到上限时，它应该在写入新数据之前删除最近最少使用的数据值，从而为新的数据值留出空间。
+
+**进阶:**
+
+你是否可以在 **O(1)** 时间复杂度内完成这两种操作？
+
+**示例:**
+
+```
+LRUCache cache = new LRUCache( 2 /* 缓存容量 */ );
+
+cache.put(1, 1);
+cache.put(2, 2);
+cache.get(1);       // 返回  1
+cache.put(3, 3);    // 该操作会使得密钥 2 作废
+cache.get(2);       // 返回 -1 (未找到)
+cache.put(4, 4);    // 该操作会使得密钥 1 作废
+cache.get(1);       // 返回 -1 (未找到)
+cache.get(3);       // 返回  3
+cache.get(4);       // 返回  4
+```
+
+---
+
+[Discussion](https://leetcode-cn.com/problems/lru-cache/comments/ "https://leetcode-cn.com/problems/lru-cache/comments/") | [Solution](https://leetcode-cn.com/problems/lru-cache/solution/ "https://leetcode-cn.com/problems/lru-cache/solution/")
+
+## 解法
+
+* python
+
+```python
+class LRUCache:
+    '''
+    ## 解题思路
+    '''
+    def __init__(self, capacity: int):
+        self.keys = []
+        self.maps = {}
+        self.capacity = capacity
+
+    def get(self, key: int) -> int:
+        v = self.maps.get(key, None)
+        if v is None:
+            return -1
+        else:
+            self.keys = [ key ] + [ k for k in self.keys if k != key]
+        return v
+
+    def put(self, key: int, value: int) -> None:
+        v = self.maps.get(key) 
+        if v is not None:
+           self.keys = [key] + [ k for k in self.keys if k != key] 
+        elif len(self.keys) >= self.capacity:
+            k = self.keys.pop()
+            self.keys.insert(0, key)
+            self.maps.pop(k)
+        else:
+            self.keys.insert(0, key)
+        self.maps[key] = value
+```
+
+* cpp
+
+```cpp
+/*
+## 解题思路
+1. 用到了两个数据结构：
+    * map： 记录key -> (val, list_node_ptr)
+    * list: 记录key按序访问列表 
+3. get()时，
+    3.1 先在map中通过key找到(val, list_node_ptr), 
+    3.2 再通过list_node_ptr, 从list获取key，移到list head；
+4. put()时：
+    4.1 full时，先从list取出tail node淘汰，并移除map中对应的key，
+    4.2 将key放入list头，并将k->(val, list_head_ptr)记录在map
+*/
+class LRUCache {
+    int capacity;            //缓存容量
+    list<int> ordered_keys;  //key访问顺序列表
+    unordered_map<int, pair<int, list<int>::iterator>> kv; //key->(val, list_node:iter)
+
+public:
+    LRUCache(int capacity): 
+        capacity(capacity) {
+    }
+
+    int get(int key) {
+        auto v = kv.find(key);
+        // keys中不存在，则返回-1
+        if (v == kv.end()) {
+            return -1;
+        }
+
+        // 将keys[key]指向的元素移动到list最前面
+        ordered_keys.splice(ordered_keys.begin(), ordered_keys, kv[key].second);
+
+        return kv[key].first;
+    }
+
+    //
+    void put(int key, int value) {
+        // 已存在的key
+        auto v = kv.find(key);
+        if (v != kv.end()) {
+            ordered_keys.splice(ordered_keys.begin(), ordered_keys, kv[key].second);
+            kv[key].first = value;
+            return;
+        } 
+
+        if (ordered_keys.size() == capacity) { //容量满了
+            // 移除list中尾部的key和map中对应的;
+            kv.erase(ordered_keys.back());
+            ordered_keys.pop_back();
+        }
+
+        // 将k-v插入到list头
+        ordered_keys.push_front(key);
+        // 然后将头部指针放入到map中
+        kv[key] = make_pair(value, ordered_keys.begin());
+    }
+};
+```
+
+```rust
+use std::collections::{HashMap, VecDeque};
+use std::convert::TryInto;
+
+/// LRUCache
+struct LRUCache {
+    keys: VecDeque<i32>,   // keys
+    kv: HashMap<i32, i32>, // cache map
+    cap: usize,            // cap of caches
+}
+
+/**
+ * `&self` means the method takes an immutable reference.
+ * If you need a mutable reference, change it to `&mut self` instead.
+ */
+impl LRUCache {
+    fn new(capacity: i32) -> Self {
+        Self {
+            keys: VecDeque::new(),
+            kv: HashMap::new(),
+            cap: capacity.try_into().unwrap(),
+        }
+    }
+
+    /// 1. 判断key是否在map中；
+    /// 2. 如果不在map中，则返回-1;
+    /// 3. 如果在map中：
+    /// 3.1 查找key在sorted_keys中的index；
+    /// 3.2 删除sorted_keys中的旧key；
+    /// 3.3 将新key插入到sorted_keys头；
+    /// 3.4. 返回map中的key->val;
+    fn get(&mut self, key: i32) -> i32 {
+        match self.kv.get(&key) {
+            None => -1,
+            Some(&v) => {
+                let i = self.keys.iter().position(|&k| k == key).unwrap();
+                self.keys.remove(i);
+                self.keys.push_front(key);
+                v
+            }
+        }
+    }
+
+    fn put(&mut self, key: i32, value: i32) {
+        match self.kv.get(&key) {
+            None => {
+                if self.is_full() {
+                    let invalid_key = self.keys.pop_back().unwrap();
+                    self.kv.remove(&invalid_key);
+                }
+                self.kv.insert(key, value); //insert k-v
+                self.keys.push_front(key);
+            }
+            Some(_) => {
+                let i = self.keys.iter().position(|&k| k == key).unwrap();
+                self.keys.remove(i);
+                self.keys.push_front(key);
+                self.kv.insert(key, value); //update k-v
+            }
+        }
+    }
+
+    fn is_full(&self) -> bool {
+        self.keys.len() >= self.cap
+    }
+}
+```

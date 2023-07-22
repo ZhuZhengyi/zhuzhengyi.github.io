@@ -1,0 +1,85 @@
+# EmuElec
+
+## 简介
+
+EmuELEC 是专为 Amlogic（晶晨）S905/S912 方案的盒子开发的游戏系统，它基于 CoreELEC 系统，在 CoreELEC 的基础上移植了 RetroArch 和众多的独立模拟器。EmuELEC 前身为 Sx05RE。Sx05RE 整合了 Lakka、KODI、EmulationStation，常被人简称为三合一。它实际上也是一个 Linux 系统，最新版本开始只支持 arm64 架构了。
+
+## 刷img
+
+1. 获取img文件；
+
+2. 使用磁盘写入工具(windows下入diskgenui, partitionguru, linux下dd)将img镜像写入到U盘中；
+
+3. 
+
+## 启动wifi
+
+```shell
+## /storage/.config/emuelec/configs/emuelec.conf
+
+## Activate wifi (0,1)
+wifi.enabled=1
+wifi.ssid=CMCC-5G
+wifi.key=xxx
+# secondary wifi (not configurable via the user interface)
+#wifi2.ssid=new ssid
+#wifi2.key=new key
+# third wifi (not configurable via the user interface)
+#wifi3.ssid=new ssid
+#wifi3.key=new key
+```
+
+## 挂载smb
+
+```shell
+[yourhost]$ ssh root@192.168.31.196
+[emuelec]# cd /storage/.config/system.d/
+[emuelec]# mkdir -p /storage/roms/psp
+[emuelec]# cat >storage-roms-psp.mount <<EOF
+[Unit]
+Description=Mounting Amiga folder on samba
+Requires=network-online.service
+After=network-online.service
+Before=emustation.service
+
+[Mount]
+What=//192.168.31.1/SHARE/roms/psp
+Where=/storage/roms/psp
+Options=username=guest
+Type=cifs
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+[emuelec]# systemctl enable storage-roms-psp.mount
+[emuelec]# systemctl start storage-roms-psp.mount
+```
+
+## 手动连接蓝牙手柄
+
+```shell
+[localhost]$ ssh root@192.168.31.196
+[emuelec]# bluetoothctl
+[bluetooth]# 
+[bluetooth]# default-agent
+[bluetooth]# power on
+[bluetooth]# discoverable on
+[bluetooth]# pairable on
+[bluetooth]# scan on
+Attempting to pair with 00:FF:01:00:0B:A7
+[CHG] Device 00:FF:01:00:0B:A7 Connected: yes
+[agent] PIN code: 195693
+[CHG] Device 00:FF:01:00:0B:A7 Connected: no 
+
+[bluetooth]# trust 00:FF:01:00:0B:A7
+[bluetooth]# pair 00:FF:01:00:0B:A7
+[bluetooth]# connect 00:FF:01:00:0B:A7
+
+## 如果碰到什么问题，可以输入删除掉你的设备，然后重新信任---配对---连接
+[bluetooth]# remove AC:FD:93:CB:3E:BE
+```
+
+## 参考
+
+1. [ROMS on CIFS SAMBA shares - EmuELEC/EmuELEC GitHub Wiki](https://github-wiki-see.page/m/EmuELEC/EmuELEC/wiki/ROMS-on-CIFS-SAMBA-shares)

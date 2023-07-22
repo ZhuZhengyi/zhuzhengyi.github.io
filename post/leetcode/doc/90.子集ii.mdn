@@ -1,0 +1,121 @@
+# [子集 II](https://leetcode-cn.com/problems/subsets-ii/description/ "https://leetcode-cn.com/problems/subsets-ii/description/")
+
+| Category   | Difficulty      | Likes | Dislikes |
+| ---------- | --------------- | ----- | -------- |
+| algorithms | Medium (63.44%) | 811   | -        |
+
+**Tags**
+
+[`array`](https://leetcode.com/tag/array "https://leetcode.com/tag/array") | [`backtracking`](https://leetcode.com/tag/backtracking "https://leetcode.com/tag/backtracking")
+
+**Companies**
+
+`facebook`
+
+给你一个整数数组 `nums` ，其中可能包含重复元素，请你返回该数组所有可能的子集（幂集）。
+
+解集 **不能** 包含重复的子集。返回的解集中，子集可以按 **任意顺序** 排列。
+
+**示例 1：**
+
+```
+输入：nums = [1,2,2]
+输出：[[],[1],[1,2],[1,2,2],[2],[2,2]]
+```
+
+**示例 2：**
+
+```
+输入：nums = [0]
+输出：[[],[0]]
+```
+
+**提示：**
+
+- `1 <= nums.length <= 10`
+- `-10 <= nums[i] <= 10`
+
+[Discussion](https://leetcode-cn.com/problems/subsets-ii/comments/ "https://leetcode-cn.com/problems/subsets-ii/comments/") | [Solution](https://leetcode-cn.com/problems/subsets-ii/solution/ "https://leetcode-cn.com/problems/subsets-ii/solution/")
+
+## 解法
+
+```rust
+// @lc code=start
+impl Solution {
+    /// ## 解题思路
+    /// - 回溯法(dfs)
+    /// 1. 首先对所有的整数排序;
+    /// 2. 遍历访问时, 跳过和前一元素相等的重复元素;
+    pub fn subsets_with_dup(nums: Vec<i32>) -> Vec<Vec<i32>> {
+        fn dfs(nums: &Vec<i32>, from: usize, tmp: &mut Vec<i32>, res: &mut Vec<Vec<i32>>) {
+            // 递归终止条件
+            if from >= nums.len() {
+                return;
+            }
+            for i in from..nums.len() {
+                // 跳过重复出现过的数字
+                if i > from && nums[i] == nums[i - 1] {
+                    continue;
+                }
+                tmp.push(nums[i]);
+                res.push(tmp.clone());
+                dfs(nums, i + 1, tmp, res);
+                tmp.pop();
+            }
+        }
+
+        let mut tmp = Vec::new();
+        let mut res = Vec::new();
+
+        res.push(tmp.clone());
+        let mut nums = nums;
+        nums.sort(); // 将原序列排序
+        dfs(&nums, 0, &mut tmp, &mut res);
+
+        res
+    }
+}
+// @lc code=end
+
+struct Solution;
+
+```
+
+
+```cpp
+class Solution {
+    vector<vector<int>> result;
+public:
+    /*
+    * ## 解题思路
+    * * 回溯法
+    * 去重主要有2点：
+    * 1. 先对nums进行排序；
+    * 2. 在深度遍历前，跳过重复元素层级的递归调用；
+    */
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        vector<int> tmp;
+        sort(nums.begin(), nums.end());
+        result.push_back(tmp);
+        dfs(nums, tmp, 0);
+        return result;
+    }
+
+    void dfs(vector<int>&nums, vector<int>&tmp, int s) {
+        if (s>=nums.size()) {
+            return;
+        }
+
+        for(int i=s; i<nums.size(); i++) {
+            // 跳过本级重复的，不往下深度遍历
+            if (i>s && nums[i] == nums[i-1]) {
+                continue;
+            }
+            tmp.push_back(nums[i]);
+            result.push_back(tmp);
+            dfs(nums, tmp, i+1);
+            tmp.pop_back();
+        }
+    }
+};
+```

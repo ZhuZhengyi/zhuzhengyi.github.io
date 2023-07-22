@@ -1,0 +1,142 @@
+# Golang汇编
+
+## 简介
+
+golang的汇编基于plan9汇编,是一个中间汇编方式，以忽略底层不同架构之间的一些差别；
+
+### 寄存器
+
+Go汇编引入了4个伪寄存器，这4个寄存器时编译器用来维护上下文、特殊标识等作用的:
+
+- **PC**(Program counter, 程序计数器): jumps and branches，指向指令地址
+- **FP**(Frame pointer, 栈桢指针): arguments and locals.(指向当前栈帧)，形如 `symbol+offset(FP)` 的方式，引用函数的输入参数。例如 `arg0+0(FP)`
+- **SB**(Static base pointer,全局静态基指针): global symbols.(指向全局符号表)
+- **SP**(Stack pointer, 栈顶指针): top of stack.(指向当前栈顶部)，形如 `symbol+offset(SP)` 的方式，引用函数的局部变量
+
+注意: 栈是向下整长 golang的汇编是调用者维护参数返回值跟返回地址。所以FP的值小于参数跟返回值。
+
+#### 常用操作指令
+
+格式：`<指令> [源操作数] [目的操作数]`
+
+| 助记符     | 指令种类 | 用途      | 示例                       | 说明                  |
+| ------- | ---- | ------- | ------------------------ | ------------------- |
+| `MOVQ`  | 传送   | 数据传送    | MOVQ 48, AX              | // 把 48 传送到 AX      |
+| `LEAQ`  | 传送   | 地址传送    | LEAQ AX, BX              | // 把 AX 有效地址传送到 BX  |
+| `PUSHQ` | 传送   | 栈压入     | PUSHQ AX                 | // 将 AX 内容送入栈顶位置    |
+| `POPQ`  | 传送   | 栈弹出     | POPQ AX                  | // 弹出栈顶数据后修改栈顶指针    |
+| `ADDQ`  | 运算   | 相加并赋值   | ADDQ BX, AX              | // 等价于 AX+=BX       |
+| `SUBQ`  | 运算   | 相减并赋值   | SUBQ BX, AX              | // 等价于 AX-=BX       |
+| `CMPQ`  | 运算   | 比较大小    | CMPQ SI CX               | // 比较 SI 和 CX 的大小   |
+| `CALL`  | 转移   | 调用函数    | CALL runtime.printnl(SB) | // 发起调用             |
+| `JMP`   | 转移   | 无条件转移指令 | JMP 0x0185               | //无条件转至 0x0185 地址处  |
+| `JLS`   | 转移   | 条件转移指令  | JLS 0x0185               | //左边小于右边，则跳到 0x0185 |
+
+```nasm
+// 栈
+SUBQ $0x18, SP      // SP -= 0x18, 栈指针下移，栈范围扩大，为函数分配函数栈帧
+ADDQ $0x18, SP      // SP ++ 0x18, 清除函数栈帧
+// 数据copy
+MOVB $1, DI         // 1 byte，常数用$num表示
+MOVW $0x10, BX      // 2bytes
+MOVD $1, DX         // 4 bytes
+MOVQ $-10, AX       // 8 bytes
+// 计算指令
+ADDQ AX, BX         // BX += AX
+SUBQ AX, BX         // BX -= AX
+IMULQ AX, BX        // BX *= AX
+// 跳转
+// 无条件跳转
+JMP addr         // 跳转到地址，地址可为代码中的地址 不过实际上手写不会出现这种东西
+JMP label        // 跳转到标签 可以跳转到同一函数内的标签位置
+JMP 2(PC)        // 以当前置顶为基础，向前/后跳转x行
+JMP -2(PC)       // 同上
+// 有条件跳转
+JNZ target       // 如果zero flag被set过，则跳转
+// 变量
+DATA symbol+offset(SB)/width,value      // 初始化symbol+offset(SB)的数据中width bytes,赋值为value
+GLOBL runtime·tlsoffset(SB), NOPTR, $4  // 声明一个全局变量tlsoffset，4byte，没有DATA部分，因其值为0。
+// NOPTR 表示这个变量数据中不存在指针，GC不需要扫描。
+```
+
+## 汇编示例
+
+```go
+package main
+
+func add(a, b int) int{
+    sum := 0 // 不设置该局部变量sum，add栈空间大小会是0
+    sum = a+b
+    return sum
+}
+func main(){
+    println(add(1,2))
+}
+```
+
+编译汇编
+
+```shell
+$ go tool compile -N -l -S main.go 
+```
+
+```nasm
+"".add STEXT nosplit size=60 args=0x18 locals=0x10
+    0x0000 00000 (main.go:3) TEXT "".add(SB), NOSPLIT, $16-24
+    0x0000 00000 (main.go:3) SUBQ $16, SP ;;生成add栈空间
+    0x0004 00004 (main.go:3) MOVQ BP, 8(SP)
+    0x0009 00009 (main.go:3) LEAQ 8(SP), BP
+    ;; ...omitted FUNCDATA stuff...    
+    0x000e 00014 (main.go:3) MOVQ $0, "".~r2+40(SP) ;;初始化返回值
+    0x0017 00023 (main.go:4) MOVQ $0, "".sum(SP) ;;局部变量sum赋为0
+    0x001f 00031 (main.go:5) MOVQ "".a+24(SP), AX ;;取参数a
+    0x0024 00036 (main.go:5) ADDQ "".b+32(SP), AX ;;等价于AX=a+b
+    0x0029 00041 (main.go:5) MOVQ AX, "".sum(SP) ;;赋值局部变量sum
+    0x002d 00045 (main.go:6) MOVQ AX, "".~r2+40(SP) ;;设置返回值
+    0x0032 00050 (main.go:6) MOVQ 8(SP), BP
+    0x0037 00055 (main.go:6) ADDQ $16, SP ;;清除add栈空间
+    0x003b 00059 (main.go:6) RET
+    ......
+"".main STEXT size=107 args=0x0 locals=0x28
+    0x0000 00000 (main.go:9) TEXT "".main(SB), $40-0
+    ......
+    0x000f 00015 (main.go:9) SUBQ $40, SP ;; 生成main栈空间
+    0x0013 00019 (main.go:9) MOVQ BP, 32(SP)
+    0x0018 00024 (main.go:9) LEAQ 32(SP), BP
+    ;; ...omitted FUNCDATA stuff...
+    0x001d 00029 (main.go:10) MOVQ $1, (SP) ;;add入参：1
+    0x0025 00037 (main.go:10) MOVQ $2, 8(SP) ;;add入参：2
+    0x002e 00046 (main.go:10) CALL "".add(SB) ;;调用add函数
+    0x0033 00051 (main.go:10) MOVQ 16(SP), AX
+    0x0038 00056 (main.go:10) MOVQ AX, ""..autotmp_0+24(SP)
+    0x003d 00061 (main.go:10) CALL runtime.printlock(SB)
+    0x0042 00066 (main.go:10) MOVQ ""..autotmp_0+24(SP), AX
+    0x0047 00071 (main.go:10) MOVQ AX, (SP)
+    0x004b 00075 (main.go:10) CALL runtime.printint(SB)
+    0x0050 00080 (main.go:10) CALL runtime.printnl(SB)
+    0x0055 00085 (main.go:10) CALL runtime.printunlock(SB)
+    0x005a 00090 (main.go:11) MOVQ 32(SP), BP
+    0x005f 00095 (main.go:11) ADDQ $40, SP ;;清除main栈空间
+    0x0063 00099 (main.go:11) RET
+    ......
+```
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/09-15-58-32-2022-01-09-15-58-27-image.png)
+
+## 参考
+
+1. [golang汇编基础知识](https://guidao.github.io/asm.html)
+
+2. [3.2 计算机结构 · Go语言高级编程](https://chai2010.cn/advanced-go-programming-book/ch3-asm/ch3-02-arch.html)
+
+3. [汇编是深入理解 Go 的基础](https://segmentfault.com/a/1190000039753236)
+
+4. [A Quick Guide to Go&#39;s Assembler - The Go Programming Language](https://go.dev/doc/asm)
+
+5. https://zhuanlan.zhihu.com/p/348227592
+
+6. [Go 系列文章3 ：plan9 汇编入门](https://xargin.com/plan9-assembly/)
+
+7. https://xiaomi-info.github.io/2019/11/27/golang-compiler-plan9/
+
+8. 

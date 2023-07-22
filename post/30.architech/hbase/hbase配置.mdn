@@ -1,0 +1,414 @@
+# HBase 配置
+
+## hbase-env.sh 配置
+
+```shell
+# hbase-env.sh
+
+# jvm
+export HBASE_HEAPSIZE=16G    # 堆内存大小，建议为20~24G，太大会导致GC时间过长，太小会导致频繁的flush
+
+# 开启jvm gc 日志
+export SERVER_GC_OPTS="-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintTenuringDistribution -Xloggc:<FILE-PATH> -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=1 -XX:GCLogFileSize=512M"    
+```
+
+### GClog 日志配置
+
+```
+-verbose:gc
+-XX:+PrintGCDetails 
+-XX:+PrintGCDateStamps 
+-XX:+PrintGCApplicationStoppedTime # 打印应用停留时间 
+-XX:+PrintTenuringDistribution # 老年代分布 
+-Xloggc:<FILE-PATH> #
+-XX:+UseGCLogFileRotation 
+-XX:NumberOfGCLogFiles=2 
+-XX:GCLogFileSize=512M
+```
+
+## hbase-site.xml 配置
+
+|       | 参数                                              | 说明                                                                                                  | 默认值  |     | 建议值    |
+| ----- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---- | --- | ------ |
+|       | hbase.hstore.blockingStoreFiles                 | hflie阻塞客户端请求数                                                                                       | 10   |     | >=64   |
+|       | hbase.hregion.memstore.flush.size               | Memstore 触发 flush操作的大小                                                                              | 128M |     | >=256M |
+|       | hbase.hregion.memstore.block.multiplier         | Memstore 触发 block 异常的倍数<br>(当memstore大小到达 memstore_flush_size x multiplier 时, 写请求会被block，引发异常)      | 4    |     | 4      |
+|       | hbase.hregion.memstore.chunkpool.maxsize        | memstore                                                                                            | 0    |     |        |
+| MSLAB | hbase.hregion.memstore.mslab.enalbed            | 开启memstore MSLAB内存分配器                                                                               | true |     |        |
+|       | hbase.hregion.memstore.mslab.chunksize          | memstore lab 中每个 chunk的大小                                                                           | 2M   |     |        |
+|       | hbase.hregion.memstore.mslab.max.allocation     | 通过MSLAB分配的对象不能超过256K，否则直接在Heap上分配                                                                   | 256K |     |        |
+|       | hbase.regionserver.global.memstore.upperLimit   | regionserver 中 所有memstore占有jvm堆内存的上限比例。<br>所有memstore超过这个上限，RS会按大到小依次flush memstore，直到小于lowerLimit。 | 0.45 |     |        |
+|       | hbase.regionserver.global.memstore.lowerLimit   | 见上面，一般比upperLimit小0.05                                                                              | 0.4  |     |        |
+|       | hfile.block.cache.size                          | block cache 占jvm 堆内存的比例                                                                             | 0.3  |     |        |
+|       | hbase.hstore.flusher.count                      | memstore flush 线程数                                                                                  | 2    |     | >=8    |
+|       | hbase.regionserver.executor.openregion.threads  |                                                                                                     | 2    |     |        |
+|       | hbase.regionserver.executor.closeregion.threads |                                                                                                     | 2    |     |        |
+|       | hbase.hstore.compaction.max                     | minor compact 一次可合并的最多 storefile 数                                                                  | 10   |     |        |
+|       | hbase.hstore.compaction.min                     | 触发 minor compact 最少store file个数                                                                     | 3    |     |        |
+|       | hbase.hstore.compaction.max                     | minor compact 一次可合并的最多 storefile 数                                                                  | 10   |     |        |
+|       | hbase.hstore.compaction.min                     | 触发 minor compact 最少store file个数                                                                     | 3    |     |        |
+|       | hbase.regionserver.thread.compaction.large      | major compact 线程数                                                                                   |      |     |        |
+|       | hbase.regionserver.thread.compaction.small      | minor compact 线程数                                                                                   |      |     |        |
+|       | hbase.regionserver.global.memstore.size         | rs 中 memstore 占总内存的比例                                                                               | 0.4  |     |        |
+|       | hbase.regionserver.hlog.blocksize               | rs 中 block size                                                                                     |      |     |        |
+|       | hbase.hstore.compactionThreshold                | hbase.hstore.compaction.min的旧值。已被代替                                                                 | 3    |     |        |
+|       | hbase.hregion.max.filesize                      |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+|       |                                                 |                                                                                                     |      |     |        |
+
+## hbase-site.xml 参数说明
+
+### zk相关
+
+* hbase.zookeeper.quorum
+  
+  hbase 集群的 zk链接入口。
+  
+  默认值：无
+  
+  eg：<value>11-3-26-102.LOCAL:2181,11-3-26-104.LOCAL:2181,11-3-26-134.LOCAL:2181</value>
+
+* zookeeper.znode.parent
+  
+  hbase 集群znode节点名称。
+  
+  默认：/hbase
+  
+  eg：<value>/hbase-hdfs01</value>
+
+### fs
+
+* hbase.rootdir
+  
+  hbase 数据存储文件系统root目录，可设置为hdfs文件系统目录(hdfs://xxxx)或分布式fs本地目录(file:///xxxx)
+  
+  默认：无
+  
+  eg: <value>hdfs://11-3-26-106.LOCAL:9000/hbase01</value>
+
+* hbase.tmp.dir
+  
+  hbase 运行临时目录
+  
+  默认：
+  
+  eg：<value>/export/Data/hbase/tmp</value>
+
+### WAL相关
+
+* <name>hbase.regionserver.hlog.enabled</name>
+  
+  是否启用wal。
+  
+  默认：true
+  
+  eg：<value>true</value>
+
+* hbase.regionserver.hlog.blocksize
+  
+  Hbase wal文件块大小。
+  
+  默认：fs 块大小，hdfs默认为：
+  
+  eg：<value>134217728</value>
+
+* <name>hbase.regionserver.maxlogs</name>
+  
+  regionserver上wal的最大个数，超过该个数，会触发memstore flush 操作。可引起写请求的阻塞。
+  
+  默认：32
+  
+  eg：<value>81</value>
+
+* <name>hbase.regionserver.hlog.slowsync.ms</name>
+  
+  regionserver wal sync 操作缓慢的定义时间。如果wal sync的时间超过该时间，则在日志中记录。
+  
+  默认：100ms
+  
+  eg：<value>350</value>
+
+* <name>hbase.regionserver.hlog.splitlog.writer.threads</name>
+  
+  Wal split 写入线程数。
+  
+  默认：3
+
+* hbase.regionserver.optionallogflushinterval
+  
+  wal log flush 间隔
+  
+  默认：1000ms
+  
+  已废弃
+
+* <name>hbase.regionserver.logroll.period</name> 
+  
+  Wal log roll周期间隔
+  
+  默认: 3600000ms (1h)
+
+* hbase.regionserver.hlog.syncer.count
+  
+  hlog sync 线程数。
+  
+  默认：5
+
+* 
+
+* 
+
+### memstore相关
+
+* <name>hbase.regionserver.global.memstore.size</name>
+  
+  rs中memstore占jvm heap的比例
+  
+  默认：0.4
+  
+  eg:
+
+* <name>hbase.regionserver.global.memstore.size.lower.limit</name>
+
+* <name>hbase.hregion.memstore.flush.size</name>
+
+* <name>hbase.hregion.memstore.block.multiplier</name>
+
+* <name>hbase.hregion.memstore.chunkpool.initialsize</name>
+
+* <name>hbase.hregion.memstore.chunkpool.maxsize</name>
+
+* <name>hbase.regionserver.optionalcacheflushinterval</name>
+  
+  memstore周期flush的时间间隔，0禁止周期flush
+  
+  默认：36000000  1h
+
+* hbase.regionserver.offheap.global.memstore.size
+  
+  ```xml
+  <property>
+      <name>hbase.regionserver.offheap.global.memstore.size</name>
+      <value>0</value>
+      <description>
+        The amount of off-heap memory all MemStores in a RegionServer may use.
+        A value of 0 means that no off-heap memory will be used.
+      </description>  
+  </property>
+  ```
+
+* hbase.hregion.memstore.mslab.enabled
+
+### storefile相关
+
+* <name>hbase.hregion.max.filesize</name>
+* <name>hbase.hstore.blockingStoreFiles</name>
+* <name>hbase.hstore.blockingWaitTime</name>
+* <name>hbase.hstore.flusher.count</name>
+* <name>hbase.regionserver.storefile.refresh.period</name>
+
+### compaction相关
+
+* <name>hbase.hregion.majorcompaction</name>
+
+* <name>hbase.hstore.compaction.kv.max</name>
+
+* <name>hbase.regionserver.thread.compaction.small</name>
+
+* <name>hbase.regionserver.thread.compaction.large</name>
+
+* <name>hbase.hstore.compaction.max</name>
+
+* <name>hbase.hstore.compaction.min</name>
+
+* <name>hbase.hregion.compacting.memstore.type</name> 
+
+* <name>hbase.regionserver.throughput.controller</name>
+  
+  <value>org.apache.hadoop.hbase.regionserver.throttle.NoLimitThroughputController
+
+* <name>hbase.hregion.compacting.memstore.type</name>
+
+* **hbase.hstore.compactionThreshold**：
+
+```xml
+<property>
+    <name>hbase.hregion.compacting.memstore.type</name> 
+    <value><none|basic|eager|adaptive></value>
+    <description>
+Compaction策略
+ 当一个active segment被flush到pipeline中之后，后台会触发一个任务对pipeline中的数据进行合并。合并任务会对pipeline中所有segment进行scan，将他们的索引合并为一个。有三种合并策略可供选择：Basic,Eager,Adaptive。
+ Basic compaction策略和Eager compaction策略的区别在于如何处理cell数据。Basic compaction不会清理多余的数据版本，这样就不需要对cell的内存进行拷贝。而Eager compaction会过滤重复的数据，并清理多余的版本，这意味着会有额外的开销：例如如果使用了MSLAB存储cell数据，就需要把经过清理之后的cell从旧的MSLAB拷贝到新的MSLAB。basic适用于所有写入模式，eager则主要针对数据大量淘汰的场景：例如消息队列、购物车等。
+ Adaptive策略则是根据数据的重复情况来决定是否使用Eager策略。在Adaptive策略中，首先会对待合并的segment进行评估，方法是在已经统计过不重复key个数的segment中，找出cell个数最多的一个，然后用这个segment的numUniqueKeys / getCellsCount得到一个比例，如果比例小于设定的阈值，则使用Eager策略，否则使用Basic策略。
+ </description>
+ </property>
+```
+
+* ### blockcache相关
+
+* <name>hfile.block.cache.size</name>
+
+* 
+
+### 复制
+
+* ### 安全
+
+* 
+
+### 开启压缩
+
+```xml
+create 'test', {NAME => 'info', VERSIONS => 1, COMPRESSION => 'snappy'}
+
+alter 'test', {NAME=>'info', METHOD=>'delete'}
+```
+
+### 其他
+
+* <name>hbase.superuser</name>
+  
+  hbase超级用户
+  
+  默认：root
+  
+  eg: <value>root,admin</value>
+
+* <name>hbase.meta.versions</name>
+
+* <name>hbase.regionserver.handler.count</name>
+  
+  rpc 线程数
+  
+  默认：200
+
+* <name>hbase.replication</name>
+
+* hbase.cluster.distributed
+  
+  是否启用分布式集群模式
+  
+  默认: false
+  
+  Eg: <value>true</value>
+
+* hbase.ipc.server.read.threadpool.size
+  
+  Hbase ipc Reader 网络 IO 个数，reader 的个数决定了从网络 io 里读取数据的速度也就是网络吞吐量。
+  
+  默认： 10。
+
+### rpc
+
+* hbase.regionserver.handler.count
+  
+  handler指的是RegionServer端开启的RPC监听器实例个数，也即RegionServer能够处理的IO请求线程数。
+  
+  默认: 30。
+
+* hbase.ipc.server.callqueue.read.ratio
+  
+  假如handler count设置300，那么，读的handler就有 300*0.3=90
+
+* hbase.ipc.server.callqueue.scan.ratio
+  
+  scan的90*0.3=27
+
+使用堆外内存（bucketcache）：
+
+```xml
+<property>
+    <name>hbase.block.data.cachecompressed</name>
+    <value>true</value>
+</property>
+<property>
+    <name>hbase.bucketcache.combinedcache.enabled</name>
+    <value>true</value>
+</property>
+<property>
+    <name>hbase.bucketcache.ioengine</name>
+    <value>offheap</value>
+</property>
+<property>
+    <name>hbase.bucketcache.percentage.in.combinedcache</name>
+    <value>0.8984</value>
+</property>
+<property>
+    <name>hbase.bucketcache.size</name>
+    <!-- unite MB -->
+    <value>8192</value>
+</property>
+<property>
+    <name>hbase.regionserver.global.memstore.size</name>
+    <value>0.4</value>
+</property>
+<property>
+    <name>hfile.block.cache.size</name>
+    <value>0.4</value>
+</property>
+```
+
+### compact 限速
+
+```xml
+<property>
+    <name>hbase.regionserver.throughput.controller</name>
+   <value>org.apache.hadoop.hbase.regionserver.compactions.PressureAwareCompactionThroughputController</value>
+    <discription>使用压力感知compaction限流策略控制器</discription>
+</property>
+<property>
+    <name>hbase.hstore.compaction.throughput.higher.bound</name>
+    <value>209715200</value>
+    <discription>限流上限阈值, 默认20MB/s</discription>
+</property>
+<property>
+    <name>hbase.hstore.compaction.throughput.lower.bound</name>
+    <value>52428800</value>
+    <discription>限流下限阈值, 默认10MB/s</discription>
+</property>
+<!--
+<property>
+    <name>hbase.hstore.compaction.throughput.offpeak</name>
+    <value>9223372036854775807</value>
+    <discription>非高峰期阈值,为Long.MAX即不限流</discription>
+</property>
+-->
+<property>
+    <name>hbase.offpeak.start.hour</name>
+    <value>0</value>
+    <discription>非高峰期开始小时时刻</discription>
+</property>
+<property>
+    <name>hbase.offpeak.end.hour</name>
+    <value>3</value>
+    <discription>非高峰期结束小时时刻</discription>
+</property>
+<property>
+    <name>hbase.hstore.compaction.throughput.tune.period</name>
+    <value>60000</value>
+    <discription>限流调整周期,单位毫秒</discription>
+</property>
+```
+
+## 配置动态更新
+
+可动态更新的配置项：http://hbase.apache.org/book.html#dyn_config
+
+```
+echo "update_all_cfg" | bin/hbase shell -n
+```
+
+## hbase shell
+
+```shell
+$ /export/server/hbase-2.1.0/bin/hbase shell
+
+> processlist         #查看task
+> list_procedures    # 查看procedures
+```

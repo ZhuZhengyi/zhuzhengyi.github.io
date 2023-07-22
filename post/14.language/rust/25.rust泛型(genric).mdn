@@ -1,0 +1,180 @@
+# Rust泛型(generic)
+
+## 简介
+
+**泛型**（generic）是关于泛化类型和函数功能, 以扩大其适用范围, 泛型极大地减少了代码的重复。
+
+* Rust泛型支持struct，enum，func，trait；
+
+* 泛型的类型参数是使用尖括号和[大驼峰命名](https://en.wikipedia.org/wiki/CamelCase)的名称：`<Aaa, Bbb, ...>` 来指定的；
+
+* Rust通过在编译时进行泛型代码的**单态化**（*monomorphization*）来保证效率, 静态分发；
+
+```rust
+//泛型struct
+struct SingleGen<T>(T);
+
+//泛型enum
+enum Option<T> {
+    Some(T),
+    None,
+}
+
+//泛型函数
+fn foo<T>(arg: T) { ... }
+
+//泛型trait
+trait DoubleDrop<T> {
+    fn double_drop(self, _: T);
+}
+
+// 对泛型的调用者类型 `U` 和任何泛型类型 `T` 实现 `DoubleDrop<T>` 。
+impl<T, U> DoubleDrop<T> for U {
+    // 此方法获得两个传入参数的所有权，并释放它们。
+    fn double_drop(self, _: T) {}
+}
+
+//泛型impl
+struct Point<T, U> {
+    x: T,
+    y: U,
+}
+impl<T, U> Point<T, U> {
+    fn mixup<V, W>(self, other: Point<V, W>) -> Point<T, W> {
+        Point {
+            x: self.x,
+            y: other.y,
+        }
+    }
+}
+```
+
+## 约束(bound)
+
+约束把泛型类型限制为符合约束的类型
+
+```rust
+//
+struct S<T: Display>(T);
+```
+
+## 特化
+
+* Rust不支持函数/结构体的特化。它支持的是针对 impl 块的特化。
+
+* 可以为一组类型，impl 一个 trait，同时为其中的一部分更特殊的类型，impl 同一个 trait。
+
+* 性能优化。泛型特化可以为某些情况提供统一抽象下的特殊实现
+
+* 代码重用。泛型特化可以提供一些默认（但不完整的）实现，某些情况下可以减少重复代码。
+
+* 高效继承。泛型特化其实跟OOP中的继承很像。
+
+```rust
+use std::fmt::Display;
+
+trait Example {
+    fn call(&self);
+}
+
+impl<T> Example for T
+{
+    default fn call(&self) {
+        println!("most generic");
+    }
+}
+
+impl<T> Example for T
+    where T: Display
+{
+    default fn call(&self) {
+        println!("generic for Display, {}", self);
+    }
+}
+
+impl Example for str {
+    fn call(&self) {
+        println!("specialized for str, {}", self);
+    }
+}
+
+fn main() {
+    let v1 = vec![1i32,2,3];
+    let v2 = 1_i32;
+    let v3 = "hello";
+
+    v1.call();
+    v2.call();
+    v3.call();
+}
+```
+
+## default
+
+```rust
+impl<T> Example for T {
+    default type Output = Box<T>;
+    default fn generate(self) -> Box<T> { Box::new(self) }
+}
+
+//bool特化
+impl Example for bool {
+    type Output = bool;
+    fn generate(self) -> bool { self }
+}
+
+// 编译器应该会认为下面的返回类型不匹配
+fn test(t: bool) -> Box<bool> {
+    Example::generate(t)
+}
+```
+
+## 泛型默认类型参数
+
+当使用泛型类型参数时，可以为泛型指定一个默认的具体类型。如果默认类型就足够的话，这消除了为具体类型实现 trait 的需要；
+
+默认参数类型主要用于如下两个方面：
+
+- 扩展类型而不破坏现有代码。
+- 在大部分用户都不需要的特定情况进行自定义。
+
+```rust
+//默认 Add trait, 
+trait Add<RHS=Self> {
+    type Output;   //关联类型
+
+    fn add(self, rhs: RHS) -> Self::Output;
+}
+
+#[derive(Debug, PartialEq)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+// Point 重载 Add trait， RHS默认为Point
+impl Add for Point {
+    type Output = Point;
+
+    fn add(self, other: Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+struct Millimeters(u32);
+struct Meters(u32);
+// Millimeters 重载 Add， RHS为Meters
+impl Add<Meters> for Millimeters {
+    type Output = Millimeters;
+
+    fn add(self, other: Meters) -> Millimeters {
+        Millimeters(self.0 + (other.0 * 1000))
+    }
+}
+```
+
+## 参考
+
+1. [泛型特化 Specialization](https://zhuanlan.zhihu.com/p/22989017)

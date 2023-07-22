@@ -1,0 +1,135 @@
+# Golang之syscall
+
+## 简介
+
+```
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   User Mode   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                                  
+                                                                                 │                                 
+│       Application                               syscall library                                                  
+          program                                   /src/syscall                 │                                 
+│                                                                                                                  
+                                                                                 │                                 
+│   ┌───────────────────┐                      ┌──────────────────────┐                                            
+    │                   │        ┌────────────▶│Faccessat {           │          │                                 
+│   │                   │        │             │                      │                                            
+    │                   │        │             │  runtime·Syscall6 {  │          │                                 
+│   │...                │        │             │                      │                                            
+    │syscall.Access(    │        │             │    ...               │          │                                 
+│   │     path, mode)───┼────────┘             │    SYSCALL ──────────┼────────────────┐                           
+    │...     ◀──────────┼──────┐               │    ...    ◀──────────┼──────────┼─────┼────────┐                  
+│   │                   │      └───────────────┼─── return;           │                │        │                  
+    │                   │                      │  }                   │          │     │        │                  
+│   │                   │                      │}                     │                │        │                  
+    └───────────────────┘                      └──────────────────────┘          │     │        │                  
+│                                                                                      │        │                  
+ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘     │        ▲                  
+                                                                                       │        │                  
+                                                                       switch to kernel mode    │                  
+┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ Kernel Mode ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─      ▼        │                  
+                                                                                 │     │        │                  
+│        System call                                 Trap handler                      │        │                  
+       service routine                                                           │     │        │                  
+│    ┌──────────────────┐                       ┌───────────────────────┐              │        │                  
+     │sys_faccessat() ◀─┼───────────┐           │system call:   ◀───────┼────────┼─────┘        │                  
+│    │{                 │           │           │                       │                       │                  
+     │                  │           │           │                       │        │              │                  
+│    │                  │           │           │   ...                 │                       │                  
+     │                  │           │           │                       │        │              │                  
+│    │  ...             │           └───────────┼───call sys_call_table │                  switch to user mode     
+     │                  │                       │                       │        │              │                  
+│    │                  │           ┌───────────┼─▶ ...                 │                       │                  
+     │  return error; ──┼───────────┘           │                       │        │              │                  
+│    │}                 │                       │    ───────────────────┼───────────▶───────────┘                  
+     └──────────────────┘                       └───────────────────────┘        │                                 
+│                                                                                                                  
+ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘                                 
+```
+
+```shell
+/syscall/syscall_linux.go
+```
+
+可以把系统调用分为三类:
+
+1. 阻塞系统调用
+2. 非阻塞系统调用
+3. wrapped 系统调用
+
+```go
+//sys   Madvise(b []byte, advice int) (err error)
+//sysnb    EpollCreate(size int) (fd int, err error)
+
+
+//mksyscall.pl 脚本 将上面的定义生成如下
+//sys
+func Madvise(b []byte, advice int) (err error) {
+    var _p0 unsafe.Pointer
+    if len(b) > 0 {
+        _p0 = unsafe.Pointer(&b[0])
+    } else {
+        _p0 = unsafe.Pointer(&_zero)
+    }
+    _, _, e1 := Syscall(SYS_MADVISE, uintptr(_p0), uintptr(len(b)), uintptr(advice))
+    if e1 != 0 {
+        err = errnoErr(e1)
+    }
+    return
+}
+//sysnb
+func EpollCreate(size int) (fd int, err error) {
+    r0, _, e1 := RawSyscall(SYS_EPOLL_CREATE, uintptr(size), 0, 0)
+    fd = int(r0)
+    if e1 != 0 {
+        err = errnoErr(e1)
+    }
+    return
+}
+
+//wrapped
+func Rename(oldpath string, newpath string) (err error) {
+    return Renameat(_AT_FDCWD, oldpath, _AT_FDCWD, newpath)
+}
+```
+
+入口：
+
+```go
+func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err syscall.Errno)
+func Syscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err syscall.Errno)
+func RawSyscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err syscall.Errno)
+func RawSyscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err syscall.Errno)
+```
+
+这些函数的实现都是汇编，按照 linux 的 syscall 调用规范，我们只要在汇编中把参数依次传入寄存器，并调用 SYSCALL 指令即可进入内核处理逻辑，系统调用执行完毕之后，返回值放在 RAX 中:
+
+| RDI | RSI | RDX | R10 | R8  | R9  | RAX        |
+| --- | --- | --- | --- | --- | --- | ---------- |
+| 参数一 | 参数二 | 参数三 | 参数四 | 参数五 | 参数六 | 系统调用编号/返回值 |
+
+Syscall 和 Syscall6 的区别只有传入参数不一样
+
+Syscall 和 Syscall6在进入和退出Syscall时，分别调用了`runtime·entersyscall(SB)`和`runtime·exitsyscall(SB)`;
+
+RawSyscall 和 RawSyscall6 在进入和退出Syscall 时候没有调用；
+
+#### 新版本抢占式调度中的 RawSyscall 和 Syscall
+
+由于 `RawSyscall` 相较于 `Syscall` 缺少了 `runtime·entersyscall(SB)` 以及 `runtime·exitsyscall(SB)` 的调用，当 `g` 执行的是阻塞性质的系统调用的时候，当前 `g` 会维持 `running` 状态，runtime 系统监控在进行全局调度的时候一旦发现运行超过 10ms 的 `g` 就会执行抢占操作（1.14.3 版本, linux_amd64 下为例），通过发送信号量给 `g` 对应的线程，而由于线程在初始化的时候进行了信号量的监听以及设置了相应的 `sa_flags` 参数，虽然包含诸如`SA_RESTART`参数会让系统调用在信号中断后自动恢复，但是不是对所有系统调用都会有效，这将会导致在收到信号量的时候对正在阻塞的系统调用产生中断，
+
+
+
+提供给用户使用的系统调用，基本都会通知 runtime，以 entersyscall，exitsyscall 的形式来告诉 runtime，在这个 syscall 阻塞的时候，由 runtime 判断是否把 P 腾出来给其它的 M 用。解绑定指的是把 M 和 P 之间解绑，如果绑定被解除，在 syscall 返回时，这个 g 会被放入执行队列 runq 中。
+
+同时 runtime 又保留了自己的特权，在执行自己的逻辑的时候，我的 P 不会被调走，这样保证了在 Go 自己“底层”使用的这些 syscall 返回之后都能被立刻处理。
+
+所以同样是 epollwait，runtime 用的是不能被别人打断的，你用的 syscall.EpollWait 那显然是没有这种特权的。
+
+## vsdo
+
+## 参考
+
+1. https://github.com/cch123/golang-notes/blob/master/syscall.md
+
+2. [曹春晖：谈一谈 Go 和 Syscall_ITPUB博客](http://blog.itpub.net/69908606/viewspace-2642153/)
+
+3. 

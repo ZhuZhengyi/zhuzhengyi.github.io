@@ -1,0 +1,53 @@
+# 集中式缓存GuavaCache
+
+## 简介
+
+Guava Cache与ConcurrentMap很相似，
+
+guava cache 加载缓存主要有两种方式:
+
+1. **cacheLoader**
+2. **callable callback**
+
+#### cacheLoader
+
+```java
+LoadingCache<Key, Value> cache = CacheBuilder.newBuilder()
+       .build(
+           new CacheLoader<Key, Value>() {
+             public Value load(Key key) throws AnyException {
+               return createValue(key);
+             }
+           });
+...
+
+try {
+  return cache.get(key);
+} catch (ExecutionException e) {
+  throw new OtherException(e.getCause());
+} 
+```
+
+#### Callable
+
+这种方式不需要在创建的时候指定load方法，但是需要在get的时候实现一个Callable匿名内部类。
+
+```java
+Cache<Key, Value> cache = CacheBuilder.newBuilder()
+    .build(); // look Ma, no CacheLoader
+...
+try {
+  cache.get(key, new Callable<Value>() {
+    @Override
+    public Value call() throws AnyException {
+      return doThingsTheHardWay(key);
+    }
+  });
+} catch (ExecutionException e) {
+  throw new OtherException(e.getCause());
+} 
+```
+
+## 参考
+
+1. 
