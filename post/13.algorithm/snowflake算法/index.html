@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="SnowFlake 算法 概述 Snowflake 算法是 Twitter 发明的一种算法，用于在分布式的高并发环境中，生成 64 位自增 ID。这种算法产生的背景是，Twitter 每秒钟能产生上万条信息">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/13.algorithm/snowflake%E7%AE%97%E6%B3%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="SnowFlake 算法">
-<meta property="og:description" content>
+<meta property="og:description" content="SnowFlake 算法 概述 Snowflake 算法是 Twitter 发明的一种算法，用于在分布式的高并发环境中，生成 64 位自增 ID。这种算法产生的背景是，Twitter 每秒钟能产生上万条信息">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/13.algorithm/snowflake%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-04-30T19:40:36+08:00">
 <meta property="article:modified_time" content="2022-04-30T19:40:36+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="SnowFlake 算法">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-04-30T19:40:36+08:00">
+<meta itemprop=description content="SnowFlake 算法 概述 Snowflake 算法是 Twitter 发明的一种算法，用于在分布式的高并发环境中，生成 64 位自增 ID。这种算法产生的背景是，Twitter 每秒钟能产生上万条信息"><meta itemprop=datePublished content="2022-04-30T19:40:36+08:00">
 <meta itemprop=dateModified content="2022-04-30T19:40:36+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2216">
 <meta itemprop=keywords content="algorithm,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="SnowFlake 算法">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="SnowFlake 算法 概述 Snowflake 算法是 Twitter 发明的一种算法，用于在分布式的高并发环境中，生成 64 位自增 ID。这种算法产生的背景是，Twitter 每秒钟能产生上万条信息"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,305 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#概述>概述</a></li>
+<li><a href=#代码>代码</a></li>
+<li><a href=#时间回拨问题>时间回拨问题</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=snowflake-算法>SnowFlake 算法</h1>
+<h2 id=概述>概述</h2>
+<p>Snowflake 算法是 Twitter 发明的一种算法，用于在分布式的高并发环境中，生成 64 位自增 ID。这种算法产生的背景是，Twitter 每秒钟能产生上万条信息，对算法的要求是：</p>
+<ol>
+<li>长度固定，不能太长。</li>
+<li>id 要能递增（方便客户端排序）</li>
+<li>在分布式环境中不能重复。</li>
+</ol>
+<p>SnowFlake 算法生成 id 的结果是一个 64bit 大小的整数，它的结构如下图：</p>
+<p><img src=/Volumes/data/document/gitnote/img/2020-03-08-16-38-22-image.png alt></p>
+<ul>
+<li>
+<p><code>1位</code>，不用。二进制中最高位为 1 的都是负数，但是我们生成的 id 一般都使用整数，所以这个最高位固定是 0</p>
+</li>
+<li>
+<p><code>41位</code>，用来记录时间戳（毫秒）。</p>
+<ul>
+<li>41 位可以表示个数字，</li>
+<li>如果只用来表示正整数（计算机中正数包含 0），可以表示的数值范围是：0 至  ，减 1 是因为可表示的数值范围是从 0 开始算的，而不是 1。</li>
+<li>也就是说 41 位可以表示个毫秒的值，转化成单位年则是年</li>
+</ul>
+</li>
+<li>
+<p><code>10位</code>，用来记录工作机器 id。</p>
+<ul>
+<li>可以部署在个节点，包括<code>5位datacenterId</code>和<code>5位workerId</code></li>
+<li><code>5位（bit）</code>可以表示的最大正整数是，即可以用 0、1、2、3、&mldr;.31 这 32 个数字，来表示不同的 datecenterId 或 workerId</li>
+</ul>
+</li>
+<li>
+<p><code>12位</code>，序列号，用来记录同毫秒内产生的不同 id。</p>
+<ul>
+<li><code>12位（bit）</code>可以表示的最大正整数是，即可以用 0、1、2、3、&mldr;.4094 这 4095 个数字，来表示同一机器同一时间截（毫秒)内产生的 4095 个 ID 序号</li>
+</ul>
+</li>
+</ul>
+<p>由于在 Java 中 64bit 的整数是 long 类型，所以在 Java 中 SnowFlake 算法生成的 id 就是 long 来存储的。</p>
+<p>SnowFlake 可以保证：</p>
+<ul>
+<li>所有生成的 id 按时间趋势递增</li>
+<li>整个分布式系统内不会产生重复 id（因为有 datacenterId 和 workerId 来做区分）</li>
+</ul>
+<p><strong>优点：</strong></p>
+<ul>
+<li>快（哈哈，天下武功唯快不破）。</li>
+<li>没有啥依赖，实现也特别简单。</li>
+<li>知道原理之后可以根据实际情况调整各各位段，方便灵活。</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>只能趋势递增。（有些也不叫缺点，网上有些如果绝对递增，竞争对手中午下单，第二天在下单即可大概判断该公司的订单量，危险！！！）</li>
+<li>依赖机器时间，如果发生回拨会导致可能生成 id 重复。 下面重点讨论时间回拨问题。</li>
+</ul>
+<h2 id=代码>代码</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=cm>/**
+</span><span class=cm> * Twitter_Snowflake&lt;br&gt;
+</span><span class=cm> * SnowFlake的结构如下(每部分用-分开):&lt;br&gt;
+</span><span class=cm> * 0 - 0000000000 0000000000 0000000000 0000000000 0 - 00000 - 00000 - 000000000000 &lt;br&gt;
+</span><span class=cm> * 1位标识，由于long基本类型在Java中是带符号的，最高位是符号位，正数是0，负数是1，所以id一般是正数，最高位是0&lt;br&gt;
+</span><span class=cm> * 41位时间截(毫秒级)，注意，41位时间截不是存储当前时间的时间截，而是存储时间截的差值（当前时间截 - 开始时间截)
+</span><span class=cm> * 得到的值），这里的的开始时间截，一般是我们的id生成器开始使用的时间，由我们程序来指定的（如下下面程序IdWorker类的startTime属性）。41位的时间截，可以使用69年，年T = (1L &lt;&lt; 41) / (1000L * 60 * 60 * 24 * 365) = 69&lt;br&gt;
+</span><span class=cm> * 10位的数据机器位，可以部署在1024个节点，包括5位datacenterId和5位workerId&lt;br&gt;
+</span><span class=cm> * 12位序列，毫秒内的计数，12位的计数顺序号支持每个节点每毫秒(同一机器，同一时间截)产生4096个ID序号&lt;br&gt;
+</span><span class=cm> * 加起来刚好64位，为一个Long型。&lt;br&gt;
+</span><span class=cm> * SnowFlake的优点是，整体上按照时间自增排序，并且整个分布式系统内不会产生ID碰撞(由数据中心ID和机器ID作区分)，并且效率较高，经测试，SnowFlake每秒能够产生26万ID左右。
+</span><span class=cm> */</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>SnowflakeIdWorker</span> <span class=o>{</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>twepoch</span> <span class=o>=</span> <span class=n>1420041600000L</span><span class=o>;</span>    <span class=cm>/** 开始时间截 (2015-01-01) */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>workerIdBits</span> <span class=o>=</span> <span class=n>5L</span><span class=o>;</span>  <span class=cm>/** 机器id所占的位数 */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>datacenterIdBits</span> <span class=o>=</span> <span class=n>5L</span><span class=o>;</span>    <span class=cm>/** 数据标识id所占的位数 */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>maxWorkerId</span> <span class=o>=</span> <span class=o>-</span><span class=n>1L</span> <span class=o>^</span> <span class=o>(-</span><span class=n>1L</span> <span class=o>&lt;&lt;</span> <span class=n>workerIdBits</span><span class=o>);</span>      <span class=cm>/** 支持的最大机器id，结果是31 (这个移位算法可以很快的计算出几位二进制数所能表示的最大十进制数) */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>maxDatacenterId</span> <span class=o>=</span> <span class=o>-</span><span class=n>1L</span> <span class=o>^</span> <span class=o>(-</span><span class=n>1L</span> <span class=o>&lt;&lt;</span> <span class=n>datacenterIdBits</span><span class=o>);</span>     <span class=cm>/** 支持的最大数据标识id，结果是31 */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>sequenceBits</span> <span class=o>=</span> <span class=n>12L</span><span class=o>;</span>    <span class=cm>/** 序列在id中占的位数 */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>workerIdShift</span> <span class=o>=</span> <span class=n>sequenceBits</span><span class=o>;</span>    <span class=cm>/** 机器ID向左移12位 */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>datacenterIdShift</span> <span class=o>=</span> <span class=n>sequenceBits</span> <span class=o>+</span> <span class=n>workerIdBits</span><span class=o>;</span>    <span class=cm>/** 数据标识id向左移17位(12+5) */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>timestampLeftShift</span> <span class=o>=</span> <span class=n>sequenceBits</span> <span class=o>+</span> <span class=n>workerIdBits</span> <span class=o>+</span> <span class=n>datacenterIdBits</span><span class=o>;</span>    <span class=cm>/** 时间截向左移22位(5+5+12) */</span>
+    <span class=kd>private</span> <span class=kd>final</span> <span class=kt>long</span> <span class=n>sequenceMask</span> <span class=o>=</span> <span class=o>-</span><span class=n>1L</span> <span class=o>^</span> <span class=o>(-</span><span class=n>1L</span> <span class=o>&lt;&lt;</span> <span class=n>sequenceBits</span><span class=o>);</span>    <span class=cm>/** 生成序列的掩码，这里为4095 (0b111111111111=0xfff=4095) */</span>
+    <span class=kd>private</span> <span class=kt>long</span> <span class=n>workerId</span><span class=o>;</span>    <span class=cm>/** 工作机器ID(0~31) */</span>
+    <span class=kd>private</span> <span class=kt>long</span> <span class=n>datacenterId</span><span class=o>;</span>    <span class=cm>/** 数据中心ID(0~31) */</span>
+    <span class=kd>private</span> <span class=kt>long</span> <span class=n>sequence</span> <span class=o>=</span> <span class=n>0L</span><span class=o>;</span>    <span class=cm>/** 毫秒内序列(0~4095) */</span>
+    <span class=kd>private</span> <span class=kt>long</span> <span class=n>lastTimestamp</span> <span class=o>=</span> <span class=o>-</span><span class=n>1L</span><span class=o>;</span>    <span class=cm>/** 上次生成ID的时间截 */</span>
+
+    <span class=cm>/**
+</span><span class=cm>     * 构造函数
+</span><span class=cm>     * @param workerId 工作ID (0~31)
+</span><span class=cm>     * @param datacenterId 数据中心ID (0~31)
+</span><span class=cm>     */</span>
+    <span class=kd>public</span> <span class=nf>SnowflakeIdWorker</span><span class=o>(</span><span class=kt>long</span> <span class=n>workerId</span><span class=o>,</span> <span class=kt>long</span> <span class=n>datacenterId</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>workerId</span> <span class=o>&gt;</span> <span class=n>maxWorkerId</span> <span class=o>||</span> <span class=n>workerId</span> <span class=o>&lt;</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+            <span class=k>throw</span> <span class=k>new</span> <span class=n>IllegalArgumentException</span><span class=o>(</span><span class=n>String</span><span class=o>.</span><span class=na>format</span><span class=o>(</span><span class=s>&#34;worker Id can&#39;t be greater than %d or less than 0&#34;</span><span class=o>,</span> <span class=n>maxWorkerId</span><span class=o>));</span>
+        <span class=o>}</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>datacenterId</span> <span class=o>&gt;</span> <span class=n>maxDatacenterId</span> <span class=o>||</span> <span class=n>datacenterId</span> <span class=o>&lt;</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+            <span class=k>throw</span> <span class=k>new</span> <span class=n>IllegalArgumentException</span><span class=o>(</span><span class=n>String</span><span class=o>.</span><span class=na>format</span><span class=o>(</span><span class=s>&#34;datacenter Id can&#39;t be greater than %d or less than 0&#34;</span><span class=o>,</span> <span class=n>maxDatacenterId</span><span class=o>));</span>
+        <span class=o>}</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>workerId</span> <span class=o>=</span> <span class=n>workerId</span><span class=o>;</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>datacenterId</span> <span class=o>=</span> <span class=n>datacenterId</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=c1>// ==============================Methods==========================================
+</span><span class=c1></span>    <span class=cm>/**
+</span><span class=cm>     * 获得下一个ID (该方法是线程安全的)
+</span><span class=cm>     * @return SnowflakeId
+</span><span class=cm>     */</span>
+    <span class=kd>public</span> <span class=kd>synchronized</span> <span class=kt>long</span> <span class=nf>nextId</span><span class=o>()</span> <span class=o>{</span>
+        <span class=kt>long</span> <span class=n>timestamp</span> <span class=o>=</span> <span class=n>timeGen</span><span class=o>();</span>
+
+        <span class=c1>//如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过这个时候应当抛出异常
+</span><span class=c1></span>        <span class=k>if</span> <span class=o>(</span><span class=n>timestamp</span> <span class=o>&lt;</span> <span class=n>lastTimestamp</span><span class=o>)</span> <span class=o>{</span>
+            <span class=k>throw</span> <span class=k>new</span> <span class=n>RuntimeException</span><span class=o>(</span>
+                    <span class=n>String</span><span class=o>.</span><span class=na>format</span><span class=o>(</span><span class=s>&#34;Clock moved backwards.  Refusing to generate id for %d milliseconds&#34;</span><span class=o>,</span> <span class=n>lastTimestamp</span> <span class=o>-</span> <span class=n>timestamp</span><span class=o>));</span>
+        <span class=o>}</span>
+
+        <span class=c1>//如果是同一时间生成的，则进行毫秒内序列
+</span><span class=c1></span>        <span class=k>if</span> <span class=o>(</span><span class=n>lastTimestamp</span> <span class=o>==</span> <span class=n>timestamp</span><span class=o>)</span> <span class=o>{</span>
+            <span class=n>sequence</span> <span class=o>=</span> <span class=o>(</span><span class=n>sequence</span> <span class=o>+</span> <span class=n>1</span><span class=o>)</span> <span class=o>&amp;</span> <span class=n>sequenceMask</span><span class=o>;</span>
+            <span class=c1>//毫秒内序列溢出
+</span><span class=c1></span>            <span class=k>if</span> <span class=o>(</span><span class=n>sequence</span> <span class=o>==</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
+                <span class=c1>//阻塞到下一个毫秒,获得新的时间戳
+</span><span class=c1></span>                <span class=n>timestamp</span> <span class=o>=</span> <span class=n>tilNextMillis</span><span class=o>(</span><span class=n>lastTimestamp</span><span class=o>);</span>
+            <span class=o>}</span>
+        <span class=o>}</span>
+        <span class=c1>//时间戳改变，毫秒内序列重置
+</span><span class=c1></span>        <span class=k>else</span> <span class=o>{</span>
+            <span class=n>sequence</span> <span class=o>=</span> <span class=n>0L</span><span class=o>;</span>
+        <span class=o>}</span>
+
+        <span class=c1>//上次生成ID的时间截
+</span><span class=c1></span>        <span class=n>lastTimestamp</span> <span class=o>=</span> <span class=n>timestamp</span><span class=o>;</span>
+
+        <span class=c1>//移位并通过或运算拼到一起组成64位的ID
+</span><span class=c1></span>        <span class=k>return</span> <span class=o>((</span><span class=n>timestamp</span> <span class=o>-</span> <span class=n>twepoch</span><span class=o>)</span> <span class=o>&lt;&lt;</span> <span class=n>timestampLeftShift</span><span class=o>)</span> <span class=c1>//
+</span><span class=c1></span>                <span class=o>|</span> <span class=o>(</span><span class=n>datacenterId</span> <span class=o>&lt;&lt;</span> <span class=n>datacenterIdShift</span><span class=o>)</span> <span class=c1>//
+</span><span class=c1></span>                <span class=o>|</span> <span class=o>(</span><span class=n>workerId</span> <span class=o>&lt;&lt;</span> <span class=n>workerIdShift</span><span class=o>)</span> <span class=c1>//
+</span><span class=c1></span>                <span class=o>|</span> <span class=n>sequence</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=cm>/**
+</span><span class=cm>     * 阻塞到下一个毫秒，直到获得新的时间戳
+</span><span class=cm>     * @param lastTimestamp 上次生成ID的时间截
+</span><span class=cm>     * @return 当前时间戳
+</span><span class=cm>     */</span>
+    <span class=kd>protected</span> <span class=kt>long</span> <span class=nf>tilNextMillis</span><span class=o>(</span><span class=kt>long</span> <span class=n>lastTimestamp</span><span class=o>)</span> <span class=o>{</span>
+        <span class=kt>long</span> <span class=n>timestamp</span> <span class=o>=</span> <span class=n>timeGen</span><span class=o>();</span>
+        <span class=k>while</span> <span class=o>(</span><span class=n>timestamp</span> <span class=o>&lt;=</span> <span class=n>lastTimestamp</span><span class=o>)</span> <span class=o>{</span>
+            <span class=n>timestamp</span> <span class=o>=</span> <span class=n>timeGen</span><span class=o>();</span>
+        <span class=o>}</span>
+        <span class=k>return</span> <span class=n>timestamp</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=cm>/**
+</span><span class=cm>     * 返回以毫秒为单位的当前时间
+</span><span class=cm>     * @return 当前时间(毫秒)
+</span><span class=cm>     */</span>
+    <span class=kd>protected</span> <span class=kt>long</span> <span class=nf>timeGen</span><span class=o>()</span> <span class=o>{</span>
+        <span class=k>return</span> <span class=n>System</span><span class=o>.</span><span class=na>currentTimeMillis</span><span class=o>();</span>
+    <span class=o>}</span>
+
+    <span class=c1>//==============================Test=============================================
+</span><span class=c1></span>    <span class=cm>/** 测试 */</span>
+    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+        <span class=n>SnowflakeIdWorker</span> <span class=n>idWorker</span> <span class=o>=</span> <span class=k>new</span> <span class=n>SnowflakeIdWorker</span><span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>0</span><span class=o>);</span>
+        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=n>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>1000</span><span class=o>;</span> <span class=n>i</span><span class=o>++)</span> <span class=o>{</span>
+            <span class=kt>long</span> <span class=n>id</span> <span class=o>=</span> <span class=n>idWorker</span><span class=o>.</span><span class=na>nextId</span><span class=o>();</span>
+            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>Long</span><span class=o>.</span><span class=na>toBinaryString</span><span class=o>(</span><span class=n>id</span><span class=o>));</span>
+            <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>id</span><span class=o>);</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=时间回拨问题>时间回拨问题</h2>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Golang Channel 简介 Go语言channel是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回; chann">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/golang/golang-channel/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Golang Channel">
-<meta property="og:description" content>
+<meta property="og:description" content="Golang Channel 简介 Go语言channel是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回; chann">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/golang-channel/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Golang Channel">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Golang Channel 简介 Go语言channel是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回; chann"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="820">
 <meta itemprop=keywords content="language,golang,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Golang Channel">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Golang Channel 简介 Go语言channel是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回; chann"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,217 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#定义>定义</a></li>
+<li><a href=#读写channel操作>读写channel操作</a></li>
+<li><a href=#select的实现>select的实现</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=golang-channel>Golang Channel</h1>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p>Go语言channel是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回;</p>
+</li>
+<li>
+<p>channel分为有缓存channel和无缓冲channel两种；</p>
+</li>
+<li>
+<p>close当 Channel 是一个空指针或者已经被关闭时，Go 语言运行时都会直接崩溃并抛出异常;</p>
+</li>
+<li>
+<p>从一个nil channel中接收数据会一直被block;</p>
+</li>
+<li>
+<p>从一个被closed的channel中接收数据会立即返回；</p>
+</li>
+</ul>
+<h2 id=定义>定义</h2>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/01/26-12-35-27-2021-01-26-12-35-23-image.png alt></p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=k>struct</span>    <span class=nc>Hchan</span>
+<span class=p>{</span>
+    <span class=n>uintgo</span>    <span class=n>qcount</span><span class=p>;</span>            <span class=c1>// 队列q中的总数据数量
+</span><span class=c1></span>    <span class=n>uintgo</span>    <span class=n>dataqsiz</span><span class=p>;</span>        <span class=c1>// 环形队列q的数据大小
+</span><span class=c1></span>    <span class=n>uint16</span>    <span class=n>elemsize</span><span class=p>;</span>        <span class=c1>//队列的当前使用量
+</span><span class=c1></span>
+    <span class=kt>bool</span>    <span class=n>closed</span><span class=p>;</span>
+    <span class=n>uint8</span>    <span class=n>elemalign</span><span class=p>;</span>
+    <span class=n>Alg</span><span class=o>*</span>    <span class=n>elemalg</span><span class=p>;</span>        <span class=c1>// interface for element type
+</span><span class=c1></span>    <span class=n>uintgo</span>    <span class=n>sendx</span><span class=p>;</span>            <span class=c1>// 发送index
+</span><span class=c1></span>    <span class=n>uintgo</span>    <span class=n>recvx</span><span class=p>;</span>            <span class=c1>// 接收index
+</span><span class=c1></span>    <span class=n>WaitQ</span>    <span class=n>recvq</span><span class=p>;</span>            <span class=c1>// 因recv而阻塞的等待队列
+</span><span class=c1></span>    <span class=n>WaitQ</span>    <span class=n>sendq</span><span class=p>;</span>            <span class=c1>// 因send而阻塞的等待队列
+</span><span class=c1></span>    <span class=n>Lock</span><span class=p>;</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>带缓冲区的chan，则缓冲区数据实际上是紧接着Hchan结构体中分配的</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=n>c</span> <span class=o>=</span> <span class=p>(</span><span class=n>Hchan</span><span class=o>*</span><span class=p>)</span><span class=n>runtime</span><span class=p>.</span><span class=n>mal</span><span class=p>(</span><span class=n>n</span> <span class=o>+</span> <span class=n>hint</span><span class=o>*</span><span class=n>elem</span><span class=o>-&gt;</span><span class=n>size</span><span class=p>);</span>
+</code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span>    <span class=n>WaitQ</span>
+<span class=p>{</span>
+    <span class=n>SudoG</span><span class=o>*</span>    <span class=n>first</span><span class=p>;</span>
+    <span class=n>SudoG</span><span class=o>*</span>    <span class=n>last</span><span class=p>;</span>
+<span class=p>};</span>
+
+<span class=c1>//
+</span><span class=c1></span><span class=k>struct</span>    <span class=n>SudoG</span>
+<span class=p>{</span>
+    <span class=n>G</span><span class=o>*</span>    <span class=n>g</span><span class=p>;</span>        <span class=c1>// g and selgen constitute
+</span><span class=c1></span>    <span class=n>uint32</span>    <span class=n>selgen</span><span class=p>;</span>        <span class=c1>// a weak pointer to g
+</span><span class=c1></span>    <span class=n>SudoG</span><span class=o>*</span>    <span class=n>link</span><span class=p>;</span>
+    <span class=n>int64</span>    <span class=n>releasetime</span><span class=p>;</span>
+    <span class=n>byte</span><span class=o>*</span>    <span class=n>elem</span><span class=p>;</span>        <span class=c1>// data element
+</span><span class=c1></span><span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=读写channel操作>读写channel操作</h2>
+<p>写channel操作，在底层运行时库中对应的是一个runtime.chansend函数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>//c &lt;- v
+</span><span class=c1></span><span class=kt>void</span> <span class=n>runtime</span><span class=err>·</span><span class=n>chansend</span><span class=p>(</span><span class=n>ChanType</span> <span class=o>*</span><span class=n>t</span><span class=p>,</span> <span class=n>Hchan</span> <span class=o>*</span><span class=n>c</span><span class=p>,</span> <span class=n>byte</span> <span class=o>*</span><span class=n>ep</span><span class=p>,</span> <span class=kt>bool</span> <span class=o>*</span><span class=n>pres</span><span class=p>,</span> <span class=kt>void</span> <span class=o>*</span><span class=n>pc</span><span class=p>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=select的实现>select的实现</h2>
+<p>select-case中的chan操作编译成了if-else。比如：</p>
+<p>每个select都对应一个Select结构体</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=k>select</span> <span class=p>{</span>
+<span class=k>case</span> <span class=nx>v</span> <span class=p>=</span> <span class=o>&lt;-</span><span class=nx>c</span><span class=p>:</span>
+        <span class=o>...</span><span class=nx>foo</span>
+<span class=k>default</span><span class=p>:</span>
+        <span class=o>...</span><span class=nx>bar</span>
+<span class=p>}</span>
+
+
+<span class=c1>// 编译如下：
+</span><span class=c1></span><span class=k>if</span> <span class=nf>selectnbrecv</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>v</span><span class=p>,</span> <span class=nx>c</span><span class=p>)</span> <span class=p>{</span>
+        <span class=o>...</span><span class=nx>foo</span>
+<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+        <span class=o>...</span><span class=nx>bar</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>select和case关键字使用了下面的结构体：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>struct</span>    <span class=nx>Scase</span>
+<span class=p>{</span>
+    <span class=nx>SudoG</span>    <span class=nx>sg</span><span class=p>;</span>            <span class=c1>// must be first member (cast to Scase)
+</span><span class=c1></span>    <span class=nx>Hchan</span><span class=o>*</span>    <span class=kd>chan</span><span class=p>;</span>        <span class=c1>// chan
+</span><span class=c1></span>    <span class=kt>byte</span><span class=o>*</span>    <span class=nx>pc</span><span class=p>;</span>            <span class=c1>// return pc
+</span><span class=c1></span>    <span class=kt>uint16</span>    <span class=nx>kind</span><span class=p>;</span>
+    <span class=kt>uint16</span>    <span class=nx>so</span><span class=p>;</span>            <span class=c1>// vararg of selected bool
+</span><span class=c1></span>    <span class=kt>bool</span><span class=o>*</span>    <span class=nx>receivedp</span><span class=p>;</span>    <span class=c1>// pointer to received bool (recv2)
+</span><span class=c1></span><span class=p>};</span>
+<span class=kd>struct</span>    <span class=nx>Select</span>
+<span class=p>{</span>
+    <span class=kt>uint16</span>    <span class=nx>tcase</span><span class=p>;</span>            <span class=c1>// 总的scase[]数量
+</span><span class=c1></span>    <span class=kt>uint16</span>    <span class=nx>ncase</span><span class=p>;</span>            <span class=c1>// 当前填充了的scase[]数量
+</span><span class=c1></span>    <span class=kt>uint16</span><span class=o>*</span>    <span class=nx>pollorder</span><span class=p>;</span>        <span class=c1>// case的poll次序
+</span><span class=c1></span>    <span class=nx>Hchan</span><span class=o>**</span>    <span class=nx>lockorder</span><span class=p>;</span>        <span class=c1>// channel的锁住的次序
+</span><span class=c1></span>    <span class=nx>Scase</span>    <span class=nx>scase</span><span class=p>[</span><span class=mi>1</span><span class=p>];</span>        <span class=c1>// 每个case会在结构体里有一个Scase，顺序是按出现的次序
+</span><span class=c1></span><span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.bookstack.cn/read/go-internals/zh-07.1.md>高级数据结构的实现 - channel - 《深入解析Go》 - 书栈网 · BookStack</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

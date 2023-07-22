@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Shuffle Map Task运算结果的处理 这个结果的处理，分为两部分，一个是在Executor端是如何直接处理Task的结果的；还有就是Driver端，如果">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/spark/spark_suffle_map_task/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Shuffle Map Task运算结果的处理">
-<meta property="og:description" content>
+<meta property="og:description" content="Shuffle Map Task运算结果的处理 这个结果的处理，分为两部分，一个是在Executor端是如何直接处理Task的结果的；还有就是Driver端，如果">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/spark/spark_suffle_map_task/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Shuffle Map Task运算结果的处理">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="Shuffle Map Task运算结果的处理 这个结果的处理，分为两部分，一个是在Executor端是如何直接处理Task的结果的；还有就是Driver端，如果"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="3205">
 <meta itemprop=keywords content="architech,spark,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Shuffle Map Task运算结果的处理">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Shuffle Map Task运算结果的处理 这个结果的处理，分为两部分，一个是在Executor端是如何直接处理Task的结果的；还有就是Driver端，如果"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -185,6 +185,195 @@ Justice's Blog
 </div>
 </div>
 <div class=post-content>
+<h1 id=shuffle-map-task运算结果的处理>Shuffle Map Task运算结果的处理</h1>
+<p>这个结果的处理，分为两部分，一个是在Executor端是如何直接处理Task的结果的；还有就是Driver端，如果在接到Task运行结束的消息时，如何对Shuffle Write的结果进行处理，从而在调度下游的Task时，下游的Task可以得到其需要的数据。</p>
+<p>Executor端的处理
+在解析BasicShuffle Writer时，我们知道ShuffleMap Task在Executor上运行时，最终会调用org.apache.spark.scheduler.ShuffleMapTask的runTask：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-scala data-lang=scala> <span class=k>override</span> <span class=k>def</span> <span class=n>runTask</span><span class=o>(</span><span class=n>context</span><span class=k>:</span> <span class=kt>TaskContext</span><span class=o>)</span><span class=k>:</span> <span class=kt>MapStatus</span> <span class=o>=</span> <span class=o>{</span>
+   <span class=c1>// 反序列化广播变量taskBinary得到RDD
+</span><span class=c1></span>   <span class=k>val</span> <span class=n>ser</span> <span class=k>=</span> <span class=nc>SparkEnv</span><span class=o>.</span><span class=n>get</span><span class=o>.</span><span class=n>closureSerializer</span><span class=o>.</span><span class=n>newInstance</span><span class=o>()</span>
+   <span class=k>val</span> <span class=o>(</span><span class=n>rdd</span><span class=o>,</span> <span class=n>dep</span><span class=o>)</span> <span class=k>=</span> <span class=n>ser</span><span class=o>.</span><span class=n>deserialize</span><span class=o>[(</span><span class=kt>RDD</span><span class=o>[</span><span class=k>_</span><span class=o>]</span>, <span class=kt>ShuffleDependency</span><span class=o>[</span><span class=k>_</span>, <span class=k>_</span>, <span class=k>_</span><span class=o>])](</span>
+     <span class=nc>ByteBuffer</span><span class=o>.</span><span class=n>wrap</span><span class=o>(</span><span class=n>taskBinary</span><span class=o>.</span><span class=n>value</span><span class=o>),</span><span class=nc>Thread</span><span class=o>.</span><span class=n>currentThread</span><span class=o>.</span><span class=n>getContextClassLoader</span><span class=o>)</span>
+<span class=c1>//省略一些非核心代码
+</span><span class=c1></span><span class=k>val</span> <span class=n>manager</span> <span class=k>=</span><span class=nc>SparkEnv</span><span class=o>.</span><span class=n>get</span><span class=o>.</span><span class=n>shuffleManager</span> <span class=c1>//获得Shuffle Manager
+</span><span class=c1></span>    <span class=c1>//获得Shuffle Writer
+</span><span class=c1></span>    <span class=n>writer</span><span class=k>=</span> <span class=n>manager</span><span class=o>.</span><span class=n>getWriter</span><span class=o>[</span><span class=kt>Any</span>, <span class=kt>Any</span><span class=o>](</span><span class=n>dep</span><span class=o>.</span><span class=n>shuffleHandle</span><span class=o>,</span> <span class=n>partitionId</span><span class=o>,</span> <span class=n>context</span><span class=o>)</span>
+<span class=c1>//首先调用rdd .iterator，如果该RDD已经cache了或者checkpoint了，那么直接读取
+</span><span class=c1>//结果，否则开始计算计算的结果将调用Shuffle Writer写入本地文件系统
+</span><span class=c1></span><span class=n>writer</span><span class=o>.</span><span class=n>write</span><span class=o>(</span><span class=n>rdd</span><span class=o>.</span><span class=n>iterator</span><span class=o>(</span><span class=n>partition</span><span class=o>,</span><span class=n>context</span><span class=o>).</span><span class=n>asInstanceOf</span><span class=o>[</span><span class=kt>Iterator</span><span class=o>[</span><span class=k>_</span> <span class=k>&lt;:</span> <span class=kt>Product2</span><span class=o>[</span><span class=kt>Any</span>, <span class=kt>Any</span><span class=o>]]])</span>
+<span class=c1>// 返回数据的元数据信息，包括location和size
+</span><span class=c1></span><span class=n>returnwriter</span><span class=o>.</span><span class=n>stop</span><span class=o>(</span><span class=n>success</span> <span class=k>=</span> <span class=kc>true</span><span class=o>).</span><span class=n>get</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>那么这个结果最终是如何处理的呢？特别是下游的Task如何获取这些Shuffle的数据呢？还要从Task是如何开始执行开始讲起。在Worker上接收Task执行命令的是org.apache.spark.executor.CoarseGrainedExecutorBackend。它在接收到LaunchTask的命令后，通过在Driver创建SparkContext时已经创建的org.apache.spark.executor.Executor的实例的launchTask，启动Task： </p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-scala data-lang=scala> <span class=k>def</span> <span class=n>launchTask</span><span class=o>(</span>
+     <span class=n>context</span><span class=k>:</span><span class=kt>ExecutorBackend</span><span class=o>,</span> <span class=n>taskId</span><span class=k>:</span> <span class=kt>Long</span><span class=o>,</span> <span class=n>taskName</span><span class=k>:</span> <span class=kt>String</span><span class=o>,</span><span class=n>serializedTask</span><span class=k>:</span> <span class=kt>ByteBuffer</span><span class=o>)</span> <span class=o>{</span>
+   <span class=k>val</span> <span class=n>tr</span> <span class=k>=</span> <span class=n>newTaskRunner</span><span class=o>(</span><span class=n>context</span><span class=o>,</span> <span class=n>taskId</span><span class=o>,</span> <span class=n>taskName</span><span class=o>,</span> <span class=n>serializedTask</span><span class=o>)</span>
+  <span class=n>runningTasks</span><span class=o>.</span><span class=n>put</span><span class=o>(</span><span class=n>taskId</span><span class=o>,</span> <span class=n>tr</span><span class=o>)</span>
+  <span class=n>threadPool</span><span class=o>.</span><span class=n>execute</span><span class=o>(</span><span class=n>tr</span><span class=o>)</span> <span class=c1>// 开始在executor中运行
+</span><span class=c1></span>  <span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>最终Task的执行是在org.apache.spark.executor.Executor.TaskRunner#run。</p>
+<p>在Executor运行Task时，得到计算结果会存入org.apache.spark.scheduler.DirectTaskResult。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=c1>//开始执行Task，最终得到的是org.apache.spark.scheduler.ShuffleMapTask#runTask
+</span><span class=c1>//返回的org.apache.spark.scheduler.MapStatus
+</span><span class=c1></span><span class=k>val</span> <span class=n>value</span> <span class=k>=</span> <span class=n>task</span><span class=o>.</span><span class=n>run</span><span class=o>(</span><span class=n>taskId</span><span class=o>.</span><span class=n>toInt</span><span class=o>)</span>
+<span class=k>val</span> <span class=n>resultSer</span> <span class=k>=</span> <span class=n>env</span><span class=o>.</span><span class=n>serializer</span><span class=o>.</span><span class=n>newInstance</span><span class=o>()</span> <span class=c1>//获得序列化工具
+</span><span class=c1></span><span class=k>val</span> <span class=n>valueBytes</span> <span class=k>=</span> <span class=n>resultSer</span><span class=o>.</span><span class=n>serialize</span><span class=o>(</span><span class=n>value</span><span class=o>)</span> <span class=c1>//序列化结果
+</span><span class=c1>//首先将结果直接放入org.apache.spark.scheduler.DirectTaskResult
+</span><span class=c1></span><span class=k>val</span> <span class=n>directResult</span> <span class=k>=</span> <span class=k>new</span> <span class=nc>DirectTaskResult</span><span class=o>(</span><span class=n>valueBytes</span><span class=o>,</span><span class=n>accumUpdates</span><span class=o>,</span> <span class=n>task</span><span class=o>.</span><span class=n>metrics</span><span class=o>.</span><span class=n>orNull</span><span class=o>)</span>
+<span class=k>val</span> <span class=n>ser</span> <span class=k>=</span> <span class=n>env</span><span class=o>.</span><span class=n>closureSerializer</span><span class=o>.</span><span class=n>newInstance</span><span class=o>()</span>
+<span class=k>val</span> <span class=n>serializedDirectResult</span> <span class=k>=</span> <span class=n>ser</span><span class=o>.</span><span class=n>serialize</span><span class=o>(</span><span class=n>directResult</span><span class=o>)</span><span class=c1>//序列化结果
+</span><span class=c1></span><span class=k>val</span> <span class=n>resultSize</span> <span class=k>=</span> <span class=n>serializedDirectResult</span><span class=o>.</span><span class=n>limit</span> <span class=c1>//序列化结果的大小
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在将结果回传到Driver时，会根据结果的大小有不同的策略：
+1)       如果结果大于1GB，那么直接丢弃这个结果。这个是Spark1.2中新加的策略。可以通过spark.driver.maxResultSize来进行设置。</p>
+<p>2)       对于“较大”的结果，将其以taskid为key存入org.apache.spark.storage.BlockManager；如果结果不大，那么直接回传给Driver。那么如何判定这个阈值呢？</p>
+<p>这里的回传是直接通过akka的消息传递机制。因此这个大小首先不能超过这个机制设置的消息的最大值。这个最大值是通过spark.akka.frameSize设置的，单位是MBytes，默认值是10MB。除此之外，还有200KB的预留空间。因此这个阈值就是conf.getInt(&ldquo;spark.akka.frameSize&rdquo;,10) * 1024 <em>1024 – 200</em>1024。</p>
+<p>3)       其他的直接通过AKKA回传到Driver。</p>
+<p>实现源码解析如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-scala data-lang=scala>     <span class=k>val</span> <span class=n>serializedResult</span> <span class=k>=</span> <span class=o>{</span>
+      <span class=k>if</span> <span class=o>(</span><span class=n>maxResultSize</span> <span class=o>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span><span class=n>resultSize</span> <span class=o>&gt;</span> <span class=n>maxResultSize</span><span class=o>)</span> <span class=o>{</span>
+
+      <span class=c1>// 如果结果的大小大于1GB，那么直接丢弃，
+</span><span class=c1></span>      <span class=c1>// 可以在spark.driver.maxResultSize设置
+</span><span class=c1></span>
+      <span class=n>ser</span><span class=o>.</span><span class=n>serialize</span><span class=o>(</span><span class=n>newIndirectTaskResult</span><span class=o>[</span><span class=kt>Any</span><span class=o>](</span><span class=nc>TaskResultBlockId</span><span class=o>(</span><span class=n>taskId</span><span class=o>),</span>
+          <span class=n>resultSize</span><span class=o>))</span>
+                <span class=o>}</span> <span class=k>else</span> <span class=k>if</span> <span class=o>(</span><span class=n>resultSize</span> <span class=o>&gt;=</span><span class=n>akkaFrameSize</span> <span class=o>-</span> <span class=nc>AkkaUtils</span><span class=o>.</span><span class=n>reservedSizeBytes</span><span class=o>)</span> <span class=o>{</span>
+
+      <span class=c1>// 如果不能通过AKKA的消息传递，那么放入BlockManager
+</span><span class=c1></span>      <span class=c1>// 等待调用者以网络的形式来获取。AKKA的消息的默认大小可以通过
+</span><span class=c1></span>      <span class=c1>//  spark.akka.frameSize来设置，默认10MB。
+</span><span class=c1></span>        <span class=k>val</span> <span class=n>blockId</span> <span class=k>=</span><span class=nc>TaskResultBlockId</span><span class=o>(</span><span class=n>taskId</span><span class=o>)</span>
+        <span class=n>env</span><span class=o>.</span><span class=n>blockManager</span><span class=o>.</span><span class=n>putBytes</span><span class=o>(</span>
+          <span class=n>blockId</span><span class=o>,</span> <span class=n>serializedDirectResult</span><span class=o>,</span><span class=nc>StorageLevel</span><span class=o>.</span><span class=nc>MEMORY_AND_DISK_SER</span><span class=o>)</span>
+        <span class=n>ser</span><span class=o>.</span><span class=n>serialize</span><span class=o>(</span><span class=n>newIndirectTaskResult</span><span class=o>[</span><span class=kt>Any</span><span class=o>](</span><span class=n>blockId</span><span class=o>,</span> <span class=n>resultSize</span><span class=o>))</span>
+      <span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+        <span class=c1>//结果可以直接回传到Driver
+</span><span class=c1></span>        <span class=n>serializedDirectResult</span>
+      <span class=o>}</span>
+    <span class=o>}</span>
+    <span class=c1>// 通过AKKA向Driver汇报本次Task的已经完成
+</span><span class=c1></span>    <span class=n>execBackend</span><span class=o>.</span><span class=n>statusUpdate</span><span class=o>(</span><span class=n>taskId</span><span class=o>,</span><span class=nc>TaskState</span><span class=o>.</span><span class=nc>FINISHED</span><span class=o>,</span> <span class=n>serializedResult</span><span class=o>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>而execBackend是org.apache.spark.executor.ExecutorBackend的一个实例，它实际上是Executor与Driver通信的接口：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=k>private</span><span class=o>[</span><span class=kt>spark</span><span class=o>]</span> <span class=k>trait</span> <span class=nc>ExecutorBackend</span> <span class=o>{</span>
+  <span class=k>def</span> <span class=n>statusUpdate</span><span class=o>(</span><span class=n>taskId</span><span class=k>:</span><span class=kt>Long</span><span class=o>,</span> <span class=n>state</span><span class=k>:</span> <span class=kt>TaskState</span><span class=o>,</span> <span class=n>data</span><span class=k>:</span> <span class=kt>ByteBuffer</span><span class=o>)</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p> TaskRunner会将Task执行的状态汇报给Driver（org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend.DriverActor）。 而Driver会转给org.apache.spark.scheduler.TaskSchedulerImpl#statusUpdate。
+Driver的处理
+TaskRunner将Task的执行状态汇报给Driver后，Driver会转给org.apache.spark.scheduler.TaskSchedulerImpl#statusUpdate。而在这里不同的状态有不同的处理：</p>
+<p>1)       如果类型是TaskState.FINISHED，那么调用org.apache.spark.scheduler.TaskResultGetter#enqueueSuccessfulTask进行处理。</p>
+<p>2)       如果类型是TaskState.FAILED或者TaskState.KILLED或者TaskState.LOST，调用org.apache.spark.scheduler.TaskResultGetter#enqueueFailedTask进行处理。对于TaskState.LOST，还需要将其所在的Executor标记为failed,并且根据更新后的Executor重新调度。</p>
+<p> enqueueSuccessfulTask的逻辑也比较简单，就是如果是IndirectTaskResult，那么需要通过blockid来获取结果：sparkEnv.blockManager.getRemoteBytes(blockId)；如果是DirectTaskResult，那么结果就无需远程获取了。然后调用</p>
+<p>1)       org.apache.spark.scheduler.TaskSchedulerImpl#handleSuccessfulTask</p>
+<p>2)       org.apache.spark.scheduler.TaskSetManager#handleSuccessfulTask</p>
+<p>3)       org.apache.spark.scheduler.DAGScheduler#taskEnded</p>
+<p>4)       org.apache.spark.scheduler.DAGScheduler#eventProcessActor</p>
+<p>5)       org.apache.spark.scheduler.DAGScheduler#handleTaskCompletion</p>
+<p>进行处理。核心逻辑都在第5个调用栈。</p>
+<p>如果task是ShuffleMapTask，那么它需要将结果通过某种机制告诉下游的Stage，以便于其可以作为下游Stage的输入。这个机制是怎么实现的？</p>
+<p>实际上，对于ShuffleMapTask来说，其结果实际上是org.apache.spark.scheduler.MapStatus；其序列化后存入了DirectTaskResult或者IndirectTaskResult中。而DAGScheduler#handleTaskCompletion通过下面的方式来获取这个结果：</p>
+<p>val status=event.result.asInstanceOf[MapStatus]</p>
+<p>通过将这个status注册到org.apache.spark.MapOutputTrackerMaster，就完成了结果处理的漫长过程：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=n>mapOutputTracker</span><span class=o>.</span><span class=n>registerMapOutputs</span><span class=o>(</span>
+             <span class=n>stage</span><span class=o>.</span><span class=n>shuffleDep</span><span class=o>.</span><span class=n>get</span><span class=o>.</span><span class=n>shuffleId</span><span class=o>,</span>
+              <span class=n>stage</span><span class=o>.</span><span class=n>outputLocs</span><span class=o>.</span><span class=n>map</span><span class=o>(</span><span class=n>list</span><span class=k>=&gt;</span> <span class=k>if</span> <span class=o>(</span><span class=n>list</span><span class=o>.</span><span class=n>isEmpty</span><span class=o>)</span> <span class=kc>null</span> <span class=k>else</span> <span class=n>list</span><span class=o>.</span><span class=n>head</span><span class=o>).</span><span class=n>toArray</span><span class=o>,</span>
+              <span class=n>changeEpoch</span> <span class=k>=</span> <span class=kc>true</span><span class=o>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>而registerMapOutputs的处理也很简单，以Shuffle ID为key将MapStatus的列表存入带有时间戳的HashMap：TimeStampedHashMap<a href>Int, Array[MapStatus]</a>。如果设置了cleanup的函数，那么这个HashMap会将超过一定时间（TTL，Time to Live）的数据清理掉。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

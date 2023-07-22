@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Loki简介 简介 整体架构 Loki的架构如下： 不难看出，Loki的架构非常简单，使用了和prometheus一样的标签来作为索引，也就是说，你">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/36.monitor/loki%E7%AE%80%E4%BB%8B/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Loki简介">
-<meta property="og:description" content>
+<meta property="og:description" content="Loki简介 简介 整体架构 Loki的架构如下： 不难看出，Loki的架构非常简单，使用了和prometheus一样的标签来作为索引，也就是说，你">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/36.monitor/loki%E7%AE%80%E4%BB%8B/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-29T22:14:09+08:00">
 <meta property="article:modified_time" content="2020-12-29T22:14:09+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Loki简介">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-29T22:14:09+08:00">
+<meta itemprop=description content="Loki简介 简介 整体架构 Loki的架构如下： 不难看出，Loki的架构非常简单，使用了和prometheus一样的标签来作为索引，也就是说，你"><meta itemprop=datePublished content="2020-12-29T22:14:09+08:00">
 <meta itemprop=dateModified content="2020-12-29T22:14:09+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2239">
 <meta itemprop=keywords content="monitor,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Loki简介">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Loki简介 简介 整体架构 Loki的架构如下： 不难看出，Loki的架构非常简单，使用了和prometheus一样的标签来作为索引，也就是说，你"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,165 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#整体架构>整体架构</a></li>
+<li><a href=#读写>读写</a>
+<ul>
+<li><a href=#distributor>Distributor</a></li>
+<li><a href=#ingester><strong>Ingester</strong></a></li>
+<li><a href=#querier><strong>Querier</strong></a></li>
+</ul>
+</li>
+<li><a href=#可扩展性><strong>可扩展性</strong></a></li>
+<li><a href=#logql日志查询语言>LogQL：日志查询语言</a></li>
+<li><a href=#log-stream-selector>Log stream selector</a></li>
+<li><a href=#filter-expression>Filter expression</a></li>
+<li><a href=#指标查询>指标查询</a>
+<ul>
+<li><a href=#范围向量>范围向量</a></li>
+<li><a href=#集合运算符>集合运算符</a></li>
+</ul>
+</li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=loki简介>Loki简介</h1>
+<h2 id=简介>简介</h2>
+<h2 id=整体架构>整体架构</h2>
+<p>Loki的架构如下：</p>
+<p><img src=https://pic3.zhimg.com/80/v2-e78ac6fc25c4f7bba09169cc15006bfa_1440w.jpg alt></p>
+<p>不难看出，Loki的架构非常简单，使用了和prometheus一样的标签来作为索引，也就是说，你通过这些标签既可以查询日志的内容也可以查询到监控的数据，不但减少了两种查询之间的切换成本，也极大地降低了日志索引的存储。</p>
+<p>Loki将使用与prometheus相同的服务发现和标签重新标记库,编写了pormtail, 在k8s中promtail以daemonset方式运行在每个节点中，通过kubernetes api等到日志的正确元数据，并将它们发送到Loki。下面是日志的存储架构：</p>
+<p><img src=https://pic2.zhimg.com/80/v2-3083e64b82c944f234c176fc58c3fe9a_1440w.jpg alt></p>
+<h2 id=读写>读写</h2>
+<p>日志数据的写主要依托的是Distributor和Ingester两个组件,整体的流程如下：</p>
+<p><img src=/Volumes/data/document/gitnote/img/2020-08-01-18-05-11-image.png alt></p>
+<h3 id=distributor>Distributor</h3>
+<p>一旦promtail收集日志并将其发送给loki，Distributor就是第一个接收日志的组件。由于日志的写入量可能很大，所以不能在它们传入时将它们写入数据库。这会毁掉数据库。我们需要批处理和压缩数据。</p>
+<p>Loki通过构建压缩数据块来实现这一点，方法是在日志进入时对其进行gzip操作，组件ingester是一个有状态的组件，负责构建和刷新chunck，当chunk达到一定的数量或者时间后，刷新到存储中去。每个流的日志对应一个ingester,当日志到达Distributor后，根据元数据和hash算法计算出应该到哪个ingester上面。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-b86263b2e466810ed9dba9397462a4e8_1440w.jpg alt></p>
+<p>此外，为了冗余和弹性，我们将其复制n（默认情况下为3）次。</p>
+<h3 id=ingester><strong>Ingester</strong></h3>
+<p>ingester接收到日志并开始构建chunk:</p>
+<p><img src=https://pic1.zhimg.com/80/v2-97cab22aa9dc8ebfd72e2ebf57a2d712_1440w.jpg alt></p>
+<p>基本上就是将日志进行压缩并附加到chunk上面。一旦chunk“填满”（数据达到一定数量或者过了一定期限），ingester将其刷新到数据库。我们对块和索引使用单独的数据库，因为它们存储的数据类型不同。</p>
+<p><img src=https://picb.zhimg.com/80/v2-b2f6de2a1bb1b4f49eac1b6f8f75986b_1440w.jpg alt></p>
+<p>刷新一个chunk之后，ingester然后创建一个新的空chunk并将新条目添加到该chunk中。</p>
+<h3 id=querier><strong>Querier</strong></h3>
+<p>读取就非常简单了，由Querier负责给定一个时间范围和标签选择器，Querier查看索引以确定哪些块匹配，并通过greps将结果显示出来。它还从Ingester获取尚未刷新的最新数据。</p>
+<p>对于每个查询，一个查询器将为您显示所有相关日志。实现了查询并行化，提供分布式grep，使即使是大型查询也是足够的。</p>
+<p><img src=https://pic4.zhimg.com/80/v2-ca02019be52596776aa7663610835780_1440w.jpg alt></p>
+<h2 id=可扩展性><strong>可扩展性</strong></h2>
+<p>Loki的索引存储可以是cassandra/bigtable/dynamodb，而chuncks可以是各种对象存储，Querier和Distributor都是无状态的组件。对于ingester他虽然是有状态的但是，当新的节点加入或者减少，整节点间的chunk会重新分配，已适应新的散列环。而Loki底层存储的实现Cortex已经 在实际的生产中投入使用多年了。有了这句话，我可以放心的在环境中实验一把了。</p>
+<h2 id=logql日志查询语言>LogQL：日志查询语言</h2>
+<p>基本的LogQL查询由两部分组成：log stream selector、filter expression</p>
+<h2 id=log-stream-selector>Log stream selector</h2>
+<p>它由一个或多个键值对组成，每个键是一个日志标签，值的话是标签的值，例如</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=p>{</span><span class=n>app</span><span class=o>=</span><span class=s>&#34;mysql&#34;</span><span class=p>,</span><span class=n>name</span><span class=o>=</span><span class=s>&#34;mysql-backup&#34;</span><span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在这个例子中，记录具有的标签流app，其值是mysql 和的一个标签name，它的值mysql-backup将被包括在查询结果。注意，这将匹配其标签至少 包含mysql-backup其名称标签的任何日志流；如果有多个包含该标签的流，则所有匹配流的日志将显示在结果中。</p>
+<p>支持以下标签匹配运算符：</p>
+<ul>
+<li>=：完全相等。</li>
+<li>!=：不相等。</li>
+<li>=~：正则表达式匹配。</li>
+<li>!~：正则表达式不匹配。</li>
+</ul>
+<p>适用于Prometheus标签选择器的相同规则也适用 于Loki日志流选择器。</p>
+<h2 id=filter-expression>Filter expression</h2>
+<p>写入日志流选择器后，可以使用搜索表达式进一步过滤生成的日志集。搜索表达式可以只是文本或正则表达式：</p>
+<ul>
+<li>{job=“mysql”} |= “error”</li>
+<li>{name=“kafka”} |~ “tsdb-ops.*io:2003”</li>
+<li>{instance=~“kafka-[23]”,name=“kafka”} !=<br>
+kafka.server:type=ReplicaManager</li>
+</ul>
+<p>运算符说明</p>
+<ul>
+<li>|=：日志行包含字符串。</li>
+<li>!=：日志行不包含字符串。</li>
+<li>|~：日志行匹配正则表达式。</li>
+<li>!~：日志行与正则表达式不匹配。</li>
+</ul>
+<h2 id=指标查询>指标查询</h2>
+<h3 id=范围向量>范围向量</h3>
+<p>LogQL 与Prometheus 具有相同的范围向量概念，不同之处在于所选的样本范围包括每个日志条目的值1。可以在所选范围内应用聚合，以将其转换为实例向量。</p>
+<p><strong>注：对于此种查询，需要添加数据源，选择promethes，但是地址为loki的地址，并在最后添加/loki即可</strong></p>
+<p>当前支持的操作功能为：</p>
+<ul>
+<li>rate：计算每秒的条目数</li>
+<li>count_over_time：计算给定范围内每个日志流的条目。</li>
+</ul>
+<p>//对fluent-bit作业在最近五分钟内的所有日志行进行计数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>count_over_time</span><span class=p>({</span><span class=n>job</span><span class=o>=</span><span class=s>&#34;fluent-bit&#34;</span><span class=p>}[</span><span class=mi>5</span><span class=n>m</span><span class=p>])</span>    
+</code></pre></td></tr></table>
+</div>
+</div><p>获取fluent-bit作业在过去十秒内所有非超时错误的每秒速率。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>rate</span><span class=p>({</span><span class=n>job</span><span class=o>=</span><span class=s>&#34;fluent-bit&#34;</span><span class=p>}</span> <span class=o>|=</span> <span class=s>&#34;error&#34;</span> <span class=o>!=</span> <span class=s>&#34;timeout&#34;</span> <span class=p>[</span><span class=mi>10</span><span class=n>s</span><span class=p>]</span>  
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=集合运算符>集合运算符</h3>
+<p>与PromQL一样，LogQL支持内置聚合运算符的一个子集，可用于聚合单个向量的元素，从而产生具有更少元素但具有集合值的新向量：</p>
+<ul>
+<li>sum：计算标签上的总和</li>
+<li>min：选择最少的标签</li>
+<li>max：选择标签上方的最大值</li>
+<li>avg：计算标签上的平均值</li>
+<li>stddev：计算标签上的总体标准差</li>
+<li>stdvar：计算标签上的总体标准方差</li>
+<li>count：计算向量中元素的数量</li>
+<li>bottomk：通过样本值选择最小的k个元素</li>
+<li>topk：通过样本值选择最大的k个元素</li>
+</ul>
+<p>可以通过包含a without或 by子句，使用聚合运算符聚合所有标签值或一组不同的标签值：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=o>&lt;</span><span class=n>aggr</span><span class=o>-</span><span class=n>op</span><span class=o>&gt;</span><span class=p>([</span><span class=n>parameter</span><span class=p>,]</span> <span class=o>&lt;</span><span class=n>vector</span> <span class=n>expression</span><span class=o>&gt;</span><span class=p>)</span> <span class=p>[</span><span class=n>without</span><span class=o>|</span><span class=n>by</span> <span class=p>(</span><span class=o>&lt;</span><span class=n>label</span> <span class=n>list</span><span class=o>&gt;</span><span class=p>)]</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>举例：</p>
+<p>统计最高日志吞吐量按container排序前十的应用程序</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>topk</span><span class=p>(</span><span class=mi>10</span><span class=p>,</span><span class=n>sum</span><span class=p>(</span><span class=n>rate</span><span class=p>({</span><span class=n>job</span><span class=o>=</span><span class=s>&#34;fluent-bit&#34;</span><span class=p>}[</span><span class=mi>5</span><span class=n>m</span><span class=p>]))</span> <span class=n>by</span><span class=p>(</span><span class=n>container</span><span class=p>))</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>获取最近五分钟内的日志计数，按级别分组</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>sum</span><span class=p>(</span><span class=n>count_over_time</span><span class=p>({</span><span class=n>job</span><span class=o>=</span><span class=s>&#34;fluent-bit&#34;</span><span class=p>}[</span><span class=mi>5</span><span class=n>m</span><span class=p>]))</span> <span class=n>by</span> <span class=p>(</span><span class=n>level</span><span class=p>)</span>
+</code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

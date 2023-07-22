@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="管理 Apache Spark 的 Java 和 Scala 依赖项 Spark 应用通常依赖于第三方 Java 或 Scala 库。以下是在向 Cloud Dataproc 集群提交 Spark 作业时添加这些依赖项的建议方法： 使用 gcloud dataproc jobs submit 命令从本地机器提交">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/spark/spark%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="管理 Apache Spark 的 Java 和 Scala 依赖项">
-<meta property="og:description" content>
+<meta property="og:description" content="管理 Apache Spark 的 Java 和 Scala 依赖项 Spark 应用通常依赖于第三方 Java 或 Scala 库。以下是在向 Cloud Dataproc 集群提交 Spark 作业时添加这些依赖项的建议方法： 使用 gcloud dataproc jobs submit 命令从本地机器提交">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/spark/spark%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="管理 Apache Spark 的 Java 和 Scala 依赖项">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="管理 Apache Spark 的 Java 和 Scala 依赖项 Spark 应用通常依赖于第三方 Java 或 Scala 库。以下是在向 Cloud Dataproc 集群提交 Spark 作业时添加这些依赖项的建议方法： 使用 gcloud dataproc jobs submit 命令从本地机器提交"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1508">
 <meta itemprop=keywords content="architech,spark,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="管理 Apache Spark 的 Java 和 Scala 依赖项">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="管理 Apache Spark 的 Java 和 Scala 依赖项 Spark 应用通常依赖于第三方 Java 或 Scala 库。以下是在向 Cloud Dataproc 集群提交 Spark 作业时添加这些依赖项的建议方法： 使用 gcloud dataproc jobs submit 命令从本地机器提交"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,110 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#避免依赖项冲突>避免依赖项冲突</a>
+<ul>
+<li><a href=#用-maven-创建一个超级阴影-jar>用 Maven 创建一个超级阴影 JAR</a></li>
+<li><a href=#用-sbt-创建一个超级阴影-jar>用 SBT 创建一个超级阴影 JAR</a></li>
+</ul>
+</li>
+<li><a href=#向-cloud-dataproc-提交超级-jar>向 Cloud Dataproc 提交超级 JAR</a></li>
+<li><a href=#后续事项>后续事项</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=管理-apache-spark-的-java-和-scala-依赖项>管理 Apache Spark 的 Java 和 Scala 依赖项</h1>
+<p>Spark 应用通常依赖于第三方 Java 或 Scala 库。以下是在向 Cloud Dataproc 集群提交 Spark 作业时添加这些依赖项的建议方法：</p>
+<ol>
+<li>
+<p>使用 <a href="https://cloud.google.com/dataproc/docs/guides/submit-job?hl=zh-cn#submitting_a_dataproc_name_short_job"><code>gcloud dataproc jobs submit</code></a> 命令从本地机器提交作业时，请使用 <code>--properties spark.jars.packages=[DEPENDENCIES]</code> 标志。</p>
+<p><strong>示例：</strong></p>
+<p>gcloud dataproc jobs submit spark<br>
+&ndash;cluster my-cluster<br>
+&ndash;properties spark.jars.packages=&lsquo;com.google.cloud:google-cloud-translate:1.35.0,org.apache.bahir:spark-streaming-pubsub_2.11:2.2.0&rsquo;</p>
+</li>
+<li>
+<p><a href="https://cloud.google.com/dataproc/docs/guides/submit-job?hl=zh-cn#submit_a_job_directly_on_your_cluster">直接通过集群提交作业</a>时，请使用带有 <code>--packages=[DEPENDENCIES]</code> 参数的 <code>spark-submit</code>命令。</p>
+<p><strong>示例：</strong></p>
+<p>spark-submit &ndash;packages=&lsquo;com.google.cloud:google-cloud-translate:1.35.0,org.apache.bahir:spark-streaming-pubsub_2.11:2.2.0&rsquo;</p>
+</li>
+</ol>
+<h2 id=避免依赖项冲突>避免依赖项冲突</h2>
+<p>如果 Spark 应用依赖项与 Hadoop 的依赖项冲突，则上述方法可能会失败。导致这种冲突的原因如下：由于 Hadoop 将其依赖项注入应用的<a href=https://en.wikipedia.org/wiki/Classpath_(Java)>类路径</a>，因此其依赖项的优先级高于应用的依赖项。出现冲突时，可能会产生 <code>NoSuchMethodError</code> 或其他错误。</p>
+<p><strong>示例：</strong><br>
+<a href=https://github.com/google/guava>Guava</a> 是 Google 的 Java 核心库，可供多种库和框架（包括 Hadoop）使用。如果作业或其依赖项需要使用的 Guava 版本比 Hadoop 使用的版本更高，则可能出现依赖项冲突。</p>
+<p>Hadoop v3.0 <a href=https://issues.apache.org/jira/browse/HADOOP-11804>解决了</a>这个问题，但依赖早期 Hadoop 版本的应用需要通过以下两个环节的解决方法来避免可能的依赖项冲突。</p>
+<ol>
+<li>创建一个单独的“超级”JAR（又名“胖”JAR），其中包含应用的软件包及其所有依赖项。</li>
+<li>重新定位超级 JAR 中冲突的依赖项软件包，以防止其路径名与 Hadoop 的依赖项软件包冲突。可在打包过程中使用插件（请参阅下文）自动执行此重定位（也称为“添加阴影”），而无需修改您的代码。</li>
+</ol>
+<h3 id=用-maven-创建一个超级阴影-jar>用 Maven 创建一个超级阴影 JAR</h3>
+<p><a href=https://maven.apache.org/>Maven</a> 是用于构建 Java 应用的软件包管理工具。<a href=https://davidb.github.io/scala-maven-plugin/>Maven scala</a> 插件可用于构建用 Scala（即 Spark 应用使用的语言）编写的应用。<a href=http://maven.apache.org/plugins/maven-shade-plugin/>Maven shade</a> 插件可用于创建阴影 JAR。</p>
+<p>以下是一个示例 <code>pom.xml</code> 配置文件，该文件用于为 Guava 库（位于 <code>com.google.common</code> 软件包中）添加阴影。此配置文件会指示 Maven 将 <code>com.google.common</code> 包重命名为 <code>repackaged.com.google.common</code> 并更新原始软件包中所有对类的引用。</p>
+<p><project xmlns=http://maven.apache.org/POM/4.0.0 xmlns:xsi=http://www.w3.org/2001/XMLSchema-instance xsi:schemalocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"> <modelversion>4.0.0</modelversion> <properties> &lt;maven.compiler.source>1.8&lt;/maven.compiler.source> &lt;maven.compiler.target>1.8&lt;/maven.compiler.target> </properties> <groupid></groupid> <artifactid></artifactid> <version></version> <dependencies> <dependency> <groupid>org.apache.spark</groupid> <artifactid>spark-sql_2.11</artifactid> <version></version> <scope>provided</scope> </dependency> </dependencies> <build> <plugins> <plugin> <groupid>net.alchim31.maven</groupid> <artifactid>scala-maven-plugin</artifactid> <executions> <execution> <goals> <goal>compile</goal> <goal>testCompile</goal> </goals> </execution> </executions> <configuration> <scalaversion></scalaversion> </configuration> </plugin> <plugin> <groupid>org.apache.maven.plugins</groupid> <artifactid>maven-shade-plugin</artifactid> <executions> <execution> <phase>package</phase> <goals> <goal>shade</goal> </goals> <configuration> <transformers> <transformer implementation=org.apache.maven.plugins.shade.resource.ManifestResourceTransformer> <mainclass></mainclass> </transformer> </transformers> <filters> <filter> <artifact><em>:</em></artifact> <excludes> <exclude>META-INF/maven/<strong></exclude> <exclude>META-INF/<em>.SF</exclude> <exclude>META-INF/</em>.DSA</exclude> <exclude>META-INF/*.RSA</exclude> </excludes> </filter> </filters> <relocations> <relocation> <pattern>com</pattern> <shadedpattern>repackaged.com.google.common</shadedpattern> <includes> <include>com.google.common.</strong></include> </includes> </relocation> </relocations> </configuration> </execution> </executions> </plugin> </plugins> </build></p>
+</project>
+<p>要运行该构建，请执行以下操作：</p>
+<p>mvn package</p>
+<p><strong>有关 <code>pom.xml</code> 的注意事项：</strong></p>
+<ul>
+<li>
+<p><a href=https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ManifestResourceTransformer>ManifestResourceTransformer</a> 会处理超级 JAR 清单文件 (<code>MANIFEST.MF</code>) 中的属性。此外，此清单还可以指定应用的入口点。</p>
+</li>
+<li>
+<p>由于 Spark 安装在 Cloud Dataproc 上，因此 Spark 的<a href=https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Dependency_Scope>范围</a>是 <code>provided</code>。</p>
+</li>
+<li>
+<p>指定 Cloud Dataproc 集群上安装的 Spark 版本（请参阅 <a href="https://cloud.google.com/dataproc/docs/concepts/versioning/dataproc-versions?hl=zh-cn">Cloud Dataproc 版本列表</a>）。如果您的应用需要使用的 Spark 版本与 Cloud Dataproc 集群中安装的版本不同，您可以编写<a href="https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/init-actions?hl=zh-cn">初始化操作</a>，或构建一个<a href="https://cloud.google.com/dataproc/docs/guides/dataproc-images?hl=zh-cn">自定义映像</a>（该映像会安装您的应用使用的 Spark 版本）。</p>
+</li>
+<li>
+<p><code>&lt;filters></code> 条目从依赖项的 <code>META-INF</code> 目录中排除了签名文件。如果没有此条目，则可能会发生 <code>java.lang.SecurityException: Invalid signature file digest for Manifest main attributes</code> 运行时异常，因为签名文件在超级 JAR 环境中无效。</p>
+</li>
+<li>
+<p>您可能需要为多个库添加阴影。为此，请添加多个路径。以下示例演示了如何为 Guava 和 Protobuf 库添加阴影。</p>
+<p><relocation> <pattern>com</pattern> <shadedpattern>repackaged.com</shadedpattern> <includes> <include>com.google.protobuf.<strong></include> <include>com.google.common.</strong></include> </includes><br>
+</relocation></p>
+</li>
+</ul>
+<h3 id=用-sbt-创建一个超级阴影-jar>用 SBT 创建一个超级阴影 JAR</h3>
+<p><a href=https://www.scala-sbt.org/>SBT</a> 是用于构建 Scala 应用的工具。要使用 SBT 创建阴影 JAR，请执行以下操作向构建定义中添加 <a href=https://github.com/sbt/sbt-assembly><code>sbt-assembly</code></a> 插件。首先，在 <code>project/</code> 目录下创建一个名为 <code>assembly.sbt</code> 的文件：</p>
+<p>├── src/
+└── build.sbt
+└── project/
+└── assembly.sbt</p>
+<p>然后，在 <code>assembly.sbt</code> 中添加以下一行内容：</p>
+<p>addSbtPlugin(&ldquo;com.eed3si9n&rdquo; % &ldquo;sbt-assembly&rdquo; % &ldquo;0.14.6&rdquo;)</p>
+<p>以下是一个示例 <code>build.sbt</code> 配置文件，该文件用于为 Guava 库（位于 <code>com.google.common package</code> 软件包中）添加阴影。</p>
+<p>lazy val commonSettings = Seq(organization := &ldquo;YOUR_GROUP_ID&rdquo;,name := &ldquo;YOUR_ARTIFACT_ID&rdquo;,version := &ldquo;YOUR_PACKAGE_VERSION&rdquo;,scalaVersion := &ldquo;YOUR_SCALA_VERSION&rdquo;,<br>
+)</p>
+<p>lazy val shaded = (project in file("."))<br>
+ .settings(commonSettings)mainClass in (Compile, packageBin) := Some(&ldquo;YOUR_APPLICATION_MAIN_CLASS&rdquo;)libraryDependencies ++= Seq(<br>
+ &ldquo;org.apache.spark&rdquo; % &ldquo;spark-sql_2.11&rdquo; % &ldquo;YOUR_SPARK_VERSION&rdquo; % &ldquo;provided&rdquo;,<br>
+ // YOUR_DEPENDENCIES<br>
+)assemblyShadeRules in assembly := Seq( ShadeRule.rename(&ldquo;com.google.common.**&rdquo; -> &ldquo;repackaged.com.google.common.@1&rdquo;).inAll<br>
+)</p>
+<p>要运行该构建，请执行以下操作：</p>
+<p>sbt assembly</p>
+<p><strong>有关 <code>build.sbt</code> 的注意事项</strong>：</p>
+<ul>
+<li>
+<p>上述示例中的阴影规则可能无法解决所有依赖项冲突，因为 SBT 使用严格的冲突解决策略。因此，您可能需要提供更精细的规则，以使用 <code>MergeStrategy.first</code>、<code>last</code>、<code>concat</code>、<code>filterDistinctLines</code>、<code>rename</code> 或 <code>discard</code> 策略明确合并特定类型的冲突文件。如需了解详情，请参阅 <code>sbt-assembly</code> 的<a href=https://github.com/sbt/sbt-assembly#merge-strategy>合并策略</a>。</p>
+</li>
+<li>
+<p>您可能需要为多个库添加阴影。为此，请添加多个路径。以下示例演示了如何为 Guava 和 Protobuf 库添加阴影。</p>
+<p>assemblyShadeRules in assembly := Seq( ShadeRule.rename(&ldquo;com.google.common.<strong>&rdquo; -> &ldquo;repackaged.com.google.common.@1&rdquo;).inAll, ShadeRule.rename(&ldquo;com.google.protobuf.</strong>&rdquo; -> &ldquo;repackaged.com.google.protobuf.@1&rdquo;).inAll<br>
+)</p>
+</li>
+</ul>
+<h2 id=向-cloud-dataproc-提交超级-jar>向 Cloud Dataproc 提交超级 JAR</h2>
+<p>在创建包含 Spark 应用及其依赖项的超级阴影 JAR 之后，您就可以向 Cloud Dataproc <a href="https://cloud.google.com/dataproc/docs/guides/submit-job?hl=zh-cn">提交作业</a>了。</p>
+<h2 id=后续事项>后续事项</h2>
+<ul>
+<li>请参阅 Spark 示例应用 <a href=https://github.com/GoogleCloudPlatform/cloud-dataproc/tree/master/spark-translate>spark-translate</a>，其中包含了 Maven 和 SBT 的配置文件。</li>
+<li>在 Cloud Dataproc 上<a href="https://cloud.google.com/dataproc/docs/tutorials/spark-scala?hl=zh-cn">编写并运行 Spark Scala 作业</a>。请按照快速入门中的说明了解如何在 Cloud Dataproc 集群上编写并运行 Spark Scala 作业。</li>
+</ul>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

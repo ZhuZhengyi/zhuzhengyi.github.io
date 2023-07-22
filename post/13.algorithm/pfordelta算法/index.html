@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="PForDelta算法 简介 由于倒排索引文件往往占用巨大的磁盘空间，我们自然想到对数据进行压缩。同时，引进压缩算法后，使得磁盘占用减少，操作系">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/13.algorithm/pfordelta%E7%AE%97%E6%B3%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="PForDelta算法">
-<meta property="og:description" content>
+<meta property="og:description" content="PForDelta算法 简介 由于倒排索引文件往往占用巨大的磁盘空间，我们自然想到对数据进行压缩。同时，引进压缩算法后，使得磁盘占用减少，操作系">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/13.algorithm/pfordelta%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T13:44:29+08:00">
 <meta property="article:modified_time" content="2021-10-10T13:44:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="PForDelta算法">
-<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T13:44:29+08:00">
+<meta itemprop=description content="PForDelta算法 简介 由于倒排索引文件往往占用巨大的磁盘空间，我们自然想到对数据进行压缩。同时，引进压缩算法后，使得磁盘占用减少，操作系"><meta itemprop=datePublished content="2021-10-10T13:44:29+08:00">
 <meta itemprop=dateModified content="2021-10-10T13:44:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="4342">
 <meta itemprop=keywords content="algorithm,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="PForDelta算法">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="PForDelta算法 简介 由于倒排索引文件往往占用巨大的磁盘空间，我们自然想到对数据进行压缩。同时，引进压缩算法后，使得磁盘占用减少，操作系"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,323 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#待压缩的倒排索引数据>待压缩的倒排索引数据</a></li>
+</ul>
+<ul>
+<li><a href=#原文链接>原文链接</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=pfordelta算法>PForDelta算法</h1>
+<h2 id=简介>简介</h2>
+<p>由于倒排索引文件往往占用巨大的磁盘空间，我们自然想到对数据进行压缩。同时，引进压缩算法后，使得磁盘占用减少，操作系统在query processing过程中磁盘读取效率也能提升。另外，压缩算法不仅要考虑压缩效果，还要照顾到query processing过程的解压缩效率。</p>
+<p>总的来说，好的索引压缩算法需要最大化两个方面：</p>
+<p>1、减少磁盘资源占用</p>
+<p>2、加快用户查询响应速度</p>
+<p>其中，加快响应速度比减少磁盘占用更为重要。本文主要介绍PForDelta压缩算法，其简单易懂，能够提供可观的数据压缩，同时具备非常高的响应速度，因此广泛的运用于很多实际信息检索系统中。</p>
+<h2 id=待压缩的倒排索引数据>待压缩的倒排索引数据</h2>
+<p>一个posting单元由&lt;DocID、TF、Term position…>组成。对于每个DocID，其保存在硬盘中的大小取决于文件集最大文档编号的大小。这样造成编号较小的DocID分配了和编号较大的DocID（上百万）一样的存储空间，浪费了资源。由于每个posting是根据DocID顺序存储，所以不需要保存DocID，只需要保存前后两个DocID的差值，这样可以大大减小DocID储存空间，这种方式成为Delta Encoding。如下图：</p>
+<p>          <img src=https://images0.cnblogs.com/blog2015/571793/201507/140445188459023.png alt></p>
+<p>对于tf值，根据<a href="http://baike.baidu.com/link?url=1tzNJbUwjjfuiBArCS5ePKkKIVTIvDJl0pSrZUKNm-dAkSWK6eTi5qcPaoeVlRLPM4B1BC3ccv328J1xETQR4a">Zipf定律</a>，tf值较小的term占大多数，我们可以对这类tf值少分配一些空间保存。而tf大的term占少数，对这些tf分配多空间储存。基于上述排列特性，往往将docID和tf及其他数据分开放置，方便数据压缩。最终，整体的存储结构如下图所示：</p>
+<p>          <img src=https://images0.cnblogs.com/blog2015/571793/201507/140447575795961.png alt></p>
+<p>为了方便分布式存储倒排索引文件，Data Block是硬盘中的基础存储单元。由于建立过程需要，每个term 的postinglist被拆分为多个部分保存在多个block中（如图不同颜色的block代表存储不同term的postinglist）。也就是说，每个block内部可能包含多个term的postinglist片段。</p>
+<p>Data block的基本组成单元是数据块（chunk），每个chunk一般包含固定数量的posting，图中所示一个chunk包含128个posting，这些posting都属于同一个term。其中将DocID、tf和position分开排放，方便压缩。</p>
+<p>这样以block为单元，以chunk为基础元素的索引存储的方式，一方面可以支持使用caching的方法缓存最常用term的postinglist，提高query响应速度。另一方面，所有压缩解压缩过程都以chunk为单位，都在chunk内部进行。当需要查找某一term的postinglist时，不需要对所有文件进行解压缩。对于不相关的chunk直接忽略，只需要对少部分block中的目标chunk进行处理，这样又从另一个方面大大缩短了query响应时间。这也是chunk机制设置的初衷。接下来，我们讨论如何对一个chunk结构进行压缩和解压缩处理。</p>
+<p><a href=https://www.cnblogs.com/huxiao-tee/p/4644422.html#_labelTop>回到顶部</a></p>
+<h1 id=pfordelta算法-1>PForDelta算法</h1>
+<p>PForDelta算法最早由Heman在2005年提出（<strong>Heman et al ICDE 2006</strong>），它允许同时对整个chunk数据（例128个数）进行压缩处理。基础思想是对于一个chunk的数列（例128个），认为其中占多数的x%数据（例90%）占用较小空间，而剩余的少数1-x%（例10%）才是导致数字存储空间过大的异常值。因此，对x%的小数据统一使用较少的b个bit存储，剩下的1-x%数据单独存储。</p>
+<p>举个例子，假设我们有一串数列23, 41, 8, 12, 30, 68, 18, 45, 21, 9, ..。取b = 5，即认为5个bit（32）能存储数列中大部分数字，剩下的超过32的数字单独处理。从可见的队列中，超过32的数字有41, 68, 45。那么PForDelta压缩后的数据如下图所示（图中将超过32的数字称为异常值exception）：</p>
+<p>          <img src=https://images0.cnblogs.com/blog2015/571793/201507/140459415799752.png alt></p>
+<p>图中第一个单元（5bit）记录第一个异常值的位置，其值为“1”表示间隔1个b-bit之后是第一个异常值。第一个异常值出现在“23”之后，是“41”，其储存的位置在队列的最末端，而其在128个5bit数字中的值“3”表示间隔3个b-bit之后，是下一个异常值，即“68”，之后依次类推。异常值用32bit记录，在队列末尾从后向前排列。</p>
+<p>上述队列就对应一个chunk（DocID），还需要<strong>另外记录</strong>b的取值和一个chunk压缩后的长度。这样就完整的对一个chunk数据进行了压缩。</p>
+<p>但是这样算法有一个明显的不足：如果两个异常值的间隔非常大（例如超过32），我们需要加入更多的空间来记录间隔，并且还需要更多的参数来记录多出多少空间。为了避免这样的问题，出现了改进的算法NewPFD。</p>
+<p><a href=https://www.cnblogs.com/huxiao-tee/p/4644422.html#_labelTop>回到顶部</a></p>
+<h1 id=改进的pfordelta算法>改进的PForDelta算法</h1>
+<p>在PForDelta算法基础上，<a href=http://files.cnblogs.com/files/huxiao-tee/InvertedIndexCompressionAndQueryProcessingWithOptimizedDocumentOrdering.pdf>H. Yan et.al  WWW2009</a>提出NewPFD算法及 OptPFD算法。</p>
+<p>NewPFD算法</p>
+<p>由于PForDelta算法最大的问题是如果异常值间隔太大会造成b-bit放不下。NewPFD的思路是：128个数最多需要7个bit就能保存，如果能将第二部分中保存异常值的32bit进行压缩，省出7bit的空间用于保存这个异常值的位置，问题就迎刃而解了。同时更自然想到，如果异常值位置信息保存在队列后方的32bit中，那么队列第一部分原用于记录异常值间隔的对应部分空间就空余出来了，可以利用这部分做进一步改进。</p>
+<p>因此，NewPFD的算法是，假设128个数中，取b=5bit，即32作为阈值。数列中低于32的数字正常存放，数列中大于32的数字，例如41 (101001) 将其低5位（b-bit）放在第一部分，将其剩下的高位（overflow）存放在队列末端。我们依然以PForDelta中的例子作为说明，一个128位数列23, 41, 8, 12, 30, 68, 18, 45, 21, 9, ..。经过NewPFD算法压缩后的形式如下图所示：</p>
+<p>          <img src=https://images0.cnblogs.com/blog2015/571793/201507/140510289387313.png alt></p>
+<p>NewPFD算法压缩后的数据依然包括两部分，第一部分128个b-bit数列，省去了第一个异常值位置单元；第二部分异常值部分包含异常值的位置和异常值的高位数字。例如，对于异常值“41”其2进制码为101001，那么低5位01001保存在数据块第一部分。在第二部分中，先保存位置信息（“41”的位置是“1”，表示原数列第2个），再以字节为单位保存高位“1”即“0000 0001”，这样反而只需要附加2个字节（一个保存位置，一个保存高位）就可以储存原本需要4个字节保存的异常值。而对于高位字节，还可以继续使用压缩算法进行压缩，本文不再继续讨论。</p>
+<p>除了数据列，NewPFD算法还需要另外保存b值和高位占的字节数（称为a值）。因为参数ab已经确定了数据块的长度，因此chunk长度值不用再单独记录。</p>
+<p>OptPFD算法</p>
+<p>OptPFD算法在NewPFD之上，认为每个数据压缩单元chunk应该有适应自己数据的独立a值和b值，这样虽然需要保存大量的ab值，但是毕竟数据量小不会影响太大的速度，相反，由于对不同chunk单独压缩，使压缩效果更好，反而提高了解压缩的效果。</p>
+<p>对于b的选取，通常选择2^b可以覆盖数列中90%的数字，也就是控制异常值在10%左右，这样可以获得压缩效果和解压缩效率的最大化。</p>
+<p><a href=https://www.cnblogs.com/huxiao-tee/p/4644422.html#_labelTop>回到顶部</a></p>
+<h1 id=索引压缩步骤>索引压缩步骤</h1>
+<p>了解了压缩算法原理，下面我们来看倒排索引文件具体如何压缩。我们采用OptPFD算法，先定义数据结构和参数：</p>
+<p>1、定义一次压缩64个数字；每次选择其中的90%数字作为正常数字，剩余10%作为异常值；</p>
+<p>2、建立一个结构体PForBlock，保存压缩后的数据，内部包含数据和压缩参数a、b；</p>
+<p>3、定义一个PForDelta算法对象，主要包括两个成员函数GetAB和compress，分别表示计算压缩参数ab值以及实施具体压缩算法。其中数组bsets_[9]，记录可取的b值，为了方便计算参数b。为了数据对齐，删除了一些b的取值。</p>
+<p>4、以4字节为一个单元存放压缩数据，为了解压缩时代码更简洁高效。例如64个待压缩数字经计算后取b = 3，则4个字节32bit一共能存放10个压缩后的数字，剩余32-3*10 = 2bit高位留空。（实际编码中可任意选择编程方案）</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=cp>#define COMPRESS_BLOCK_SIZE 64
+</span><span class=cp>#define PFOR_THRESHOLD 0.9
+</span><span class=cp></span>
+<span class=k>struct</span> <span class=nc>PForBlock</span> <span class=p>{</span>
+  <span class=kt>unsigned</span> <span class=n>a</span><span class=p>,</span><span class=n>b</span><span class=p>;</span>
+  <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=n>data</span><span class=p>;</span>
+<span class=p>};</span>
+
+<span class=k>class</span> <span class=nc>PForCompressor</span> <span class=p>{</span>
+ <span class=k>public</span><span class=o>:</span>
+  <span class=n>PForCompressor</span><span class=p>()</span> <span class=p>{</span>
+    <span class=n>bsets_</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span><span class=o>=</span><span class=mi>1</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>1</span><span class=p>]</span><span class=o>=</span><span class=mi>2</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>2</span><span class=p>]</span><span class=o>=</span><span class=mi>3</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>3</span><span class=p>]</span><span class=o>=</span><span class=mi>4</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>4</span><span class=p>]</span><span class=o>=</span><span class=mi>5</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>5</span><span class=p>]</span><span class=o>=</span><span class=mi>6</span><span class=p>;</span>
+    <span class=n>bsets_</span><span class=p>[</span><span class=mi>6</span><span class=p>]</span><span class=o>=</span><span class=mi>8</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>7</span><span class=p>]</span><span class=o>=</span><span class=mi>10</span><span class=p>;</span><span class=n>bsets_</span><span class=p>[</span><span class=mi>8</span><span class=p>]</span><span class=o>=</span><span class=mi>16</span><span class=p>;</span>
+  <span class=p>}</span>
+  <span class=n>PForBlock</span> <span class=nf>compress</span><span class=p>(</span><span class=k>const</span> <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=o>&amp;</span><span class=n>v</span><span class=p>);</span>
+
+ <span class=k>protected</span><span class=o>:</span>
+  <span class=kt>void</span> <span class=n>getAB</span><span class=p>(</span><span class=k>const</span> <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=o>&amp;</span><span class=n>v</span><span class=p>);</span>
+  <span class=kt>unsigned</span> <span class=n>bsets_</span><span class=p>[</span><span class=mi>9</span><span class=p>];</span>
+  <span class=kt>unsigned</span> <span class=n>a_</span><span class=p>,</span> <span class=n>b_</span><span class=p>;</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>其中，getAB()和compress()函数具体代码如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=kt>void</span> <span class=n>PForCompressor</span><span class=o>::</span><span class=n>getAB</span><span class=p>(</span><span class=k>const</span> <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=o>&amp;</span><span class=n>v</span><span class=p>)</span> <span class=p>{</span>
+  <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=n>u</span> <span class=o>=</span> <span class=n>v</span><span class=p>;</span>
+  <span class=n>sort</span><span class=p>(</span><span class=n>u</span><span class=p>.</span><span class=n>begin</span><span class=p>(),</span> <span class=n>u</span><span class=p>.</span><span class=n>end</span><span class=p>());</span>
+  <span class=kt>unsigned</span> <span class=n>threshold</span> <span class=o>=</span> <span class=n>u</span><span class=p>[((</span><span class=kt>unsigned</span><span class=p>)(</span><span class=kt>double</span><span class=p>)</span><span class=n>u</span><span class=p>.</span><span class=n>size</span><span class=p>()</span><span class=o>*</span><span class=n>PFOR_THRESHOLD</span> <span class=o>-</span> <span class=mi>1</span><span class=p>)];</span>
+  <span class=kt>unsigned</span> <span class=n>max_num</span> <span class=o>=</span> <span class=n>u</span><span class=p>[</span><span class=n>u</span><span class=p>.</span><span class=n>size</span><span class=p>()</span> <span class=o>-</span> <span class=mi>1</span><span class=p>];</span>
+  <span class=c1>// Get b
+</span><span class=c1></span>  <span class=kt>unsigned</span> <span class=n>bn</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+  <span class=k>for</span> <span class=p>(;</span> <span class=n>bn</span> <span class=o>&lt;</span> <span class=mi>8</span><span class=p>;</span> <span class=o>++</span><span class=n>bn</span><span class=p>)</span> <span class=p>{</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>threshold</span> <span class=o>&gt;&gt;</span> <span class=n>bsets_</span><span class=p>[</span><span class=n>bn</span><span class=p>])</span> <span class=o>&lt;=</span> <span class=mi>0</span><span class=p>)</span>
+      <span class=k>break</span><span class=p>;</span>
+  <span class=p>}</span>
+  <span class=n>b_</span> <span class=o>=</span> <span class=n>bsets_</span><span class=p>[</span><span class=n>bn</span><span class=p>];</span>
+  <span class=c1>// Get a
+</span><span class=c1></span>  <span class=n>max_num</span> <span class=o>&gt;&gt;=</span> <span class=n>b_</span><span class=p>;</span>
+  <span class=n>a_</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span>
+  <span class=k>for</span> <span class=p>(;</span> <span class=n>a_</span> <span class=o>&lt;</span> <span class=mi>4</span><span class=p>;</span> <span class=o>++</span><span class=n>a_</span><span class=p>)</span> <span class=p>{</span>
+    <span class=k>if</span> <span class=p>((</span><span class=mi>1</span> <span class=o>&lt;&lt;</span> <span class=p>(</span><span class=n>a_</span> <span class=o>*</span> <span class=mi>8</span><span class=p>))</span> <span class=o>&gt;</span> <span class=n>max_num</span><span class=p>)</span>
+      <span class=k>break</span><span class=p>;</span>
+  <span class=p>}</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=n>PForBlock</span> <span class=n>PForCompressor</span><span class=o>::</span><span class=n>compress</span><span class=p>(</span><span class=k>const</span> <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=o>&amp;</span><span class=n>v</span><span class=p>)</span> <span class=p>{</span>
+  <span class=n>getAB</span><span class=p>(</span><span class=n>v</span><span class=p>);</span>
+  <span class=kt>unsigned</span> <span class=n>threshold</span> <span class=o>=</span> <span class=mi>1</span> <span class=o>&lt;&lt;</span> <span class=n>b_</span><span class=p>;</span>
+  <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;</span> <span class=n>tail</span><span class=p>;</span>
+  <span class=n>vector</span><span class=o>&lt;</span><span class=kt>unsigned</span><span class=o>&gt;::</span><span class=n>iterator</span> <span class=n>it</span><span class=p>;</span>
+  <span class=n>PForBlock</span> <span class=n>block</span><span class=p>;</span>
+  <span class=n>block</span><span class=p>.</span><span class=n>a</span> <span class=o>=</span> <span class=n>a_</span><span class=p>;</span>
+  <span class=n>block</span><span class=p>.</span><span class=n>b</span> <span class=o>=</span> <span class=n>b_</span><span class=p>;</span>
+
+  <span class=c1>//90% fit numbers and the low b-bit of exceptions are stored at the head
+</span><span class=c1></span>  <span class=kt>unsigned</span> <span class=n>head_size</span> <span class=o>=</span> <span class=p>(</span><span class=n>v</span><span class=p>.</span><span class=n>size</span><span class=p>()</span> <span class=o>+</span> <span class=mi>32</span> <span class=o>/</span> <span class=n>b_</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>/</span> <span class=p>(</span><span class=mi>32</span> <span class=o>/</span> <span class=n>b_</span><span class=p>);</span>
+  <span class=k>for</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>head_size</span><span class=p>;</span> <span class=o>++</span><span class=n>i</span><span class=p>)</span>
+    <span class=n>block</span><span class=p>.</span><span class=n>data</span><span class=p>.</span><span class=n>push_back</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+  <span class=k>for</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>v</span><span class=p>.</span><span class=n>size</span><span class=p>();</span> <span class=o>++</span><span class=n>i</span><span class=p>)</span> <span class=p>{</span>
+    <span class=kt>unsigned</span> <span class=n>low</span> <span class=o>=</span> <span class=n>v</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>&amp;</span> <span class=p>(</span><span class=n>threshold</span> <span class=o>-</span> <span class=mi>1</span><span class=p>);</span>
+    <span class=n>block</span><span class=p>.</span><span class=n>data</span><span class=p>[</span><span class=n>i</span> <span class=o>/</span> <span class=p>(</span><span class=mi>32</span> <span class=o>/</span> <span class=n>b_</span><span class=p>)]</span> <span class=o>|=</span> <span class=n>low</span> <span class=o>&lt;&lt;</span> <span class=n>i</span> <span class=o>%</span> <span class=p>(</span><span class=mi>32</span> <span class=o>/</span> <span class=n>b_</span><span class=p>)</span> <span class=o>*</span> <span class=n>b_</span><span class=p>;</span>
+    <span class=k>if</span><span class=p>(</span><span class=n>v</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>&gt;=</span> <span class=n>threshold</span><span class=p>)</span> <span class=p>{</span>
+      <span class=n>tail</span><span class=p>.</span><span class=n>push_back</span><span class=p>(</span><span class=n>i</span><span class=p>);</span>
+      <span class=kt>unsigned</span> <span class=n>high</span> <span class=o>=</span> <span class=n>v</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>&gt;&gt;</span> <span class=n>b_</span><span class=p>;</span>
+      <span class=k>for</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>l</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>l</span> <span class=o>&lt;</span> <span class=n>a_</span><span class=p>;</span> <span class=o>++</span><span class=n>l</span><span class=p>)</span> <span class=p>{</span>
+        <span class=n>tail</span><span class=p>.</span><span class=n>push_back</span><span class=p>((</span><span class=n>high</span> <span class=o>&gt;&gt;</span> <span class=p>(</span><span class=n>l</span> <span class=o>*</span> <span class=mi>8</span><span class=p>))</span> <span class=o>&amp;</span> <span class=mi>255</span><span class=p>);</span>
+      <span class=p>}</span>
+    <span class=p>}</span>
+  <span class=p>}</span>
+
+  <span class=c1>// high-bit of exceptions are stored at the end using a-bytes each.
+</span><span class=c1></span>  <span class=kt>unsigned</span> <span class=n>temp</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+  <span class=kt>unsigned</span> <span class=n>i</span><span class=p>;</span>
+  <span class=k>for</span><span class=p>(</span><span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>tail</span><span class=p>.</span><span class=n>size</span><span class=p>();</span> <span class=o>++</span><span class=n>i</span><span class=p>)</span> <span class=p>{</span>
+    <span class=n>temp</span> <span class=o>|=</span> <span class=n>tail</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>&lt;&lt;</span> <span class=p>(</span><span class=n>i</span> <span class=o>*</span> <span class=mi>8</span> <span class=o>%</span> <span class=mi>32</span><span class=p>);</span>
+    <span class=k>if</span><span class=p>(</span><span class=n>i</span> <span class=o>%</span> <span class=mi>4</span> <span class=o>==</span> <span class=mi>3</span><span class=p>)</span> <span class=p>{</span>
+      <span class=n>block</span><span class=p>.</span><span class=n>data</span><span class=p>.</span><span class=n>push_back</span><span class=p>(</span><span class=n>temp</span><span class=p>);</span>
+      <span class=n>temp</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=p>}</span>
+  <span class=p>}</span>
+  <span class=k>if</span><span class=p>(</span><span class=n>i</span> <span class=o>%</span> <span class=mi>4</span> <span class=o>!=</span> <span class=mi>0</span><span class=p>)</span>
+    <span class=n>block</span><span class=p>.</span><span class=n>data</span><span class=p>.</span><span class=n>push_back</span><span class=p>(</span><span class=n>temp</span><span class=p>);</span>
+
+  <span class=k>return</span> <span class=n>block</span><span class=p>;</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h1 id=索引解压步骤>索引解压步骤</h1>
+<p>1、解压前已经知道压缩数据的参数a和b（由程序或配置文件另外保存），先对压缩数据的第一部分解压，以压缩64个数字为例，则将64个b-bit从压缩数据中第一部分提取出来；</p>
+<p>2、之后再对第二部分解压，由于已经知道异常值在数列中的索引位置（1字节）和异常值的高位bit（a字节），将异常值的高位比特加入其第一部分的低位比特中，就完成了解压过程。</p>
+<p>3、由于压缩算法按照4字节为一个单元进行存储压缩数据，而不同的参数b值对应不同的存放方案，因此最高效的解压缩编程是每种压缩方案单独编写一个解压缩程序。</p>
+<p>先来看解压缩对象定义</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=k>class</span> <span class=nc>PForDecompressor</span> <span class=p>{</span>
+  <span class=k>public</span><span class=o>:</span>
+    <span class=n>PForDecompressor</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>Decompress</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>a</span><span class=p>,</span><span class=kt>unsigned</span> <span class=n>b</span><span class=p>,</span><span class=kt>unsigned</span> <span class=n>item_num</span><span class=p>,</span><span class=kt>unsigned</span> <span class=o>*</span><span class=n>data</span><span class=p>,</span><span class=kt>unsigned</span> <span class=n>data_length</span><span class=p>,</span><span class=kt>unsigned</span><span class=o>*</span> <span class=n>res</span><span class=p>);</span>
+
+  <span class=k>private</span><span class=o>:</span>
+    <span class=k>typedef</span> <span class=kt>void</span><span class=p>(</span><span class=n>PForDecompressor</span><span class=o>::*</span><span class=n>step1Funs</span><span class=p>)();</span>
+    <span class=k>typedef</span> <span class=nf>void</span><span class=p>(</span><span class=n>PForDecompressor</span><span class=o>::*</span><span class=n>step2Funs</span><span class=p>)(</span><span class=kt>unsigned</span><span class=p>);</span>
+    <span class=n>step1Funs</span> <span class=n>step1_</span><span class=p>[</span><span class=mi>17</span><span class=p>];</span>
+    <span class=n>step2Funs</span> <span class=n>step2_</span><span class=p>[</span><span class=mi>5</span><span class=p>];</span>
+
+    <span class=kt>unsigned</span> <span class=n>item_num_</span><span class=p>;</span>
+    <span class=kt>unsigned</span> <span class=n>data_length_</span><span class=p>;</span>
+    <span class=kt>unsigned</span><span class=o>*</span> <span class=n>data_</span><span class=p>;</span>
+    <span class=kt>unsigned</span><span class=o>*</span> <span class=n>res_</span><span class=p>;</span>
+
+    <span class=kt>void</span> <span class=nf>step3</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B1</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B2</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B3</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B4</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B5</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B6</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B8</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B10</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1B16</span><span class=p>();</span>
+    <span class=kt>void</span> <span class=nf>step1Ex</span><span class=p>();</span>
+
+    <span class=kt>void</span> <span class=nf>step2A1</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>b</span><span class=p>);</span>
+    <span class=kt>void</span> <span class=nf>step2A2</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>b</span><span class=p>);</span>
+    <span class=kt>void</span> <span class=nf>step2A3</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>b</span><span class=p>);</span>
+    <span class=kt>void</span> <span class=nf>step2A4</span><span class=p>(</span><span class=kt>unsigned</span> <span class=n>b</span><span class=p>);</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>压缩时设定参数b的取值可以是1、2、3、4、5、6、8、10、16，解压时分别对应step1Bx()函数。这个9个函数以函数指针的形式，以b的数值作为索引，保存在一个具有17个元素的数组里。为了方便检测b的合法性，非法的b取值也设置在了数组中，由step1Ex表示。当step1Ex被调用时，会返回一个异常。</p>
+<p>2、压缩时参数a的取值可能是1~4，解压时分别对应step2Ax()，解压第二部分时，需要用到参数b，因此将其作为函数入参。和解压第一部分一样，也将这4个函数以函数指针的形式保存在数组里，方便读取。</p>
+<p>所以，根据算法初始化的要求，自然可以得出类构造函数定义：</p>
+<h2 id=原文链接>原文链接</h2>
+<p><a href=https://www.cnblogs.com/huxiao-tee/p/4644422.html>倒排索引压缩：改进的PForDelta算法 - 胡潇 - 博客园</a></p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

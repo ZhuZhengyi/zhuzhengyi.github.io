@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Spring的注解 什么是注解 传统的Spring做法是使用.xml文件来对bean进行注入或者是配置aop、事务，这么做有两个缺点： 如果所有的">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/java/spring%E6%B3%A8%E8%A7%A3/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Spring的注解">
-<meta property="og:description" content>
+<meta property="og:description" content="Spring的注解 什么是注解 传统的Spring做法是使用.xml文件来对bean进行注入或者是配置aop、事务，这么做有两个缺点： 如果所有的">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/java/spring%E6%B3%A8%E8%A7%A3/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Spring的注解">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Spring的注解 什么是注解 传统的Spring做法是使用.xml文件来对bean进行注入或者是配置aop、事务，这么做有两个缺点： 如果所有的"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="3620">
 <meta itemprop=keywords content="language,java,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Spring的注解">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Spring的注解 什么是注解 传统的Spring做法是使用.xml文件来对bean进行注入或者是配置aop、事务，这么做有两个缺点： 如果所有的"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,595 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#什么是注解>什么是注解</a></li>
+<li><a href=#不使用注解>不使用注解</a></li>
+<li><a href=#autowired>@Autowired</a></li>
+<li><a href=#autowired接口注入>@Autowired接口注入</a></li>
+<li><a href=#resource>@Resource</a></li>
+<li><a href=#service>@Service</a></li>
+<li><a href=#补充细节>补充细节</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=spring的注解>Spring的注解</h1>
+<h2 id=什么是注解>什么是注解</h2>
+<p>传统的<code>Spring</code>做法是使用<code>.xml</code>文件来对<code>bean</code>进行注入或者是配置<code>aop</code>、事务，这么做有两个缺点：</p>
+<ol>
+<li>
+<p>如果所有的内容都配置在<code>.xml</code>文件中，那么<code>.xml</code>文件将会十分庞大；如果按需求分开<code>.xml</code>文件，那么<code>.xml</code>文件又会非常多。总之这将导致配置文件的可读性与可维护性变得很低。</p>
+</li>
+<li>
+<p>开发中需要在<code>.java</code>文件和<code>.xml</code>文件之间不断切换，是一件麻烦的事，同时这种思维上的不连贯也会降低开发的效率。</p>
+</li>
+</ol>
+<p>为了解决这两个问题，<code>Spring</code>引入了注解，通过<code>@XXX</code>的方式，让注解与Java Bean 紧密结合，既大大减少了配置文件的体积，又增加了Java Bean 的可读性与内聚性。</p>
+<h2 id=不使用注解>不使用注解</h2>
+<p>先看一个不使用注解的 Spring 示例，在这个示例的基础上，再改成注解版本，这样也能看出使用与不使用注解之间的区别，先定义一个老虎类：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Tiger</span>
+<span class=o>{</span>
+    <span class=kd>private</span> <span class=n>String</span> <span class=n>tigerName</span> <span class=o>=</span> <span class=s>&#34;TigerKing&#34;</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=s>&#34;TigerName:&#34;</span> <span class=o>+</span> <span class=n>tigerName</span><span class=o>;</span>
+    <span class=o>}</span>
+
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>再定义一个猴子类：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Monkey</span> <span class=o>{</span>
+    <span class=kd>private</span> <span class=n>String</span> <span class=n>monkeyName</span> <span class=o>=</span> <span class=s>&#34;MonkeyKing&#34;</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>(){</span>
+        <span class=k>return</span> <span class=s>&#34;MonkeyName:&#34;</span> <span class=o>+</span> <span class=n>monkeyName</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>再定义一个动物园类：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Zoo</span> <span class=o>{</span>
+    <span class=kd>private</span> <span class=n>Tiger</span> <span class=n>tiger</span><span class=o>;</span>
+    <span class=kd>private</span> <span class=n>Monkey</span> <span class=n>monkey</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>setTiger</span><span class=o>(</span><span class=n>Tiger</span> <span class=n>tiger</span><span class=o>)</span>
+    <span class=o>{</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>tiger</span> <span class=o>=</span> <span class=n>tiger</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>setMonkey</span><span class=o>(</span><span class=n>Monkey</span> <span class=n>monkey</span><span class=o>)</span>
+    <span class=o>{</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>monkey</span> <span class=o>=</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=kd>public</span> <span class=n>Tiger</span> <span class=nf>getTiger</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=kd>public</span> <span class=n>Monkey</span> <span class=nf>getMonkey</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span> <span class=o>+</span> <span class=s>&#34;\\n&#34;</span> <span class=o>+</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在Spring的配置文件中这么写：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=cp>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+<span class=nt>&lt;beans</span> <span class=na>xmlns:xsi=</span><span class=s>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>   
+    <span class=err>xmlns\=&#34;http://www.springframework.org/schema/beans&#34;</span>  
+    <span class=na>xmlns:context=</span><span class=s>&#34;http://www.springframework.org/schema/context&#34;</span>  
+    <span class=na>xsi:schemaLocation=</span><span class=s>&#34;http://www.springframework.org/schema/beans 
+</span><span class=s>        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+</span><span class=s>        http://www.springframework.org/schema/context
+</span><span class=s>        http://www.springframework.org/schema/context/spring-context-4.2.xsd&#34;</span>
+    <span class=na>default-autowire=</span><span class=s>&#34;byType&#34;</span><span class=nt>&gt;</span>
+
+    <span class=nt>&lt;bean</span> <span class=na>id=</span><span class=s>&#34;zoo&#34;</span> <span class=na>class=</span><span class=s>&#34;com.nnngu.bean.Zoo&#34;</span> <span class=nt>&gt;</span>
+        <span class=nt>&lt;property</span> <span class=na>name=</span><span class=s>&#34;tiger&#34;</span> <span class=na>ref=</span><span class=s>&#34;tiger&#34;</span> <span class=nt>/&gt;</span>
+        <span class=nt>&lt;property</span> <span class=na>name=</span><span class=s>&#34;monkey&#34;</span> <span class=na>ref=</span><span class=s>&#34;monkey&#34;</span> <span class=nt>/&gt;</span>
+    <span class=nt>&lt;/bean&gt;</span>
+
+    <span class=nt>&lt;bean</span> <span class=na>id=</span><span class=s>&#34;tiger&#34;</span> <span class=na>class=</span><span class=s>&#34;com.nnngu.domain.Tiger&#34;</span> <span class=nt>/&gt;</span>
+    <span class=nt>&lt;bean</span> <span class=na>id=</span><span class=s>&#34;monkey&#34;</span> <span class=na>class=</span><span class=s>&#34;com.nnngu.domain.Monkey&#34;</span> <span class=nt>/&gt;</span>
+
+<span class=nt>&lt;/beans&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>都很熟悉，权当复习一遍了。</p>
+<h2 id=autowired>@Autowired</h2>
+<p><code>@Autowired</code>顾名思义，就是自动装配，其作用是为了消除Java代码里面的<code>getter/setter</code>与bean属性中的property。当然，<code>getter</code>看个人需求，如果私有属性需要对外提供的话，应当保留该<code>getter</code>。</p>
+<p>因此，引入<code>@Autowired</code>注解，先看一下Spring的配置文件怎么写：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=err>&lt;</span>?xml version\=&#34;1.0&#34; encoding\=&#34;UTF-8&#34;?\&gt;
+<span class=nt>&lt;beans</span> <span class=err>xmlns:xsi\=&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>   
+    <span class=err>xmlns\=&#34;http://www.springframework.org/schema/beans&#34;</span>  
+    <span class=err>xmlns:context\=&#34;http://www.springframework.org/schema/context&#34;</span>  
+    <span class=err>xsi:schemaLocation\=&#34;http://www.springframework.org/schema/beans</span> 
+        <span class=err>http://www.springframework.org/schema/beans/spring\-beans\-4.2.xsd</span>
+        <span class=err>http://www.springframework.org/schema/context</span>
+        <span class=err>http://www.springframework.org/schema/context/spring\-context\-4.2.xsd&#34;\</span><span class=nt>&gt;</span>
+
+    <span class=nt>&lt;context:component-scan</span> <span class=na>base-package=</span><span class=s>&#34;com.nnngu&#34;</span> <span class=nt>/&gt;</span>
+
+    <span class=nt>&lt;bean</span> <span class=na>id=</span><span class=s>&#34;zoo&#34;</span> <span class=na>class=</span><span class=s>&#34;com.nnngu.bean.Zoo&#34;</span> <span class=nt>/&gt;</span>
+    <span class=nt>&lt;bean</span> <span class=na>id=</span><span class=s>&#34;tiger&#34;</span> <span class=na>class=</span><span class=s>&#34;com.nnngu.domain.Tiger&#34;</span> <span class=nt>/&gt;</span>
+    <span class=nt>&lt;bean</span> <span class=na>id=</span><span class=s>&#34;monkey&#34;</span> <span class=na>class=</span><span class=s>&#34;com.nnngu.domain.Monkey&#34;</span> <span class=nt>/&gt;</span>
+
+<span class=nt>&lt;/beans&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>注意上面代码中的<code>&lt;context:component-scan base-package="com.nnngu" /></code> ，作用是告诉Spring我要使用注解了，Spring会自动扫描<code>com.nnngu</code>路径下的注解。</p>
+<p>之前在<code>zoo</code>这个bean里面应当注入的两个属性<code>tiger</code>、<code>monkey</code>，现在不需要注入了。再看一下 <code>Zoo.java</code> 也很方便，把<code>getter/setter</code> 都可以去掉：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Zoo</span>
+<span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Tiger</span> <span class=n>tiger</span><span class=o>;</span>
+
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Monkey</span> <span class=n>monkey</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span> <span class=o>+</span> <span class=s>&#34;\\n&#34;</span> <span class=o>+</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>上面代码中<code>@Autowired</code>注解的意思是，当Spring发现<code>@Autowired</code>注解时，将自动在代码上下文中找到和其匹配（默认是类型匹配）的Bean，并自动注入到相应的地方去。</p>
+<p>（有一个细节性的问题是，假如配置文件的bean里面有两个property，<code>Zoo.java</code>里面又去掉了属性的<code>getter/setter</code>并使用<code>@Autowired</code>注解标注这两个属性那会怎么样？答案是Spring会按照xml优先的原则去<code>Zoo.java</code>中寻找这两个属性的<code>getter/setter</code>，导致的结果就是初始化bean报错。）</p>
+<p>此时如果我把<code>.xml</code>文件的<code>&lt;bean id="tiger" class="com.nnngu.domain.Tiger" /></code>和<code>&lt;bean id="monkey" class="com.nnngu.domain.Monkey" /></code> 去掉，再运行，会抛出如下异常：<code>org.springframework.beans.factory.BeanCreationException: Could not autowire field</code>。因为，<code>@Autowired</code>注解要去寻找的是一个<code>bean</code>，Tiger 和 Monkey 的<code>bean</code>定义都给去掉了，自然就不是一个<code>bean</code>了，Spring容器找不到也很好理解。那么，如果属性的<code>bean</code>找不到，我又不想让Spring容器抛出异常，而只显示null，可以吗？答案是可以的，只要将<code>@Autowired</code>注解的required属性设置为 false 即可，如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Zoo</span>
+<span class=o>{</span>
+    <span class=nd>@Autowired</span><span class=o>(</span><span class=n>required</span> <span class=o>=</span> <span class=kc>false</span><span class=o>)</span>
+    <span class=kd>private</span> <span class=n>Tiger</span> <span class=n>tiger</span><span class=o>;</span>
+
+    <span class=nd>@Autowired</span><span class=o>(</span><span class=n>required</span> <span class=o>=</span> <span class=kc>false</span><span class=o>)</span>
+    <span class=kd>private</span> <span class=n>Monkey</span> <span class=n>monkey</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span> <span class=o>+</span> <span class=s>&#34;\\n&#34;</span> <span class=o>+</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>此时，就算找不到 tiger、monkey 这两个属性的 <code>bean</code>，Spring容器也不再抛出异常，而是认为这两个属性为null。</p>
+<h2 id=autowired接口注入>@Autowired接口注入</h2>
+<p>上面的比较简单，我们只是简单注入一个Java类，那么如果有一个接口，有多个实现，Bean里引用的是接口名，又该怎么做呢？比如有一个Car接口：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>interface</span> <span class=nc>Car</span>
+<span class=o>{</span>
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>carName</span><span class=o>();</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>两个实现类BMW和Benz：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>BMW</span> <span class=kd>implements</span> <span class=n>Car</span>
+<span class=o>{</span>
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>carName</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=s>&#34;BMW car&#34;</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>Benz</span> <span class=kd>implements</span> <span class=n>Car</span>
+<span class=o>{</span>
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>carName</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=s>&#34;Benz car&#34;</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>写一个CarFactory，引用Car：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>CarFactory</span>
+<span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Car</span> <span class=n>car</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>car</span><span class=o>.</span><span class=na>carName</span><span class=o>();</span>
+    <span class=o>}</span>
+
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>不用说，一定是报错的，Car接口有两个实现类，Spring并不知道应当引用哪个实现类。这种情况通常有两个解决办法：</p>
+<p>1、删除其中一个实现类，Spring会自动去base-package下寻找Car接口的实现类，发现Car接口只有一个实现类，便会直接引用这个实现类。</p>
+<p>2、实现类就是有多个该怎么办？此时可以使用<code>@Qualifier</code>注解：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>CarFactory</span>
+<span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=nd>@Qualifier</span><span class=o>(</span><span class=s>&#34;BMW&#34;</span><span class=o>)</span>
+    <span class=kd>private</span> <span class=n>Car</span> <span class=n>car</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>car</span><span class=o>.</span><span class=na>carName</span><span class=o>();</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>注意<code>@Qualifier</code>注解括号里面的应当是Car接口实现类的类名，我之前试的时候一直以为是bean的名字，所以写了"bMW"，结果一直报错。</p>
+<h2 id=resource>@Resource</h2>
+<p>把<code>@Resource</code>注解放在<code>@Autowired</code>下面说，是因为它们的作用非常相似。先看一下<code>@Resource</code>，直接在<code>Zoo.java</code>中写：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Zoo</span>
+<span class=o>{</span>
+    <span class=nd>@Resource</span><span class=o>(</span><span class=n>name</span> <span class=o>=</span> <span class=s>&#34;tiger&#34;</span><span class=o>)</span>
+    <span class=kd>private</span> <span class=n>Tiger</span> <span class=n>tiger</span><span class=o>;</span>
+
+    <span class=nd>@Resource</span><span class=o>(</span><span class=n>type</span> <span class=o>=</span> <span class=n>Monkey</span><span class=o>.</span><span class=na>class</span><span class=o>)</span>
+    <span class=kd>private</span> <span class=n>Monkey</span> <span class=n>monkey</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span> <span class=o>+</span> <span class=s>&#34;\n&#34;</span> <span class=o>+</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>说一下<code>@Resource</code>的装配顺序：</p>
+<ol>
+<li>
+<p><code>@Resource</code>后面如果没有任何内容，默认是通过name属性去匹配bean，找不到再按type去匹配；</p>
+</li>
+<li>
+<p>指定了name和type则根据指定的name和type去匹配bean，任何一个不匹配都将报错；</p>
+</li>
+</ol>
+<p>然后，区分一下<code>@Autowired</code>和<code>@Resource</code>两个注解的区别：</p>
+<ol>
+<li>
+<p><code>@Autowired</code>默认按照byType方式进行bean匹配，<code>@Resource</code>默认按照byName方式进行bean匹配；</p>
+</li>
+<li>
+<p><code>@Autowired</code>是Spring的注解，<code>@Resource</code>是J2EE的注解，这个可以看一下导入注解的时候这两个注解的包名就一清二楚了</p>
+</li>
+</ol>
+<p>Spring属于第三方的，J2EE是Java自己的东西，因此，建议使用<code>@Resource</code>注解，以减少代码和Spring之间的耦合。</p>
+<h2 id=service>@Service</h2>
+<p>上面动物园这个例子，还可以继续简化，因为Spring的配置文件里面还有三个bean，下一步的简化是把这三个bean也给去掉，使得Spring配置文件里面只有一个自动扫描的标签。这样做增强了Java代码的内聚性并进一步减少配置文件。</p>
+<p>先看一下配置文件（三个bean都删除了）：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=err>&lt;</span>?xml version\=&#34;1.0&#34; encoding\=&#34;UTF-8&#34;?\&gt;
+<span class=nt>&lt;beans</span> <span class=err>xmlns:xsi\=&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>   
+    <span class=err>xmlns\=&#34;http://www.springframework.org/schema/beans&#34;</span>  
+    <span class=err>xmlns:context\=&#34;http://www.springframework.org/schema/context&#34;</span>  
+    <span class=err>xsi:schemaLocation\=&#34;http://www.springframework.org/schema/beans</span> 
+        <span class=err>http://www.springframework.org/schema/beans/spring\-beans\-4.2.xsd</span>
+        <span class=err>http://www.springframework.org/schema/context</span>
+        <span class=err>http://www.springframework.org/schema/context/spring\-context\-4.2.xsd&#34;\</span><span class=nt>&gt;</span>
+
+    <span class=nt>&lt;context:component</span><span class=err>\-scan</span> <span class=err>base\-package\=&#34;com.nnngu&#34;</span> <span class=err>/\</span><span class=nt>&gt;</span>
+
+<span class=err>&lt;</span>/beans\&gt;
+</code></pre></td></tr></table>
+</div>
+</div><p>下面以<code>Zoo.java</code>为例，其余的<code>Monkey.java</code>和<code>Tiger.java</code>都一样：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=nd>@Service</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>Zoo</span>
+<span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Tiger</span> <span class=n>tiger</span><span class=o>;</span>
+
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Monkey</span> <span class=n>monkey</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span> <span class=o>+</span> <span class=s>&#34;\\n&#34;</span> <span class=o>+</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这样，<code>Zoo.java</code>在Spring容器中存在的形式就是<code>zoo</code>，即可以通过 <code>ApplicationContext</code>的<code>getBean("zoo")</code>方法来得到<code>Zoo.java</code>。</p>
+<p><code>@Service</code>注解，其实做了两件事情：</p>
+<ol>
+<li>
+<p>声明<code>Zoo.java</code>是一个bean，这点很重要，因为<code>Zoo.java</code>是一个bean，其他的类才可以使用<code>@Autowired</code>将Zoo作为一个成员变量自动注入；</p>
+</li>
+<li>
+<p><code>Zoo.java</code>在bean中的id是<code>zoo</code>，即类名且首字母小写；</p>
+</li>
+</ol>
+<p>如果我不想用这种形式，而想让<code>Zoo.java</code>在Spring容器中的名字就叫做<code>Zoo</code>，可以吗？答案是可以的：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=nd>@Service</span><span class=o>(</span><span class=s>&#34;Zoo&#34;</span><span class=o>)</span>
+<span class=nd>@Scope</span><span class=o>(</span><span class=s>&#34;prototype&#34;</span><span class=o>)</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>Zoo</span>
+<span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Monkey</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=nd>@Autowired</span>
+    <span class=kd>private</span> <span class=n>Tiger</span> <span class=n>tiger</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=n>String</span> <span class=nf>toString</span><span class=o>()</span>
+    <span class=o>{</span>
+        <span class=k>return</span> <span class=n>tiger</span> <span class=o>+</span> <span class=s>&#34;\\n&#34;</span> <span class=o>+</span> <span class=n>monkey</span><span class=o>;</span>
+    <span class=o>}</span>
+
+<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这样，就可以通过<code>ApplicationContext</code>的<code>getBean("Zoo")</code>方法来得到<code>Zoo.java</code>了。</p>
+<p>这里我还多加了一个<code>@Scope</code>注解，应该很好理解。因为Spring默认产生的bean是单例的，假如我不想使用单例怎么办，xml文件里面可以在bean里面配置scope属性。注解也一样，配置<code>@Scope</code>即可，默认是"singleton"即单例，&ldquo;prototype"表示原型即每次都会new一个新的对象出来。</p>
+<h2 id=补充细节>补充细节</h2>
+<p>最后再补充一个细节。假如animal包下有Tiger，domain包下也有Tiger，它们二者都加了<code>@Service</code>注解，那么在<code>Zoo.java</code>中即使明确表示我要引用的是domain包下的Tiger，程序运行的时候依然会报错。</p>
+<p>因为两个Tiger都使用<code>@Service</code>注解标注，意味着两个bean的名字都是"tiger&rdquo;，那么我在<code>Zoo.java</code>中自动装配的是哪个tiger呢？不明确，因此，Spring容器会抛出<code>ConflictingBeanDefinitionException</code>异常。</p>
+<hr>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

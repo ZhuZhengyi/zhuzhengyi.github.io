@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Linux内存管理 简介 kernel的内存管理是个2层分层系统，从下往上依次为： 第一层为全部物理内存：其管理器为伙伴系统，最小管理单位为pag">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/21.linux/linux%E5%86%85%E6%A0%B8%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%BC%99%E4%BC%B4%E7%AE%97%E6%B3%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Linux内存管理">
-<meta property="og:description" content>
+<meta property="og:description" content="Linux内存管理 简介 kernel的内存管理是个2层分层系统，从下往上依次为： 第一层为全部物理内存：其管理器为伙伴系统，最小管理单位为pag">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux%E5%86%85%E6%A0%B8%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%BC%99%E4%BC%B4%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-06-04T10:26:13+08:00">
 <meta property="article:modified_time" content="2022-06-04T10:26:13+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Linux内存管理">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-06-04T10:26:13+08:00">
+<meta itemprop=description content="Linux内存管理 简介 kernel的内存管理是个2层分层系统，从下往上依次为： 第一层为全部物理内存：其管理器为伙伴系统，最小管理单位为pag"><meta itemprop=datePublished content="2022-06-04T10:26:13+08:00">
 <meta itemprop=dateModified content="2022-06-04T10:26:13+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2677">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Linux内存管理">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Linux内存管理 简介 kernel的内存管理是个2层分层系统，从下往上依次为： 第一层为全部物理内存：其管理器为伙伴系统，最小管理单位为pag"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,167 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#buddy算法基本原理>Buddy算法基本原理</a>
+<ul>
+<li><a href=#特点>特点</a></li>
+</ul>
+</li>
+<li><a href=#slab算法>Slab算法</a>
+<ul>
+<li><a href=#slab分配算法>slab分配算法</a></li>
+<li><a href=#内存碎片检查方法>内存碎片检查方法</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=linux内存管理>Linux内存管理</h1>
+<h2 id=简介>简介</h2>
+<p>kernel的内存管理是个2层分层系统，从下往上依次为：</p>
+<ul>
+<li>第一层为全部物理内存：其管理器为伙伴系统，最小管理单位为page；</li>
+<li>第二层为slab page：其管理器为slab/slub，最小管理单位为2的m次幂的字节块；</li>
+</ul>
+<h2 id=buddy算法基本原理>Buddy算法基本原理</h2>
+<ul>
+<li>
+<p>伙伴算法（Buddy system）把所有的空闲页框分为11个块链表，每块链表中分布包含特定的连续页框地址空间，第0个块链表包含大小为2 ^ 0个连续的页框，第1个块链表中，每个链表元素包含2 ^ 1个页框大小的连续地址空间，….，第10个块链表中，每个链表元素包含2 ^ 10个页框大小的连续地址空间。每个链表中元素的个数在系统初始化时决定，在执行过程中，动态变化。</p>
+</li>
+<li>
+<p>伙伴算法每次只能分配2的幂次页的空间，比如一次分配1页，2页，4页，8页，…，1024页(2^10)等等，每页(pageSize)大小一般为4K，因此，伙伴算法最多一次能够分配4M的内存空间。</p>
+</li>
+<li>
+<p>两个内存块，大小相同，地址连续，同属于一个大块区域。（第0块和第1块是伙伴，第2块和第3块是伙伴，但第1块和第2块不是伙伴）</p>
+</li>
+<li>
+<p>内核空间分为三种区，DMA，NORMAL，HIGHMEM，对于每一种区，都有对应的伙伴算法。</p>
+</li>
+</ul>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/11-11-47-14-2020-12-11-11-47-08-image.png alt></p>
+<h3 id=特点>特点</h3>
+<p>优点：</p>
+<ul>
+<li>
+<p>较好的解决外部碎片问题</p>
+</li>
+<li>
+<p>当需要分配若干个内存页面时，用于DMA的内存页面必须连续，伙伴算法很好的满足了这个要求</p>
+</li>
+<li>
+<p>只要请求的块不超过512个页面(2K)，内核就尽量分配连续的页面。</p>
+</li>
+</ul>
+<p>缺点：</p>
+<ol>
+<li>
+<p>合并的要求太过严格，只能是满足伙伴关系的块才能合并，比如第1块和第2块就不能合并。</p>
+</li>
+<li>
+<p>碎片问题：一个连续的内存中仅仅一个页面被占用，导致整块内存区都不具备合并的条件</p>
+</li>
+<li>
+<p>浪费问题：伙伴算法只能分配2的幂次方内存区，当需要8K（2页）时，好说，当需要9K时，那就需要分配16K（4页）的内存空间，但是实际只用到9K空间，多余的7K空间就被浪费掉。</p>
+</li>
+<li>
+<p>算法的效率问题： 伙伴算法涉及了比较多的计算还有链表和位图的操作，开销还是比较大的，如果每次2 ^ n大小的伙伴块就会合并到2 ^ (n+1)的链表队列中，那么2 ^ n大小链表中的块就会因为合并操作而减少，但系统随后立即有可能又有对该大小块的需求，为此必须再从2 ^ (n+1)大小的链表中拆分，这样的合并又立即拆分的过程是无效率的。</p>
+</li>
+</ol>
+<h2 id=slab算法>Slab算法</h2>
+<p>高速缓存Slab层
+slab是Linux操作系统的一种内存分配机制。其工作是针对一些经常分配并释放的对象，如进程描述符等，这些对象的大小一般比较小，如果直接采用伙伴系统来进行分配和释放，不仅会造成大量的内存碎片，而且处理速度也太慢。
+而slab分配器是基于对象进行管理的，相同类型的对象归为一类(如进程描述符就是一类)，每当要申请这样一个对象，slab分配器就从一个slab列表中分配一个这样大小的单元出去，而当要释放时，将其重新保存在该列表中，而不是直接返回给伙伴系统，从而避免这些内碎片。slab分配器并不丢弃已分配的对象，而是释放并把它们保存在内存中。当以后又要请求新的对象时，就可以从内存直接获取而不用重复初始化。
+对象高速缓存的组织如右下图所示，高速缓存的内存区被划分为多个slab，每个slab由一个或多个连续的页框组成，这些页框中既包含已分配的对象，也包含空闲的对象。
+在cache和object中加入slab分配器，是在时间和空间上的折中方案。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/24-15-55-57-2022-01-24-15-55-52-image.png alt></p>
+<h3 id=slab分配算法>slab分配算法</h3>
+<p>slab分配算法采用cache 存储内核对象。当创建cache 时，起初包括若干标记为空闲的对象。对象的数量与slab的大小有关。开始，所有对象都标记为空闲。当需要内核数据结构的对象时，可以直接从cache 上直接获取，并将对象初始化为使用。
+下面考虑内核如何将slab分配给表示进程描述符的对象。在Linux系统中，进程描述符的类型是struct task_struct ，其大小约为1.7KB。当Linux 内核创建新任务时，它会从cache 中获得struct task_struct 对象所需要的内存。Cache 上会有已分配好的并标记为空闲的struct task_struct 对象来满足请求。
+Linux 的slab 可有三种状态：
+满的：slab 中的所有对象被标记为使用。
+空的：slab 中的所有对象被标记为空闲。
+部分：slab 中的对象有的被标记为使用，有的被标记为空闲。
+slab 分配器首先从部分空闲的slab 进行分配。如没有，则从空的slab 进行分配。如没有，则从物理连续页上分配新的slab，并把它赋给一个cache ，然后再从新slab 分配空间。
+————————————————
+版权声明：本文为CSDN博主「aurorayqz」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/aurorayqz/article/details/79671785</p>
+<h3 id=内存碎片检查方法>内存碎片检查方法</h3>
+<p>buddyinfo是linuxbuddy系统管理物理内存的debug信息。在linux中使用buddy算法解决物理内存的外碎片问题，其把所有空闲的内存，以2的幂次方的形式，分成11个块链表，分别对应为1、2、4、8、16、32、64、128、256、512、1024个页块。而Linux支持NUMA技术，对于NUMA设备，NUMA系统的结点通常是由一组CPU和本地内存组成，每一个节点都有相应的本地内存，因此buddyinfo 中的Node0表示节点ID；而每一个节点下的内存设备，又可以划分为多个内存区域（zone），因此下面的显示中，对于Node0的内存，又划分类DMA、Normal区域。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># sudo cat /proc/buddyinfo</span>
+Node 0, zone      DMA      <span class=m>1</span>      <span class=m>0</span>      <span class=m>1</span>      <span class=m>0</span>      <span class=m>0</span>      <span class=m>0</span>      <span class=m>1</span>      <span class=m>0</span>      <span class=m>0</span>      <span class=m>1</span>      <span class=m>3</span>
+Node 0, zone    DMA32   <span class=m>1380</span>   <span class=m>1417</span>   <span class=m>2611</span>   <span class=m>6972</span>   <span class=m>3703</span>   <span class=m>1978</span>    <span class=m>585</span>      <span class=m>7</span>      <span class=m>0</span>      <span class=m>0</span>      <span class=m>0</span>
+Node 0, zone   Normal  <span class=m>90233</span> <span class=m>1147352</span> <span class=m>1517090</span> <span class=m>1219299</span> <span class=m>740669</span> <span class=m>285583</span>  <span class=m>49056</span>   <span class=m>2098</span>     <span class=m>13</span>      <span class=m>0</span>      <span class=m>0</span>
+Node 1, zone   Normal <span class=m>159797</span> <span class=m>625159</span> <span class=m>907571</span> <span class=m>870913</span> <span class=m>650684</span> <span class=m>360921</span> <span class=m>124162</span>  <span class=m>20515</span>    <span class=m>867</span>      <span class=m>4</span>      <span class=m>0</span>
+
+
+<span class=c1># extfrag_index文件中显示的数值是除以1000后的结果，当数值越接近1则表示碎片越多，数值越接近-1则表示碎片越少</span>
+$ sudo cat /sys/kernel/debug/extfrag/extfrag_index
+Node 0, zone      DMA -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000
+Node 0, zone    DMA32 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 0.979 0.990
+Node 0, zone   Normal -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 0.989 0.995
+Node 1, zone   Normal -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 0.993
+
+<span class=c1># </span>
+$ sudo cat /sys/kernel/debug/extfrag/unusable_index
+Node 0, zone      DMA 0.000 0.000 0.000 0.001 0.001 0.001 0.001 0.018 0.018 0.018 0.159
+Node 0, zone    DMA32 0.000 0.005 0.013 0.042 0.276 0.527 0.797 0.960 1.000 1.000 1.000
+Node 0, zone   Normal 0.000 0.000 0.068 0.211 0.439 0.714 0.923 0.994 0.999 1.000 1.000
+Node 1, zone   Normal 0.000 0.004 0.041 0.126 0.286 0.521 0.777 0.945 0.996 0.999 1.000
+
+<span class=c1># 被动清理内存碎片, 内核配置需配置：CONFIG_COMPACTION=y</span>
+$ sudo <span class=nb>echo</span> <span class=m>1</span> &gt; /proc/sys/vm/compact_memory
+
+<span class=c1># 主动清理, 清空cache/buffer/memory</span>
+$ sudo sync
+$ sudo <span class=nb>echo</span> <span class=m>3</span> &gt; /proc/sys/vm/drop_caches
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://blog.csdn.net/myhes/article/details/120788821>【小工具】 - linux内存碎片检查和清理_巨魔战将-CSDN博客</a></p>
+</li>
+<li>
+<p><a href="https://blog.csdn.net/aurorayqz/article/details/79671785?spm=1001.2101.3001.6650.3&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7EHighlightScore-3.queryctrv2&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7EHighlightScore-3.queryctrv2&utm_relevant_index=6">Linux是如何避免内存碎片的_aurorayqz的博客-CSDN博客_内存碎片</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

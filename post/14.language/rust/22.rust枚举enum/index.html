@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Rust枚举(enum) 简介 enum是rust中用于表示同一个可能拥有可数不同状态对象的结构； enum包含枚举类型和枚举值, 枚举类型是该枚举">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/rust/22.rust%E6%9E%9A%E4%B8%BEenum/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Rust枚举(enum)">
-<meta property="og:description" content>
+<meta property="og:description" content="Rust枚举(enum) 简介 enum是rust中用于表示同一个可能拥有可数不同状态对象的结构； enum包含枚举类型和枚举值, 枚举类型是该枚举">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/rust/22.rust%E6%9E%9A%E4%B8%BEenum/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2023-06-02T19:58:28+08:00">
 <meta property="article:modified_time" content="2023-06-02T19:58:28+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Rust枚举(enum)">
-<meta itemprop=description content><meta itemprop=datePublished content="2023-06-02T19:58:28+08:00">
+<meta itemprop=description content="Rust枚举(enum) 简介 enum是rust中用于表示同一个可能拥有可数不同状态对象的结构； enum包含枚举类型和枚举值, 枚举类型是该枚举"><meta itemprop=datePublished content="2023-06-02T19:58:28+08:00">
 <meta itemprop=dateModified content="2023-06-02T19:58:28+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="557">
 <meta itemprop=keywords content="language,rust,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Rust枚举(enum)">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Rust枚举(enum) 简介 enum是rust中用于表示同一个可能拥有可数不同状态对象的结构； enum包含枚举类型和枚举值, 枚举类型是该枚举"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,198 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#常用enum>常用Enum</a>
+<ul>
+<li><a href=#optiont>Option<t></a></li>
+<li><a href=#as_ref>as_ref</a></li>
+<li><a href=#as_mut>as_mut</a></li>
+<li><a href=#cow>Cow</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=rust枚举enum>Rust枚举(enum)</h1>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p><code>enum</code>是rust中用于表示同一个可能拥有可数不同状态对象的结构；</p>
+</li>
+<li>
+<p><code>enum</code>包含<code>枚举类型</code>和<code>枚举值</code>, <code>枚举类型</code>是该枚举的类型，包含所有的枚举值，枚举值是枚举类型成员的具体实例；</p>
+</li>
+<li>
+<p><code>enum</code>中的<code>枚举值</code>可以包含任何类型成员；</p>
+</li>
+<li>
+<p>所有枚举值共享同一块内存空间；</p>
+</li>
+<li>
+<p>一般的enum中为了区分不同的枚举值，在头部有一个枚举标记，枚举类型大小等于枚举标记+最大枚举值类型大小；</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>enum</span> <span class=nc>Message</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>Quit</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Move</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>x</span>: <span class=kt>i32</span><span class=p>,</span><span class=w> </span><span class=n>y</span>: <span class=kt>i32</span> <span class=p>},</span><span class=w>
+</span><span class=w>    </span><span class=n>Write</span><span class=p>(</span><span class=nb>String</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=n>ChangeColor</span><span class=p>(</span><span class=kt>i32</span><span class=p>,</span><span class=w> </span><span class=kt>i32</span><span class=p>,</span><span class=w> </span><span class=kt>i32</span><span class=p>),</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>main</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>m1</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Message</span>::<span class=n>Quit</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>m2</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Message</span>::<span class=n>Move</span><span class=p>{</span><span class=n>x</span>:<span class=mi>1</span><span class=p>,</span><span class=n>y</span>:<span class=mi>1</span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>m3</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Message</span>::<span class=n>ChangeColor</span><span class=p>(</span><span class=mi>255</span><span class=p>,</span><span class=mi>255</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id=常用enum>常用Enum</h2>
+<h3 id=optiont>Option<t></h3>
+<ul>
+<li><code>Option&lt;T></code>是rust中最常用的enum，用于表示一个值存在或不存在；</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>enum</span> <span class=nb>Option</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=nb>Some</span><span class=p>(</span><span class=n>T</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=nb>None</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=w> </span><span class=nb>Option</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>as_ref</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=n>T</span><span class=o>&gt;</span><span class=w> </span><span class=c1>//从`&amp;Option&lt;T&gt;`转换为`Option&lt;&amp;T&gt;`
+</span><span class=c1></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>as_mut</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=k>mut</span><span class=w> </span><span class=n>T</span><span class=o>&gt;</span><span class=w> </span><span class=c1>//从&amp;mut Option&lt;T&gt;转换为Option&lt;&amp;mut T&gt; 
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=c1>// unwrap: 当遇到None值时会panic
+</span><span class=c1></span><span class=w>    </span><span class=k>fn</span> <span class=nf>unwrap</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>T</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>match</span><span class=w> </span><span class=bp>self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=nb>Option</span>::<span class=nb>Some</span><span class=p>(</span><span class=n>val</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>val</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=nb>Option</span>::<span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>panic</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;unwrap option None&#34;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>//
+</span><span class=c1></span><span class=k>fn</span> <span class=nf>unwrap_or</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=p>(</span><span class=n>option</span>: <span class=nb>Option</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=p>,</span><span class=w> </span><span class=n>default</span>: <span class=nc>T</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>T</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>match</span><span class=w> </span><span class=n>option</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>default</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=nb>Some</span><span class=p>(</span><span class=n>value</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>value</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>//
+</span><span class=c1></span><span class=k>fn</span> <span class=nf>and_then</span><span class=o>&lt;</span><span class=n>F</span><span class=p>,</span><span class=w> </span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>A</span><span class=o>&gt;</span><span class=p>(</span><span class=n>option</span>: <span class=nb>Option</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=p>,</span><span class=w> </span><span class=n>f</span>: <span class=nc>F</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=w>
+</span><span class=w>        </span><span class=k>where</span><span class=w> </span><span class=n>F</span>: <span class=nb>FnOnce</span><span class=p>(</span><span class=n>T</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>match</span><span class=w> </span><span class=n>option</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>None</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=nb>Some</span><span class=p>(</span><span class=n>value</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>f</span><span class=p>(</span><span class=n>value</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>ok_or</span><span class=o>&lt;</span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>E</span><span class=o>&gt;</span><span class=p>(</span><span class=n>option</span>: <span class=nb>Option</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span><span class=p>,</span><span class=w> </span><span class=n>err</span>: <span class=nc>E</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Result</span><span class=o>&lt;</span><span class=n>T</span><span class=p>,</span><span class=w> </span><span class=n>E</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>match</span><span class=w> </span><span class=n>option</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=nb>Some</span><span class=p>(</span><span class=n>val</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Ok</span><span class=p>(</span><span class=n>val</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Err</span><span class=p>(</span><span class=n>err</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id=as_ref>as_ref</h3>
+<ul>
+<li>从<code>&Option&lt;T></code>转换为<code>Option&lt;&T></code> </li>
+</ul>
+<h3 id=as_mut>as_mut</h3>
+<h3 id=cow>Cow</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>pub</span><span class=w> </span><span class=k>enum</span> <span class=nc>Cow</span><span class=o>&lt;</span><span class=na>&#39;a</span><span class=p>,</span><span class=w> </span><span class=n>B</span><span class=o>&gt;</span><span class=w> 
+</span><span class=w></span><span class=k>where</span><span class=w>
+</span><span class=w>    </span><span class=n>B</span>: <span class=na>&#39;a</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=nb>ToOwned</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=o>?</span><span class=nb>Sized</span><span class=p>,</span><span class=w> 
+</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>Borrowed</span><span class=p>(</span><span class=o>&amp;</span><span class=na>&#39;a</span><span class=w> </span><span class=n>B</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=n>Owned</span><span class=p>(</span><span class=o>&lt;</span><span class=n>B</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=nb>ToOwned</span><span class=o>&gt;</span>::<span class=n>Owned</span><span class=p>),</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://course.rs/basic/compound-type/enum.html>枚举 - Rust语言圣经(Rust Course)</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

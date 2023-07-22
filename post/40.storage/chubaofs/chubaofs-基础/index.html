@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="ChubaoFS 基础 简介 ChubaoFS是一个开源的分布式文件存储系统，同时提供POSIX FS和S3两种访问接口。 2018年由JD TigLab开发，202">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-%E5%9F%BA%E7%A1%80/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="ChubaoFS 基础">
-<meta property="og:description" content>
+<meta property="og:description" content="ChubaoFS 基础 简介 ChubaoFS是一个开源的分布式文件存储系统，同时提供POSIX FS和S3两种访问接口。 2018年由JD TigLab开发，202">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-%E5%9F%BA%E7%A1%80/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ChubaoFS 基础">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="ChubaoFS 基础 简介 ChubaoFS是一个开源的分布式文件存储系统，同时提供POSIX FS和S3两种访问接口。 2018年由JD TigLab开发，202"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1509">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ChubaoFS 基础">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="ChubaoFS 基础 简介 ChubaoFS是一个开源的分布式文件存储系统，同时提供POSIX FS和S3两种访问接口。 2018年由JD TigLab开发，202"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,187 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#特点>特点</a></li>
+<li><a href=#架构>架构</a></li>
+<li><a href=#组件>组件</a></li>
+<li><a href=#基础概念>基础概念</a></li>
+<li><a href=#资源管理>资源管理</a></li>
+<li><a href=#元数据管理>元数据管理</a></li>
+<li><a href=#数据管理>数据管理</a>
+<ul>
+<li><a href=#fuseclient>FuseClient</a></li>
+<li><a href=#s3>S3</a></li>
+<li><a href=#加载volume>加载Volume</a></li>
+<li><a href=#数据修复>数据修复</a></li>
+</ul>
+</li>
+<li><a href=#未来>未来</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=chubaofs-基础>ChubaoFS 基础</h1>
+<hr>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p>ChubaoFS是一个开源的分布式文件存储系统，同时提供<code>POSIX FS</code>和<code>S3</code>两种访问接口。</p>
+</li>
+<li>
+<p>2018年由JD TigLab开发，2020年加入CNCF基金会，现为CNCF沙箱项目；</p>
+</li>
+<li>
+<p>ChubaoFS的设计之初是为大规模容器环境提供分布式的文件存储服务；</p>
+</li>
+</ul>
+<hr>
+<h2 id=特点>特点</h2>
+<ul>
+<li><strong>高可扩展</strong>：ChubaoFS的所有组件都是支持分布式部署，数据资源通过分片实现横向扩展；</li>
+<li><strong>高可靠</strong>：各个资源节点通过multi-raft协议提供的多副本强一致性来保证数据的高可靠；</li>
+<li><strong>多协议支持</strong>：同时支持POSIX FS 和S3 协议；</li>
+<li><strong>大小文件优化</strong>：ChubaoFS对于大小文件在底层，使用不同的方式进行优化，同时兼顾了大小文件的性能和存储开销；</li>
+<li><strong>多写入模式支持</strong>：同时支持顺序写、随机写2种写入模式；</li>
+<li><strong>动态资源调度</strong>：ChubaoFS的资源管理基于负载的动态调度算法，能合理分配资源，调度资源，避免热点；</li>
+<li><strong>部署简便</strong>：各组件部署不依赖其他组件，部署方便；同时提供docker，k8s容器部署组件；</li>
+</ul>
+<hr>
+<h2 id=架构>架构</h2>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/09/18-11-38-03-2021-09-18-11-37-54-image.png alt></p>
+<hr>
+<h2 id=组件>组件</h2>
+<ul>
+<li>
+<p><strong>资源管理节点</strong>(<code>Master</code>)：执行集群资源管理、分配、调度的节点，资源管理节点只参与资源管理和调度，不进行具体的数据读写；</p>
+</li>
+<li>
+<p><strong>元数据节点</strong>(<code>MetaNode</code>)：提供文件元数据(<code>Meta</code>)管理、存储服务的节点，文件元数据包括inode、dentry、extend等，通过分片(<code>MetaParitition</code>)分布到不同的元数据节点，通过multi-raft保证多副本一致性；</p>
+</li>
+<li>
+<p><strong>数据节点</strong>(<code>DataNode</code>)：提供文件数据(<code>Data</code>)管理、存储服务的节点，文件数据通过数据分片(<code>DataPartition</code>)分布到不同的数据节点，通过多副本保证数据高可用；</p>
+</li>
+<li>
+<p><strong>对象存储节点</strong>(<code>ObjectNode</code>): 提供S3访问服务的节点，<code>ObjectNode</code>节点主要提供S3协议解析及uri映射功能，为无状态节点，可以动态部署；</p>
+</li>
+<li>
+<p><strong>Fuse客户端</strong>(<code>Client</code>): Fuse客户端为用户提供POSIX FS文件访问接口；</p>
+</li>
+</ul>
+<hr>
+<h2 id=基础概念>基础概念</h2>
+<ul>
+<li>
+<p><strong>集群</strong>(<code>Cluster</code>)：一组建立副本关系的<code>Master</code>和由其管理的<code>MetaNode</code>, <code>DataNode</code>, <code>ObjectNode</code>节点构成一个集群；</p>
+</li>
+<li>
+<p><strong>卷</strong>（<code>Volume</code>）：卷是一个逻辑视图，每个卷由一组相关的<code>MetaPartition</code>, 数据分组<code>DataPartition</code>组合；</p>
+</li>
+<li>
+<p><strong>数据分片</strong>（<code>DataPartition</code>）: 数据分片是文件数据管理的单元，chubaofs在数据分片为单位来实现数据的分布，复制等管理，从而实现数据的扩展和高可用；</p>
+</li>
+<li>
+<p><strong>元数据分片</strong>（<code>MetaPartition</code>）: 元数据分片是文件元数据管理单元；</p>
+</li>
+<li>
+<p><strong>副本组</strong>（<code>Replicas</code>）：</p>
+</li>
+<li>
+<p><strong>数据集</strong>（<code>Extent</code>）:</p>
+</li>
+</ul>
+<hr>
+<h2 id=资源管理>资源管理</h2>
+<ul>
+<li>
+<p>Master是chubaofs系统中进行资源管理、分配的组件;</p>
+</li>
+<li>
+<p>Master主要管理chubaofs集群中的所有元数据节点(metanode)，数据节点(datanode)及这些节点上的mp,dp等资源；</p>
+</li>
+<li>
+<p>Master通过raft来实现多节点部署时的数据同步，以提供master的高可用；</p>
+</li>
+<li>
+<p>Master只有一个Leader节点提供服务，非Leader节点只作为备份节点，只是作为Leader节点的数据副本；当发生Leader切换时，新当选的Leader提供继续提供服务；</p>
+</li>
+<li>
+<p>Master只参与资源管理和分配，不参与具体的读写流程，轻量化；</p>
+</li>
+<li>
+<p>Master主要管理的资源包括：</p>
+<ul>
+<li>
+<p>MetaNode节点管理；</p>
+</li>
+<li>
+<p>DataNode节点管理；</p>
+</li>
+<li>
+<p>Volume资源管理；</p>
+</li>
+<li>
+<p>用户管理；</p>
+</li>
+<li>
+<p>状态监测；</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id=元数据管理>元数据管理</h2>
+<ul>
+<li></li>
+</ul>
+<hr>
+<h2 id=数据管理>数据管理</h2>
+<ul>
+<li>
+<hr>
+</li>
+</ul>
+<h3 id=fuseclient>FuseClient</h3>
+<hr>
+<h3 id=s3>S3</h3>
+<hr>
+<h3 id=加载volume>加载Volume</h3>
+<hr>
+<h3 id=数据修复>数据修复</h3>
+<hr>
+<h2 id=未来>未来</h2>
+<ul>
+<li>
+<p>metanode内存优化；</p>
+</li>
+<li>
+<p>datanode nvme+spdk优化；</p>
+</li>
+<li>
+<p>网络库优化；</p>
+</li>
+<li>
+<p>raft 优化；</p>
+</li>
+<li>
+<p>web console；</p>
+</li>
+<li>
+<p>EC node；</p>
+</li>
+</ul>
+<hr>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=http://chubao.io/>http://chubao.io/</a></li>
+<li><a href=https://chubaofs.readthedocs.io/>https://chubaofs.readthedocs.io/</a></li>
+<li><a href=https://www.cncf.io/projects/chubaofs/>ChubaoFS | Cloud Native Computing Foundation</a></li>
+<li><a href=https://github.com/chubaofs/chubaofs>GitHub - chubaofs/chubaofs: ChubaoFS (abbrev. CBFS) is a cloud native distributed file system and object store.</a></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

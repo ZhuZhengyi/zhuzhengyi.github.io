@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="k8s网络模型 简介 Kubernetes 要求所有的网络插件实现必须满足如下要求： 所有的 Pod 可以与任何其他 Pod 直接通信，无需使用 NAT 映射（network address transla">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="k8s网络模型">
-<meta property="og:description" content>
+<meta property="og:description" content="k8s网络模型 简介 Kubernetes 要求所有的网络插件实现必须满足如下要求： 所有的 Pod 可以与任何其他 Pod 直接通信，无需使用 NAT 映射（network address transla">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="k8s网络模型">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="k8s网络模型 简介 Kubernetes 要求所有的网络插件实现必须满足如下要求： 所有的 Pod 可以与任何其他 Pod 直接通信，无需使用 NAT 映射（network address transla"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="892">
 <meta itemprop=keywords content="cloudnative,k8s,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="k8s网络模型">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="k8s网络模型 简介 Kubernetes 要求所有的网络插件实现必须满足如下要求： 所有的 Pod 可以与任何其他 Pod 直接通信，无需使用 NAT 映射（network address transla"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,137 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#linux-network-namespace>Linux network namespace</a></li>
+<li><a href=#pod-to-pod的网络>Pod-to-Pod的网络</a></li>
+<li><a href=#service>service</a></li>
+<li><a href=#kube-proxy>kube-proxy</a></li>
+<li><a href=#ingress>ingress</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=k8s网络模型>k8s网络模型</h1>
+<h2 id=简介>简介</h2>
+<p>Kubernetes 要求所有的网络插件实现必须满足如下要求：</p>
+<ul>
+<li>所有的 Pod 可以与任何其他 Pod 直接通信，无需使用 NAT 映射（network address translation）</li>
+<li>所有节点可以与所有 Pod 直接通信，无需使用 NAT 映射</li>
+<li>Pod 内部获取到的 IP 地址与其他 Pod 或节点与其通信时的 IP 地址是同一个</li>
+</ul>
+<p>在这些限制条件下，需要解决如下四种完全不同的网络使用场景的问题：</p>
+<ol>
+<li>Container-to-Container 的网络</li>
+<li>Pod-to-Pod 的网络</li>
+<li>Pod-to-Service 的网络</li>
+<li>Internet-to-Service 的网络</li>
+</ol>
+<h2 id=linux-network-namespace>Linux network namespace</h2>
+<ul>
+<li>
+<p>Linux系统中，每一个进程都在一个 <a href=http://man7.org/linux/man-pages/man8/ip-netns.8.html>network namespace (opens new window)</a>中进行通信，</p>
+</li>
+<li>
+<p>network namespace 是一个独立的网络堆栈；</p>
+</li>
+<li>
+<p>默认情况下，Linux 将所有的进程都分配到 root network namespace，以使得进程可以访问外部网络；</p>
+</li>
+<li>
+<p>Kubernetes 为每一个 Pod 都创建了一个 network namespace。具体做法是，把一个 Docker 容器当做 “Pod Container” 用来获取 network namespace，在创建 Pod 中新的容器时，都使用 docker run 的 <code>--network:container</code> 功能来加入该 network namespace</p>
+</li>
+</ul>
+<h2 id=pod-to-pod的网络>Pod-to-Pod的网络</h2>
+<p>同节点内，pod-pod通信</p>
+<p><img src=https://kuboard.cn/assets/img/pod-to-pod-same-node.90e4d5a2.gif alt=K8S教程_Kubernetes网络模型_同节点上Pod之间发送数据包></p>
+<p>不同节点，pod-pod</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/20-16-53-41-pod-to-pod-different-nodes.4187b249.gif alt></p>
+<h2 id=service>service</h2>
+<ul>
+<li>
+<p>k8s的<code>pod</code>是可变的，<code>sevice</code>为最终用户提供了一个不可变的访问方式；</p>
+</li>
+<li>
+<p>一个service对应一组pod，这些pod可动态变化，组成微服务；</p>
+</li>
+<li>
+<p>service通过selector和pod对应，在k8s会使用endpoint来</p>
+</li>
+<li>
+<p>service有两种实现类型：</p>
+<ul>
+<li>
+<p>ClusterIP：</p>
+</li>
+<li>
+<p>NodePort：</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id=kube-proxy>kube-proxy</h2>
+<ul>
+<li>
+<p>Kube-proxy 是 kubernetes 工作节点上的一个网络代理组件，运行在每个node上；</p>
+</li>
+<li>
+<p>Kube-proxy维护节点上的网络规则，实现了Kubernetes Service 概念的一部分 ；</p>
+</li>
+<li>
+<p>使发往 Service 的流量（通过ClusterIP和端口）负载均衡到正确的后端Pod；</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>## 查看kube-proxy</span>
+kubectl get pods -n kube-system -o wide <span class=p>|</span> grep proxy
+<span class=c1>## 查看kube-proxy当前模式</span>
+kubectl logs kube-proxy-4hw9j -n kube-system
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=ingress>ingress</h2>
+<ul>
+<li>ingress是</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>## 查看ingress</span>
+kubectl get ingress --all-namespaces
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://kuboard.cn/learning/k8s-intermediate/service/network.html#kubernetes%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5>Kubernetes网络模型 | Kuboard官网</a></p>
+</li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/337806843>https://zhuanlan.zhihu.com/p/337806843</a></p>
+</li>
+<li>
+<p><a href=https://xie.infoq.cn/article/0fff4f0bc79a1a24809e60887>深入理解Kubernetes的Service：回归本源的场景需求_Kubernetes_韩超_InfoQ写作社区</a></p>
+</li>
+<li>
+<p><a href=https://chenjiandongx.me/2021/02/06/k8s-ipvs-mode/>Kubernetes 修改 kube-porxy ipvs 模式 | dongdong&rsquo;s blog</a></p>
+</li>
+<li>
+<p><a href=https://its401.com/article/qq_35745940/120445659>Kubernetes（k8s）kube-proxy、Service详解_匠人精神，持之以恒！-程序员ITS401 - 程序员ITS401</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

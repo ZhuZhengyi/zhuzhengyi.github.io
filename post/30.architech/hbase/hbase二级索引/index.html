@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="HBase二级索引 简介 协处理器实现Coprocessor CoProcessor相当于HBase的Observer+hook，目前支持Mast">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hbase/hbase%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="HBase二级索引">
-<meta property="og:description" content>
+<meta property="og:description" content="HBase二级索引 简介 协处理器实现Coprocessor CoProcessor相当于HBase的Observer+hook，目前支持Mast">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hbase/hbase%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T12:59:52+08:00">
 <meta property="article:modified_time" content="2021-10-10T12:59:52+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="HBase二级索引">
-<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T12:59:52+08:00">
+<meta itemprop=description content="HBase二级索引 简介 协处理器实现Coprocessor CoProcessor相当于HBase的Observer+hook，目前支持Mast"><meta itemprop=datePublished content="2021-10-10T12:59:52+08:00">
 <meta itemprop=dateModified content="2021-10-10T12:59:52+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="491">
 <meta itemprop=keywords content="architech,hbase,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="HBase二级索引">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="HBase二级索引 简介 协处理器实现Coprocessor CoProcessor相当于HBase的Observer+hook，目前支持Mast"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,58 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#协处理器实现coprocessor>协处理器实现Coprocessor</a></li>
+<li><a href=#客户端自主设置二级索引表>客户端自主设置二级索引表</a></li>
+<li><a href=#已实现方案>已实现方案</a>
+<ul>
+<li><a href=#phoneix>Phoneix</a></li>
+<li><a href=#hive>Hive</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=hbase二级索引>HBase二级索引</h1>
+<h2 id=简介>简介</h2>
+<h2 id=协处理器实现coprocessor>协处理器实现Coprocessor</h2>
+<p>CoProcessor相当于HBase的Observer+hook，目前支持MasterObserver、RegionObserver和WALObserver，基本上对于HBase Table的管理、数据的Put、Delete、Get等操作都可以找到对应的pre<em><strong>和post</strong></em>。这样如果需要对于某一项Column建立Secondary Indexing，就可以在Put、Delete的时候，将其信息更新到另外一张索引表中。</p>
+<h2 id=客户端自主设置二级索引表>客户端自主设置二级索引表</h2>
+<ul>
+<li>
+<p>设置主表的TTL(Time To Live)比索引表小一点，让其略早一点消亡。</p>
+</li>
+<li>
+<p>不要在IndexingTable存储Value值，即删除如图2所示的val列。</p>
+</li>
+<li>
+<p>Put操作时，对于操作的主表的所有列，使用同一的Local TimeStamp的值，更新到Indexing Table，然后使用该TimeStamp插入主表数据。</p>
+</li>
+<li>
+<p>Delete操作时，首先操作主表的数据，然后再去更新Indexing Table的数据。</p>
+</li>
+</ul>
+<h2 id=已实现方案>已实现方案</h2>
+<h3 id=phoneix>Phoneix</h3>
+<h3 id=hive>Hive</h3>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.jianshu.com/p/3bbb3d88dc6a>HBase二级索引总结 - 简书</a></p>
+</li>
+<li>
+<p><a href=https://segmentfault.com/a/1190000019794306>HBase二级索引方案 - 大数据学习笔记 - SegmentFault 思否</a></p>
+</li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/43972378>https://zhuanlan.zhihu.com/p/43972378</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

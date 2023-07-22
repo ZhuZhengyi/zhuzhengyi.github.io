@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Kademlia算法 简介 Kademlia算法是2002年由Petar Maymounkov 和 David Mazières 所设计，以异或距离来对哈希表进行分层是其特点 Kad">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/13.algorithm/kademlia%E7%AE%97%E6%B3%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Kademlia算法">
-<meta property="og:description" content>
+<meta property="og:description" content="Kademlia算法 简介 Kademlia算法是2002年由Petar Maymounkov 和 David Mazières 所设计，以异或距离来对哈希表进行分层是其特点 Kad">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/13.algorithm/kademlia%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-06-12T20:44:24+08:00">
 <meta property="article:modified_time" content="2022-06-12T20:44:24+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Kademlia算法">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-06-12T20:44:24+08:00">
+<meta itemprop=description content="Kademlia算法 简介 Kademlia算法是2002年由Petar Maymounkov 和 David Mazières 所设计，以异或距离来对哈希表进行分层是其特点 Kad"><meta itemprop=datePublished content="2022-06-12T20:44:24+08:00">
 <meta itemprop=dateModified content="2022-06-12T20:44:24+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="4336">
 <meta itemprop=keywords content="algorithm,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Kademlia算法">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Kademlia算法 简介 Kademlia算法是2002年由Petar Maymounkov 和 David Mazières 所设计，以异或距离来对哈希表进行分层是其特点 Kad"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,185 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a>
+<ul>
+<li><a href=#1关键问题>1）关键问题</a></li>
+<li><a href=#2节点的要素>2）节点的要素</a></li>
+<li><a href=#3文件的存储及查找>3）文件的存储及查找</a></li>
+<li><a href=#4节点的异或距离>4）节点的异或距离</a></li>
+<li><a href=#5节点定位>5）节点定位</a></li>
+<li><a href=#6算法的三个参数keyspacek和α>6）算法的三个参数：keyspace，k和α</a></li>
+<li><a href=#7节点的指令>7）节点的指令</a></li>
+<li><a href=#8k-bucket的维护及更新机制>8)k-bucket的维护及更新机制</a></li>
+<li><a href=#9总结>9）总结</a></li>
+</ul>
+</li>
+<li><a href=#参考文献>参考文献</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=kademlia算法>Kademlia算法</h1>
+<hr>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p>Kademlia算法是2002年由Petar Maymounkov 和 David Mazières 所设计，以异或距离来对哈希表进行分层是其特点</p>
+</li>
+<li>
+<p>Kademlia后来被eMule、BitTorrent等P2P软件采用作为底层算法。</p>
+</li>
+<li>
+<p>Kademlia可以作为信息安全技术的奠基之一。<br>
+Kademlia的优点在于：</p>
+</li>
+</ul>
+<ul>
+<li>对于任意一个有[ 2(n−1) ,2𝑛)个节点的网络，最多只需要n步搜索即可找到目标节点；</li>
+<li>K-bucket的更新机制一定程度上保持了网络的活性和安全性。</li>
+</ul>
+<p>Kademlia算法是一种分布式存储及路由的算法。</p>
+<p>什么是分布式存储？试想一下，一所1000人的学校，现在学校突然决定拆掉图书馆（不设立中心化的服务器），将图书馆里所有的书都分发到每位学生手上（所有的文件分散存储在各个节点上）。即是所有的学生，共同组成了一个分布式的图书馆。</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-795f3af7231108b7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/800/format/webp alt></p>
+<p>由中心图书馆到分布式图书馆</p>
+<p>在这种场景下，有几个关键的问题需要回答。</p>
+<h3 id=1关键问题>1）关键问题</h3>
+<ol>
+<li>每个同学手上都分配哪些书。即如何分配存储内容到各个节点，新增/删除内容如何处理。</li>
+<li>当你需要找到一本书，譬如《分布式算法》的时候，如何知道哪位同学手上有《分布式算法》（对1000个人挨个问一遍，“你有没有《分布式算法》？”，显然是个不经济的做法），又如何联系上这位同学。即一个节点如果想获取某个特定的文件，如何找到存储文件的节点/地址/路径。</li>
+</ol>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-8b12f9959fa3144f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/358/format/webp alt></p>
+<p>如何寻找需要的书籍？</p>
+<p>接下来，让我们来看看Kademlia算法如何巧妙地解决这些问题。</p>
+<h3 id=2节点的要素>2）节点的要素</h3>
+<p>首先我们来看看每个同学（节点）都有哪些属性：</p>
+<ul>
+<li>学号（Node ID，2进制，160位）</li>
+<li>手机号码（节点的IP地址及端口）</li>
+</ul>
+<p>每个同学会维护以下内容：</p>
+<ul>
+<li>从图书馆分发下来的书本（被分配到需要存储的内容），每本书当然都有书名和书本内容（内容以&lt;key, value>对的形式存储，可以理解为文件名和文件内容）；</li>
+<li>一个通讯录，包含一小部分其他同学的学号和手机号，通讯录按学号分层（一个路由表，称为“k-bucket”，按Node ID分层，记录有限个数的其他节点的ID和IP地址及端口）。</li>
+</ul>
+<p>根据上面那个类比，可以看看这个表格：</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-ac0338100a380c61.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/601/format/webp alt></p>
+<p>概念对比</p>
+<p><em>（Hash的概念解释，可参见<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fbaike.baidu.com%2Fitem%2F%25E5%2593%2588%25E5%25B8%258C%25E7%25AE%2597%25E6%25B3%2595%2F4960188">百度百科-哈希算法</a>）</em></p>
+<p><em>关于为什么不是每个同学都有全量通讯录（每个节点都维护全量路由信息）：其一，分布式系统中节点的进入和退出是相当频繁的，每次有变动时都全网广播通讯录更新，通讯量会很大；其二，一旦任意一个同学被坏人绑架了（节点被黑客攻破），则坏人马上就拥有了所有人的手机号码，这并不安全。</em></p>
+<h3 id=3文件的存储及查找>3）文件的存储及查找</h3>
+<p>原来收藏在图书馆里，按索引号码得整整齐齐的书，以一种什么样的方式分发到同学们手里呢？</p>
+<p>大致的原则，包括：</p>
+<p>    1）书本能够比较均衡地分布在同学们的手里，不会出现部分同学手里书特别多、而大部分同学连一本书都没有的情况；</p>
+<p>    2）同学想找一本特定的书的时候，能够一种相对简单的索引方式找到这本书。<br>
+Kademlia作了下面这种安排：<br>
+假设《分布式算法》这本书的书名的hash值是 <em>00010000</em>，那么这本书就会被要求存在学号为<em>00010000</em>的同学手上。（这要求hash算法的值域与node ID的值域一致。Kademlia的Node ID是160位2进制。这里的示例对Node ID进行了简略）<br>
+但还得考虑到会有同学缺勤。万一<em>00010000</em>今天没来上学（节点没有上线或彻底退出网络），那《分布式算法》这本书岂不是谁都拿不到了？那算法要求这本书不能只存在一个同学手上，而是被要求同时存储在学号最接近<em>00010000</em>的k位同学手上，即<em>00010001</em>、<em>00010010</em>、<em>00010011</em>…等同学手上都会有这本书。</p>
+<p>同样地，当你需要找《分布式算法》这本书时，将书名hash一下，得到 <em>00010000</em>，这个便是索书号，你就知道该找哪（几）位同学了。剩下的问题，就是找到这（几）位同学的手机号。</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-54dfcb165392638e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/628/format/webp alt></p>
+<p>书籍搜索定位</p>
+<h3 id=4节点的异或距离>4）节点的异或距离</h3>
+<p>由于你手上只有一部分同学的通讯录，你很可能并没有<em>00010000</em>的手机号（IP地址）。那如何联系上目标同学呢？</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-41d8839bc652fea1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/338/format/webp alt></p>
+<p>通讯录上并没有目标同学的情况</p>
+<p>一个可行的思路就是在你的通讯录里找到一位拥有目标同学的联系方式的同学。前面提到，每位同学手上的通讯录都是按距离分层的。算法的设计是，如果一个同学离你越近，你手上的通讯录里存有ta的手机号码的概率越大。而算法的核心的思路就可以是：当你知道目标同学Z与你之间的距离，你可以在你的通讯录上先找到一个你认为与同学Z最相近的同学B，请同学B再进一步去查找同学Z的手机号。</p>
+<p>上文提到的距离，是学号（Node ID）之间的异或距离(XOR distance）。异或是针对yes/no或者二进制的运算.</p>
+<blockquote>
+<p>异或的运算法则为：0⊕0=0，1⊕0=1，0⊕1=1，1⊕1=0（同为0，异为1）<br>
+<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fbaike.baidu.com%2Fitem%2F%25E5%25BC%2582%25E6%2588%2596%2F10993677%3Ffr%3Daladdin">百度百科-异或</a></p>
+</blockquote>
+<p>举2个例子：<br>
+<em>01010000</em>与<em>01010010</em>距离（即是2个ID的异或值）为<em>00000010</em>（换算为十进制即为2）；<br>
+<em>01000000</em>与<em>00000001</em>距离为<em>01000001</em>（换算为十进制即为26+1，即65）；<br>
+如此类推。</p>
+<p>那通讯录是如何按距离分层呢？下面的示例会告诉你，按异或距离分层，基本上可以理解为按位数分层。设想以下情景：<br>
+以<em>0000110</em>为基础节点，如果一个节点的ID，前面所有位数都与它相同，只有最后1位不同，这样的节点只有1个——<em>0000111</em>，与基础节点的异或值为<em>0000001</em>，即距离为1；对于<em>0000110</em>而言，这样的节点归为**“k-bucket 1”**；<br>
+如果一个节点的ID，前面所有位数相同，从倒数第2位开始不同，这样的节点只有2个：*0000101*、*0000100*，与基础节点的异或值为*0000011*和*0000010*，即距离范围为3和2；对于*0000110*而言，这样的节点归为**“k-bucket 2”**；<br>
+……<br>
+如果一个节点的ID，前面所有位数相同，从倒数第n位开始不同，这样的节点只有2(i-1)个，与基础节点的距离范围为[2(i-1), 2i）；对于*0000110*而言，这样的节点归为**“k-bucket i”**；</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-6bdd6e96a80d0780.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/430/format/webp alt></p>
+<p>按位数区分k-bucket</p>
+<p>对上面描述的另一种理解方式：如果将整个网络的节点梳理为一个按节点ID排列的二叉树，树最末端的每个叶子便是一个节点，则下图就比较直观的展现出，节点之间的距离的关系。</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-c12846900b0525db.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/913/format/webp alt></p>
+<p>k-bucket示意图：右下角的黑色实心圆，为基础节点（按wiki百科的配图修改）</p>
+<p>回到我们的类比。每个同学只维护一部分的通讯录，这个通讯录按照距离分层（可以理解为按学号与自己的学号从第几位开始不同而分层），即k-bucket1, k-bucket 2, k-bucket 3…虽然每个k-bucket中实际存在的同学人数逐渐增多，但每个同学在它自己的每个k-bucket中只记录k位同学的手机号（k个节点的地址与端口，这里的k是一个可调节的常量参数）。<br>
+由于学号（节点的ID）有160位，所以每个同学的通讯录中共分160层（节点共有160个k-bucket）。整个网络最多可以容纳2^160个同学（节点），但是每个同学（节点）最多只维护160 * k 行通讯录（其他节点的地址与端口）。</p>
+<h3 id=5节点定位>5）节点定位</h3>
+<p>我们现在来阐述一个完整的索书流程。</p>
+<p>A同学（学号<em>00000110</em>）想找《分布式算法》，</p>
+<p>A首先需要计算书名的哈希值，hash(《分布式算法》) = <em>00010000</em>。那么A就知道ta需要找到<em>00010000</em>号同学（命名为Z同学）或学号与Z邻近的同学。<br>
+Z的学号<em>00010000</em>与自己的异或距离为 <em>00010110</em>，距离范围在[24, 25)，所以这个Z同学可能在k-bucket 5中（或者说，Z同学的学号与A同学的学号从第5位开始不同，所以Z同学可能在k-bucket 5中）。<br>
+然后A同学看看自己的k-bucket 5有没有Z同学：</p>
+<ul>
+<li>如果有，那就直接联系Z同学要书；</li>
+<li>如果没有，在k-bucket 5里随便找一个B同学（注意任意B同学，它的学号第5位肯定与Z相同，即它与Z同学的距离会小于24，相当于比Z、A之间的距离缩短了一半以上），请求B同学在它自己的通讯录里按同样的查找方式找一下Z同学：<br>
+&ndash; 如果B知道Z同学，那就把Z同学的手机号（IP Address）告诉A；<br>
+&ndash; 如果B也不知道Z同学，那B按同样的搜索方法，可以在自己的通讯录里找到一个离Z更近的C同学（Z、C之间距离小于23），把C同学推荐给A；A同学请求C同学进行下一步查找。</li>
+</ul>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-1396765e4e0afb12.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/866/format/webp alt></p>
+<p>查询方式示意</p>
+<p>Kademlia的这种查询机制，有点像是将一张纸不断地对折来收缩搜索范围，保证对于任意n个学生，最多只需要查询log2(n)次，即可找到获得目标同学的联系方式（即在对于任意一个有[2(n−1), 2n)个节点的网络，最多只需要n步搜索即可找到目标节点）。</p>
+<p><img src=https://upload-images.jianshu.io/upload_images/947209-1143169c8318a2ff.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/666/format/webp alt></p>
+<p>每次搜索都将距离至少收缩一半</p>
+<p>以上便是Kademlia算法的基本原理。</p>
+<p>以下再简要介绍协议中的技术细节。</p>
+<h3 id=6算法的三个参数keyspacek和α>6）算法的三个参数：keyspace，k和α</h3>
+<ul>
+<li>keyspace<br>
+&ndash; 即ID有多少位<br>
+&ndash; 决定每个节点的通讯录有几层</li>
+<li>k<br>
+&ndash; 每个一层k-bucket里装k个node的信息，即&lt;node ID, IP Adress, port><br>
+&ndash; 每次查找node时，返回k个node的信息<br>
+&ndash; 对于某个特定的data，离其key最近的k个节点被会要求存储这个data</li>
+<li>α<br>
+&ndash; 每次向其他node请求查找某个node时，会向α个node发出请求</li>
+</ul>
+<h3 id=7节点的指令>7）节点的指令</h3>
+<p>Kademlia算法中，每个节点只有4个指令</p>
+<ul>
+<li>PING<br>
+&ndash; 测试一个节点是否在线</li>
+<li>STORE<br>
+&ndash; 要求一个节点存储一份数据</li>
+<li>FIND_NODE<br>
+&ndash; 根据节点ID查找一个节点</li>
+<li>FIND_VALUE<br>
+&ndash; 根据KEY查找一个数据，实则上跟FIND_NODE非常类似</li>
+</ul>
+<h3 id=8k-bucket的维护及更新机制>8)k-bucket的维护及更新机制</h3>
+<ul>
+<li>每个bucket里的节点都按最后一次接触的时间倒序排列</li>
+<li>每次执行四个指令中的任意一个都会触发更新</li>
+<li>当一个节点与自己接触时，检查它是否在K-bucket中<br>
+&ndash; 如果在，那么将它挪到k-bucket列表的最底（最新）<br>
+&ndash; 如果不在，PING一下列表最上面（最旧）的一个节点<br>
+&ndash; a) 如果PING通了，将旧节点挪到列表最底，并丢弃新节点<br>
+&ndash; b) 如果PING不通，删除旧节点，并将新节点加入列表</li>
+</ul>
+<p>该机制保证了任意节点加入和离开都不影响整体网络。</p>
+<h3 id=9总结>9）总结</h3>
+<p>Kademlia是分布式哈希表（Distributed Hash Table, DHT）的一种。而DHT是一类去中心化的分布式系统。</p>
+<p>在这类系统中，每个节点（node）分别维护一部分的存储内容以及其他节点的路由/地址，使得网络中任何参与者（即节点）发生变更（进入/退出）时，对整个网络造成的影响最小。</p>
+<p>DHT可以用于构建更复杂的应用，包括分布式文件系统、点对点技术文件分享系统、合作的网页高速缓存、域名系统以及实时通信等。</p>
+<h2 id=参考文献>参考文献</h2>
+<ul>
+<li>
+<p><a href="https://links.jianshu.com/go?to=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FDistributed_hash_table">wiki百科-分布式哈希表</a></p>
+</li>
+<li>
+<p><a href="https://links.jianshu.com/go?to=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FKademlia">wiki百科-Kademlia</a></p>
+</li>
+<li>
+<p><a href="https://links.jianshu.com/go?to=http%3A%2F%2Fpdos.csail.mit.edu%2F%7Epetar%2Fpapers%2Fmaymounkov-kademlia-lncs.pdf">Kademlia: A Peer-to-peer information system based on the XOR Metric</a></p>
+</li>
+<li>
+<p><a href="https://links.jianshu.com/go?to=https%3A%2F%2Fsegmentfault.com%2Fa%2F1190000000351815">王子亭的Kademlia笔记</a></p>
+</li>
+</ul>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

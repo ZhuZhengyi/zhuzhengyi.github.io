@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Spark存储体系详解 存储体系的职责 在研究Spark存储体系之前，我们先搞清楚一个重要的问题：对于一个数据计算引擎，存储体系在其中的职责是什">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/spark/spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Spark存储体系详解">
-<meta property="og:description" content>
+<meta property="og:description" content="Spark存储体系详解 存储体系的职责 在研究Spark存储体系之前，我们先搞清楚一个重要的问题：对于一个数据计算引擎，存储体系在其中的职责是什">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/spark/spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Spark存储体系详解">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Spark存储体系详解 存储体系的职责 在研究Spark存储体系之前，我们先搞清楚一个重要的问题：对于一个数据计算引擎，存储体系在其中的职责是什"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2656">
 <meta itemprop=keywords content="architech,spark,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Spark存储体系详解">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Spark存储体系详解 存储体系的职责 在研究Spark存储体系之前，我们先搞清楚一个重要的问题：对于一个数据计算引擎，存储体系在其中的职责是什"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,137 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#存储体系的职责>存储体系的职责</a></li>
+<li><a href=#spark存储体系主要功能>Spark存储体系主要功能</a></li>
+<li><a href=#spark中存储体系相关的类>Spark中存储体系相关的类</a></li>
+<li><a href=#参考资料>参考资料：</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=spark存储体系详解>Spark存储体系详解</h1>
+<h2 id=存储体系的职责>存储体系的职责</h2>
+<p>在研究Spark存储体系之前，我们先搞清楚一个重要的问题：<strong>对于一个数据计算引擎，存储体系在其中的职责是什么？或者说功能定位是什么？</strong> 而子模块肯定是为整个系统服务的，所以我们可以从 计算引擎(Spark)本身功能来一探究竟。</p>
+<p>一个数据计算引擎，最主要的是对数据进行各种加工（转换、过滤、聚合、合并、统计等），我们可以将对数据的加工当成数据状态的转换。所以计算引擎的核心功能就是 定义<strong>数据状态</strong> 及定义<strong>数据状态之上的各种操作</strong>，对应于Spark即是，RDD 及之上的各种Transform和Action操作，所以Spark存储体系应该包括对RDD的存储。</p>
+<p>输入是外部系统不算Spark本身的存储体系，Spark执行时会将整个作业按照数据依赖情况构建成DAG划分成多个Stage，Stage间涉及到数据的生成和传输(Shuffle阶段) 此处涉及到存储体系，涉及到的功能有数据存储、数据寻址，数据读取和数据远程传输。</p>
+<p>在数据处理中，涉及到一个数据对应多路处理的情况，无论用户是否显式的调用Cache，这都涉及到RDD<strong>复用</strong>，即涉及到中间结果的存储，此处会用到存储体系，涉及到的功能也是数据的存储、寻址和读取。</p>
+<p>Spark 提供了Broadcast功能可以将小的数据集同步到多个节点上，该功能也涉及数据的存储、寻址、读取和远程传输。</p>
+<h2 id=spark存储体系主要功能>Spark存储体系主要功能</h2>
+<p>根据以上分析，我们知道Spark存储体系主要功能为：</p>
+<ul>
+<li>资源的申请：对于磁盘即创建目录、文件；对于内存即变量的创建、销毁。磁盘资源相对比较丰富，在需要时再去创建目录、文件是完全没问题的，所以不需要太复杂的资源管理。而内存资源是很稀缺的，如果在需要时再去申请很可能出现系统没有足够的内存分配的情况，而如果不加节制的申请也可能自己把系统内存占光，造成其他任务不能执行，这样就会出现很大的不确定性。Spark采用预申请内存资源，自己管理内存资源的方式来确保一个更稳定的内存环境。</li>
+<li>数据存储、读取：具体数据的读写。ps: Spark定义数据存储的最小单元为Block。</li>
+<li><strong>数据寻址(单节点、集群中)</strong>：为了区分各Block，每个Block有唯一的标识Id(BlockId)。对于数据的查询，一方面，需要确定在具体哪个节点上（<strong>集群中寻址</strong>）；另一方面，需要确定在具体节点的内存中还是磁盘中，具体路径或引用是什么（<strong>节点中具体数据寻址</strong>）。</li>
+<li>数据远程传输：Broadcast、Shuffle之类的操作涉及到数据的跨节点传输，所以需要有数据远程传输功能。</li>
+</ul>
+<h2 id=spark中存储体系相关的类>Spark中存储体系相关的类</h2>
+<p>确定了Spark存储体系所提供的功能，我们再来看看Spark中存储体系相对应的具体的实现类。</p>
+<ul>
+<li>
+<p>BlockId: Block是Spark存储体系中，数据管理的基本单位；BlockId是数据块的唯一标识。</p>
+</li>
+<li>
+<p>BlockInfo：Block的元数据信息，如存储Level(StorageLevel)等。</p>
+</li>
+<li>
+<p>StorageLevel：定义了存储级别，内存还是磁盘，序列化还是非序列化，几个副本。</p>
+</li>
+<li>
+<p><strong>BlockInfoManager</strong>：使用一个Map来映射BlockId和其对应的BlockInfo; 另外维护了每个Block的读锁和写锁。</p>
+</li>
+<li>
+<p>BlockResult：Block的数据结果，包括数据读取接口。</p>
+</li>
+<li>
+<p><strong>BlockManager</strong>：每个节点(driver、executor)中管理数据的接口，屏蔽了底层存储细节（内存、磁盘、序列化方式）。</p>
+</li>
+<li>
+<p>BlockManagerId：Blockmanager的唯一标识。</p>
+</li>
+<li>
+<p><strong>BlockMangerMasterEndpoint</strong>：维护集群中所有的BlockManager及其维护的Block</p>
+</li>
+<li>
+<p>BlockManagerMaster：各BlockManager与 BlockMangerMasterEndpoint 通信的代理（RPC客户端）。</p>
+</li>
+<li>
+<p><strong>MapOutTracher</strong>：用于找到某Reduce对应的上游Block所在的位置。</p>
+</li>
+<li>
+<p>BlockManagerSlaveEndpoint：各BlockManager中对外提供服务的RPC服务端，用于接收对该节点数据处理的请求（主要是删除数据）。</p>
+</li>
+<li>
+<p>DiskStore：文件读写。</p>
+</li>
+<li>
+<p>MemoryStore：内存读写管理，并根据存储级别将数据转存到磁盘等。</p>
+</li>
+<li>
+<p>DiskBlockManager：资源申请，创建目录、文件等。</p>
+</li>
+<li>
+<p>MemoryPool：预申请的内存空间，主要有四块，堆内执行内存、堆内存储内存、堆外执行内存和堆外存储内存。</p>
+</li>
+<li>
+<p>MemoryManager：对预申请的内存进行分配与回收。目前有<a href=https://github.com/apache/spark/blob/branch-1.6/core/src/main/scala/org/apache/spark/memory/StaticMemoryManager.scala>StaticMemoryManager</a> 和 <a href=https://github.com/apache/spark/blob/branch-1.6/core/src/main/scala/org/apache/spark/memory/UnifiedMemoryManager.scala>UnifiedMemoryManager</a> 两种内存管理器，这里Static和Unified是相对执行内存和存储内存的关系来说的。Static即执行内存和存储内存各自空间相对是静态的、固定的；而Unified管理方式下对执行内存和存储内存统一管理，两者可以相互借用。</p>
+</li>
+<li>
+<p>ShuffleClient：用于Block上传、下载的接口。</p>
+</li>
+<li>
+<p>BlockTransferService：ShuffleClient底层的面向网络RPC的数据传输服务。</p>
+</li>
+</ul>
+<p>对这些类有个整体的认识，再去看源码应该会容易很多。</p>
+<p>下面有两张图，比便于对Spark存储体系的整体认识，从网上直接粘过来的，把原文链接放在了参考资料里。</p>
+<p>这张图跟《Spark内核设计的艺术》的一样，姑且作为出处：</p>
+<p><img src=chrome-extension://cjedbglnccaioiolemnfhjncicchinao/2019/05/15/Spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/spark-storage-system.png alt></p>
+<p>这张图见参考资料：</p>
+<h2 id=参考资料>参考资料：</h2>
+<ul>
+<li><a href=https://www.cnblogs.com/cenglinjinran/p/8476199.html>Spark存储体系</a></li>
+</ul>
+<ul>
+<li>
+<p><a href=https://www.codercto.com/a/85944.html>Spark原理 | Cosco:高效的Spark Shuffle服务 | 码农网</a></p>
+</li>
+<li>
+<p><a href=https://www.cnblogs.com/cenglinjinran/p/8476199.html>Spark存储体系 - 层林尽染 - 博客园</a></p>
+</li>
+<li>
+<p><a href=https://juejin.im/post/5bd854955188255ca65da7ed>https://juejin.im/post/5bd854955188255ca65da7ed</a></p>
+</li>
+<li>
+<p><a href=https://blog.guopengfei.top/2019/05/15/Spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/>https://blog.guopengfei.top/2019/05/15/Spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/</a></p>
+</li>
+<li>
+<p><a href=http://www.linuxboy.net/yunjisuan/51238.html>Spark技术内幕：Shuffle Pluggable框架详解，你怎么开发自己的Shuffle Service？，sparkpluggable_云计算 | LinuxBoy</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/anzhsoft/article/details/42519333>Spark技术内幕：Shuffle Pluggable框架详解，你怎么开发自己的Shuffle Service？_anzhsoft的技术专栏-CSDN博客_shuffle service</a></p>
+</li>
+<li>
+<p><a href=https://www.cnblogs.com/ChouYarn/p/7169472.html>Spark源码阅读之存储体系&ndash;存储体系概述与shuffle服务 - ChouYarn - 博客园</a><a href=https://www.codercto.com/a/85944.html>Spark原理 | Cosco:高效的Spark Shuffle服务 | 码农网</a></p>
+</li>
+<li>
+<p><a href=https://juejin.im/post/5bd854955188255ca65da7ed>https://juejin.im/post/5bd854955188255ca65da7ed</a></p>
+</li>
+<li>
+<p><a href=https://blog.guopengfei.top/2019/05/15/Spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/>https://blog.guopengfei.top/2019/05/15/Spark%E5%AD%98%E5%82%A8%E4%BD%93%E7%B3%BB%E8%AF%A6%E8%A7%A3/</a></p>
+</li>
+<li>
+<p><a href=http://www.linuxboy.net/yunjisuan/51238.html>Spark技术内幕：Shuffle Pluggable框架详解，你怎么开发自己的Shuffle Service？，sparkpluggable_云计算 | LinuxBoy</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/anzhsoft/article/details/42519333>Spark技术内幕：Shuffle Pluggable框架详解，你怎么开发自己的Shuffle Service？_anzhsoft的技术专栏-CSDN博客_shuffle service</a></p>
+</li>
+<li>
+<p><a href=https://www.cnblogs.com/ChouYarn/p/7169472.html>Spark源码阅读之存储体系&ndash;存储体系概述与shuffle服务 - ChouYarn - 博客园</a></p>
+</li>
+</ul>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

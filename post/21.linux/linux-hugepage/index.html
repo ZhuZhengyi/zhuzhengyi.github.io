@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Linux HugePage 简介 linux kernel虚拟内存通过多级页表机制来完成虚拟内存到物理内存的映射管理。默认的页大小是4KB，如果需要管理内存很大，将造成页表项占">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-hugepage/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Linux HugePage">
-<meta property="og:description" content>
+<meta property="og:description" content="Linux HugePage 简介 linux kernel虚拟内存通过多级页表机制来完成虚拟内存到物理内存的映射管理。默认的页大小是4KB，如果需要管理内存很大，将造成页表项占">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-hugepage/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Linux HugePage">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="Linux HugePage 简介 linux kernel虚拟内存通过多级页表机制来完成虚拟内存到物理内存的映射管理。默认的页大小是4KB，如果需要管理内存很大，将造成页表项占"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="933">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Linux HugePage">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Linux HugePage 简介 linux kernel虚拟内存通过多级页表机制来完成虚拟内存到物理内存的映射管理。默认的页大小是4KB，如果需要管理内存很大，将造成页表项占"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,175 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#设置>设置</a>
+<ul>
+<li><a href=#永久设置>永久设置</a></li>
+<li><a href=#临时设置>临时设置</a></li>
+</ul>
+</li>
+<li><a href=#使用>使用</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=linux-hugepage>Linux HugePage</h1>
+<h2 id=简介>简介</h2>
+<p>linux kernel虚拟内存通过多级页表机制来完成虚拟内存到物理内存的映射管理。默认的页大小是4KB，如果需要管理内存很大，将造成页表项占用空间过多，TLB缓存命中率下降，查找耗时过长的问题。</p>
+<p>HugePage是在</p>
+<p>在Linux系统中，有两种方式可以用来使用hugepages。</p>
+<ul>
+<li>
+<p>2.6内核就已经引入的Hugetlbfs虚拟文件系统，hugetlbfs主要用于数据库，需要专门的进行配置以及应用程序的代码支持</p>
+</li>
+<li>
+<p>从2.6.38版本开始（RHEL 6）引入的THP（Transparent Hugepages）.THP一切都交给操作系统来完成，也不需要额外的配置，对于应用程序是透明的，可用于更广泛的应用程序。</p>
+</li>
+</ul>
+<h2 id=设置>设置</h2>
+<p>大页内存设置允许可在启动参数中预先指定，也可以在启动后，通过手动设置。</p>
+<h3 id=永久设置>永久设置</h3>
+<p>开启linux大页内存支持：面配置需要连续的内存空间，因此在开机时就分配是最可靠的方式。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 在/etc/default/grub的GRUB_CMDLINE_LINUX中增加大页相关参数</span>
+<span class=nv>GRUB_CMDLINE_LINUX</span><span class=o>=</span><span class=s2>&#34;default_hugepagesz=1G hugepagesz=1G hugepages=128 ...&#34;</span>
+<span class=c1>#更新grub.cfg：</span>
+$ grub2-mkconfig -o /boot/grub2/grub.cfg
+$ reboot  <span class=c1># 重启</span>
+<span class=c1>#确认内核大页内存是否开启</span>
+$ cat /proc/cmdline 
+<span class=nv>BOOT_IMAGE</span><span class=o>=</span>... <span class=nv>hugepagesz</span><span class=o>=</span>1048576K <span class=nv>hugepages</span><span class=o>=</span><span class=m>128</span> <span class=nv>default_hugepagesz</span><span class=o>=</span>1G <span class=nv>hugepagesz</span><span class=o>=</span>1G <span class=nv>hugepages</span><span class=o>=</span><span class=m>128</span> ... 
+</code></pre></td></tr></table>
+</div>
+</div><p>配置大页面后，系统在开机启动时会首选尝试在内存中找到并预留连续的大小为 <code>hugepages * hugepagesz</code> 的内存空间。如果内存空间不满足，则启动会报错 <code>Kernel Panic, Out of Memory</code> 等错误。</p>
+<h3 id=临时设置>临时设置</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 手动分配1个1GB大内存页</span>
+$ <span class=nb>echo</span> <span class=m>1</span> &gt; /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages
+<span class=c1># 强制分配给指定的NUMA节点</span>
+$ <span class=nb>echo</span> <span class=m>1024</span> &gt;/sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+
+
+<span class=c1># 挂载</span>
+$ mkdir /mnt/huge_1GB
+$ mount -t hugetlbfs nodev /mnt/huge_1GB -o <span class=s2>&#34;pagesize=1GB&#34;</span>
+<span class=c1># /etc/fstab 自动挂载</span>
+nodev /mnt/huge_1GB hugetlbfs <span class=nv>pagesize</span><span class=o>=</span>1GB <span class=m>0</span> <span class=m>0</span>
+</code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 查看巨页信息</span>
+$ sysctl -a <span class=p>|</span> grep -i huge
+$ cat /proc/meminfo <span class=p>|</span> grep -i huge
+<span class=c1># 预留192个大页</span>
+$ sysctl vm.nr_hugepages<span class=o>=</span><span class=m>192</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=使用>使用</h2>
+<p>如果一个程序要使用hugetlbfs，那么用户只能使用mmap 标准的SYSV函数shmget/ shmat来调用/访问它。如果使用mmap调用，则在mmap函数的第四个参数带入的标志位为MAP_HUGETLB</p>
+<p>如果使用shmget接口来调用，则需要则shmget的第三个参数的位置带入SHM_HUGETLB参数</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cp>#include</span> <span class=cpf>&lt;sys/mman.h&gt;</span><span class=cp>
+</span><span class=cp>#include</span> <span class=cpf>&lt;stdio.h&gt;</span><span class=cp>
+</span><span class=cp>#include</span> <span class=cpf>&lt;memory.h&gt;</span><span class=cp>
+</span><span class=cp></span>
+<span class=kt>int</span> <span class=nf>main</span><span class=p>(</span><span class=kt>int</span> <span class=n>argc</span><span class=p>,</span> <span class=kt>char</span> <span class=o>*</span><span class=n>argv</span><span class=p>[])</span> <span class=p>{</span>
+  <span class=kt>char</span> <span class=o>*</span><span class=n>m</span><span class=p>;</span>
+  <span class=n>size_t</span> <span class=n>s</span> <span class=o>=</span> <span class=p>(</span><span class=mi>8UL</span> <span class=o>*</span> <span class=mi>1024</span> <span class=o>*</span> <span class=mi>1024</span><span class=p>);</span>
+
+  <span class=n>m</span> <span class=o>=</span> <span class=n>mmap</span><span class=p>(</span><span class=nb>NULL</span><span class=p>,</span> <span class=n>s</span><span class=p>,</span> <span class=n>PROT_READ</span> <span class=o>|</span> <span class=n>PROT_WRITE</span><span class=p>,</span>
+                    <span class=n>MAP_PRIVATE</span> <span class=o>|</span> <span class=n>MAP_ANONYMOUS</span> <span class=o>|</span> <span class=mh>0x40000</span> <span class=cm>/*MAP_HUGETLB*/</span><span class=p>,</span> <span class=o>-</span><span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>);</span>
+  <span class=k>if</span> <span class=p>(</span><span class=n>m</span> <span class=o>==</span> <span class=n>MAP_FAILED</span><span class=p>)</span> <span class=p>{</span>
+    <span class=n>perror</span><span class=p>(</span><span class=s>&#34;map mem&#34;</span><span class=p>);</span>
+    <span class=n>m</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+    <span class=k>return</span> <span class=mi>1</span><span class=p>;</span>
+  <span class=p>}</span>
+
+  <span class=n>memset</span><span class=p>(</span><span class=n>m</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>s</span><span class=p>);</span>
+  <span class=n>printf</span><span class=p>(</span><span class=s>&#34;map_hugetlb ok, press ENTER to quit!</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>);</span>
+  <span class=n>getchar</span><span class=p>();</span>
+
+  <span class=n>munmap</span><span class=p>(</span><span class=n>m</span><span class=p>,</span> <span class=n>s</span><span class=p>);</span>
+  <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt>https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt</a></p>
+</li>
+<li>
+<p><a href=https://docs.azure.cn/zh-cn/articles/azure-operations-guide/virtual-machines/linux/aog-virtual-machines-Linux-hugepage-configure>https://docs.azure.cn/zh-cn/articles/azure-operations-guide/virtual-machines/linux/aog-virtual-machines-Linux-hugepage-configure</a></p>
+</li>
+<li>
+<p><a href=https://www.jianshu.com/p/242ba363e4ed>Linux四级页表及其原理 - 简书</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="SQL 查询引擎 简介 select 这才是完整的SELECT查询 SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*; where 和 having区别 “Where” 是一个">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/sql-%E6%9F%A5%E8%AF%A2%E6%A8%A1%E5%9E%8B/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="SQL 查询引擎">
-<meta property="og:description" content>
+<meta property="og:description" content="SQL 查询引擎 简介 select 这才是完整的SELECT查询 SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*; where 和 having区别 “Where” 是一个">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/sql-%E6%9F%A5%E8%AF%A2%E6%A8%A1%E5%9E%8B/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="SQL 查询引擎">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="SQL 查询引擎 简介 select 这才是完整的SELECT查询 SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*; where 和 having区别 “Where” 是一个"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="233">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="SQL 查询引擎">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="SQL 查询引擎 简介 select 这才是完整的SELECT查询 SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*; where 和 having区别 “Where” 是一个"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,70 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a>
+<ul>
+<li><a href=#select>select</a></li>
+</ul>
+</li>
+<li><a href=#sql逻辑计划优化>sql逻辑计划优化</a>
+<ul>
+<li><a href=#常量折叠>常量折叠</a></li>
+<li><a href=#谓词下推>谓词下推</a></li>
+<li><a href=#投影消除>投影消除</a></li>
+<li><a href=#列裁剪>列裁剪</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=sql-查询引擎>SQL 查询引擎</h1>
+<h2 id=简介>简介</h2>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/06/18-15-38-07-2021-06-18-15-38-04-image.png alt></p>
+<h3 id=select>select</h3>
+<p>这才是完整的SELECT查询</p>
+<p><code>SELECT DISTINCT column, AGG_FUNC(*column_or_expression*), … FROM mytable JOIN another_table ON mytable.column = another_table.column WHERE *constraint_expression* GROUP BY column HAVING *constraint_expression* ORDER BY *column* ASC/DESC LIMIT *count* OFFSET *COUNT*;</code></p>
+<ul>
+<li>
+<p><code>where</code> 和 <code>having</code>区别</p>
+<ul>
+<li>
+<p>“Where” 是一个约束声明，使用Where来约束来之数据库的数据，Where是在结果返回之前起作用的，</p>
+</li>
+<li>
+<p><strong>Where中不能使用聚合函数</strong>。</p>
+</li>
+<li>
+<p>“Having”是一个过滤声明，是在查询返回结果集以后对查询结果进行的过滤操作，</p>
+</li>
+<li>
+<p><strong>在Having中可以使用聚合函数</strong>。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id=sql逻辑计划优化>sql逻辑计划优化</h2>
+<h3 id=常量折叠>常量折叠</h3>
+<h3 id=谓词下推>谓词下推</h3>
+<h3 id=投影消除>投影消除</h3>
+<h3 id=列裁剪>列裁剪</h3>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.jianshu.com/p/e08dd77acfed>https://www.jianshu.com/p/e08dd77acfed</a></p>
+</li>
+<li>
+<p><a href=https://developer.aliyun.com/article/743505>SQL 查询的分布式执行与调度-阿里云开发者社区</a></p>
+</li>
+<li>
+<p><a href="https://zhuanlan.zhihu.com/p/48735419?spm=a2c6h.12873639.0.0.642b7af5uV9ysp">https://zhuanlan.zhihu.com/p/48735419?spm=a2c6h.12873639.0.0.642b7af5uV9ysp</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

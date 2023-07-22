@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="HBase RPC 简介 HBase主要包含Master，RegionServer，Client 3个组件组成。组件之间通过Rpc 和 zk进行通信。RPC通信功能">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hbase/hbase-rpc/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="HBase RPC">
-<meta property="og:description" content>
+<meta property="og:description" content="HBase RPC 简介 HBase主要包含Master，RegionServer，Client 3个组件组成。组件之间通过Rpc 和 zk进行通信。RPC通信功能">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hbase/hbase-rpc/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T12:59:52+08:00">
 <meta property="article:modified_time" content="2021-10-10T12:59:52+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="HBase RPC">
-<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T12:59:52+08:00">
+<meta itemprop=description content="HBase RPC 简介 HBase主要包含Master，RegionServer，Client 3个组件组成。组件之间通过Rpc 和 zk进行通信。RPC通信功能"><meta itemprop=datePublished content="2021-10-10T12:59:52+08:00">
 <meta itemprop=dateModified content="2021-10-10T12:59:52+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1164">
 <meta itemprop=keywords content="architech,hbase,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="HBase RPC">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="HBase RPC 简介 HBase主要包含Master，RegionServer，Client 3个组件组成。组件之间通过Rpc 和 zk进行通信。RPC通信功能"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,151 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#配置参数>配置参数</a></li>
+<li><a href=#结构>结构</a></li>
+<li><a href=#rpc实现>RPC实现</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=hbase-rpc>HBase RPC</h1>
+<h2 id=简介>简介</h2>
+<p>HBase主要包含Master，RegionServer，Client 3个组件组成。组件之间通过Rpc 和 zk进行通信。RPC通信功能主要基于Protobuf和NIO这两个组件来实现，</p>
+<p><img src=assets/2020-01-07-11-42-09-image.png alt></p>
+<h2 id=配置参数>配置参数</h2>
+<ol>
+<li>
+<p>hbase.ipc.server.listen.queue.size :</p>
+<p>存放连接请求的等待队列长度,默认与ipc.server.listen.queue.size参数值相同，为128个。</p>
+</li>
+<li>
+<p>hbase.regionserver.handler.count</p>
+<p>regionserver 的 rpc请求队列处理线程数，默认为 30</p>
+</li>
+<li>
+<p>hbase.master.handler.count</p>
+<p>master rpc请求队列处理线程数，默认为 25</p>
+</li>
+<li>
+<p>hbase.ipc.server.read.threadpool.size</p>
+<p>Reader线程数，默认为10个。reader 的个数决定了从网络 io 里读取数据的速度也就是网络吞吐量</p>
+</li>
+<li>
+<p>hbase.ipc.server.max.callqueue.size</p>
+<p>单个消费队列所允许的存储空间上限(默认为1GB)，超过该上限客户端会抛出以下异常</p>
+</li>
+<li>
+<p>hbase.ipc.server.max.callqueue.length</p>
+<p>单个消费队列的长度限制，默认值为10倍的Handler数。</p>
+</li>
+<li>
+<p>hbase.ipc.server.callqueue.handler.factor</p>
+<p>该参数用于决定消费队列的个数。</p>
+</li>
+<li>
+<p>hbase.ipc.server.callqueue.read.share</p>
+</li>
+<li></li>
+</ol>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>hbase.ipc.server.read.threadpool.size
+
+默认： 10
+Reader线程数
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=结构>结构</h2>
+<p>RPC报文</p>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2020-01-07-11-06-09-image.png alt></p>
+<ul>
+<li>请求头</li>
+</ul>
+<p><img src=assets/2020-01-07-11-06-34-image.png alt></p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=kd>message</span> <span class=nc>RequestHeader</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>    <span class=k>optional</span> <span class=kt>uint32</span> <span class=n>call_id</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span><span class=err></span>    <span class=k>optional</span> <span class=n>RPCTInfo</span> <span class=n>trace_info</span> <span class=o>=</span> <span class=mi>2</span><span class=p>;</span><span class=err>
+</span><span class=err></span>    <span class=k>optional</span> <span class=kt>string</span> <span class=n>method_name</span> <span class=o>=</span> <span class=mi>3</span><span class=p>;</span><span class=err>
+</span><span class=err></span>    <span class=k>optional</span> <span class=kt>bool</span> <span class=n>request_param</span> <span class=o>=</span> <span class=mi>4</span><span class=p>;</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><img src=assets/2020-01-07-11-07-17-image.png alt></p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=kd>message</span> <span class=nc>ResponseHeader</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>    <span class=k>optional</span> <span class=kt>uint32</span> <span class=n>call_id</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id=rpc实现>RPC实现</h2>
+<p>RpcServer配置三个队列：</p>
+<ul>
+<li>callQueue</li>
+</ul>
+<p>绝大部分Call请求存在该队列中：callQueue上maxQueueLength为${ipc.server.max.callqueue.length},默认是${hbase.master.handler.count}*DEFAULT_MAX_CALLQUEUE_LENGTH_PER_HANDLER，目前0.95.1中，每个Handler上CallQueue的最大个数默认值(DEFAULT_MAX_CALLQUEUE_LENGTH_PER_HANDLER)为10。</p>
+<ul>
+<li>PriorityQueue</li>
+</ul>
+<p>如果设置priorityHandlerCount的个数，会创建与callQueue相当容量的queue存储Call，该优先级队列对应的Handler的个数由rpcServer实例化时传入。</p>
+<ul>
+<li>replicationQueue</li>
+</ul>
+<p>由于RpcServer由HMaster和RegionServer共用，该功能仅为RegionServer提供，queue的大小为${ipc.server.max.callqueue.size}指定，默认为1024<em>1024</em>1024，handler的个数为hbase.regionserver.replication.handler.count。</p>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2020-01-07-11-18-46-image.png alt></p>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2020-01-07-11-29-06-image.png alt></p>
+<ul>
+<li>rpc-client</li>
+</ul>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2020-01-07-12-34-08-image.png alt></p>
+<ul>
+<li>rpc-server</li>
+</ul>
+<p>rpc-server基于nio 的reactor模型设计，其主要流程如下：</p>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2020-01-07-12-34-46-image.png alt></p>
+<ul>
+<li>scheduler</li>
+</ul>
+<p>hbase rpc实现了两种调度器（FifoRpcScheduler和SimpleRpcScheduler）。FifoRpcScheduler是master默认的调度器，直接将CallRunner对象放到线程池中去执行。而SimpleRpcScheduler是RS默认调度器，分成三种不同的executor，对于不同的请求，使用的不同的executor去执行。</p>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2020-01-07-12-35-19-image.png alt></p>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://cloud.tencent.com/developer/article/1005560>Hbase 调优之 RPC - 云+社区 - 腾讯云</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/yangzishiw/article/details/78840107>https://blog.csdn.net/yangzishiw/article/details/78840107</a></p>
+</li>
+<li>
+<p><a href=http://www.binospace.com/index.php/in-depth-analysis-hbase-rpc-0-95-version-implementation-mechanism/>The internals of HBase Rpc (Protobuf) | Binospace</a></p>
+</li>
+<li>
+<p><a href="http://09itblog.site/?p=874">http://09itblog.site/?p=874</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

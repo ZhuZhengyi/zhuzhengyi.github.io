@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="分布式系统时钟 时钟 物理时钟 物理时钟：物理节点的系统时钟； 逻辑时钟：逻辑上表示事件顺序的方法； Lamport 时钟 Leslie Lamport 在1978年提出逻辑时钟的概念，并描述">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/31.distribute/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E6%97%B6%E9%92%9F/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="分布式系统时钟">
-<meta property="og:description" content>
+<meta property="og:description" content="分布式系统时钟 时钟 物理时钟 物理时钟：物理节点的系统时钟； 逻辑时钟：逻辑上表示事件顺序的方法； Lamport 时钟 Leslie Lamport 在1978年提出逻辑时钟的概念，并描述">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/31.distribute/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E6%97%B6%E9%92%9F/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="分布式系统时钟">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="分布式系统时钟 时钟 物理时钟 物理时钟：物理节点的系统时钟； 逻辑时钟：逻辑上表示事件顺序的方法； Lamport 时钟 Leslie Lamport 在1978年提出逻辑时钟的概念，并描述"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1141">
 <meta itemprop=keywords content="distribute,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="分布式系统时钟">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="分布式系统时钟 时钟 物理时钟 物理时钟：物理节点的系统时钟； 逻辑时钟：逻辑上表示事件顺序的方法； Lamport 时钟 Leslie Lamport 在1978年提出逻辑时钟的概念，并描述"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,65 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#时钟>时钟</a></li>
+<li><a href=#物理时钟>物理时钟</a></li>
+<li><a href=#lamport-时钟>Lamport 时钟</a>
+<ul>
+<li><a href=#happened-before--规则>Happened-Before（->） 规则</a></li>
+<li><a href=#lamport-时钟规则>Lamport 时钟规则</a></li>
+<li><a href=#顺序>顺序</a></li>
+</ul>
+</li>
+<li><a href=#向量时钟>向量时钟</a></li>
+<li><a href=#版本向量version-vector>版本向量（Version Vector）</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=分布式系统时钟>分布式系统时钟</h1>
+<h2 id=时钟>时钟</h2>
+<h2 id=物理时钟>物理时钟</h2>
+<ul>
+<li><strong>物理时钟</strong>：物理节点的系统时钟；</li>
+<li><strong>逻辑时钟</strong>：逻辑上表示事件顺序的方法；</li>
+</ul>
+<h2 id=lamport-时钟>Lamport 时钟</h2>
+<p>Leslie Lamport 在1978年提出逻辑时钟的概念，并描述了一种逻辑时钟的表示方法，这个方法被称为Lamport时间戳(Lamport timestamps)[3]。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/12-20-51-38-image-20190905174446521.png alt=image-20190905174446521></p>
+<h3 id=happened-before--规则>Happened-Before（->） 规则</h3>
+<ol>
+<li>如果a、b是同一个进程中的事件，且a 先于 b 发生，则 a -> b;</li>
+<li>a、b不同进程，a发送，b接收，则 a->b;</li>
+<li>如果 a->b 且b -> c, 则 a -> c;</li>
+</ol>
+<h3 id=lamport-时钟规则>Lamport 时钟规则</h3>
+<ol>
+<li>每个事件对应一个Lamport时间戳，初始值为0</li>
+<li>如果事件在节点内发生，时间戳加1</li>
+<li>如果事件属于发送事件，时间戳加1并在消息中带上该时间戳</li>
+<li>如果事件属于接收事件，时间戳 = Max(本地时间戳，消息中的时间戳) + 1</li>
+</ol>
+<h3 id=顺序>顺序</h3>
+<ul>
+<li><strong>偏序</strong>：假设有事件a、b，C(a)、C(b)分别表示事件a、b对应的Lamport时间戳，如果C(a) &lt; C(b)，则有a发生在b之前(happened before)，记作 a -> b，例如图1中有 C1 -> B1。通过该定义，事件集中Lamport时间戳不等的事件可进行比较，我们获得事件的<a href=https://en.wikipedia.org/wiki/Partially_ordered_set#Formal_definition>偏序关系</a></li>
+<li><strong>全序</strong>：如果C(a) = C(b)，那a、b事件的顺序又是怎样的？假设a、b分别在节点P、Q上发生，Pi、Qj分别表示我们给P、Q的编号，如果 C(a) = C(b) 并且 Pi &lt; Qj，同样定义为a发生在b之前，记作 a => b。假如我们对图1的A、B、C分别编号Ai = 1、Bj = 2、Ck = 3，因 C(B4) = C(C3) 并且 Bj &lt; Ck，则 B4 => C3。</li>
+</ul>
+<h2 id=向量时钟>向量时钟</h2>
+<p>Lamport时间戳帮助我们得到事件顺序关系，但还有一种顺序关系不能用Lamport时间戳很好地表示出来，那就是同时发生关系(concurrent)[4]。例如图1中事件B4和事件C3没有因果关系，属于同时发生事件，但Lamport时间戳定义两者有先后顺序。</p>
+<p>Vector clock是在Lamport时间戳基础上演进的另一种逻辑时钟方法，它通过vector结构不但记录本节点的Lamport时间戳，同时也记录了其他节点的Lamport时间戳[5][6]。Vector clock的原理与Lamport时间戳类似，使用图例如下：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/12-20-52-07-image-20190905174555795.png alt=image-20190905174555795></p>
+<p>假设有事件a、b分别在节点P、Q上发生，Vector clock分别为Ta、Tb，如果Tb[Q] > Ta[Q] 并且 Tb[P] >= Ta[P]，则a发生于b之前，记作 a -> b。到目前为止还和Lamport时间戳差别不大，那Vector clock怎么判别同时发生关系呢？</p>
+<p>如果 Tb[Q] > Ta[Q] 并且 Tb[P] &lt; Ta[P]，则认为a、b同时发生，记作 a &lt;-> b。例如图2中节点B上的第4个事件 (A:2，B:4，C:1) 与节点C上的第2个事件 (B:3，C:2) 没有因果关系、属于同时发生事件（Tb4[B]=4>Tc2[B]=3，Tb4[C]=1&lt;Tc2[C]=2）。</p>
+<h2 id=版本向量version-vector>版本向量（Version Vector）</h2>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=http://oserror.com/distributed/distributed-system-time-ordering/>http://oserror.com/distributed/distributed-system-time-ordering/</a></li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Git内部原理揭秘 Git是怎么储存信息的 这里会用一个简单的例子让大家直观感受一下git是怎么储存信息的。 首先我们先创建两个文件 1 2 3 4 $ git init">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/70.tool/git%E5%8E%9F%E7%90%86/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Git内部原理揭秘">
-<meta property="og:description" content>
+<meta property="og:description" content="Git内部原理揭秘 Git是怎么储存信息的 这里会用一个简单的例子让大家直观感受一下git是怎么储存信息的。 首先我们先创建两个文件 1 2 3 4 $ git init">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/70.tool/git%E5%8E%9F%E7%90%86/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Git内部原理揭秘">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Git内部原理揭秘 Git是怎么储存信息的 这里会用一个简单的例子让大家直观感受一下git是怎么储存信息的。 首先我们先创建两个文件 1 2 3 4 $ git init"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2153">
 <meta itemprop=keywords content="tool,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Git内部原理揭秘">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Git内部原理揭秘 Git是怎么储存信息的 这里会用一个简单的例子让大家直观感受一下git是怎么储存信息的。 首先我们先创建两个文件 1 2 3 4 $ git init"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,219 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#git是怎么储存信息的>Git是怎么储存信息的</a></li>
+<li><a href=#git的三个分区>Git的三个分区</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=git内部原理揭秘>Git内部原理揭秘</h1>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-52-48-640.png alt></p>
+<h2 id=git是怎么储存信息的>Git是怎么储存信息的</h2>
+<p>这里会用一个简单的例子让大家直观感受一下git是怎么储存信息的。</p>
+<p>首先我们先创建两个文件</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ git init
+$ echo &#39;111&#39; &gt; a.txt
+$ echo &#39;222&#39; &gt; b.txt
+$ git add *.txt
+</code></pre></td></tr></table>
+</div>
+</div><p>Git会将整个数据库储存在<code>.git/</code>目录下，如果你此时去查看<code>.git/objects</code>目录，你会发现仓库里面多了两个object。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ tree .git/objects
+.git/objects
+├── 58
+│   └── c9bdf9d017fcd178dc8c073cbfcbb7ff240d6c
+├── c2
+│   └── 00906efd24ec5e783bee7f23b5d7c941b0c12c
+├── info
+└── pack
+</code></pre></td></tr></table>
+</div>
+</div><p>好奇的我们来看一下里面存的是什么东西</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ cat .git/objects/58/c9bdf9d017fcd178dc8c073cbfcbb7ff240d6c
+xKOR0a044K%
+</code></pre></td></tr></table>
+</div>
+</div><p>怎么是一串乱码？这是因为Git将信息压缩成二进制文件。但是不用担心，因为Git也提供了一个能够帮助你探索它的api <code>git cat-file [-t] [-p]</code>， <code>-t</code>可以查看object的类型，<code>-p</code>可以查看object储存的具体内容。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ git cat-file -t 58c9
+blob
+$ git cat-file -p 58c9
+111
+</code></pre></td></tr></table>
+</div>
+</div><p>可以发现这个object是一个blob类型的节点，他的内容是111，也就是说这个object储存着a.txt文件的内容。</p>
+<p>这里我们遇到第一种Git object，blob类型，它只储存的是一个文件的内容，不包括文件名等其他信息。然后将这些信息经过SHA1哈希算法得到对应的哈希值<br>
+58c9bdf9d017fcd178dc8c073cbfcbb7ff240d6c，作为这个object在Git仓库中的唯一身份证。</p>
+<p>也就是说，我们此时的Git仓库是这样子的：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-53-08-6402.png alt></p>
+<p>我们继续探索，我们创建一个commit。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ git commit -am &#39;[+] init&#39;
+$ tree .git/objects
+.git/objects
+├── 0c
+│   └── 96bfc59d0f02317d002ebbf8318f46c7e47ab2
+├── 4c
+│   └── aaa1a9ae0b274fba9e3675f9ef071616e5b209
+...
+</code></pre></td></tr></table>
+</div>
+</div><p>我们会发现当我们commit完成之后，Git仓库里面多出来两个object。同样使用<code>cat-file</code>命令，我们看看它们分别是什么类型以及具体的内容是什么。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ git cat-file -t 4caaa1
+tree
+$ git cat-file -p 4caaa1
+100644 blob 58c9bdf9d017fcd178dc8c0...     a.txt
+100644 blob c200906efd24ec5e783bee7...    b.txt
+</code></pre></td></tr></table>
+</div>
+</div><p>这里我们遇到了第二种Git object类型——tree，它将当前的目录结构打了一个快照。从它储存的内容来看可以发现它储存了一个目录结构（类似于文件夹），以及每一个文件（或者子文件夹）的权限、类型、对应的身份证（SHA1值）、以及文件名。</p>
+<p>此时的Git仓库是这样的：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-53-16-3.png alt></p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ git cat-file -t 0c96bf
+commit
+$ git cat-file -p 0c96bf
+tree 4caaa1a9ae0b274fba9e3675f9ef071616e5b209
+author lzane 李泽帆  1573302343 +0800
+committer lzane 李泽帆  1573302343 +0800
+[+] init
+</code></pre></td></tr></table>
+</div>
+</div><p>接着我们发现了第三种Git object类型——commit，它储存的是一个提交的信息，包括对应目录结构的快照tree的哈希值，上一个提交的哈希值（这里由于是第一个提交，所以没有父节点。在一个merge提交中还会出现多个父节点），提交的作者以及提交的具体时间，最后是该提交的信息。</p>
+<p>此时我们去看Git仓库是这样的：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-53-28-4.png alt></p>
+<p>到这里我们就知道Git是怎么储存一个提交的信息的了，那有同学就会问，我们平常接触的分支信息储存在哪里呢？</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ cat .git/HEAD
+ref: refs/heads/master
+
+$ cat .git/refs/heads/master
+0c96bfc59d0f02317d002ebbf8318f46c7e47ab2
+</code></pre></td></tr></table>
+</div>
+</div><p>在Git仓库里面，HEAD、分支、普通的Tag可以简单的理解成是一个指针，指向对应commit的SHA1值。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-53-34-45.png alt></p>
+<p>其实还有第四种Git object，类型是tag，在添加含附注的tag（<code>git tag -a</code>）的时候会新建，这里不详细介绍，有兴趣的朋友按照上文中的方法可以深入探究。</p>
+<p>至此我们知道了Git是什么储存一个文件的内容、目录结构、commit信息和分支的。<strong>其本质上是一个key-value的数据库加上默克尔树形成的有向无环图（DAG）</strong>。这里可以蹭一下区块链的热度，区块链的数据结构也使用了默克尔树。</p>
+<h2 id=git的三个分区>Git的三个分区</h2>
+<p>接下来我们来看一下Git的三个分区（工作目录、Index 索引区域、Git仓库），以及Git变更记录是怎么形成的。了解这三个分区和Git链的内部原理之后可以对Git的众多指令有一个“可视化”的理解，不会再经常搞混。</p>
+<p>接着上面的例子，目前的仓库状态如下：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-53-41-65.png alt></p>
+<p>这里有三个区域，他们所储存的信息分别是：</p>
+<ul>
+<li>
+<p>工作目录 （ working directory ）：操作系统上的文件，所有代码开发编辑都在这上面完成。</p>
+</li>
+<li>
+<p>索引（ index or staging area ）：可以理解为一个暂存区域，这里面的代码会在下一次commit被提交到Git仓库。</p>
+</li>
+<li>
+<p>Git仓库（ git repository ）：由Git object记录着每一次提交的快照，以及链式结构记录的提交变更历史。</p>
+</li>
+</ul>
+<p>我们来看一下更新一个文件的内容这个过程会发生什么事。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-53-48-4325.png alt></p>
+<p>运行<code>echo "333" > a.txt</code>将a.txt的内容从111修改成333，此时如上图可以看到，此时索引区域和git仓库没有任何变化。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-54-02-432423.png alt></p>
+<p>运行<code>git add a.txt</code>将a.txt加入到索引区域，此时如上图所示，git在仓库里面新建了一个blob object，储存了新的文件内容。并且更新了索引将a.txt指向了新建的blob object。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/24-09-54-15-543234.png alt></p>
+<p>运行<code>git commit -m 'update'</code>提交这次修改。如上图所示</p>
+<ol>
+<li>
+<p>Git首先根据当前的索引生产一个tree object，充当新提交的一个快照。</p>
+</li>
+<li>
+<p>创建一个新的commit object，将这次commit的信息储存起来，并且parent指向上一个commit，组成一条链记录变更历史。</p>
+</li>
+<li>
+<p>将master分支的指针移到新的commit结点。</p>
+</li>
+</ol>
+<p>至此我们知道了Git的三个分区分别是什么以及他们的作用，以及历史链是怎么被建立起来的。**基本上Git的大部分指令就是在操作这三个分区以及这条链。<strong>可以尝试的思考一下git的各种命令，试一下你能不能够在上图将它们</strong>“可视化”**出来，这个很重要，建议尝试一下。</p>
+<p>如果不能很好的将日常使用的指令“可视化”出来，推荐阅读 <a href=https://marklodato.github.io/visual-git-guide/index-zh-cn.html>图解Git</a></p>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.jiqizhixin.com/articles/2019-12-20>这才是真正的Git——Git内部原理揭秘！ | 机器之心</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

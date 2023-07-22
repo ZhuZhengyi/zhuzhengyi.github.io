@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Golang Runtime 简介 Go调度器的演化 源码分析 Go 程序启动后需要对自身运行时进行初始化，其真正的程序入口由 runtime 包控制。 以 AMD64 架构上的 Linux 和 macOS 为例，分别位于：src">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/golang/golang-runtime/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Golang Runtime">
-<meta property="og:description" content>
+<meta property="og:description" content="Golang Runtime 简介 Go调度器的演化 源码分析 Go 程序启动后需要对自身运行时进行初始化，其真正的程序入口由 runtime 包控制。 以 AMD64 架构上的 Linux 和 macOS 为例，分别位于：src">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/golang-runtime/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Golang Runtime">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Golang Runtime 简介 Go调度器的演化 源码分析 Go 程序启动后需要对自身运行时进行初始化，其真正的程序入口由 runtime 包控制。 以 AMD64 架构上的 Linux 和 macOS 为例，分别位于：src"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1359">
 <meta itemprop=keywords content="language,golang,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Golang Runtime">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Golang Runtime 简介 Go调度器的演化 源码分析 Go 程序启动后需要对自身运行时进行初始化，其真正的程序入口由 runtime 包控制。 以 AMD64 架构上的 Linux 和 macOS 为例，分别位于：src"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,236 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#go调度器的演化>Go调度器的演化</a></li>
+<li><a href=#源码分析>源码分析</a></li>
+<li><a href=#sysmon>sysmon</a></li>
+<li><a href=#scavenger>scavenger</a></li>
+<li><a href=#go-关键字>go 关键字</a></li>
+<li><a href=#defer>defer</a></li>
+<li><a href=#go-routine-栈>Go Routine 栈</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=golang-runtime>Golang Runtime</h1>
+<h2 id=简介>简介</h2>
+<h2 id=go调度器的演化>Go调度器的演化</h2>
+<h2 id=源码分析>源码分析</h2>
+<p>Go 程序启动后需要对自身运行时进行初始化，其真正的程序入口由 runtime 包控制。 以 AMD64 架构上的 Linux 和 macOS 为例，分别位于：<code>src/runtime/rt0_linux_amd64.s</code> 和 <code>src/runtime/rt0_darwin_amd64.s</code>。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>TEXT _rt0_amd64_linux(SB),NOSPLIT,$-8
+    JMP    _rt0_amd64(SB)
+TEXT _rt0_amd64_darwin(SB),NOSPLIT,$-8
+    JMP    _rt0_amd64(SB)
+</code></pre></td></tr></table>
+</div>
+</div><p>两者均跳转到了 <code>_rt0_amd64</code> 函数:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>TEXT _rt0_amd64(SB),NOSPLIT,$-8
+    MOVQ    0(SP), DI    // argc
+    LEAQ    8(SP), SI    // argv
+    JMP    runtime·rt0_go(SB)
+
+TEXT runtime·rt0_go(SB),NOSPLIT,$0
+    // 将参数向前复制到一个偶数栈上
+    MOVQ    DI, AX            // argc
+    MOVQ    SI, BX            // argv
+    SUBQ    $(4*8+7), SP    // 2args 2auto
+    ANDQ    $~15, SP
+    MOVQ    AX, 16(SP)
+    MOVQ    BX, 24(SP)
+
+    // 初始化 g0 执行栈
+    MOVQ    $runtime·g0(SB), DI            // DI = g0
+    LEAQ    (-64*1024+104)(SP), BX
+    MOVQ    BX, g_stackguard0(DI)        // g0.stackguard0 = SP + (-64*1024+104)
+    MOVQ    BX, g_stackguard1(DI)        // g0.stackguard1 = SP + (-64*1024+104)
+    MOVQ    BX, (g_stack+stack_lo)(DI)    // g0.stack.lo    = SP + (-64*1024+104)
+    MOVQ    SP, (g_stack+stack_hi)(DI)    // g0.stack.hi    = SP
+
+    // 确定 CPU 处理器的信息
+    MOVL    $0, AX
+    CPUID            // CPUID 会设置 AX 的值
+    MOVL    AX, SI
+    (...)
+</code></pre></td></tr></table>
+</div>
+</div><p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/01/25-16-54-30-2021-01-25-16-54-23-image.png alt=golang-runtime启动流程></p>
+<h2 id=sysmon>sysmon</h2>
+<p>在main.main执行之前，Go语言的runtime库会初始化一些后台任务，其中一个任务就是sysmon。</p>
+<p>sysmon是一个物理线程，主要处理两个事件：</p>
+<ul>
+<li>
+<p>对于网络的epoll;</p>
+</li>
+<li>
+<p>抢占式调度的检测: sysmon会根据系统当前的繁忙程度睡一小段时间，然后每隔10ms至少进行一次epoll并唤醒相应的goroutine</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>newm</span><span class=p>(</span><span class=n>sysmon</span><span class=p>,</span> <span class=n>nil</span><span class=p>);</span>  <span class=c1>//sysmon 是一个m, 物理线程；
+</span><span class=c1></span>
+<span class=k>for</span><span class=p>(;;)</span> <span class=p>{</span>
+    <span class=n>runtime</span><span class=p>.</span><span class=n>usleep</span><span class=p>(</span><span class=n>delay</span><span class=p>);</span>
+    <span class=k>if</span><span class=p>(</span><span class=n>lastpoll</span> <span class=o>!=</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=n>lastpoll</span> <span class=o>+</span> <span class=mi>10</span><span class=o>*</span><span class=mi>1000</span><span class=o>*</span><span class=mi>1000</span> <span class=o>&gt;</span> <span class=n>now</span><span class=p>)</span> <span class=p>{</span>
+        <span class=n>runtime</span><span class=p>.</span><span class=n>netpoll</span><span class=p>();</span>
+    <span class=p>}</span>
+    <span class=n>retake</span><span class=p>(</span><span class=n>now</span><span class=p>);</span>    <span class=c1>// 根据每个P的状态和运行时间决定是否要进行抢占
+</span><span class=c1></span><span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=scavenger>scavenger</h2>
+<p>scavenger是一个goroutine，执行的是runtime·MHeap_Scavenger函数。</p>
+<p>它将一些不再使用的内存归还给操作系统，用于执行内存回收；</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>runtime</span><span class=err>·</span><span class=n>newproc</span><span class=p>(</span><span class=o>&amp;</span><span class=n>scavenger</span><span class=p>,</span> <span class=n>nil</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>runtime</span><span class=err>·</span><span class=n>main</span><span class=p>);</span>  <span class=c1>//scavenger 是一个goroutine
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id=go-关键字>go 关键字</h2>
+<p>Go语言中，表达式go f(x, y, z)会启动一个新的goroutine运行函数f(x, y, z)</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=k>go</span> <span class=nf>f</span><span class=p>(</span><span class=nx>args</span><span class=p>)</span>
+<span class=c1>//go 关键字是如下语句的一个包装
+</span><span class=c1></span><span class=nx>runtime</span><span class=p>.</span><span class=nf>newproc</span><span class=p>(</span><span class=nx>size</span><span class=p>,</span> <span class=nx>f</span><span class=p>,</span> <span class=nx>args</span><span class=p>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=defer>defer</h2>
+<ul>
+<li>
+<p>defer关键字的实现跟go关键字很类似，不同的是它调用的是runtime.deferproc而不是runtime.newproc。</p>
+</li>
+<li>
+<p>在defer出现的地方，插入了指令<code>call runtime.deferproc</code>，然后在函数返回之前的地方，插入指令<code>call runtime.deferreturn</code>。</p>
+</li>
+<li>
+<p>goroutine的控制结构中，有一张表记录defer，</p>
+</li>
+<li>
+<p>调用runtime.deferproc时会将需要defer的表达式记录在表中，而在调用<code>runtime.deferreturn</code>的时候，则会依次从defer表中出栈并执行。</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>//无defer函数返回
+</span><span class=c1></span><span class=nx>add</span> <span class=nx>xx</span> <span class=nx>SP</span>
+<span class=k>return</span>
+
+<span class=c1>//defer 函数返回
+</span><span class=c1></span><span class=nx>call</span> <span class=nx>runtime</span><span class=p>.</span><span class=nx>deferreturn</span><span class=err>，</span>
+<span class=nx>add</span> <span class=nx>xx</span> <span class=nx>SP</span>
+<span class=k>return</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=go-routine-栈>Go Routine 栈</h2>
+<ul>
+<li>
+<p>每个goroutine需要能够运行，都有自己的栈。</p>
+</li>
+<li>
+<p>初始时只给栈分配很小的空间，然后随着使用过程中的需要自动地增长</p>
+</li>
+<li>
+<p>Go1.3版本之后则使用的是continuous stack；</p>
+</li>
+<li>
+<p>每个Go函数调用的前几条指令，先比较栈指针寄存器跟g->stackguard，检测是否发生栈溢出。如果栈指针寄存器值超越了stackguard就需要扩展栈空间；</p>
+</li>
+</ul>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.bookstack.cn/read/go-internals/zh-04.1.md>Go语言程序初始化过程 - 系统初始化 - 《深入解析Go》 - 书栈网 · BookStack</a></p>
+</li>
+<li>
+<p><a href=https://golang.design/under-the-hood/zh-cn/part1basic/ch05life/boot/>https://golang.design/under-the-hood/zh-cn/part1basic/ch05life/boot/</a></p>
+</li>
+<li>
+<p><a href=https://www.cnblogs.com/mafeng/p/10305419.html>深入理解golang 的栈 - ma_fighting - 博客园</a></p>
+</li>
+<li>
+<p><a href=http://www.huamo.online/2019/06/25/%E6%B7%B1%E5%85%A5%E7%A0%94%E7%A9%B6goroutine%E6%A0%88/>深入研究goroutine栈 | 花木兰</a></p>
+</li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/237870981>https://zhuanlan.zhihu.com/p/237870981</a></p>
+</li>
+<li>
+<p><a href=https://segmentfault.com/a/1190000019570427>https://segmentfault.com/a/1190000019570427</a></p>
+</li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

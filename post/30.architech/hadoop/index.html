@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Hadoop 简介 组件 hdfs: 分布式文件存储系统，包含namenode，datanode两个组件， 配置文件: $HADOOP_HOME/etc/hadoop/hdfs-site.xml 启动进程： $HADOOP_HOME/sbin/hadoop-daemon.sh start/stop namenode | datanode yarn: 资源管理与调度 配置文件: $HADOOP_HOME/etc/hadoop/yarn-site.xml">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hadoop/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Hadoop">
-<meta property="og:description" content>
+<meta property="og:description" content="Hadoop 简介 组件 hdfs: 分布式文件存储系统，包含namenode，datanode两个组件， 配置文件: $HADOOP_HOME/etc/hadoop/hdfs-site.xml 启动进程： $HADOOP_HOME/sbin/hadoop-daemon.sh start/stop namenode | datanode yarn: 资源管理与调度 配置文件: $HADOOP_HOME/etc/hadoop/yarn-site.xml">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hadoop/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Hadoop">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="Hadoop 简介 组件 hdfs: 分布式文件存储系统，包含namenode，datanode两个组件， 配置文件: $HADOOP_HOME/etc/hadoop/hdfs-site.xml 启动进程： $HADOOP_HOME/sbin/hadoop-daemon.sh start/stop namenode | datanode yarn: 资源管理与调度 配置文件: $HADOOP_HOME/etc/hadoop/yarn-site.xml"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="799">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Hadoop">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Hadoop 简介 组件 hdfs: 分布式文件存储系统，包含namenode，datanode两个组件， 配置文件: $HADOOP_HOME/etc/hadoop/hdfs-site.xml 启动进程： $HADOOP_HOME/sbin/hadoop-daemon.sh start/stop namenode | datanode yarn: 资源管理与调度 配置文件: $HADOOP_HOME/etc/hadoop/yarn-site.xml"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,335 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#组件>组件</a></li>
+<li><a href=#安装>安装</a></li>
+<li><a href=#hadoop-ha-配置>Hadoop HA 配置</a>
+<ul>
+<li><a href=#启动命令>启动命令</a></li>
+<li><a href=#hadoop-prometheus-exporter>Hadoop prometheus exporter</a></li>
+</ul>
+</li>
+<li><a href=#yarn>Yarn</a>
+<ul>
+<li><a href=#yarn-内存设置>yarn 内存设置</a></li>
+</ul>
+</li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=hadoop>Hadoop</h1>
+<h2 id=简介>简介</h2>
+<h2 id=组件>组件</h2>
+<ul>
+<li>
+<p><strong>hdfs</strong>: 分布式文件存储系统，包含namenode，datanode两个组件，</p>
+<p>配置文件: $HADOOP_HOME/etc/hadoop/hdfs-site.xml</p>
+<p>启动进程： $HADOOP_HOME/sbin/hadoop-daemon.sh start/stop namenode | datanode</p>
+</li>
+<li>
+<p><strong>yarn</strong>: 资源管理与调度</p>
+<p>配置文件: $HADOOP_HOME/etc/hadoop/yarn-site.xml</p>
+<p>启动进程： $HADOOP_HOME/sbin/yarn-daemon.sh start/stop resourcemanager | nodemanager</p>
+</li>
+<li>
+<p><strong>mr历史日志服务器</strong>: mapreduce历史服务器，查看已经运行完的Mapreduce作业记录，比如用了多少个Map、用了多少个Reduce、作业提交时间、作业启动时间、作业完成时间等信息。</p>
+<p>配置文件: $HADOOP_HOME/etc/hadoop/mapred-site.xml</p>
+<p>启动进程： $HADOOP_HOME/sbin/mr-jobhistory-daemon.sh start historyserver</p>
+<p>mapred-site.xml:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;configuration&gt;</span>
+  <span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>yarn.app.mapreduce.am.staging-dir<span class=nt>&lt;/name&gt;</span>
+    <span class=nt>&lt;value&gt;</span>/tmp/hadoop-yarn/staging<span class=nt>&lt;/value&gt;</span>
+    <span class=nt>&lt;/property&gt;</span>
+  <span class=nt>&lt;property&gt;</span>
+    <span class=nt>&lt;name&gt;</span>mapreduce.jobhistory.done-dir<span class=nt>&lt;/name&gt;</span>
+    <span class=nt>&lt;value&gt;</span>${yarn.app.mapreduce.am.staging-dir}/history/done<span class=nt>&lt;/value&gt;</span>
+    <span class=nt>&lt;/property&gt;</span>
+  <span class=nt>&lt;property&gt;</span>
+    <span class=nt>&lt;name&gt;</span>mapreduce.jobhistory.intermediate-done-dir<span class=nt>&lt;/name&gt;</span>
+    <span class=nt>&lt;value&gt;</span>${yarn.app.mapreduce.am.staging-dir}/history/done_intermediate<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;/configuration&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h2 id=安装>安装</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=nv>$HADOOP_HOME</span>/etc/hadoop/core-site.xml
+<span class=nv>$HADOOP_HOME</span>/etc/hadoop/hdfs-site.xml
+<span class=nv>$HADOOP_HOME</span>/etc/hadoop/mapred-site.xml
+<span class=nv>$HADOOP_HOME</span>/etc/hadoop/yarn-site.xml
+
+//格式化namenode
+<span class=nv>$HADOOP_HOME</span>/bin/hadoop namenode -format
+//启动namenode
+<span class=nv>$HADOOP_HOME</span>/sbin/hadoop-daemon.sh start namenode
+//启动datanode
+<span class=nv>$HADOOP_HOME</span>/sbin/hadoop-daemon.sh start datanode
+//启动resource manager
+<span class=nv>$HADOOP_HOME</span>/sbin/yarn-daemon.sh start resourcemanager
+//启动node manager
+<span class=nv>$HADOOP_HOME</span>/sbin/yarn-daemon.sh start nodemanager
+//启动historyserver
+<span class=nv>$HADOOP_HOME</span>/sbin/mr-jobhistory-daemon.sh start historyserver
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>
+<p>wordcount</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$HADOOP_HOME/bin/hadoop jar $HODOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.6.jar wordcount /input /output
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h2 id=hadoop-ha-配置>Hadoop HA 配置</h2>
+<p>Hadoop 的 namenode 存在单点故障，为解决这个问题，需对其配置HA方案。</p>
+<ul>
+<li>
+<p>hdfs-site.xml</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=c>&lt;!-- ha集群名称 --&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.nameservices<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>ha-cluster<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=c>&lt;!-- ha包含哪些节点 --&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.ha.namenodes.ha-cluster<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>nn1,nn2<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=c>&lt;!-- namenode rpc 监听地址 --&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.namenode.rpc-address.ha-cluster.nn1<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>machine1.example.com:8020<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.namenode.rpc-address.ha-cluster.nn2<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>machine2.example.com:8020<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=c>&lt;!-- namenode http 监听地址 --&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.namenode.http-address.ha-cluster.nn1<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>machine1.example.com:50070<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.namenode.http-address.ha-cluster.nn2<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>machine2.example.com:50070<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=c>&lt;!-- NameNode读写JNs组的uri --&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.namenode.shared.edits.dir<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>qjournal://jnode1.example.com:8485;jnode2.example.com:8485;jnode3.example.com:8485/ha-cluster<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.client.failover.proxy.provider.mycluster<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>org.apache.Hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.ha.fencing.methods<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>sshfence<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.ha.fencing.ssh.private-key-files<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>/home/exampleuser/.ssh/id_rsa<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>core-site.xml</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.defaultFS<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>hdfs://ha-cluster<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+   <span class=nt>&lt;name&gt;</span>ha.zookeeper.quorum<span class=nt>&lt;/name&gt;</span>
+   <span class=nt>&lt;value&gt;</span>zk1.example.com:2181,zk2.example.com:2181,zk3.example.com:2181<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>dfs.journalnode.edits.dir<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>/path/to/journal/node/local/data<span class=nt>&lt;/value&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=启动命令>启动命令</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=nv>$sbin</span>/hadoop-daemon.sh start journalnode. <span class=c1># 在各个journalnode节点上执行，启动journalnode</span>
+
+$ bin/hdfs namenode -format      <span class=c1>#未初始化hdfs集群，在一个namenode节点上执行，格式化namenode</span>
+$ bin/hdfs namenode -bootstrapStandby <span class=c1># 同步已格式化的namenode数据到未格式化namenode节点</span>
+
+$ binm/hdfs namenode -initializeSharedEdits     <span class=c1>#将非HA集群转换成HA集群</span>
+
+$ bin/hdfs zkfc –formatZK     <span class=c1>#格式化zk</span>
+
+$ sbin/start-all.sh  <span class=c1>#启动所有服务</span>
+$ sbin/stop-all.sh   <span class=c1>#关闭所有服务</span>
+
+$ bin/hdfs haadmin -getServiceState nn1    <span class=c1>#查看节点HA状态</span>
+$ bin/hdfs haadmin -transitionToActive --forceactive --forcemanual nn1  <span class=c1>#强制切换active</span>
+
+$ bin/hdfs haadmin -failover --forcefence serviceId serviceId2
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=hadoop-prometheus-exporter>Hadoop prometheus exporter</h3>
+<p>$HADOOP_HOME/etc/hadoop/hadoop-env.sh\</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=nb>export</span> <span class=nv>HADOOP_JMX_NN_PORT</span><span class=o>=</span><span class=m>10400</span>
+<span class=nb>export</span> <span class=nv>HADOOP_JMX_DN_PORT</span><span class=o>=</span><span class=m>10401</span>
+<span class=nb>export</span> <span class=nv>HADOOP_JMX_EXPORTER_JAR</span><span class=o>=</span><span class=s2>&#34;</span><span class=nv>$HADOOP_HOME</span><span class=s2>/lib/jmx_prometheus_javaagent-0.10.jar&#34;</span>
+<span class=nb>export</span> <span class=nv>HADOOP_JMX_EXPORTER_CONF</span><span class=o>=</span><span class=s2>&#34;</span><span class=nv>$HADOOP_HOME</span><span class=s2>/etc/hadoop/hadoop-exporter.yaml&#34;</span>
+<span class=nb>export</span> <span class=nv>HADOOP_NAMENODE_OPTS</span><span class=o>=</span><span class=s2>&#34;</span><span class=nv>$HADOOP_NAMENODE_OPTS</span><span class=s2> -javaagent:</span><span class=nv>$HADOOP_JMX_EXPORTER_JAR</span><span class=s2>=</span><span class=nv>$HADOOP_JMX_NN_PORT</span><span class=s2>:</span><span class=nv>$HADOOP_JMX_EXPORTER_CONF</span><span class=s2>&#34;</span>
+<span class=nb>export</span> <span class=nv>HADOOP_DATANODE_OPTS</span><span class=o>=</span><span class=s2>&#34;</span><span class=nv>$HADOOP_DATANODE_OPTS</span><span class=s2> -javaagent:</span><span class=nv>$HADOOP_JMX_EXPORTER_JAR</span><span class=s2>=</span><span class=nv>$HADOOP_JMX_DN_PORT</span><span class=s2>:</span><span class=nv>$HADOOP_JMX_EXPORTER_CONF</span><span class=s2>&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=yarn>Yarn</h2>
+<h3 id=yarn-内存设置>yarn 内存设置</h3>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

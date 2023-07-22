@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/parquet/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="列式存储格式Parquet">
-<meta property="og:description" content>
+<meta property="og:description" content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/parquet/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="列式存储格式Parquet">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="5992">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="列式存储格式Parquet">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="列式存储格式Parquet 简介 Apache Parquet是Hadoop生态圈中一种新型列式存储格式, 来自于2010年Google发表的Dremel论文"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,329 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#架构>架构</a></li>
+<li><a href=#行式存储列式存储>行式存储/列式存储</a>
+<ul>
+<li><a href=#数据模型>数据模型</a></li>
+<li><a href=#列存储格式>列存储格式</a></li>
+<li><a href=#definition-levels>Definition levels</a></li>
+<li><a href=#repetition-levels>Repetition levels</a></li>
+<li><a href=#striping-and-assembly>Striping and assembly</a></li>
+<li><a href=#文件格式>文件格式</a></li>
+<li><a href=#映射下推project-pushdown>映射下推(Project PushDown)</a></li>
+<li><a href=#谓词下推predicate-pushdown>谓词下推(Predicate PushDown)</a></li>
+</ul>
+</li>
+<li><a href=#性能>性能</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=列式存储格式parquet>列式存储格式Parquet</h1>
+<h1 id=简介>简介</h1>
+<p>Apache Parquet是Hadoop生态圈中一种<strong>新型列式存储格式</strong>, 来自于2010年Google发表的<a href=http://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/36632.pdf>Dremel论文</a>，可以兼容Hadoop生态圈中大多数计算框架(Hadoop、Spark等)，被多种查询引擎支持(Hive、Impala、Drill等)，并且它是语言和平台无关的。</p>
+<p>Parquet最初是由Twitter和Cloudera(由于Impala的缘故)合作开发完成并开源，2015年5月从Apache的孵化器里毕业成为Apache顶级项目，最新的版本是1.8.1。</p>
+<p>Parquet是语言无关的，而且不与任何一种数据处理框架绑定在一起，适配多种语言和组件，能够与Parquet配合的组件有：</p>
+<ul>
+<li>
+<p>查询引擎: Hive, Impala, Pig, Presto, Drill, Tajo, HAWQ, IBM Big SQL</p>
+</li>
+<li>
+<p>计算框架: MapReduce, Spark, Cascading, Crunch, Scalding, Kite</p>
+</li>
+<li>
+<p>数据模型: Avro, Thrift, Protocol Buffers, POJOs</p>
+</li>
+</ul>
+<h2 id=架构>架构</h2>
+<ol>
+<li>存储格式(storage format)</li>
+</ol>
+<p>parquet-format项目定义了Parquet内部的数据类型、存储格式等。</p>
+<ol start=2>
+<li>对象模型转换器(object model converters)</li>
+</ol>
+<p>这部分功能由parquet-mr项目来实现，主要完成外部对象模型与Parquet内部数据类型的映射。</p>
+<ol start=3>
+<li>对象模型(object models)</li>
+</ol>
+<p>对象模型可以简单理解为内存中的数据表示，Avro, Thrift, Protocol Buffers, Hive SerDe, Pig Tuple, Spark SQL InternalRow等这些都是对象模型。Parquet也提供了一个example object model 帮助大家理解。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-14-37-42-2019-12-13-16-20-15-image.png alt></p>
+<h2 id=行式存储列式存储>行式存储/列式存储</h2>
+<ul>
+<li>
+<p><strong>行式存储</strong>：更适合OLTP</p>
+</li>
+<li>
+<p><strong>列式存储</strong>: 是按照列进行存储数据，把某一列的数据连续的存储，每一行中的不同列的值离散分布。更适合OLAP</p>
+</li>
+</ul>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-14-37-55-2019-12-13-16-27-54-image.png alt></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>行式存储</th>
+<th>列式存储</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>优点</td>
+<td>* 数据被保存在一起<br>* INSERT/UPDATE容易</td>
+<td>Ø  查询时只有涉及到的列会被读取<br><br>Ø  投影(projection)很高效<br><br>Ø  任何列都能作为索引</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>Ø  选择(Selection)时即使只涉及某几列，所有数据也都会被读取</td>
+<td>* 选择完成时，被选择的列要重新组装<br><br>* INSERT/UPDATE比较麻烦</td>
+</tr>
+</tbody>
+</table>
+<h3 id=数据模型>数据模型</h3>
+<p>理解Parquet首先要理解这个列存储格式的数据模型。我们以一个下面这样的schema和数据为例来说明这个问题。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=kd>message</span> <span class=nc>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=k>required</span> <span class=kt>string</span> <span class=n>owner</span><span class=p>;</span><span class=err>
+</span><span class=err></span> <span class=k>repeated</span> <span class=kt>string</span> <span class=n>ownerPhoneNumbers</span><span class=p>;</span><span class=err>
+</span><span class=err></span> <span class=k>repeated</span> <span class=kd>group</span> <span class=n>contacts</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=k>required</span> <span class=kt>string</span> <span class=n>name</span><span class=p>;</span><span class=err>
+</span><span class=err></span>   <span class=k>optional</span> <span class=kt>string</span> <span class=n>phoneNumber</span><span class=p>;</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Parquet格式的数据类型不需要复杂的Map, List, Set等，而是使用repeated fields 和 groups来表示。例如List和Set可以被表示成一个repeated field，Map可以表示成一个包含有key-value 对的repeated group ，而且key是required的。</p>
+<h3 id=列存储格式>列存储格式</h3>
+<p>列存储通过将相同基本类型（primitive type）的值存储在一起来提供高效的编码和解码。为了用列存储来存储如上嵌套的数据结构，我们需要将该schema用某种方式映射到一系列的列使我们能够将记录写到列中并且能读取成原来的嵌套的数据结构。</p>
+<p>在Parquet格式的存储中，一个schema的树结构有几个叶子节点（叶子节点都是primitive type），实际的存储中就会有多少column。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-14-03-2020-11-11-15-13-58-image.png alt></p>
+<p>上面这个schema的数据存储实际上有四个column. 只有字段值不能表达清楚记录的结构。给出一个repeated field的两个值，我们不知道此值是按什么‘深度’被重复的（比如，这些值是来自两个不同的记录，还是相同的记录中两个重复的值）。同样的，给出一个缺失的可选字段，我们不知道整个路径有多少字段被显示定义了。因此我们将介绍repetition level 和 definition level的概念。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-29-02-2020-11-11-15-28-56-image.png alt></p>
+<h3 id=definition-levels>Definition levels</h3>
+<p>Definition level指明该列的路径上多少个可选field被定义了。</p>
+<p>嵌套数据类型的特点是有些field（optional field 和 repeated field）可以是空的，也就是没有定义。如果一个field是定义的，那么它的所有的父节点都是被定义的。从根节点开始遍历，当某一个field的路径上的节点开始是空的时候我们记录下当前的深度作为这个field的Definition Level。如果一个field的definition Level等于这个field的最大definition Level就说明这个field是有数据的。</p>
+<p>对于required类型的field必须是有定义的，所以这个Definition Level是不需要的。</p>
+<p>在关系型数据中，optional类型的field被编码成0表示空和1表示非空（或者反之）。</p>
+<p>注：definition Level是该路径上有定义的repeated field 和 optional field的个数，不包括required field，因为required field是必须有定义的。</p>
+<p>再举个简单的例子：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=kd>message</span> <span class=nc>ExampleDefinitionLevel</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>  <span class=k>optional</span> <span class=kd>group</span> <span class=n>a</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>    <span class=k>required</span> <span class=kd>group</span> <span class=n>b</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>      <span class=k>optional</span> <span class=kt>string</span> <span class=n>c</span><span class=p>;</span><span class=err>
+</span><span class=err></span>    <span class=p>}</span><span class=err>
+</span><span class=err></span>  <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-19-04-2020-11-11-15-18-59-image.png alt></p>
+<p>因为b是required field，所以第3行c的definition level为1而不是2（因为b是required field，所有不需计算在内）；</p>
+<p>第4行c的definition level为2而不是3（理由同上）.</p>
+<h3 id=repetition-levels>Repetition levels</h3>
+<p>Repetition level指明该值在路径中哪个repeated field重复。</p>
+<p>Repetition level是针对repeted field的。</p>
+<p>注意在图2中的Code字段。可以看到它在r1出现了3次。‘en-us’、‘en’在第一个Name中，而‘en-gb’在第三个Name中。</p>
+<p>结合了图2你肯定能理解我上一句话并知道‘en-us’、‘en’、‘en-gb’出现在r1中的具体位置，但是不看图的话呢？怎么用文字，或者说是一种定义、一种属性、一个数值，诠释清楚它们出现的位置？</p>
+<p>这就是重复深度这个概念的作用，它能用一个数字告诉我们在路径中的什么重复字段，此值重复了，以此来确定此值的位置（注意，这里的重复，特指在某个repeated类型的字段下“重复”出现的“重复”）。</p>
+<p>我们用深度0表示一个纪录的开头（虚拟的根节点），深度的计算忽略非重复字段（标签不是repeated的字段都不算在深度里）。所以在Name.Language.Code这个路径中，包含两个重复字段，Name和Language，如果在Name处重复，重复深度为1（虚拟的根节点是0，下一级就是1），在Language处重复就是2，不可能在Code处重复，它是required类型，表示有且仅有一个；同样的，在路径Links.Forward中，Links是optional的，不参与深度计算（不可能重复），Forward是repeated的，因此只有在Forward处重复时重复深度为1。现在我们从上至下扫描纪录r1。当我们遇到’en-us’，我们没看到任何重复字段，也就是说，重复深度是0。当我们遇到‘en’，字段Language重复了（在‘en-us’的路径里已经出现过一个Language），所以重复深度是2.最终，当我们遇到’en-gb‘，Name重复了（Name在前面‘en-us’和‘en’的路径里已经出现过一次，而此Name后Language只出现过一次，没有重复），所以重复深度是1。因此，r1中Code的值的重复深度是0、2、1.</p>
+<p>要注意第二个Name在r1中没有包含任何Code值。为了确定‘en-gb’出现在第三个Name而不是第二个，我们添加一个NULL值在‘en’和‘en-gb’之间（如图3所示）。</p>
+<h3 id=striping-and-assembly>Striping and assembly</h3>
+<p>下面用AddressBook的例子来说明Striping和assembly的过程。</p>
+<p>对于每个column的最大的Repetion Level和 Definition Level下图所示。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-20-29-2020-11-11-15-20-23-image.png alt></p>
+<p>下面这样两条record：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=n>owner</span><span class=o>:</span> <span class=s>&#34;Julien Le Dem&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=n>ownerPhoneNumbers</span><span class=o>:</span> <span class=s>&#34;555 123 4567&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=n>ownerPhoneNumbers</span><span class=o>:</span> <span class=s>&#34;555 666 1337&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=n>name</span><span class=o>:</span> <span class=s>&#34;Dmitriy Ryaboy&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span>   <span class=n>phoneNumber</span><span class=o>:</span> <span class=s>&#34;555 987 6543&#34;</span><span class=p>,</span><span class=err>
+</span><span class=err></span> <span class=p>},</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=n>name</span><span class=o>:</span> <span class=s>&#34;Chris Aniszczyk&#34;</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span><span class=err>
+</span><span class=err></span><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=n>owner</span><span class=o>:</span> <span class=s>&#34;A. Nonymous&#34;</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>以contacts.phoneNumber这一列为例，</p>
+<p>&ldquo;555 987 6543"这个contacts.phoneNumber的Definition Level是最大Definition Level=2。</p>
+<p>而如果一个contact没有phoneNumber，那么它的Definition Level就是1。</p>
+<p>如果连contact都没有，那么它的Definition Level就是0。</p>
+<p>下面我们拿掉其他三个column只看contacts.phoneNumber这个column，把上面的两条record简化成下面的样子：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-protobuf data-lang=protobuf><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span>   <span class=n>phoneNumber</span><span class=o>:</span> <span class=s>&#34;555 987 6543&#34;</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span> <span class=n>contacts</span><span class=o>:</span> <span class=p>{</span><span class=err>
+</span><span class=err></span> <span class=p>}</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span><span class=err></span><span class=n>AddressBook</span> <span class=p>{</span><span class=err>
+</span><span class=err></span><span class=p>}</span><span class=err>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这两条记录的序列化过程如下图所示：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-22-00-2020-11-11-15-21-55-image.png alt></p>
+<p>如果我们要把这个column写到磁盘上，磁盘上会写入这样的数据：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/03/16-18-23-37-2022-03-16-18-23-30-image.png alt></p>
+<p>注意：NULL实际上不会被存储，如果一个column value的Definition Level小于该column最大Definition Level的话，那么就表示这是一个空值。</p>
+<p>下面是从磁盘上读取数据并反序列化成AddressBook对象的过程：</p>
+<ol>
+<li>
+<p>读取第一个三元组R=0, D=2, Value=”555 987 6543”</p>
+<p>R=0 表示是一个新的record，要根据schema创建一个新的nested record直到Definition Level=2。</p>
+<p>D=2 说明Definition Level=Max Definition Level，那么这个Value就是contacts.phoneNumber这一列的值，赋值操作contacts.phoneNumber=”555 987 6543”。</p>
+</li>
+</ol>
+<hr>
+<ol start=2>
+<li>
+<p>读取第二个三元组 R=1, D=1</p>
+<p>R=1 表示不是一个新的record，是上一个record中一个新的contacts。</p>
+<p>D=1 表示contacts定义了，但是contacts的下一个级别也就是phoneNumber没有被定义，所以创建一个空的contacts。</p>
+</li>
+</ol>
+<hr>
+<ol start=3>
+<li>
+<p>读取第三个三元组 R=0, D=0</p>
+<p>R=0 表示一个新的record，根据schema创建一个新的nested record直到Definition Level=0，也就是创建一个AddressBook根节点。</p>
+</li>
+</ol>
+<p>可以看出在Parquet列式存储中，对于一个schema的所有叶子节点会被当成column存储，而且叶子节点一定是primitive类型的数据。对于这样一个primitive类型的数据会衍生出三个sub columns (R, D, Value)，也就是从逻辑上看除了数据本身以外会存储大量的Definition Level和Repetition Level。那么这些Definition Level和Repetition Level是否会带来额外的存储开销呢？实际上这部分额外的存储开销是可以忽略的。因为对于一个schema来说level都是有上限的，而且非repeated类型的field不需要Repetition Level，required类型的field不需要Definition Level，也可以缩短这个上限。例如对于Twitter的7层嵌套的schema来说，只需要3个bits就可以表示这两个Level了。</p>
+<p>对于存储关系型的record，record中的元素都是非空的（NOT NULL in SQL）。Repetion Level和Definition Level都是0，所以这两个sub column就完全不需要存储了。所以在存储非嵌套类型的时候，Parquet格式也是一样高效的。</p>
+<h3 id=文件格式>文件格式</h3>
+<ul>
+<li>
+<p>行组(Row Group)：按照行将数据物理上划分为多个单元，每一个行组包含一定的行数。一个行组包含这个行组对应的区间内的所有列的列块。</p>
+<p>官方建议：</p>
+<blockquote>
+<p>更大的行组意味着更大的列块，使得能够做更大的序列IO。我们建议设置更大的行组（512MB-1GB）。因为一次可能需要读取整个行组，所以我们想让一个行组刚好在一个HDFS块中。因此，HDFS块的大小也需要被设得更大。一个最优的读设置是：1GB的行组，1GB的HDFS块，1个HDFS块放一个HDFS文件。</p>
+</blockquote>
+</li>
+<li>
+<p>列块(Column Chunk)：在一个行组中每一列保存在一个列块中，行组中的所有列连续的存储在这个行组文件中。不同的列块可能使用不同的算法进行压缩。一个列块由多个页组成。</p>
+</li>
+<li>
+<p>页(Page)：每一个列块划分为多个页，页是压缩和编码的单元，对数据模型来说页是透明的。在同一个列块的不同页可能使用不同的编码方式。官方建议一个页为8KB。</p>
+</li>
+</ul>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-23-49-2020-11-11-15-23-44-image.png alt></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/11-15-24-14-2020-11-11-15-24-08-image.png alt></p>
+<p>上图展示了一个Parquet文件的结构:</p>
+<ul>
+<li>
+<p>一个文件中可以存储多个行组;</p>
+</li>
+<li>
+<p>文件的首位都是该文件的Magic Code，用于校验它是否是一个Parquet文件;</p>
+</li>
+<li>
+<p>Footer length存储了文件元数据的大小，通过该值和文件长度可以计算出元数据的偏移量，文件的元数据中包括每一个行组的元数据信息和当前文件的Schema信息。</p>
+</li>
+</ul>
+<p>除了文件中每一个行组的元数据，每一页的开始都会存储该页的元数据，</p>
+<p>在Parquet中，有三种类型的页：</p>
+<ul>
+<li>
+<p>数据页: 用于存储当前行组中该列的值，</p>
+</li>
+<li>
+<p>字典页: 存储该列值的编码字典，每一个列块中最多包含一个字典页，</p>
+</li>
+<li>
+<p>索引页: 用来存储当前行组下该列的索引，</p>
+</li>
+</ul>
+<p>目前Parquet中还不支持索引页，但是在后面的版本中增加。</p>
+<h3 id=映射下推project-pushdown>映射下推(Project PushDown)</h3>
+<p>说到列式存储的优势，映射下推是最突出的，它意味着在获取表中原始数据时只需要扫描查询中需要的列，由于每一列的所有值都是连续存储的，所以分区取出每一列的所有值就可以实现TableScan算子，而避免扫描整个表文件内容。</p>
+<p>在Parquet中原生就支持映射下推，执行查询的时候可以通过Configuration传递需要读取的列的信息，这些列必须是Schema的子集，映射每次会扫描一个Row Group的数据，然后一次性得将该Row Group里所有需要的列的Cloumn Chunk都读取到内存中，每次读取一个Row Group的数据能够大大降低随机读的次数，除此之外，Parquet在读取的时候会考虑列是否连续，如果某些需要的列是存储位置是连续的，那么一次读操作就可以把多个列的数据读取到内存。</p>
+<h3 id=谓词下推predicate-pushdown>谓词下推(Predicate PushDown)</h3>
+<p>在数据库之类的查询系统中最常用的优化手段就是谓词下推了，通过将一些过滤条件尽可能的在最底层执行可以减少每一层交互的数据量，从而提升性能，例如”select count(1) from A Join B on A.id = B.id where A.a > 10 and B.b &lt; 100″SQL查询中，在处理Join操作之前需要首先对A和B执行TableScan操作，然后再进行Join，再执行过滤，最后计算聚合函数返回，但是如果把过滤条件A.a > 10和B.b &lt; 100分别移到A表的TableScan和B表的TableScan的时候执行，可以大大降低Join操作的输入数据。</p>
+<p>无论是行式存储还是列式存储，都可以在将过滤条件在读取一条记录之后执行以判断该记录是否需要返回给调用者，在Parquet做了更进一步的优化，优化的方法时对每一个Row Group的每一个Column Chunk在存储的时候都计算对应的统计信息，包括该Column Chunk的最大值、最小值和空值个数。通过这些统计值和该列的过滤条件可以判断该Row Group是否需要扫描。另外Parquet未来还会增加诸如Bloom Filter和Index等优化数据，更加有效的完成谓词下推。</p>
+<h2 id=性能>性能</h2>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://www.jianshu.com/p/47b39ae336d5>https://www.jianshu.com/p/47b39ae336d5</a></p>
+</li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/35622907>https://zhuanlan.zhihu.com/p/35622907</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/dc_726/article/details/41143175>https://blog.csdn.net/dc_726/article/details/41143175</a></p>
+</li>
+<li>
+<p><a href=https://www.jianshu.com/p/47b39ae336d5>列存储格式Parquet浅析 - 简书</a></p>
+</li>
+<li>
+<p><a href=https://blog.csdn.net/yu616568/article/details/51868447>Parquet与ORC：高性能列式存储格式_Hello World-CSDN博客_orc parquet</a></p>
+</li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

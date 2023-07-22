@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hbase/hbase-region-split/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="HBase Region Split">
-<meta property="og:description" content>
+<meta property="og:description" content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hbase/hbase-region-split/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="HBase Region Split">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2230">
 <meta itemprop=keywords content="architech,hbase,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="HBase Region Split">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="HBase Region Split 为什么需要 Split HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memst"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,87 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#为什么需要-split><strong>为什么需要 Split</strong></a></li>
+<li><a href=#split时机>Split时机</a></li>
+<li><a href=#split策略>Split策略</a></li>
+<li><a href=#split-流程>Split 流程</a>
+<ul>
+<li><a href=#prepare阶段>prepare阶段</a></li>
+<li><a href=#execute阶段>execute阶段</a></li>
+<li><a href=#rollback阶段>rollback阶段：</a></li>
+<li><a href=#region-事务性保证>Region 事务性保证</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=hbase-region-split>HBase Region Split</h1>
+<h2 id=为什么需要-split><strong>为什么需要 Split</strong></h2>
+<p>HBase 写入region时，先将数据写入region的memstore中，当memstore达到限制大小后，flush memstore为storefile，storefile会在compaction时合并成大文件，随着写入数据的增加，storefile会越来越大，影响读写性能，为此需要将region 拆分。</p>
+<h2 id=split时机>Split时机</h2>
+<p>HBase 中共有3种情况会触发 HBase Split：</p>
+<ol>
+<li>当 Memstore flush 时，有可能产生较大的 HFile，会判断是否需要执行 Split。</li>
+<li>HStore 执行完成 Compact 操作后，可能产生较大的 HFile，会判断是否需要执行 Split。</li>
+<li>HBaseAdmin 手动执行 split 命令时，会触发 Split。</li>
+</ol>
+<h2 id=split策略>Split策略</h2>
+<p>目前已经的支持触发策略多达6种：</p>
+<ul>
+<li>
+<p><strong>ConstantSizeRegionSplitPolicy</strong>：0.94版本前默认切分策略。 一个 Region 中最大 Store 的大小大于设置阈值之后才会触发切分，Store 大小为压缩后的文件大小（启用压缩的场景） 切分策略对于大表和小表没有明显的区分</p>
+</li>
+<li>
+<p><strong>IncreasingToUpperBoundRegionSplitPolicy</strong>：0.94版本~2.0版本默认切分策略。<br>
+和 ConstantSizeRegionSplitPolicy 思路相同，一个 Region 中最大 Store 大小大于设置阈值就会触发切分，区别是这个阈值并不像 ConstantSizeRegionSplitPolicy 是一个固定的值，而是会在不断调整。<br>
+调整规则和 Region 所属表在当前 RegionServer 上的 Region 个数有关系 ：(#regions) * (#regions) * (#regions) * flush_size * 2，最大值为用户设置的 MaxRegionFileSize<br>
+能够自适应大表和小表，这种策略下很多小表会在大集群中产生大量小 Region，分散在整个集群中</p>
+</li>
+<li>
+<p><strong>SteppingSplitPolicy</strong>：2.0版本默认切分策略。<br>
+相比 IncreasingToUpperBoundRegionSplitPolicy 简单了一些，依然和待分裂 Region 所属表在当前 RegionServer 上的 Region 个数有关系：如果 Region 个数等于1，切分阈值为 flush_size * 2，否则为 MaxRegionFileSize</p>
+</li>
+<li>
+<p><strong>DisableSplitPolicy</strong>：禁止 Region split</p>
+</li>
+<li>
+<p><strong>KeyPrefixRegionSplitPolicy</strong>：切分策略依然依据默认切分策略，根据 Rowkey 指定长度的前缀来切分 Region，保证相同的前缀的行保存在同一个 Region 中。由 KeyPrefixRegionSplitPolicy.prefix_length 属性指定 Rowkey 前缀长度。按此长度对splitPoint进行截取。<br>
+此种策略比较适合有固定前缀的 Rowkey。当没有设置前缀长度，切分效果等同与 IncreasingToUpperBoundRegionSplitPolicy。</p>
+</li>
+<li>
+<p><strong>DelimitedKeyPrefixRegionSplitPolicy</strong>：切分策略依然依据默认切分策略，同样是保证相同 RowKey 前缀的数据在一个Region中，但是是以指定分隔符前面的前缀为来切分 Region。</p>
+</li>
+</ul>
+<h2 id=split-流程>Split 流程</h2>
+<p><img src=/Users/zhuzhengyi/Documents/gitnote/img/2019-12-19-14-45-18-image.png alt></p>
+<h3 id=prepare阶段>prepare阶段</h3>
+<p>在内存中初始化两个子 Region，具体是生成两个 HRegionInfo 对象，包含 TableName、RegionName、Startkey、Endkey等。同时会生成一个 transaction journal，这个对象用来记录切分的进展</p>
+<h3 id=execute阶段>execute阶段</h3>
+<p>（1）在ZK节点 /hbase/region-in-transition/region-name 下创建一个 znode，并设置状态为SPLITTING<br>
+（2）Master 通过监听ZK节点，检测到 Region 状态的变化<br>
+（3）RegionServer 在父 Region 的数据目录（HDFS）下创建一个名称为 .splits 的子目录<br>
+（4）RegionServer 关闭父 Region，强制将数据 flush 到磁盘，并这个 Region 标记为 offline 的状态。此时，落到这个 Region 的请求都会返回 NotServingRegionException 这个错误，客户端需要进行一些重试，直到新的 Region 上线。<br>
+（5）RegionServer 在 .splits 目录（HDFS）下创建 daughterA 和 daughterB 子目录，并在文件夹中创建对应的 reference 文件，分别指向父 Region 的数据文件中的一部分。<br>
+（6）RegionServer 创建子 Region 的目录（HDFS），并将 daughterA 和 daughterB 目录下的文件拷贝到 Region 目录。<br>
+（7）在 .META. 表中设置父 Region 为 offline 状态，不再提供服务。并将子 Region 的信息添加到 .META. 表中父 Region 的信息中（splitA 和 splitB 两列）。这个时候如果扫描 hbase:meta 表，会发现父 Region 正在执行 split，并不能看到子 Region 的信息。如果 RegionServer 执行这个过程失败，Master 和下一个分配了这个 Region 的 Regionserver 会清除 split 相关的状态数据。<br>
+（8）RegionServer 并行启用两个子 Region，并正式提供对外服务<br>
+（9）RegionSever 将 daughterA 和 daughterB 添加到 .META. 表中，并设置为 online 状态，这样就可以从 .META. 找到子 Region，并可以对子 Region 进行访问了。<br>
+（10）RegionServr 修改ZK节点 /hbase/region-in-transition/region-name 的状态为SPLIT，Master 就可以监听到 Region 状态的更新。Split 事务就此结束。</p>
+<h3 id=rollback阶段>rollback阶段：</h3>
+<p>如果 execute 阶段出现异常，则执行 rollback 操作。为了实现回滚，整个切分过程被分为很多子阶段，回滚程序会根据当前进展到哪个子阶段清理对应的垃圾数据。JournalEntryType 类定义了各个子阶段。</p>
+<h3 id=region-事务性保证>Region 事务性保证</h3>
+<p>整个region切分是一个比较复杂的过程，涉及子步骤，因此必须保证整个 Split 过程的事务性，即要么完全成功，要么完全未开始，在任何情况下也不能出现 Split 只完成一半的情况。为了实现事务性，Hbase 设计了使用状态机（见 SplitTransaction 类）的方式保存切分过程中的每个子步骤状态，这样一旦出现异常，系统可以根据当前所处的状态决定是否回滚，以及如何回滚。</p>
+<p>目前实现中这些中间状态都只存储在内存中，因此一旦在切分过程中出现 RegionServer 宕机的情况，有可能会出现切分处于中间状态的情况，也就是RIT状态。这种情况下可使用 hbck 工具，根据实际情况查看并分析解决方案。</p>
+<p>在2.0版本 HBase 实现了新的分布式事务框架 Procedure V2（HBASE-12439），使用 HLog 存储这种单机事务（DDL、Split、Move 等操作）的中间状态。保证即使在事务执行过程中参与者发生了宕机，依然可以使用 HLog 作为协调者对事务进行回滚操作或重新提交。</p>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://www.jianshu.com/p/53459997c814>https://www.jianshu.com/p/53459997c814</a></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="k8s之Pod基本原理 简介 Pod、Service、Volume 和 Namespace 是 Kubernetes 集群中四大基本对象， 它们能够表示系统中部署的应用、工作负载、网络和磁盘">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E4%B9%8Bpod%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="k8s之Pod基本原理">
-<meta property="og:description" content>
+<meta property="og:description" content="k8s之Pod基本原理 简介 Pod、Service、Volume 和 Namespace 是 Kubernetes 集群中四大基本对象， 它们能够表示系统中部署的应用、工作负载、网络和磁盘">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E4%B9%8Bpod%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-04-30T00:25:08+08:00">
 <meta property="article:modified_time" content="2022-04-30T00:25:08+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="k8s之Pod基本原理">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-04-30T00:25:08+08:00">
+<meta itemprop=description content="k8s之Pod基本原理 简介 Pod、Service、Volume 和 Namespace 是 Kubernetes 集群中四大基本对象， 它们能够表示系统中部署的应用、工作负载、网络和磁盘"><meta itemprop=datePublished content="2022-04-30T00:25:08+08:00">
 <meta itemprop=dateModified content="2022-04-30T00:25:08+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="3903">
 <meta itemprop=keywords content="cloudnative,k8s,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="k8s之Pod基本原理">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="k8s之Pod基本原理 简介 Pod、Service、Volume 和 Namespace 是 Kubernetes 集群中四大基本对象， 它们能够表示系统中部署的应用、工作负载、网络和磁盘"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,699 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#概述>概述</a>
+<ul>
+<li><a href=#容器>容器</a></li>
+<li><a href=#卷>卷</a></li>
+<li><a href=#网络>网络</a></li>
+<li><a href=#小结>小结</a></li>
+</ul>
+</li>
+<li><a href=#生命周期>生命周期</a>
+<ul>
+<li><a href=#创建>创建</a></li>
+<li><a href=#健康检查>健康检查</a></li>
+<li><a href=#删除>删除</a></li>
+</ul>
+</li>
+<li><a href=#总结>总结</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=k8s之pod基本原理>k8s之Pod基本原理</h1>
+<h2 id=简介>简介</h2>
+<p>Pod、Service、Volume 和 Namespace 是 Kubernetes 集群中四大基本对象，</p>
+<p>它们能够表示系统中部署的应用、工作负载、网络和磁盘资源，共同定义了集群的状态。</p>
+<p>Kubernetes 中很多其他的资源其实只对这些基本的对象进行了组合。</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-basic-objects.png alt=kubernetes-basic-objects></p>
+<p>Pod 是 Kubernetes 集群中能够被创建和管理的最小部署单元。</p>
+<h2 id=概述>概述</h2>
+<p>作为 Kubernetes 集群中的基本单元，Pod 就是最小并且最简单的 Kubernetes 对象，</p>
+<p>这个简单的对象其实就能够独立启动一个后端进程并在集群的内部为调用方提供服务。</p>
+<p>在上一篇文章  <a href=https://draveness.me/kubernetes-object-intro>从 Kubernetes 中的对象谈起</a>  中，我们曾经介绍过简单的 Kubernetes Pod 是如何使用 YAML 进行描述的：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>busybox</span><span class=w>
+</span><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>busybox</span><span class=w>
+</span><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span><span class=w>    </span>- <span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>busybox</span><span class=w>
+</span><span class=w>      </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span><span class=w>        </span>- <span class=l>sleep</span><span class=w>
+</span><span class=w>        </span>- <span class=s2>&#34;3600&#34;</span><span class=w>
+</span><span class=w>      </span><span class=nt>imagePullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>IfNotPresent</span><span class=w>
+</span><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>busybox</span><span class=w>
+</span><span class=w>  </span><span class=nt>restartPolicy</span><span class=p>:</span><span class=w> </span><span class=l>Always</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这个 YAML 文件描述了一个 Pod 启动时运行的容器和命令以及它的重启策略，</p>
+<p>在当前 Pod 出现错误或者执行结束后是否应该被 Kubernetes 的控制器拉起来，</p>
+<p>除了这些比较显眼的配置之外，元数据  <code>metadata</code>  的配置也非常重要，<code>name</code>  是当前对象在 Kubernetes 集群中的唯一标识符，</p>
+<p>而标签  <code>labels</code>  可以帮助我们快速选择对象。</p>
+<p>在同一个 Pod 中，有几个概念特别值得关注，</p>
+<p>首先就是容器，在 Pod 中其实可以同时运行一个或者多个容器，这些容器能够共享网络、存储以及 CPU、内存等资源。</p>
+<p>在这一小节中我们将关注 Pod 中的容器、卷和网络三大概念。</p>
+<h3 id=容器>容器</h3>
+<p>每一个 Kubernetes 的 Pod 其实都具有两种不同的容器，两种不同容器的职责其实十分清晰，</p>
+<p>一种是  <code>InitContainer</code>，这种容器会在 Pod 启动时运行，主要用于初始化一些配置，</p>
+<p>另一种是 Pod 在 Running 状态时内部存活的  <code>Container</code>，它们的主要作用是对外提供服务或者作为工作节点处理异步任务等等。</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-pod-init-and-regular-containers.png alt=kubernetes-pod-init-and-regular-containers></p>
+<p>通过对不同容器类型的命名我们也可以看出，</p>
+<p><code>InitContainer</code>  会比  <code>Container</code>  优先启动，在  <code>kubeGenericRuntimeManager.SyncPod</code>  方法中会先后启动两种容器。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>kubeGenericRuntimeManager</span><span class=p>)</span> <span class=nf>SyncPod</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>_</span> <span class=nx>v1</span><span class=p>.</span><span class=nx>PodStatus</span><span class=p>,</span> <span class=nx>podStatus</span> <span class=o>*</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>PodStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span> <span class=p>[]</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Secret</span><span class=p>,</span> <span class=nx>backOff</span> <span class=o>*</span><span class=nx>flowcontrol</span><span class=p>.</span><span class=nx>Backoff</span><span class=p>)</span> <span class=p>(</span><span class=nx>result</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>PodSyncResult</span><span class=p>)</span> <span class=p>{</span>
+    <span class=c1>// Step 1: Compute sandbox and container changes.
+</span><span class=c1></span>    <span class=c1>// Step 2: Kill the pod if the sandbox has changed.
+</span><span class=c1></span>    <span class=c1>// Step 3: kill any running containers in this pod which are not to keep.
+</span><span class=c1></span>    <span class=c1>// Step 4: Create a sandbox for the pod if necessary.
+</span><span class=c1></span>    <span class=c1>// ...
+</span><span class=c1></span>
+    <span class=c1>// Step 5: start the init container.
+</span><span class=c1></span>    <span class=k>if</span> <span class=nx>container</span> <span class=o>:=</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>NextInitContainerToStart</span><span class=p>;</span> <span class=nx>container</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>msg</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>startContainer</span><span class=p>(</span><span class=nx>podSandboxID</span><span class=p>,</span> <span class=nx>podSandboxConfig</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span><span class=p>,</span> <span class=nx>podIP</span><span class=p>,</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerTypeInit</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=c1>// Step 6: start containers in podContainerChanges.ContainersToStart.
+</span><span class=c1></span>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>idx</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>ContainersToStart</span> <span class=p>{</span>
+        <span class=nx>container</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>pod</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Containers</span><span class=p>[</span><span class=nx>idx</span><span class=p>]</span>
+
+        <span class=nx>msg</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>startContainer</span><span class=p>(</span><span class=nx>podSandboxID</span><span class=p>,</span> <span class=nx>podSandboxConfig</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span><span class=p>,</span> <span class=nx>podIP</span><span class=p>,</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerTypeRegular</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=k>return</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>通过分析私有方法  <code>startContainer</code>  的实现我们得出：容器的类型最终只会影响在 Debug 时创建的标签，所以对于 Kubernetes 来说两种容器的启动和执行也就只有顺序先后的不同。</p>
+<h3 id=卷>卷</h3>
+<p>每一个 Pod 中的容器是可以通过  <a href=https://draveness.me/kubernetes-volume>卷（Volume）</a>  的方式共享文件目录的，这些 Volume 能够存储持久化的数据；在当前 Pod 出现故障或者滚动更新时，对应 Volume 中的数据并不会被清除，而是会在 Pod 重启后重新挂载到期望的文件目录中：</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-containers-share-volumes.png alt=kubernetes-containers-share-volumes></p>
+<p>kubelet.go 文件中的私有方法  <code>syncPod</code>  会调用  <code>WaitForAttachAndMount</code>  方法为等待当前 Pod 启动需要的挂载文件：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>vm</span> <span class=o>*</span><span class=nx>volumeManager</span><span class=p>)</span> <span class=nf>WaitForAttachAndMount</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+    <span class=nx>expectedVolumes</span> <span class=o>:=</span> <span class=nf>getExpectedVolumes</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+    <span class=nx>uniquePodName</span> <span class=o>:=</span> <span class=nx>util</span><span class=p>.</span><span class=nf>GetUniquePodName</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+
+    <span class=nx>vm</span><span class=p>.</span><span class=nx>desiredStateOfWorldPopulator</span><span class=p>.</span><span class=nf>ReprocessPod</span><span class=p>(</span><span class=nx>uniquePodName</span><span class=p>)</span>
+
+    <span class=nx>wait</span><span class=p>.</span><span class=nf>PollImmediate</span><span class=p>(</span>
+        <span class=nx>podAttachAndMountRetryInterval</span><span class=p>,</span>
+        <span class=nx>podAttachAndMountTimeout</span><span class=p>,</span>
+        <span class=nx>vm</span><span class=p>.</span><span class=nf>verifyVolumesMountedFunc</span><span class=p>(</span><span class=nx>uniquePodName</span><span class=p>,</span> <span class=nx>expectedVolumes</span><span class=p>))</span>
+
+    <span class=k>return</span> <span class=kc>nil</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>我们会在  <a href=https://draveness.me/kubernetes-volume>后面的章节</a>  详细地介绍 Kubernetes 中卷的创建、挂载是如何进行的，在这里我们需要知道的是卷的挂载是 Pod 启动之前必须要完成的工作：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>kl</span> <span class=o>*</span><span class=nx>Kubelet</span><span class=p>)</span> <span class=nf>syncPod</span><span class=p>(</span><span class=nx>o</span> <span class=nx>syncPodOptions</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+    <span class=c1>// ...
+</span><span class=c1></span>
+    <span class=k>if</span> <span class=p>!</span><span class=nx>kl</span><span class=p>.</span><span class=nf>podIsTerminated</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span> <span class=p>{</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nx>volumeManager</span><span class=p>.</span><span class=nf>WaitForAttachAndMount</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=nx>pullSecrets</span> <span class=o>:=</span> <span class=nx>kl</span><span class=p>.</span><span class=nf>getPullSecretsForPod</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+
+    <span class=nx>result</span> <span class=o>:=</span> <span class=nx>kl</span><span class=p>.</span><span class=nx>containerRuntime</span><span class=p>.</span><span class=nf>SyncPod</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>apiPodStatus</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span><span class=p>,</span> <span class=nx>kl</span><span class=p>.</span><span class=nx>backOff</span><span class=p>)</span>
+    <span class=nx>kl</span><span class=p>.</span><span class=nx>reasonCache</span><span class=p>.</span><span class=nf>Update</span><span class=p>(</span><span class=nx>pod</span><span class=p>.</span><span class=nx>UID</span><span class=p>,</span> <span class=nx>result</span><span class=p>)</span>
+
+    <span class=k>return</span> <span class=kc>nil</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在当前 Pod 的卷创建完成之后，就会调用上一节中提到的  <code>SyncPod</code>  公有方法继续进行同步 Pod 信息和创建、启动容器的工作。</p>
+<h3 id=网络>网络</h3>
+<p>同一个 Pod 中的多个容器会被共同分配到同一个 Host 上并且共享网络栈，</p>
+<p>这些 Pod 能够通过 localhost 互相访问到彼此的端口和服务，如果使用了相同的端口也会发生冲突，</p>
+<p>同一个 Pod 上的所有容器会连接到同一个网络设备上，这个网络设备就是由 Pod Sandbox 中的沙箱容器在  <code>RunPodSandbox</code>  方法中启动时创建的：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ds</span> <span class=o>*</span><span class=nx>dockerService</span><span class=p>)</span> <span class=nf>RunPodSandbox</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>r</span> <span class=o>*</span><span class=nx>runtimeapi</span><span class=p>.</span><span class=nx>RunPodSandboxRequest</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>runtimeapi</span><span class=p>.</span><span class=nx>RunPodSandboxResponse</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>config</span> <span class=o>:=</span> <span class=nx>r</span><span class=p>.</span><span class=nf>GetConfig</span><span class=p>()</span>
+
+    <span class=c1>// Step 1: Pull the image for the sandbox.
+</span><span class=c1></span>    <span class=nx>image</span> <span class=o>:=</span> <span class=nx>defaultSandboxImage</span>
+
+    <span class=c1>// Step 2: Create the sandbox container.
+</span><span class=c1></span>    <span class=nx>createConfig</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>ds</span><span class=p>.</span><span class=nf>makeSandboxDockerConfig</span><span class=p>(</span><span class=nx>config</span><span class=p>,</span> <span class=nx>image</span><span class=p>)</span>
+    <span class=nx>createResp</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>ds</span><span class=p>.</span><span class=nx>client</span><span class=p>.</span><span class=nf>CreateContainer</span><span class=p>(</span><span class=o>*</span><span class=nx>createConfig</span><span class=p>)</span>
+
+    <span class=nx>resp</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>runtimeapi</span><span class=p>.</span><span class=nx>RunPodSandboxResponse</span><span class=p>{</span><span class=nx>PodSandboxId</span><span class=p>:</span> <span class=nx>createResp</span><span class=p>.</span><span class=nx>ID</span><span class=p>}</span>
+
+    <span class=nx>ds</span><span class=p>.</span><span class=nf>setNetworkReady</span><span class=p>(</span><span class=nx>createResp</span><span class=p>.</span><span class=nx>ID</span><span class=p>,</span> <span class=kc>false</span><span class=p>)</span>
+
+    <span class=c1>// Step 3: Create Sandbox Checkpoint.
+</span><span class=c1></span>    <span class=nx>ds</span><span class=p>.</span><span class=nx>checkpointManager</span><span class=p>.</span><span class=nf>CreateCheckpoint</span><span class=p>(</span><span class=nx>createResp</span><span class=p>.</span><span class=nx>ID</span><span class=p>,</span> <span class=nf>constructPodSandboxCheckpoint</span><span class=p>(</span><span class=nx>config</span><span class=p>))</span>
+
+    <span class=c1>// Step 4: Start the sandbox container.
+</span><span class=c1></span>    <span class=nx>ds</span><span class=p>.</span><span class=nx>client</span><span class=p>.</span><span class=nf>StartContainer</span><span class=p>(</span><span class=nx>createResp</span><span class=p>.</span><span class=nx>ID</span><span class=p>)</span>
+
+    <span class=c1>// Step 5: Setup networking for the sandbox.
+</span><span class=c1></span>    <span class=nx>cID</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nf>BuildContainerID</span><span class=p>(</span><span class=nx>runtimeName</span><span class=p>,</span> <span class=nx>createResp</span><span class=p>.</span><span class=nx>ID</span><span class=p>)</span>
+    <span class=nx>networkOptions</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span><span class=p>)</span>
+    <span class=nx>ds</span><span class=p>.</span><span class=nx>network</span><span class=p>.</span><span class=nf>SetUpPod</span><span class=p>(</span><span class=nx>config</span><span class=p>.</span><span class=nf>GetMetadata</span><span class=p>().</span><span class=nx>Namespace</span><span class=p>,</span> <span class=nx>config</span><span class=p>.</span><span class=nf>GetMetadata</span><span class=p>().</span><span class=nx>Name</span><span class=p>,</span> <span class=nx>cID</span><span class=p>,</span> <span class=nx>config</span><span class=p>.</span><span class=nx>Annotations</span><span class=p>,</span> <span class=nx>networkOptions</span><span class=p>)</span>
+
+    <span class=k>return</span> <span class=nx>resp</span><span class=p>,</span> <span class=kc>nil</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>沙箱容器其实就是  <code>pause</code>  容器，</p>
+<p>上述方法引用的  <code>defaultSandboxImage</code>  其实就是官方提供的  <code>k8s.gcr.io/pause:3.1</code>  镜像，</p>
+<p>这里会创建沙箱镜像和检查点并启动容器。</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-pod-network.png alt=kubernetes-pod-network></p>
+<p>每一个节点上都会由 Kubernetes 的网络插件 Kubenet 创建一个基本的  <code>cbr0</code>  网桥并为每一个 Pod 创建  <code>veth</code>  虚拟网络设备，同一个 Pod 中的所有容器就会通过这个网络设备共享网络，也就是能够通过 localhost 互相访问彼此暴露的端口和服务。</p>
+<h3 id=小结>小结</h3>
+<p>Kubernetes 中的每一个 Pod 都包含多个容器，这些容器在通过 Kubernetes 创建之后就能共享网络和存储，这其实是 Pod 非常重要的特性，我们能通过这个特性构建比较复杂的服务拓扑和依赖关系。</p>
+<h2 id=生命周期>生命周期</h2>
+<p>想要深入理解 Pod 的实现原理，最好最快的办法就是从 Pod 的生命周期入手，通过理解 Pod 创建、重启和删除的原理我们最终就能够系统地掌握 Pod 的生命周期与核心原理。</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-pod-lifecycle.png alt=kubernetes-pod-lifecycle></p>
+<p>当 Pod 被创建之后，就会进入健康检查状态，</p>
+<p>当 Kubernetes 确定当前 Pod 已经能够接受外部的请求时，才会将流量打到新的 Pod 上并继续对外提供服务，</p>
+<p>在这期间如果发生了错误就可能会触发重启机制，在 Pod 被删除之前都会触发一个  <code>PreStop</code>  的钩子，</p>
+<p>其中的方法完成之后 Pod 才会被删除，接下来我们就会按照这里的顺序依次介绍 Pod 『从生到死』的过程。</p>
+<h3 id=创建>创建</h3>
+<p>Pod 的创建都是通过  <code>SyncPod</code>  来实现的，创建的过程大体上可以分为六个步骤：</p>
+<ol>
+<li>计算 Pod 中沙盒和容器的变更；</li>
+<li>强制停止 Pod 对应的沙盒；</li>
+<li>强制停止所有不应该运行的容器；</li>
+<li>为 Pod 创建新的沙盒；</li>
+<li>创建 Pod 规格中指定的初始化容器；</li>
+<li>依次创建 Pod 规格中指定的常规容器；</li>
+</ol>
+<p>我们可以看到 Pod 的创建过程其实是比较简单的，首先计算 Pod 规格和沙箱的变更，然后停止可能影响这一次创建或者更新的容器，最后依次创建沙盒、初始化容器和常规容器。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>kubeGenericRuntimeManager</span><span class=p>)</span> <span class=nf>SyncPod</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>_</span> <span class=nx>v1</span><span class=p>.</span><span class=nx>PodStatus</span><span class=p>,</span> <span class=nx>podStatus</span> <span class=o>*</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>PodStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span> <span class=p>[]</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Secret</span><span class=p>,</span> <span class=nx>backOff</span> <span class=o>*</span><span class=nx>flowcontrol</span><span class=p>.</span><span class=nx>Backoff</span><span class=p>)</span> <span class=p>(</span><span class=nx>result</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>PodSyncResult</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>podContainerChanges</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>computePodActions</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>)</span>
+    <span class=k>if</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>CreateSandbox</span> <span class=p>{</span>
+        <span class=nx>ref</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>ref</span><span class=p>.</span><span class=nf>GetReference</span><span class=p>(</span><span class=nx>legacyscheme</span><span class=p>.</span><span class=nx>Scheme</span><span class=p>,</span> <span class=nx>pod</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=k>if</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>KillPod</span> <span class=p>{</span>
+        <span class=k>if</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>CreateSandbox</span> <span class=p>{</span>
+            <span class=nx>m</span><span class=p>.</span><span class=nf>purgeInitContainers</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>)</span>
+        <span class=p>}</span>
+    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+        <span class=k>for</span> <span class=nx>containerID</span><span class=p>,</span> <span class=nx>containerInfo</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>ContainersToKill</span> <span class=p>{</span>
+            <span class=nx>m</span><span class=p>.</span><span class=nf>killContainer</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>containerID</span><span class=p>,</span> <span class=nx>containerInfo</span><span class=p>.</span><span class=nx>name</span><span class=p>,</span> <span class=nx>containerInfo</span><span class=p>.</span><span class=nx>message</span><span class=p>,</span> <span class=kc>nil</span><span class=p>)</span>            <span class=p>}</span>
+        <span class=p>}</span>
+    <span class=p>}</span>
+
+    <span class=nx>podSandboxID</span> <span class=o>:=</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>SandboxID</span>
+    <span class=k>if</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>CreateSandbox</span> <span class=p>{</span>
+        <span class=nx>podSandboxID</span><span class=p>,</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>_</span> <span class=p>=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>createPodSandbox</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>Attempt</span><span class=p>)</span>
+    <span class=p>}</span>
+    <span class=nx>podSandboxConfig</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>generatePodSandboxConfig</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>Attempt</span><span class=p>)</span>
+
+    <span class=k>if</span> <span class=nx>container</span> <span class=o>:=</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>NextInitContainerToStart</span><span class=p>;</span> <span class=nx>container</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>msg</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>startContainer</span><span class=p>(</span><span class=nx>podSandboxID</span><span class=p>,</span> <span class=nx>podSandboxConfig</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span><span class=p>,</span> <span class=nx>podIP</span><span class=p>,</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerTypeInit</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>idx</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>podContainerChanges</span><span class=p>.</span><span class=nx>ContainersToStart</span> <span class=p>{</span>
+        <span class=nx>container</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>pod</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Containers</span><span class=p>[</span><span class=nx>idx</span><span class=p>]</span>
+        <span class=nx>msg</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nf>startContainer</span><span class=p>(</span><span class=nx>podSandboxID</span><span class=p>,</span> <span class=nx>podSandboxConfig</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>podStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span><span class=p>,</span> <span class=nx>podIP</span><span class=p>,</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerTypeRegular</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=k>return</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>简化后的  <code>SyncPod</code>  方法的脉络非常清晰，可以很好地理解整个创建 Pod 的工作流程；而初始化容器和常规容器被调用  <code>startContainer</code>  来启动：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>kubeGenericRuntimeManager</span><span class=p>)</span> <span class=nf>startContainer</span><span class=p>(</span><span class=nx>podSandboxID</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>podSandboxConfig</span> <span class=o>*</span><span class=nx>runtimeapi</span><span class=p>.</span><span class=nx>PodSandboxConfig</span><span class=p>,</span> <span class=nx>container</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Container</span><span class=p>,</span> <span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>podStatus</span> <span class=o>*</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>PodStatus</span><span class=p>,</span> <span class=nx>pullSecrets</span> <span class=p>[]</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Secret</span><span class=p>,</span> <span class=nx>podIP</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>containerType</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerType</span><span class=p>)</span> <span class=p>(</span><span class=kt>string</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>imageRef</span><span class=p>,</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nx>imagePuller</span><span class=p>.</span><span class=nf>EnsureImageExists</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>pullSecrets</span><span class=p>)</span>
+
+    <span class=c1>// ...
+</span><span class=c1></span>    <span class=nx>containerID</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nx>runtimeService</span><span class=p>.</span><span class=nf>CreateContainer</span><span class=p>(</span><span class=nx>podSandboxID</span><span class=p>,</span> <span class=nx>containerConfig</span><span class=p>,</span> <span class=nx>podSandboxConfig</span><span class=p>)</span>
+
+    <span class=nx>m</span><span class=p>.</span><span class=nx>internalLifecycle</span><span class=p>.</span><span class=nf>PreStartContainer</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>containerID</span><span class=p>)</span>
+
+    <span class=nx>m</span><span class=p>.</span><span class=nx>runtimeService</span><span class=p>.</span><span class=nf>StartContainer</span><span class=p>(</span><span class=nx>containerID</span><span class=p>)</span>
+
+    <span class=k>if</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Lifecycle</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=o>&amp;&amp;</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Lifecycle</span><span class=p>.</span><span class=nx>PostStart</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>kubeContainerID</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerID</span><span class=p>{</span>
+            <span class=nx>Type</span><span class=p>:</span> <span class=nx>m</span><span class=p>.</span><span class=nx>runtimeName</span><span class=p>,</span>
+            <span class=nx>ID</span><span class=p>:</span>   <span class=nx>containerID</span><span class=p>,</span>
+        <span class=p>}</span>
+        <span class=nx>msg</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>m</span><span class=p>.</span><span class=nx>runner</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>kubeContainerID</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>container</span><span class=p>,</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Lifecycle</span><span class=p>.</span><span class=nx>PostStart</span><span class=p>)</span>
+    <span class=p>}</span>
+
+    <span class=k>return</span> <span class=s>&#34;&#34;</span><span class=p>,</span> <span class=kc>nil</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在启动每一个容器的过程中也都按照相同的步骤进行操作：</p>
+<ol>
+<li>通过镜像拉取器获得当前容器中使用镜像的引用；</li>
+<li>调用远程的  <code>runtimeService</code>  创建容器；</li>
+<li>调用内部的生命周期方法  <code>PreStartContainer</code>  为当前的容器设置分配的 CPU 等资源；</li>
+<li>调用远程的  <code>runtimeService</code>  开始运行镜像；</li>
+<li>如果当前的容器包含  <code>PostStart</code>  钩子就会执行该回调；</li>
+</ol>
+<p>每次  <code>SyncPod</code>  被调用时不一定是创建新的 Pod 对象，它还会承担更新、删除和同步 Pod 规格的职能，根据输入的新规格执行相应的操作。</p>
+<h3 id=健康检查>健康检查</h3>
+<p>如果我们遵循 Pod 的最佳实践，其实应该尽可能地为每一个 Pod 添加  <code>livenessProbe</code>  和  <code>readinessProbe</code>  的健康检查，这两者能够为 Kubernetes 提供额外的存活信息，如果我们配置了合适的健康检查方法和规则，那么就不会出现服务未启动就被打入流量或者长时间未响应依然没有重启等问题。</p>
+<p>在 Pod 被创建或者被移除时，会被加入到当前节点上的  <code>ProbeManager</code>  中，<code>ProbeManager</code>  会负责这些 Pod 的健康检查：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>kl</span> <span class=o>*</span><span class=nx>Kubelet</span><span class=p>)</span> <span class=nf>HandlePodAdditions</span><span class=p>(</span><span class=nx>pods</span> <span class=p>[]</span><span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>start</span> <span class=o>:=</span> <span class=nx>kl</span><span class=p>.</span><span class=nx>clock</span><span class=p>.</span><span class=nf>Now</span><span class=p>()</span>
+    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>pod</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>pods</span> <span class=p>{</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nx>podManager</span><span class=p>.</span><span class=nf>AddPod</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nf>dispatchWork</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>kubetypes</span><span class=p>.</span><span class=nx>SyncPodCreate</span><span class=p>,</span> <span class=nx>mirrorPod</span><span class=p>,</span> <span class=nx>start</span><span class=p>)</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nx>probeManager</span><span class=p>.</span><span class=nf>AddPod</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=p>(</span><span class=nx>kl</span> <span class=o>*</span><span class=nx>Kubelet</span><span class=p>)</span> <span class=nf>HandlePodRemoves</span><span class=p>(</span><span class=nx>pods</span> <span class=p>[]</span><span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>start</span> <span class=o>:=</span> <span class=nx>kl</span><span class=p>.</span><span class=nx>clock</span><span class=p>.</span><span class=nf>Now</span><span class=p>()</span>
+    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>pod</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>pods</span> <span class=p>{</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nx>podManager</span><span class=p>.</span><span class=nf>DeletePod</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nf>deletePod</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+        <span class=nx>kl</span><span class=p>.</span><span class=nx>probeManager</span><span class=p>.</span><span class=nf>RemovePod</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>简化后的  <code>HandlePodAdditions</code>  和  <code>HandlePodRemoves</code>  方法非常直白，我们可以直接来看  <code>ProbeManager</code>  如何处理不同节点的健康检查。</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-probe-manager.png alt=kubernetes-probe-manager></p>
+<p>每一个新的 Pod 都会被调用  <code>ProbeManager</code>  的<code>AddPod</code>  函数，这个方法会初始化一个新的 Goroutine 并在其中运行对当前 Pod 进行健康检查：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>manager</span><span class=p>)</span> <span class=nf>AddPod</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>key</span> <span class=o>:=</span> <span class=nx>probeKey</span><span class=p>{</span><span class=nx>podUID</span><span class=p>:</span> <span class=nx>pod</span><span class=p>.</span><span class=nx>UID</span><span class=p>}</span>
+    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>c</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>pod</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>Containers</span> <span class=p>{</span>
+        <span class=nx>key</span><span class=p>.</span><span class=nx>containerName</span> <span class=p>=</span> <span class=nx>c</span><span class=p>.</span><span class=nx>Name</span>
+
+        <span class=k>if</span> <span class=nx>c</span><span class=p>.</span><span class=nx>ReadinessProbe</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+            <span class=nx>key</span><span class=p>.</span><span class=nx>probeType</span> <span class=p>=</span> <span class=nx>readiness</span>
+            <span class=nx>w</span> <span class=o>:=</span> <span class=nf>newWorker</span><span class=p>(</span><span class=nx>m</span><span class=p>,</span> <span class=nx>readiness</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>c</span><span class=p>)</span>
+            <span class=nx>m</span><span class=p>.</span><span class=nx>workers</span><span class=p>[</span><span class=nx>key</span><span class=p>]</span> <span class=p>=</span> <span class=nx>w</span>
+            <span class=k>go</span> <span class=nx>w</span><span class=p>.</span><span class=nf>run</span><span class=p>()</span>
+        <span class=p>}</span>
+
+        <span class=k>if</span> <span class=nx>c</span><span class=p>.</span><span class=nx>LivenessProbe</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+            <span class=nx>key</span><span class=p>.</span><span class=nx>probeType</span> <span class=p>=</span> <span class=nx>liveness</span>
+            <span class=nx>w</span> <span class=o>:=</span> <span class=nf>newWorker</span><span class=p>(</span><span class=nx>m</span><span class=p>,</span> <span class=nx>liveness</span><span class=p>,</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>c</span><span class=p>)</span>
+            <span class=nx>m</span><span class=p>.</span><span class=nx>workers</span><span class=p>[</span><span class=nx>key</span><span class=p>]</span> <span class=p>=</span> <span class=nx>w</span>
+            <span class=k>go</span> <span class=nx>w</span><span class=p>.</span><span class=nf>run</span><span class=p>()</span>
+        <span class=p>}</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在执行健康检查的过程中，Worker 只是负责根据当前 Pod 的状态定期触发一次  <code>Probe</code>，它会根据 Pod 的配置分别选择调用  <code>Exec</code>、<code>HTTPGet</code>  或  <code>TCPSocket</code>  三种不同的  <code>Probe</code>  方式：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>pb</span> <span class=o>*</span><span class=nx>prober</span><span class=p>)</span> <span class=nf>runProbe</span><span class=p>(</span><span class=nx>probeType</span> <span class=nx>probeType</span><span class=p>,</span> <span class=nx>p</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Probe</span><span class=p>,</span> <span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>status</span> <span class=nx>v1</span><span class=p>.</span><span class=nx>PodStatus</span><span class=p>,</span> <span class=nx>container</span> <span class=nx>v1</span><span class=p>.</span><span class=nx>Container</span><span class=p>,</span> <span class=nx>containerID</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerID</span><span class=p>)</span> <span class=p>(</span><span class=nx>probe</span><span class=p>.</span><span class=nx>Result</span><span class=p>,</span> <span class=kt>string</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>timeout</span> <span class=o>:=</span> <span class=nx>time</span><span class=p>.</span><span class=nf>Duration</span><span class=p>(</span><span class=nx>p</span><span class=p>.</span><span class=nx>TimeoutSeconds</span><span class=p>)</span> <span class=o>*</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span>
+    <span class=k>if</span> <span class=nx>p</span><span class=p>.</span><span class=nx>Exec</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>command</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nf>ExpandContainerCommandOnlyStatic</span><span class=p>(</span><span class=nx>p</span><span class=p>.</span><span class=nx>Exec</span><span class=p>.</span><span class=nx>Command</span><span class=p>,</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Env</span><span class=p>)</span>
+        <span class=k>return</span> <span class=nx>pb</span><span class=p>.</span><span class=nx>exec</span><span class=p>.</span><span class=nf>Probe</span><span class=p>(</span><span class=nx>pb</span><span class=p>.</span><span class=nf>newExecInContainer</span><span class=p>(</span><span class=nx>container</span><span class=p>,</span> <span class=nx>containerID</span><span class=p>,</span> <span class=nx>command</span><span class=p>,</span> <span class=nx>timeout</span><span class=p>))</span>
+    <span class=p>}</span>
+    <span class=k>if</span> <span class=nx>p</span><span class=p>.</span><span class=nx>HTTPGet</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>scheme</span> <span class=o>:=</span> <span class=nx>strings</span><span class=p>.</span><span class=nf>ToLower</span><span class=p>(</span><span class=nb>string</span><span class=p>(</span><span class=nx>p</span><span class=p>.</span><span class=nx>HTTPGet</span><span class=p>.</span><span class=nx>Scheme</span><span class=p>))</span>
+        <span class=nx>host</span> <span class=o>:=</span> <span class=nx>p</span><span class=p>.</span><span class=nx>HTTPGet</span><span class=p>.</span><span class=nx>Host</span>
+        <span class=nx>port</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nf>extractPort</span><span class=p>(</span><span class=nx>p</span><span class=p>.</span><span class=nx>HTTPGet</span><span class=p>.</span><span class=nx>Port</span><span class=p>,</span> <span class=nx>container</span><span class=p>)</span>
+        <span class=nx>path</span> <span class=o>:=</span> <span class=nx>p</span><span class=p>.</span><span class=nx>HTTPGet</span><span class=p>.</span><span class=nx>Path</span>
+        <span class=nx>url</span> <span class=o>:=</span> <span class=nf>formatURL</span><span class=p>(</span><span class=nx>scheme</span><span class=p>,</span> <span class=nx>host</span><span class=p>,</span> <span class=nx>port</span><span class=p>,</span> <span class=nx>path</span><span class=p>)</span>
+        <span class=nx>headers</span> <span class=o>:=</span> <span class=nf>buildHeader</span><span class=p>(</span><span class=nx>p</span><span class=p>.</span><span class=nx>HTTPGet</span><span class=p>.</span><span class=nx>HTTPHeaders</span><span class=p>)</span>
+        <span class=k>if</span> <span class=nx>probeType</span> <span class=o>==</span> <span class=nx>liveness</span> <span class=p>{</span>
+            <span class=k>return</span> <span class=nx>pb</span><span class=p>.</span><span class=nx>livenessHttp</span><span class=p>.</span><span class=nf>Probe</span><span class=p>(</span><span class=nx>url</span><span class=p>,</span> <span class=nx>headers</span><span class=p>,</span> <span class=nx>timeout</span><span class=p>)</span>
+        <span class=p>}</span> <span class=k>else</span> <span class=p>{</span> <span class=c1>// readiness
+</span><span class=c1></span>            <span class=k>return</span> <span class=nx>pb</span><span class=p>.</span><span class=nx>readinessHttp</span><span class=p>.</span><span class=nf>Probe</span><span class=p>(</span><span class=nx>url</span><span class=p>,</span> <span class=nx>headers</span><span class=p>,</span> <span class=nx>timeout</span><span class=p>)</span>
+        <span class=p>}</span>
+    <span class=p>}</span>
+    <span class=k>if</span> <span class=nx>p</span><span class=p>.</span><span class=nx>TCPSocket</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+        <span class=nx>port</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nf>extractPort</span><span class=p>(</span><span class=nx>p</span><span class=p>.</span><span class=nx>TCPSocket</span><span class=p>.</span><span class=nx>Port</span><span class=p>,</span> <span class=nx>container</span><span class=p>)</span>
+        <span class=nx>host</span> <span class=o>:=</span> <span class=nx>p</span><span class=p>.</span><span class=nx>TCPSocket</span><span class=p>.</span><span class=nx>Host</span>
+        <span class=k>return</span> <span class=nx>pb</span><span class=p>.</span><span class=nx>tcp</span><span class=p>.</span><span class=nf>Probe</span><span class=p>(</span><span class=nx>host</span><span class=p>,</span> <span class=nx>port</span><span class=p>,</span> <span class=nx>timeout</span><span class=p>)</span>
+    <span class=p>}</span>
+    <span class=k>return</span> <span class=nx>probe</span><span class=p>.</span><span class=nx>Unknown</span><span class=p>,</span> <span class=s>&#34;&#34;</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Missing probe handler for %s:%s&#34;</span><span class=p>,</span> <span class=nx>format</span><span class=p>.</span><span class=nf>Pod</span><span class=p>(</span><span class=nx>pod</span><span class=p>),</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Kubernetes 在 Pod 启动后的  <code>InitialDelaySeconds</code>  时间内会等待 Pod 的启动和初始化，在这之后会开始健康检查，默认的健康检查重试次数是三次，如果健康检查正常运行返回了一个确定的结果，那么 Worker 就是记录这次的结果，在连续失败  <code>FailureThreshold</code>  次或者成功  <code>SuccessThreshold</code>  次，那么就会改变当前 Pod 的状态，这也是为了避免由于服务不稳定带来的抖动。</p>
+<h3 id=删除>删除</h3>
+<p>当 Kubelet 在  <code>HandlePodRemoves</code>  方法中接收到来自客户端的删除请求时，就会通过一个名为  <code>deletePod</code>  的私有方法中的 Channel 将这一事件传递给 PodKiller 进行处理：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>kl</span> <span class=o>*</span><span class=nx>Kubelet</span><span class=p>)</span> <span class=nf>deletePod</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+    <span class=nx>kl</span><span class=p>.</span><span class=nx>podWorkers</span><span class=p>.</span><span class=nf>ForgetWorker</span><span class=p>(</span><span class=nx>pod</span><span class=p>.</span><span class=nx>UID</span><span class=p>)</span>
+
+    <span class=nx>runningPods</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>kl</span><span class=p>.</span><span class=nx>runtimeCache</span><span class=p>.</span><span class=nf>GetPods</span><span class=p>()</span>
+    <span class=nx>runningPod</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nf>Pods</span><span class=p>(</span><span class=nx>runningPods</span><span class=p>).</span><span class=nf>FindPod</span><span class=p>(</span><span class=s>&#34;&#34;</span><span class=p>,</span> <span class=nx>pod</span><span class=p>.</span><span class=nx>UID</span><span class=p>)</span>
+    <span class=nx>podPair</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>PodPair</span><span class=p>{</span><span class=nx>APIPod</span><span class=p>:</span> <span class=nx>pod</span><span class=p>,</span> <span class=nx>RunningPod</span><span class=p>:</span> <span class=o>&amp;</span><span class=nx>runningPod</span><span class=p>}</span>
+
+    <span class=nx>kl</span><span class=p>.</span><span class=nx>podKillingCh</span> <span class=o>&lt;-</span> <span class=o>&amp;</span><span class=nx>podPair</span>
+    <span class=k>return</span> <span class=kc>nil</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>Kubelet 除了将事件通知给 PodKiller 之外，还需要将当前 Pod 对应的 Worker 从持有的  <code>podWorkers</code>  中删除；PodKiller 其实就是 Kubelet 持有的一个 Goroutine，它会在后台持续运行并监听来自  <code>podKillingCh</code>  的事件：</p>
+<p><img src=https://img.draveness.me/2018-12-25-kubernetes-pod-killer.png alt=kubernetes-pod-killer></p>
+<p>经过一系列的方法调用之后，最终调用容器运行时的  <code>killContainersWithSyncResult</code>  方法，这个方法会同步地杀掉当前 Pod 中全部的容器：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>kubeGenericRuntimeManager</span><span class=p>)</span> <span class=nf>killContainersWithSyncResult</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>runningPod</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>gracePeriodOverride</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=p>(</span><span class=nx>syncResults</span> <span class=p>[]</span><span class=o>*</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>SyncResult</span><span class=p>)</span> <span class=p>{</span>
+    <span class=nx>containerResults</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=o>*</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>SyncResult</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>runningPod</span><span class=p>.</span><span class=nx>Containers</span><span class=p>))</span>
+
+    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>container</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>runningPod</span><span class=p>.</span><span class=nx>Containers</span> <span class=p>{</span>
+        <span class=k>go</span> <span class=kd>func</span><span class=p>(</span><span class=nx>container</span> <span class=o>*</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>Container</span><span class=p>)</span> <span class=p>{</span>
+            <span class=nx>killContainerResult</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nf>NewSyncResult</span><span class=p>(</span><span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>KillContainer</span><span class=p>,</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+            <span class=nx>m</span><span class=p>.</span><span class=nf>killContainer</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>container</span><span class=p>.</span><span class=nx>ID</span><span class=p>,</span> <span class=nx>container</span><span class=p>.</span><span class=nx>Name</span><span class=p>,</span> <span class=s>&#34;Need to kill Pod&#34;</span><span class=p>,</span> <span class=nx>gracePeriodOverride</span><span class=p>)</span>
+            <span class=nx>containerResults</span> <span class=o>&lt;-</span> <span class=nx>killContainerResult</span>
+        <span class=p>}(</span><span class=nx>container</span><span class=p>)</span>
+    <span class=p>}</span>
+    <span class=nb>close</span><span class=p>(</span><span class=nx>containerResults</span><span class=p>)</span>
+
+    <span class=k>for</span> <span class=nx>containerResult</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>containerResults</span> <span class=p>{</span>
+        <span class=nx>syncResults</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>syncResults</span><span class=p>,</span> <span class=nx>containerResult</span><span class=p>)</span>
+    <span class=p>}</span>
+    <span class=k>return</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>对于每一个容器来说，它们在被停止之前都会先调用  <code>PreStop</code>  的钩子方法，让容器中的应用程序能够有时间完成一些未处理的操作，随后调用远程的服务停止运行的容器：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>kubeGenericRuntimeManager</span><span class=p>)</span> <span class=nf>killContainer</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>containerID</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nx>ContainerID</span><span class=p>,</span> <span class=nx>containerName</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>reason</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>gracePeriodOverride</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+    <span class=nx>containerSpec</span> <span class=o>:=</span> <span class=nx>kubecontainer</span><span class=p>.</span><span class=nf>GetContainerSpec</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>containerName</span><span class=p>);</span>
+
+    <span class=nx>gracePeriod</span> <span class=o>:=</span> <span class=nb>int64</span><span class=p>(</span><span class=nx>minimumGracePeriodInSeconds</span><span class=p>)</span>
+    <span class=k>switch</span> <span class=p>{</span>
+    <span class=k>case</span> <span class=nx>pod</span><span class=p>.</span><span class=nx>DeletionGracePeriodSeconds</span> <span class=o>!=</span> <span class=kc>nil</span><span class=p>:</span>
+        <span class=nx>gracePeriod</span> <span class=p>=</span> <span class=o>*</span><span class=nx>pod</span><span class=p>.</span><span class=nx>DeletionGracePeriodSeconds</span>
+    <span class=k>case</span> <span class=nx>pod</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>TerminationGracePeriodSeconds</span> <span class=o>!=</span> <span class=kc>nil</span><span class=p>:</span>
+        <span class=nx>gracePeriod</span> <span class=p>=</span> <span class=o>*</span><span class=nx>pod</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>TerminationGracePeriodSeconds</span>
+    <span class=p>}</span>
+
+    <span class=nx>m</span><span class=p>.</span><span class=nf>executePreStopHook</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>containerID</span><span class=p>,</span> <span class=nx>containerSpec</span><span class=p>,</span> <span class=nx>gracePeriod</span><span class=p>)</span>
+    <span class=nx>m</span><span class=p>.</span><span class=nx>internalLifecycle</span><span class=p>.</span><span class=nf>PreStopContainer</span><span class=p>(</span><span class=nx>containerID</span><span class=p>.</span><span class=nx>ID</span><span class=p>)</span>
+    <span class=nx>m</span><span class=p>.</span><span class=nx>runtimeService</span><span class=p>.</span><span class=nf>StopContainer</span><span class=p>(</span><span class=nx>containerID</span><span class=p>.</span><span class=nx>ID</span><span class=p>,</span> <span class=nx>gracePeriod</span><span class=p>)</span>
+    <span class=nx>m</span><span class=p>.</span><span class=nx>containerRefManager</span><span class=p>.</span><span class=nf>ClearRef</span><span class=p>(</span><span class=nx>containerID</span><span class=p>)</span>
+
+    <span class=k>return</span> <span class=nx>err</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>从这个简化版本的  <code>killContainer</code>  方法中，我们可以大致看出停止运行容器的大致逻辑，先从 Pod 的规格中计算出当前停止所需要的时间，然后运行钩子方法和内部的生命周期方法，最后将容器停止并清除引用。</p>
+<h2 id=总结>总结</h2>
+<p>在这篇文章中，我们已经介绍了 Pod 中的几个重要概念 — 容器、卷和网络以及从创建到删除整个过程是如何实现的。</p>
+<p>Kubernetes 中 Pod 的运行和管理总是与 kubelet 以及它的组件密不可分，后面的文章中也会介绍 kubelet 究竟是什么，它在整个 Kubernetes 中扮演什么样的角色。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

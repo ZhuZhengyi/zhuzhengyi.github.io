@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/aws-s3/hadoop-aws/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Hadoop-aws">
-<meta property="og:description" content>
+<meta property="og:description" content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/aws-s3/hadoop-aws/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Hadoop-aws">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2964">
 <meta itemprop=keywords content="architech,aws-s3,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Hadoop-aws">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Hadoop-aws 简介 Hadoop S3A client Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。 直接读写S3对象； 兼容标准S3客户端； 兼容老版的s3n://"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,759 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#hadoop-s3a-client>Hadoop S3A client</a>
+<ul>
+<li><a href=#其他s3-connectors>其他S3 connectors</a></li>
+</ul>
+</li>
+<li><a href=#起步>起步</a></li>
+<li><a href=#注意事项>注意事项</a>
+<ul>
+<li><a href=#事项1s3一致性模型>事项1：S3一致性模型</a></li>
+<li><a href=#事项2目录虚拟>事项2：目录虚拟</a></li>
+<li><a href=#事项3对象存储不同的认证模型>事项3：对象存储不同的认证模型</a></li>
+<li><a href=#事项4aws-credentials-很重要>事项4：AWS credentials 很重要</a></li>
+</ul>
+</li>
+<li><a href=#保护aws凭证>保护AWS凭证</a></li>
+<li><a href=#s3a-客户端配置>S3A 客户端配置</a>
+<ul>
+<li><a href=#重试和恢复>重试和恢复</a></li>
+<li><a href=#处理read-during-overwrite>处理Read-During-Overwrite</a></li>
+</ul>
+</li>
+<li><a href=#s3a如何写数据到s3>S3A如何写数据到S3</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=hadoop-aws>Hadoop-aws</h1>
+<h2 id=简介>简介</h2>
+<h2 id=hadoop-s3a-client>Hadoop S3A client</h2>
+<p>Hadoop ”S3A“ 客户端提供Amazon S3对象存储的高性能存储兼容实现。</p>
+<ul>
+<li>
+<p>直接读写S3对象；</p>
+</li>
+<li>
+<p>兼容标准S3客户端；</p>
+</li>
+<li>
+<p>兼容老版的<code>s3n://</code>和Amazon EMR的<code>s3://</code>客户端文件创建；</p>
+</li>
+<li>
+<p>支持大文件(GB)分块上传；</p>
+</li>
+<li>
+<p>提供列式数据文件（如<code>Apache ORC</code>和<code>Apache Parquet</code>）高性能随机IO模型；</p>
+</li>
+<li>
+<p>使用Amazon Java S3 SDK，支持最新S3特性和认证规范；</p>
+</li>
+<li>
+<p>支持如下认证格式：环境变量、Hadoop配置属性、Hadoop key manager 和IAM 角色；</p>
+</li>
+<li>
+<p>支持单独bucket配置；</p>
+</li>
+<li>
+<p>结合<code>S3Guard</code>, 提供高性能一致性的metadata目录读操作，兼顾速度和一致性；</p>
+</li>
+<li>
+<p>支持S3服务端读写加密，包括<code>SSE-S3</code>、<code>SSE-KMS</code>和<code>SSE-C</code>;</p>
+</li>
+<li>
+<p>集成Hadoop 指标；</p>
+</li>
+<li>
+<p>完全由开源组织维护；</p>
+</li>
+</ul>
+<h3 id=其他s3-connectors>其他S3 connectors</h3>
+<p>如下有一些其他的Hadoop S3 connector，现在只有<code>S3A</code>由hadoop 项目有效维护。</p>
+<ul>
+<li>
+<p>Apache Hadoop 原有<code>s3://</code> client. 不再包含咋hadoop中；</p>
+</li>
+<li>
+<p>Amazon EMR的<code>s3://</code>client。由Amazon EMR项目组维护；</p>
+</li>
+<li>
+<p>Apache Hadoop <code>s3n://</code>client。不再有效，可迁移至最新的<code>s3a://</code>;</p>
+</li>
+</ul>
+<h2 id=起步>起步</h2>
+<p><code>S3A</code>依赖两个JAR包，和<code>hadoop-common</code>一致：</p>
+<ul>
+<li>
+<p><code>hadoop-aws</code>；</p>
+</li>
+<li>
+<p><code>aws-java-sdk-bundle</code>；</p>
+</li>
+</ul>
+<p>其中<code>hadoop-common</code>和<code>hadoop-aws</code>版本必须一致；</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;properties&gt;</span>
+ <span class=c>&lt;!-- Your exact Hadoop version here--&gt;</span>
+  <span class=nt>&lt;hadoop.version&gt;</span>3.0.0<span class=nt>&lt;/hadoop.version&gt;</span>
+<span class=nt>&lt;/properties&gt;</span>
+
+<span class=nt>&lt;dependencies&gt;</span>
+  <span class=nt>&lt;dependency&gt;</span>
+    <span class=nt>&lt;groupId&gt;</span>org.apache.hadoop<span class=nt>&lt;/groupId&gt;</span>
+    <span class=nt>&lt;artifactId&gt;</span>hadoop-client<span class=nt>&lt;/artifactId&gt;</span>
+    <span class=nt>&lt;version&gt;</span>${hadoop.version}<span class=nt>&lt;/version&gt;</span>
+  <span class=nt>&lt;/dependency&gt;</span>
+  <span class=nt>&lt;dependency&gt;</span>
+    <span class=nt>&lt;groupId&gt;</span>org.apache.hadoop<span class=nt>&lt;/groupId&gt;</span>
+    <span class=nt>&lt;artifactId&gt;</span>hadoop-aws<span class=nt>&lt;/artifactId&gt;</span>
+    <span class=nt>&lt;version&gt;</span>${hadoop.version}<span class=nt>&lt;/version&gt;</span>
+  <span class=nt>&lt;/dependency&gt;</span>
+<span class=nt>&lt;/dependencies&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=注意事项>注意事项</h2>
+<p>Amazon S3昨晚对象存储，为了实现可扩展、便宜、高可靠等特性，像其他的云对象存储一样，放松了对经典<code>POSIX</code>文件系统的一些约束。</p>
+<p><code>S3Guard</code>尝试为S3部分实现这些缺失的特性。</p>
+<h3 id=事项1s3一致性模型>事项1：S3一致性模型</h3>
+<ul>
+<li>
+<p>由<code>Hadoop Filesystem API</code>创建的最新文件不会立即可访问；</p>
+</li>
+<li>
+<p>文件<code>detele</code>和<code>update</code>操作不会立即同步，文件旧的副本可能存在不定时间；</p>
+</li>
+<li>
+<p>目录的<code>delete</code>和<code>rename</code>操作通过文件操作递归实现。这些操作最小耗时和文件数相关，在这些操作中部分更新可能还可访问。如果操作被中的，则文件系统保持在中间状态；</p>
+</li>
+</ul>
+<h3 id=事项2目录虚拟>事项2：目录虚拟</h3>
+<p><code>S3A</code>客户端的目录是虚拟的：</p>
+<ul>
+<li>
+<p>执行<code>mkdirs</code>调用时，先创建一个stub entry，当向目录增加一个文件时删除该entry；</p>
+</li>
+<li>
+<p><code>list</code>目录时，查找所有以该目录开头的路径作为列表返回；</p>
+</li>
+<li>
+<p><code>rename</code>单个目录时，先通过list获取相关对象，并通过s3将对象复制到新的目标对象中；</p>
+</li>
+<li>
+<p><code>delete</code>单个目录时，先list后，批量删除所有相关对象；</p>
+</li>
+<li>
+<p><code>rename</code>和<code>delete</code>多个目录时，list所有相关目录对象后，对每个对象单独进行相关操作；</p>
+</li>
+</ul>
+<p>虚拟目录带来的一些后果：</p>
+<ul>
+<li>
+<p>目录可能缺少修改时间。部分依赖的Hadoop操作可能会引发不可预料行为；</p>
+</li>
+<li>
+<p>目录<code>list</code>操作很慢。尽量使用<code>listFiles(path, recursive)</code>进行高效的递归list；</p>
+</li>
+<li>
+<p>如果调用者尝试，可能在文件下创建文件；</p>
+</li>
+<li>
+<p>目录<code>rename</code>操作和目录下的文件个数和大小相关。</p>
+</li>
+<li>
+<p>目录<code>rename</code>操作不是原子的。可能部分失效，调用者无法安全</p>
+</li>
+<li>
+<p>目录<code>delete</code>操作不是原子的，可能部分失效；</p>
+</li>
+</ul>
+<h3 id=事项3对象存储不同的认证模型>事项3：对象存储不同的认证模型</h3>
+<p>S3对象认证模型和HDFS及传统文件系统的认证模型有很大不同，<code>S3A</code>client在API查询metadata时简单汇报一些相关信息：</p>
+<ul>
+<li>
+<p>文件owner是当前用户；</p>
+</li>
+<li>
+<p>文件group也为当前用户（hadoop 2.8.0之前为空）</p>
+</li>
+<li>
+<p>目录权限为<code>777</code>;</p>
+</li>
+<li>
+<p>文件权限为<code>666</code>;</p>
+</li>
+</ul>
+<h3 id=事项4aws-credentials-很重要>事项4：AWS credentials 很重要</h3>
+<p><code>AWS credentials</code>不仅是服务的支付凭证，也提供数据的读写访问权限，任何拥有credentials的用户将不仅能读取数据，而且也能删除数据。</p>
+<p>避免通过以下方式在无意中泄露credentials：</p>
+<ul>
+<li>
+<p>SCM 配置文件中要包含secrets；</p>
+</li>
+<li>
+<p>在终端中记录；</p>
+</li>
+<li>
+<p>bug 包括中包括secret；</p>
+</li>
+<li>
+<p>AWS_开头的环境变量；</p>
+</li>
+</ul>
+<h2 id=保护aws凭证>保护AWS凭证</h2>
+<h2 id=s3a-客户端配置>S3A 客户端配置</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span><span class=lnt>156
+</span><span class=lnt>157
+</span><span class=lnt>158
+</span><span class=lnt>159
+</span><span class=lnt>160
+</span><span class=lnt>161
+</span><span class=lnt>162
+</span><span class=lnt>163
+</span><span class=lnt>164
+</span><span class=lnt>165
+</span><span class=lnt>166
+</span><span class=lnt>167
+</span><span class=lnt>168
+</span><span class=lnt>169
+</span><span class=lnt>170
+</span><span class=lnt>171
+</span><span class=lnt>172
+</span><span class=lnt>173
+</span><span class=lnt>174
+</span><span class=lnt>175
+</span><span class=lnt>176
+</span><span class=lnt>177
+</span><span class=lnt>178
+</span><span class=lnt>179
+</span><span class=lnt>180
+</span><span class=lnt>181
+</span><span class=lnt>182
+</span><span class=lnt>183
+</span><span class=lnt>184
+</span><span class=lnt>185
+</span><span class=lnt>186
+</span><span class=lnt>187
+</span><span class=lnt>188
+</span><span class=lnt>189
+</span><span class=lnt>190
+</span><span class=lnt>191
+</span><span class=lnt>192
+</span><span class=lnt>193
+</span><span class=lnt>194
+</span><span class=lnt>195
+</span><span class=lnt>196
+</span><span class=lnt>197
+</span><span class=lnt>198
+</span><span class=lnt>199
+</span><span class=lnt>200
+</span><span class=lnt>201
+</span><span class=lnt>202
+</span><span class=lnt>203
+</span><span class=lnt>204
+</span><span class=lnt>205
+</span><span class=lnt>206
+</span><span class=lnt>207
+</span><span class=lnt>208
+</span><span class=lnt>209
+</span><span class=lnt>210
+</span><span class=lnt>211
+</span><span class=lnt>212
+</span><span class=lnt>213
+</span><span class=lnt>214
+</span><span class=lnt>215
+</span><span class=lnt>216
+</span><span class=lnt>217
+</span><span class=lnt>218
+</span><span class=lnt>219
+</span><span class=lnt>220
+</span><span class=lnt>221
+</span><span class=lnt>222
+</span><span class=lnt>223
+</span><span class=lnt>224
+</span><span class=lnt>225
+</span><span class=lnt>226
+</span><span class=lnt>227
+</span><span class=lnt>228
+</span><span class=lnt>229
+</span><span class=lnt>230
+</span><span class=lnt>231
+</span><span class=lnt>232
+</span><span class=lnt>233
+</span><span class=lnt>234
+</span><span class=lnt>235
+</span><span class=lnt>236
+</span><span class=lnt>237
+</span><span class=lnt>238
+</span><span class=lnt>239
+</span><span class=lnt>240
+</span><span class=lnt>241
+</span><span class=lnt>242
+</span><span class=lnt>243
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.maximum<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>15<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Controls the maximum number of simultaneous connections to S3.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.ssl.enabled<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>true<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Enables or disables SSL connections to S3.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.endpoint<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>AWS S3 endpoint to connect to. An up-to-date list is
+    provided in the AWS Documentation: regions and endpoints. Without this
+    property, the standard region (s3.amazonaws.com) is assumed.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.path.style.access<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>false<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Enable S3 path style access ie disabling the default virtual hosting behaviour.
+    Useful for S3A-compliant storage providers as it removes the need to set up DNS for virtual hosting.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.host<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Hostname of the (optional) proxy server for S3 connections.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.port<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Proxy server port. If this property is not set
+    but fs.s3a.proxy.host is, port 80 or 443 is assumed (consistent with
+    the value of fs.s3a.connection.ssl.enabled).<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.username<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Username for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.password<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Password for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.domain<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Domain for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.proxy.workstation<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Workstation for authenticating with proxy server.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.attempts.maximum<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>20<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How many times we should retry commands on transient errors.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.establish.timeout<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>5000<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket connection setup timeout in milliseconds.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.connection.timeout<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>200000<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket connection timeout in milliseconds.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.paging.maximum<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>5000<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How many keys to request from S3 when doing
+     directory listings at a time.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.threads.max<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>10<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span> Maximum number of concurrent active (part)uploads,
+  which each use a thread from the threadpool.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.socket.send.buffer<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>8192<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket send buffer hint to amazon connector. Represented in bytes.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.socket.recv.buffer<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>8192<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Socket receive buffer hint to amazon connector. Represented in bytes.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.threads.keepalivetime<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>60<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Number of seconds a thread can be idle before being
+    terminated.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.max.total.tasks<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>5<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Number of (part)uploads allowed to the queue before
+  blocking additional uploads.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.size<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>100M<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How big (in bytes) to split upload or copy operations up into.
+    A suffix from the set {K,M,G,T,P} may be used to scale the numeric value.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.threshold<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>2147483647<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>How big (in bytes) to split upload or copy operations up into.
+    This also controls the partition size in renamed files, as rename() involves
+    copying the source file(s).
+    A suffix from the set {K,M,G,T,P} may be used to scale the numeric value.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multiobjectdelete.enable<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>true<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>When enabled, multiple single-object delete requests are replaced by
+    a single &#39;delete multiple objects&#39;-request, reducing the number of requests.
+    Beware: legacy S3-compatible object stores might not support this request.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.acl.default<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Set a canned ACL for newly created and copied objects. Value may be Private,
+    PublicRead, PublicReadWrite, AuthenticatedRead, LogDeliveryWrite, BucketOwnerRead,
+    or BucketOwnerFullControl.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.purge<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>false<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>True if you want to purge existing multipart uploads that may not have been
+     completed/aborted correctly<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.multipart.purge.age<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>86400<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Minimum age in seconds of multipart uploads to purge<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.signing-algorithm<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Override the default signing algorithm so legacy
+    implementations can still be used<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.server-side-encryption-algorithm<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Specify a server-side encryption algorithm for s3a: file system.
+    Unset by default. It supports the following values: &#39;AES256&#39; (for SSE-S3), &#39;SSE-KMS&#39;
+     and &#39;SSE-C&#39;
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+    <span class=nt>&lt;name&gt;</span>fs.s3a.server-side-encryption.key<span class=nt>&lt;/name&gt;</span>
+    <span class=nt>&lt;description&gt;</span>Specific encryption key to use if fs.s3a.server-side-encryption-algorithm
+    has been set to &#39;SSE-KMS&#39; or &#39;SSE-C&#39;. In the case of SSE-C, the value of this property
+    should be the Base64 encoded key. If you are using SSE-KMS and leave this property empty,
+    you&#39;ll be using your default&#39;s S3 KMS key, otherwise you should set this property to
+    the specific KMS key id.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.buffer.dir<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>${hadoop.tmp.dir}/s3a<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Comma separated list of directories that will be used to buffer file
+    uploads to.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.block.size<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>32M<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Block size to use when reading files using s3a: file system.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.user.agent.prefix<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>
+    Sets a custom value that will be prepended to the User-Agent header sent in
+    HTTP requests to the S3 back-end by S3AFileSystem.  The User-Agent header
+    always includes the Hadoop version number followed by a string generated by
+    the AWS SDK.  An example is &#34;User-Agent: Hadoop 2.8.0, aws-sdk-java/1.10.6&#34;.
+    If this optional property is set, then its value is prepended to create a
+    customized User-Agent.  For example, if this configuration property was set
+    to &#34;MyApp&#34;, then an example of the resulting User-Agent would be
+    &#34;User-Agent: MyApp, Hadoop 2.8.0, aws-sdk-java/1.10.6&#34;.
+  <span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.impl<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>org.apache.hadoop.fs.s3a.S3AFileSystem<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>The implementation class of the S3A Filesystem<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.AbstractFileSystem.s3a.impl<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>org.apache.hadoop.fs.s3a.S3A<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>The implementation class of the S3A AbstractFileSystem.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.readahead.range<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>64K<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Bytes to read ahead during a seek() before closing and
+  re-opening the S3 HTTP connection. This option will be overridden if
+  any call to setReadahead() is made to an open stream.<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+
+<span class=nt>&lt;property&gt;</span>
+  <span class=nt>&lt;name&gt;</span>fs.s3a.list.version<span class=nt>&lt;/name&gt;</span>
+  <span class=nt>&lt;value&gt;</span>2<span class=nt>&lt;/value&gt;</span>
+  <span class=nt>&lt;description&gt;</span>Select which version of the S3 SDK&#39;s List Objects API to use.
+  Currently support 2 (default) and 1 (older API).<span class=nt>&lt;/description&gt;</span>
+<span class=nt>&lt;/property&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=重试和恢复>重试和恢复</h3>
+<h3 id=处理read-during-overwrite>处理Read-During-Overwrite</h3>
+<h2 id=s3a如何写数据到s3>S3A如何写数据到S3</h2>
+<p>原<code>S3A</code>客户端实现写文件是通过将所有写入的<code>OutputStream</code>数据缓存到磁盘中，只有当stream close时，才开始启动上传操作。这导致输出很慢，尤其在大文件时可能占满磁盘空间。</p>
+<p>Hadoop 2.7 增加了 <code>S3AFastOutputStream</code>代替原有的<code>S3AOutputStream</code>(以后将从hadoop中移除)。</p>
+<p>FastOutputStream 主要如下实现：</p>
+<ul>
+<li>
+<p>大文件分为多个定长<code>block</code>来上传。通过<code>fs.s3a.multipart.size</code>配置指定；</p>
+</li>
+<li>
+<p>缓存<code>block</code>到磁盘(默认)或堆/非堆内存中；</p>
+</li>
+<li>
+<p>通过后台线程并行上传<code>block</code>;</p>
+</li>
+<li>
+<p>缓存<code>block</code>大小已达到长度及开始上传；</p>
+</li>
+<li>
+<p>缓存到磁盘时，使用<code>fs.s3a.buffer.dir</code>指定的目录；</p>
+</li>
+<li></li>
+</ul>
+<h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#How_S3A_writes_data_t>Apache Hadoop Amazon Web Services support – Hadoop-AWS module: Integration with Amazon Web Services</a></p>
+</li>
+<li>
+<p><a href=https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/s3guard.html>Apache Hadoop Amazon Web Services support – S3Guard: Consistency and Metadata Caching for S3A</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="跳表(skiplist) 简介 跳表(SkipList)由 William Pugh 于 1990 年发明。他在 Communications of the ACM June 1990, 33(6) 668-676 上发表了 Skip lists: a probabilistic alternative to balanced trees，在该论文中详细解">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/12.data_struct/20.%E8%B7%B3%E8%A1%A8/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="跳表(skiplist)">
-<meta property="og:description" content>
+<meta property="og:description" content="跳表(skiplist) 简介 跳表(SkipList)由 William Pugh 于 1990 年发明。他在 Communications of the ACM June 1990, 33(6) 668-676 上发表了 Skip lists: a probabilistic alternative to balanced trees，在该论文中详细解">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/12.data_struct/20.%E8%B7%B3%E8%A1%A8/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="跳表(skiplist)">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="跳表(skiplist) 简介 跳表(SkipList)由 William Pugh 于 1990 年发明。他在 Communications of the ACM June 1990, 33(6) 668-676 上发表了 Skip lists: a probabilistic alternative to balanced trees，在该论文中详细解"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="316">
 <meta itemprop=keywords content="data_struct,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="跳表(skiplist)">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="跳表(skiplist) 简介 跳表(SkipList)由 William Pugh 于 1990 年发明。他在 Communications of the ACM June 1990, 33(6) 668-676 上发表了 Skip lists: a probabilistic alternative to balanced trees，在该论文中详细解"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,84 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#核心思想>核心思想</a></li>
+<li><a href=#实现要点>实现要点</a></li>
+<li><a href=#实现>实现</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=跳表skiplist>跳表(skiplist)</h1>
+<h2 id=简介>简介</h2>
+<p><code>跳表</code>(SkipList)由 William Pugh 于 1990 年发明。他在 Communications of the ACM June 1990, 33(6) 668-676 上发表了 Skip lists: a probabilistic alternative to balanced trees，在该论文中详细解释了跳表的数据结构和插入删除操作。</p>
+<p>跳表是平衡树的一种替代的数据结构，和红黑树不相同的是，跳表对于树的平衡的实现是基于一种随机化的算法，跳表的插入和删除的工作是比较简单的。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/12-21-20-04-2020-03-06-11-41-30-image.png alt></p>
+<h2 id=核心思想>核心思想</h2>
+<ul>
+<li>在普通链表中增加层级指针，实现节点的快速访问。</li>
+</ul>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/12-21-20-11-image-20190504154638969.png alt=image-20190504154638969></p>
+<h2 id=实现要点>实现要点</h2>
+<ol>
+<li>新增节点通过随机数决定指针的层级；</li>
+<li>通过调节因子决定随机层级，从而控制层级指针的疏密；</li>
+</ol>
+<h2 id=实现>实现</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=k>typedef</span> <span class=k>struct</span> <span class=nc>zskiplistNode</span> <span class=p>{</span>
+    <span class=c1>// member 对象
+</span><span class=c1></span>    <span class=n>robj</span> <span class=o>*</span><span class=n>obj</span><span class=p>;</span>
+    <span class=c1>// 分值
+</span><span class=c1></span>    <span class=kt>double</span> <span class=n>score</span><span class=p>;</span>
+
+    <span class=c1>// 后退指针
+</span><span class=c1></span>    <span class=k>struct</span> <span class=nc>zskiplistNode</span> <span class=o>*</span><span class=n>backward</span><span class=p>;</span>
+
+    <span class=c1>// 层
+</span><span class=c1></span>    <span class=k>struct</span> <span class=nc>zskiplistLevel</span> <span class=p>{</span>
+        <span class=c1>// 前进指针
+</span><span class=c1></span>        <span class=k>struct</span> <span class=nc>zskiplistNode</span> <span class=o>*</span><span class=n>forward</span><span class=p>;</span>
+        <span class=c1>// 这个层跨越的节点数量
+</span><span class=c1></span>        <span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>span</span><span class=p>;</span>
+
+    <span class=p>}</span> <span class=n>level</span><span class=p>[];</span>
+
+<span class=p>}</span> <span class=n>zskiplistNode</span><span class=p>;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li><a href=http://www.cnblogs.com/xuqiang/archive/2011/05/22/2053516.html>http://www.cnblogs.com/xuqiang/archive/2011/05/22/2053516.html</a></li>
+<li><a href=https://redisbook.readthedocs.io/en/latest/internal-datastruct/skiplist.html>跳跃表 — Redis 设计与实现</a></li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

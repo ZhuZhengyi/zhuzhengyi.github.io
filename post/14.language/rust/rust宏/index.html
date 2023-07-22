@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Rust宏 简介 一般来说，宏是编程语言中，在编译期执行的，用于实现元编程的一种语法扩展技术； Rust中的宏处理发生在 AST 生成之后， 特性 rust中">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/rust/rust%E5%AE%8F/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Rust宏">
-<meta property="og:description" content>
+<meta property="og:description" content="Rust宏 简介 一般来说，宏是编程语言中，在编译期执行的，用于实现元编程的一种语法扩展技术； Rust中的宏处理发生在 AST 生成之后， 特性 rust中">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/rust/rust%E5%AE%8F/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2023-04-05T15:05:52+08:00">
 <meta property="article:modified_time" content="2023-04-05T15:05:52+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Rust宏">
-<meta itemprop=description content><meta itemprop=datePublished content="2023-04-05T15:05:52+08:00">
+<meta itemprop=description content="Rust宏 简介 一般来说，宏是编程语言中，在编译期执行的，用于实现元编程的一种语法扩展技术； Rust中的宏处理发生在 AST 生成之后， 特性 rust中"><meta itemprop=datePublished content="2023-04-05T15:05:52+08:00">
 <meta itemprop=dateModified content="2023-04-05T15:05:52+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2171">
 <meta itemprop=keywords content="language,rust,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Rust宏">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Rust宏 简介 一般来说，宏是编程语言中，在编译期执行的，用于实现元编程的一种语法扩展技术； Rust中的宏处理发生在 AST 生成之后， 特性 rust中"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,314 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#特性>特性</a></li>
+<li><a href=#分类>分类</a></li>
+<li><a href=#宏语法>宏语法</a></li>
+<li><a href=#声明宏macro_rules>声明宏macro_rules</a>
+<ul>
+<li><a href=#指示符designator>指示符(designator)</a></li>
+<li><a href=#重复repetition>重复(repetition)</a></li>
+</ul>
+</li>
+<li><a href=#过程宏proc_macro>过程宏proc_macro</a>
+<ul>
+<li><a href=#derive过程宏>derive过程宏</a></li>
+<li><a href=#属性过程宏>属性过程宏</a></li>
+<li><a href=#函数过程宏function-like-macros>函数过程宏(Function-like macros)</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=rust宏>Rust宏</h1>
+<h2 id=简介>简介</h2>
+<p>一般来说，宏是编程语言中，在编译期执行的，用于实现元编程的一种语法扩展技术；</p>
+<p>Rust中的宏处理发生在 AST 生成之后，</p>
+<h2 id=特性>特性</h2>
+<p>rust中的宏拥有如下特性：</p>
+<ul>
+<li>卫生宏，编译器或运行时会保证宏里面定义的变量或函数不会与外面的冲突，在宏里面以普通方式定义的变量作用域不会跑到宏外面；</li>
+<li>可变参数。rust中的宏参数数量是可变的；</li>
+</ul>
+<h2 id=分类>分类</h2>
+<p>rust中的宏分为声明宏和过程宏两大类：</p>
+<ul>
+<li>
+<p><strong>声明</strong>（<em>Declarative</em>）宏：使用 <code>macro_rules!</code> 定义；</p>
+</li>
+<li>
+<p><strong>过程</strong>（<em>Procedural</em>）宏：过程宏接收 Rust 代码作为输入，在这些代码上进行操作，然后产生另一些代码作为输出，而非像声明式宏那样匹配对应模式然后以另一部分代码替换当前代码。过程宏包含以下三种：</p>
+<ul>
+<li>
+<p><code>#[derive]</code> 过程宏：在结构体和枚举上指定通过 <code>derive</code> 属性添加的代码；</p>
+</li>
+<li>
+<p>类属性（Attribute-like）宏：定义可用于任意项的自定义属性</p>
+</li>
+<li>
+<p>类函数宏：看起来像函数不过作用于作为参数传递的 token</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id=宏语法>宏语法</h2>
+<p>宏的语法分为<strong>定义</strong>和<strong>调用</strong>两个方面：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// 定义
+</span><span class=c1></span><span class=n>macro_rules</span><span class=o>!</span><span class=w> </span><span class=o>&lt;</span><span class=n>macro_name</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w> 
+</span><span class=w>    </span><span class=n>macro_body</span><span class=w> 
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// 调用
+</span><span class=c1></span><span class=o>&lt;</span><span class=n>macro_name</span><span class=o>&gt;!&lt;</span><span class=p>(</span><span class=n>macro_args</span><span class=p>)</span><span class=o>&gt;</span><span class=w> 
+</span></code></pre></td></tr></table>
+</div>
+</div><p>注意：</p>
+<ul>
+<li>
+<p>宏的定义必须出现在宏调用之前;</p>
+</li>
+<li>
+<p>宏的调用参数可以使用<code>()</code>、<code>[]</code>、<code>{}</code>中的任意进行包括；</p>
+</li>
+<li></li>
+</ul>
+<h2 id=声明宏macro_rules>声明宏macro_rules</h2>
+<ul>
+<li>声明宏是用来声明一个宏调用的；</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=cp>#[macro_export]</span><span class=w>           </span><span class=c1>//将宏进行了导出，其它的包就可以将该宏引入到当前作用域中使用
+</span><span class=c1></span><span class=n>macro_rules</span><span class=o>!</span><span class=w> </span><span class=n>vec</span><span class=w> </span><span class=p>{</span><span class=w>        </span><span class=c1>//macro_rules！定义宏
+</span><span class=c1></span><span class=w>    </span><span class=p>(</span><span class=w> </span><span class=cp>$(</span><span class=w> </span><span class=cp>$x</span>:<span class=nc>expr</span><span class=w> </span><span class=p>),</span><span class=o>*</span><span class=w> </span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>    </span><span class=c1>//宏模式匹配
+</span><span class=c1></span><span class=w>        </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>temp_vec</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Vec</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>            </span><span class=cp>$(</span><span class=w>
+</span><span class=w>                </span><span class=n>temp_vec</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=cp>$x</span><span class=p>);</span><span class=w>
+</span><span class=w>            </span><span class=p>)</span><span class=o>*</span><span class=w>
+</span><span class=w>            </span><span class=n>temp_vec</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>vec</span><span class=o>!</span><span class=p>[</span><span class=mi>1</span><span class=p>,</span><span class=w> </span><span class=mi>2</span><span class=p>,</span><span class=w> </span><span class=mi>3</span><span class=p>];</span><span class=w> </span><span class=c1>//这个宏在编译时被转换为如下代码段
+</span><span class=c1></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>temp_vec</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Vec</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>temp_vec</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>temp_vec</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=mi>2</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>temp_vec</span><span class=p>.</span><span class=n>push</span><span class=p>(</span><span class=mi>3</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>temp_vec</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id=指示符designator>指示符(designator)</h3>
+<p>宏里面的变量都是以 <code>$</code> 开头的，其余的都是按字面去匹配，以 <code>$</code> 开头的变量都是用来表示语法(syntactic)元素，为了限定匹配什么类型的语法元素，需要用指示符(designator)加以限定，就跟普通的变量绑定一样用冒号将变量和类型分开，当前宏支持以下几种指示符：</p>
+<ul>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#block><code>block</code></a>：代码块(block)，如一块语句或者由大括号包围的不限数量的表达式；</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#expr><code>expr</code></a>：表达式 (expression)，匹配任何形式的表达式 (<a href=https://doc.rust-lang.org/reference/expressions.html>expression</a>)，如<code>"literal"</code>、<code>funcall()</code>、<code>future.await</code>;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#ident><code>ident</code></a>：标识符 (identifier)，匹配任何形式的标识符 (<a href=https://doc.rust-lang.org/reference/identifiers.html>identifier</a>) 或者关键字，如<code>foo</code>、<code>async</code>、<code>O___O</code>；</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#item><code>item</code></a>：条目(item), 匹配 Rust 的 <a href=https://doc.rust-lang.org/reference/items.html>item</a> 的 <strong>定义</strong> (definitions), 如<code>struct Foo;</code>、<code>impl Foo {}</code>、<code>enum Bar {}</code>;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#lifetime><code>lifetime</code></a>：生命周期注解(lifetime), 比如 <code>'foo</code>、<code>'static</code>;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#literal><code>literal</code></a>：字面值(literal), 比如 <code>"Hello World!"</code>、<code>3.14</code>、<code>'🦀'</code>;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#meta><code>meta</code></a>：元信息(meta), 匹配属性 (<a href=https://doc.rust-lang.org/reference/attributes.html>attribute</a>)里面的内容;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#pat><code>pat</code></a>：模式 (pattern), 普通模式匹配（非宏本身的模式）中的模式，例如 <code>Some(t)</code>, <code>(3, 'a', _)</code>;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#path><code>path</code></a>：路径()path), 比如 <code>foo</code>、<code>::std::mem::replace</code>、<code>transmute::&lt;_, int></code>）;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#stmt><code>stmt</code></a>：语句 (statment), 如 <code>let a = 42;</code>;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#tt><code>tt</code></a>： 标记树(token tree), 能匹配几乎所有东西， 在使用宏之后检查 (inspect) 匹配的内容;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#ty><code>ty</code></a>：类型(type), 匹配任何形式的类型表达式，如 <code>i32</code>, <code>char</code>等;</li>
+<li><a href=https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#vis><code>vis</code></a>：可视标识符，可能为空, 比如 <code>pub</code>、<code>pub(in crate)</code>;</li>
+</ul>
+<h3 id=重复repetition>重复(repetition)</h3>
+<p>宏相比函数一个很大的不同是宏可以接受任意多个参数，例如 <code>println!</code> 和 <code>vec!</code>，使用 <code>+</code> 和 <code>*</code>表示重复；</p>
+<ul>
+<li>
+<p><code>+</code> 表示一次或多次（至少一次）；</p>
+</li>
+<li>
+<p><code>*</code> 表示0次或多次；</p>
+</li>
+<li>
+<p><code>?</code>最多一次重复；</p>
+</li>
+</ul>
+<p>重复的模式需要用括号括起来，外面再加上 <code>$</code>，例如 <code>$(...)*</code>, <code>$(...)+</code>。</p>
+<p>括号三种括号中的任意一种，因为括号在这里仅仅是用来标记一个模式的开始和结束，大部分情况重复的模式是用逗号或分号分隔的，所以你会经常看到 <code>$(...),*</code>, <code>$(...);*</code>, <code>$(...),+</code>, <code>$(...);+</code> 这样的用来表示重复。</p>
+<h2 id=过程宏proc_macro>过程宏proc_macro</h2>
+<ul>
+<li>
+<p>过程宏是使用源代码作为输入参数，基于代码进行一系列操作后，再输出一段全新的代码;</p>
+</li>
+<li>
+<p>与声明宏不同,过程宏中的 derive 宏输出的代码并不会替换之前的代码;</p>
+</li>
+<li>
+<p>过程宏必须先被编译后才能使用，所以其定义必须要放入一个独立的包中；</p>
+</li>
+</ul>
+<h3 id=derive过程宏>derive过程宏</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>//定义derive proc macro
+</span><span class=c1></span><span class=k>use</span><span class=w> </span><span class=n>proc_macro</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[proc_macro_derive(HelloMacro)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>some_name</span><span class=p>(</span><span class=n>input</span>: <span class=nc>TokenStream</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>TokenStream</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>//使用derive proc macro
+</span><span class=c1></span><span class=k>use</span><span class=w> </span><span class=n>hello_macro</span>::<span class=n>HelloMacro</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>hello_macro_derive</span>::<span class=n>HelloMacro</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(HelloMacro)]</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>Sunfei</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(HelloMacro)]</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>Sunface</span><span class=p>;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id=属性过程宏>属性过程宏</h3>
+<p>属性过程宏的定义函数有两个参数：</p>
+<ul>
+<li>第一个参数时用于说明属性包含的内容：<code>Get, "/"</code> 部分</li>
+<li>第二个是属性所标注的类型项，在这里是 <code>fn index() {...}</code>，注意，函数体也被包含其中</li>
+</ul>
+<p>类属性宏的工作方式：</p>
+<ul>
+<li>
+<p>创建一个包，类型是 <code>proc-macro</code>；</p>
+</li>
+<li>
+<p>接着实现一个函数用于生成想要的代码。</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>//属性宏定义
+</span><span class=c1></span><span class=cp>#[proc_macro_attribute]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>route</span><span class=p>(</span><span class=n>attr</span>: <span class=nc>TokenStream</span><span class=p>,</span><span class=w> </span><span class=n>item</span>: <span class=nc>TokenStream</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>TokenStream</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>...</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>//使用属性过程宏
+</span><span class=c1></span><span class=cp>#[route(GET, </span><span class=s>&#34;/&#34;</span><span class=cp>)]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>index</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>   </span><span class=p>...</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id=函数过程宏function-like-macros>函数过程宏(Function-like macros)</h3>
+<ul>
+<li>
+<p>函数过程宏和声明宏 <code>macro_rules</code> 有些类似, 都可以想函数那样直接调用；</p>
+</li>
+<li>
+<p>函数过程宏和声明宏不同之处在于函数过程宏定义不必使用match，而是更灵活，也能实现更复杂的功能；</p>
+</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>//定义函数过程宏
+</span><span class=c1></span><span class=cp>#[proc_macro]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>sql</span><span class=p>(</span><span class=n>input</span>: <span class=nc>TokenStream</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>TokenStream</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>//使用函数过程宏
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>sql</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>sql</span><span class=o>!</span><span class=p>(</span><span class=n>SELECT</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=n>FROM</span><span class=w> </span><span class=n>posts</span><span class=w> </span><span class=n>WHERE</span><span class=w> </span><span class=n>id</span><span class=o>=</span><span class=mi>1</span><span class=p>);</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li>
+<p><a href=https://hardocs.com/d/rustprimer/macro/macro.html>宏系统 · Rust Primer - 给初学者的Rust中文教程</a></p>
+</li>
+<li>
+<p><a href=https://kaisery.github.io/trpl-zh-cn/ch19-06-macros.html>宏 - Rust 程序设计语言 简体中文版</a></p>
+</li>
+<li>
+<p><a href=https://zhuanlan.zhihu.com/p/106016118>Rust Macro 手册</a></p>
+</li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

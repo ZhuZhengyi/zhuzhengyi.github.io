@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Bash基础 简介 特殊变量 1 2 3 4 5 6 7 $# # 参数个数 $@ # 所有参数, 每个参数分别用&amp;#34;&amp;#34;包含 $* # 所有参数，所有参数使用一个外层&#">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/shell/bash%E5%9F%BA%E7%A1%80/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Bash基础">
-<meta property="og:description" content>
+<meta property="og:description" content="Bash基础 简介 特殊变量 1 2 3 4 5 6 7 $# # 参数个数 $@ # 所有参数, 每个参数分别用&#34;&#34;包含 $* # 所有参数，所有参数使用一个外层&#">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/shell/bash%E5%9F%BA%E7%A1%80/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-11-08T10:33:04+08:00">
 <meta property="article:modified_time" content="2021-11-08T10:33:04+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Bash基础">
-<meta itemprop=description content><meta itemprop=datePublished content="2021-11-08T10:33:04+08:00">
+<meta itemprop=description content="Bash基础 简介 特殊变量 1 2 3 4 5 6 7 $# # 参数个数 $@ # 所有参数, 每个参数分别用&#34;&#34;包含 $* # 所有参数，所有参数使用一个外层&#"><meta itemprop=datePublished content="2021-11-08T10:33:04+08:00">
 <meta itemprop=dateModified content="2021-11-08T10:33:04+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1812">
 <meta itemprop=keywords content="language,shell,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Bash基础">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Bash基础 简介 特殊变量 1 2 3 4 5 6 7 $# # 参数个数 $@ # 所有参数, 每个参数分别用&#34;&#34;包含 $* # 所有参数，所有参数使用一个外层&#"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,597 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#特殊变量>特殊变量</a></li>
+<li><a href=#参数替换>参数替换</a></li>
+<li><a href=#字符串>字符串</a></li>
+<li><a href=#数组array>数组(array)</a>
+<ul>
+<li><a href=#字典dict>字典(dict)</a></li>
+</ul>
+</li>
+<li><a href=#引用>引用</a></li>
+<li><a href=#4-case-语句>4. case 语句</a></li>
+<li><a href=#5-read>5. read</a></li>
+<li><a href=#6-逻辑操作符>6. 逻辑操作符</a></li>
+<li><a href=#7--和->7. || 和 &&</a></li>
+<li><a href=#8-字符串操作符>8. 字符串操作符</a></li>
+<li><a href=#9-整数操作符>9. 整数操作符</a></li>
+<li><a href=#10-文件操作符>10. 文件操作符</a></li>
+<li><a href=#11-for>11. for</a></li>
+<li><a href=#12-算术运算>12. 算术运算</a></li>
+<li><a href=#13-seq>13. seq</a></li>
+<li><a href=#16-echo>16 echo</a></li>
+<li><a href=#判断>判断</a></li>
+<li><a href=#数组>数组</a></li>
+<li><a href=#常用操作>常用操作</a></li>
+<li><a href=#变量替换>变量替换</a></li>
+<li><a href=#模板文件变量替换>模板文件变量替换</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=bash基础>Bash基础</h1>
+<h2 id=简介>简介</h2>
+<h2 id=特殊变量>特殊变量</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=nv>$#</span>        <span class=c1># 参数个数</span>
+<span class=nv>$@</span>        <span class=c1># 所有参数, 每个参数分别用&#34;&#34;包含</span>
+<span class=nv>$*</span>        <span class=c1># 所有参数，所有参数使用一个外层&#34; &#34;包含</span>
+<span class=nv>$0</span>        <span class=c1># 文件名</span>
+<span class=nv>$1</span>        <span class=c1># 第1个参数</span>
+<span class=nv>$?</span>        <span class=c1># 上一个命令的退出状态</span>
+<span class=nv>$!</span>        <span class=c1># 进程ID</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参数替换>参数替换</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=si>${</span><span class=nv>var</span><span class=k>:-</span><span class=nv>value</span><span class=si>}</span>         <span class=c1># 若var已设置，则不进行赋值， 否则，var=value</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>:=value</span><span class=si>}</span>         <span class=c1># 总取value</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>:?mesg</span><span class=si>}</span>          <span class=c1># 若var未设置，则显示mesg</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>:+value</span><span class=si>}</span>         <span class=c1># 若var未设置，则var为空， 否则，var=value</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>%pattern</span><span class=si>}</span>        <span class=c1># 从var右边去掉最短的pattern%%</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>%%pattern</span><span class=si>}</span>       <span class=c1># 从var右边去掉最长的pattern</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>#pattern</span><span class=si>}</span>        <span class=c1># 从var左边去掉最短的pattern</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>##pattern</span><span class=si>}</span>       <span class=c1># 从var左边去掉最长的pattern</span>
+<span class=si>${</span><span class=nv>word</span><span class=p>:</span><span class=nv>pos</span><span class=p>:</span><span class=nv>size</span><span class=si>}</span>      <span class=c1># chars at pos(&gt;0,from left; &lt;0, from right ) len of size</span>
+<span class=si>${</span><span class=nv>var</span><span class=p>/ABC/DEFG</span><span class=si>}</span>       <span class=c1># replace ABC with DEFG</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=字符串>字符串</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=nv>str</span><span class=o>=</span><span class=s2>&#34;abcdef&#34;</span>
+expr length <span class=nv>$str</span>   <span class=c1># 4</span>
+<span class=nb>echo</span> <span class=si>${#</span><span class=nv>str</span><span class=si>}</span>       <span class=c1>#获取字符串长度 4</span>
+<span class=c1>## 获取子串index</span>
+expr index <span class=nv>$str</span> <span class=s2>&#34;b&#34;</span>  <span class=c1># 2</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>:</span><span class=nv>2</span><span class=p>:</span><span class=nv>3</span><span class=si>}</span>    <span class=c1>#从第二个位置开始提取3个字符, bcd</span>
+
+<span class=c1>## 左边截取掉最短的匹配 </span>
+<span class=nv>str</span><span class=o>=</span><span class=s2>&#34;abbc,def,ghi,abcjkl&#34;</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>#a*c</span><span class=si>}</span>     <span class=c1># #从左边截取掉最短的匹配， 输出： ,def,ghi,abcjkl</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>##a*c</span><span class=si>}</span>    <span class=c1># ##从左边截取掉最长的匹配， 输出：jkl</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>#</span><span class=s2>&#34;a*c&#34;</span><span class=si>}</span>   <span class=c1># 输出abbc,def,ghi,abcjkl 因为str中没有&#34;a*c&#34;子串</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>##</span><span class=s2>&#34;a*c&#34;</span><span class=si>}</span>  <span class=c1># 输出abbc,def,ghi,abcjkl 同理</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>#*a*c*</span><span class=si>}</span>   <span class=c1># 空</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>##*a*c*</span><span class=si>}</span>  <span class=c1># 空</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>#d*f</span><span class=si>}</span>     <span class=c1># 输出abbc,def,ghi,abcjkl, </span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>#*d*f</span><span class=si>}</span>    <span class=c1># 输出,ghi,abcjkl   </span>
+<span class=c1>## 从右边截取最短的匹配</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>%a*l</span><span class=si>}</span>     <span class=c1># %表示从右边截取最短的匹配， abbc,def,ghi   </span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>%%b*l</span><span class=si>}</span>    <span class=c1># %%)表示从右边截取最长的匹配， a             </span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>%a*c</span><span class=si>}</span>     <span class=c1># abbc,def,ghi,abcjkl</span>
+
+<span class=c1>## 子串替换</span>
+<span class=nv>str</span><span class=o>=</span><span class=s2>&#34;apple, tree, apple tree&#34;</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>/apple/APPLE</span><span class=si>}</span>   <span class=c1>#/替换第一次出现的apple， APPLE, tree, apple tree</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>//apple/APPLE</span><span class=si>}</span>  <span class=c1>#//替换所有apple， APPLE, tree, APPLE tree </span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>/#apple/APPLE</span><span class=si>}</span>  <span class=c1>#/#开头匹配替换， APPLE, tree, apple tree</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>str</span><span class=p>/%apple/APPLE</span><span class=si>}</span>  <span class=c1>#%末尾匹配替换， 如果字符串str以apple结尾，则用APPLE替换它</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=数组array>数组(array)</h2>
+<ul>
+<li>bash中的数组index可以不连续；</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=c1>## 定义数组</span>
+<span class=nb>declare</span> -a array1  <span class=nv>array2</span><span class=o>=(</span> a b c  d <span class=o>)</span>
+<span class=c1>## 数组赋值</span>
+array1<span class=o>[</span>2<span class=o>]=</span>a1
+<span class=c1>## 数组所有value             </span>
+<span class=si>${</span><span class=nv>array1</span><span class=p>[*]</span><span class=si>}</span>
+<span class=si>${</span><span class=nv>array1</span><span class=p>[@]</span><span class=si>}</span>
+<span class=c1>## 数组元素个数</span>
+<span class=nb>echo</span> <span class=si>${#</span><span class=nv>array1</span><span class=p>[*]</span><span class=si>}</span>
+<span class=c1>## 数组元素:        </span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>array1</span><span class=p>[2]</span><span class=si>}</span>
+
+<span class=c1>## 数组元素增加前缀</span>
+<span class=nv>array</span><span class=o>=(</span> <span class=si>${</span><span class=nv>array</span><span class=p>[@]/#/prefix_</span><span class=si>}</span> <span class=o>)</span> <span class=c1># prefix_a prefix_b prefix_c</span>
+<span class=nv>array</span><span class=o>=(</span> <span class=s2>&#34;</span><span class=si>${</span><span class=nv>array</span><span class=p>[@]/%/_suffix</span><span class=si>}</span><span class=s2>&#34;</span> <span class=o>)</span> <span class=c1># a_suffiix b_suffix c_suffix</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=字典dict>字典(dict)</h3>
+<p>bash 4.1.2 版本以上内置dict支持</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>## bash version &gt; 4.1.2</span>
+
+<span class=c1>## 字典声明</span>
+<span class=nb>declare</span> -A hashmap
+
+<span class=nv>hashmap</span><span class=o>=(</span> <span class=o>[</span><span class=s1>&#39;a&#39;</span><span class=o>]=</span><span class=m>1</span>
+       <span class=o>[</span><span class=s1>&#39;b&#39;</span><span class=o>]=</span><span class=m>2</span>
+       <span class=o>[</span><span class=s1>&#39;c&#39;</span><span class=o>]=</span><span class=m>3</span> <span class=o>)</span>
+
+<span class=c1>## 字典赋值</span>
+hashmap<span class=o>[</span><span class=s2>&#34;key&#34;</span><span class=o>]=</span><span class=s2>&#34;value&#34;</span>
+hashmap<span class=o>[</span><span class=s2>&#34;key2&#34;</span><span class=o>]=</span><span class=s2>&#34;value2&#34;</span>
+<span class=c1>## 获取value</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>hashmap</span><span class=p>[</span><span class=s2>&#34;key&#34;</span><span class=p>]</span><span class=si>}</span>
+<span class=c1>## 所有key</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=p>!hashmap[@]</span><span class=si>}</span>
+<span class=c1>## 所有value</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>hashmap</span><span class=p>[@]</span><span class=si>}</span> 
+
+<span class=c1>## </span>
+<span class=nv>hashmap</span><span class=o>+=(</span> <span class=o>[</span><span class=s2>&#34;key4&#34;</span><span class=o>]=</span>val4 <span class=o>[</span><span class=s2>&#34;key5&#34;</span><span class=o>]=</span>val5 <span class=o>)</span>
+<span class=c1>## 删除key</span>
+<span class=nb>unset</span> host_panes<span class=o>[</span><span class=nv>$delhost</span><span class=o>]</span>
+
+<span class=c1>## 遍历key</span>
+<span class=k>for</span> key in <span class=si>${</span><span class=p>!hashmap[@]</span><span class=si>}</span><span class=p>;</span> <span class=k>do</span> <span class=nb>echo</span> <span class=nv>$key</span> <span class=si>${</span><span class=nv>hashmap</span><span class=p>[</span><span class=nv>$key</span><span class=p>]</span><span class=si>}</span><span class=p>;</span> <span class=k>done</span>
+<span class=c1>## 遍历value</span>
+<span class=k>for</span> value in <span class=si>${</span><span class=nv>hashmap</span><span class=p>[@]</span><span class=si>}</span><span class=p>;</span> <span class=k>do</span> <span class=nb>echo</span> <span class=nv>$value</span><span class=p>;</span> <span class=k>done</span>
+
+<span class=c1>## 关联数组作为函数参数传递</span>
+<span class=k>function</span> print_array <span class=o>{</span>
+    <span class=c1># eval string into a new associative array</span>
+    <span class=nb>eval</span> <span class=s2>&#34;declare -A func_assoc_array=&#34;</span><span class=si>${</span><span class=nv>1</span><span class=p>#*=</span><span class=si>}</span>
+    <span class=c1># proof that array was successfully created</span>
+    <span class=nb>declare</span> -p func_assoc_array
+<span class=o>}</span>
+
+<span class=c1># declare an associative array</span>
+<span class=nb>declare</span> -A <span class=nv>assoc_array</span><span class=o>=([</span><span class=s2>&#34;key1&#34;</span><span class=o>]=</span><span class=s2>&#34;value1&#34;</span> <span class=o>[</span><span class=s2>&#34;key2&#34;</span><span class=o>]=</span><span class=s2>&#34;value2&#34;</span><span class=o>)</span>
+<span class=c1># show associative array definition</span>
+<span class=nb>declare</span> -p assoc_array
+
+<span class=c1># pass associative array in string form to function</span>
+print_array <span class=s2>&#34;</span><span class=k>$(</span><span class=nb>declare</span> -p assoc_array<span class=k>)</span><span class=s2>&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=引用>引用</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=4-case-语句>4. case 语句</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=k>case</span> <span class=nv>$arg</span> in
+    -a<span class=p>|</span>--aaa<span class=o>)</span>  do_a <span class=p>;;</span>
+    -b<span class=p>|</span>--bbb<span class=o>)</span>  do_b <span class=p>;;</span>
+    c*<span class=o>)</span>  do_c  <span class=p>;;</span>
+    *<span class=o>)</span>  <span class=p>;;</span>
+<span class=k>esac</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=5-read>5. read</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=k>while</span> <span class=nb>read</span> line <span class=p>;</span> <span class=k>do</span>
+    <span class=nb>echo</span> <span class=s2>&#34;a </span><span class=nv>$line</span><span class=s2>&#34;</span>
+<span class=k>done</span> &lt;filename
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=6-逻辑操作符>6. 逻辑操作符</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=o>[</span> exp1 -a exp2 <span class=o>]</span>  <span class=c1>#逻辑与</span>
+<span class=o>[</span> exp1 -o exp2 <span class=o>]</span>  <span class=c1>#逻辑或</span>
+<span class=o>[[</span> ! exp <span class=o>]]</span>         <span class=c1>#逻辑非</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=7--和->7. || 和 &&</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>cmd1 <span class=o>&amp;&amp;</span> cmd2                <span class=c1>#    if cmd1 == true ; then cmd2    ;</span>
+cmd1 <span class=o>||</span> cmd2                <span class=c1>#    if cmd1 == false; then cmd2 ;</span>
+cmd1 <span class=o>&amp;&amp;</span> cmd2 <span class=o>||</span> cmd3        <span class=c1>#    cmd1 ? cmd2 : cmd3</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=8-字符串操作符>8. 字符串操作符</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=o>[</span> <span class=nv>$str1</span>  <span class=o>=</span> <span class=nv>$str2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; str1 == str2 &#34;</span>
+<span class=o>[</span> <span class=nv>$str1</span> !<span class=o>=</span> <span class=nv>$str2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; str1 != str2 &#34;</span>
+<span class=o>[</span> <span class=nv>$str</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; str 非空 &#34;</span>
+<span class=o>[</span> -n <span class=nv>$str</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; str 不为空&#34;</span>
+<span class=o>[</span> -z <span class=nv>$str</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; str1 空 &#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=9-整数操作符>9. 整数操作符</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=o>[</span> <span class=nv>$n1</span> -eq <span class=nv>$n2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; n1 == n2 &#34;</span>
+<span class=o>[</span> <span class=nv>$n1</span> -ne <span class=nv>$n2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; n1 != n2 &#34;</span>
+<span class=o>[</span> <span class=nv>$n1</span> -gt <span class=nv>$n2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; n1 &gt; n2 &#34;</span>
+<span class=o>[</span> <span class=nv>$n1</span> -ge <span class=nv>$n2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; n1 &gt;= n2 &#34;</span>
+<span class=o>[</span> <span class=nv>$n1</span> -lt <span class=nv>$n2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; n1 &lt; n2 &#34;</span>
+<span class=o>[</span> <span class=nv>$n1</span> -le <span class=nv>$n2</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; n1 &lt;= n2 &#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=10-文件操作符>10. 文件操作符</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=o>[</span> -e <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> 存在 &#34;</span>
+<span class=o>[</span> -s <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> 长度不为0 &#34;</span>
+<span class=o>[</span> -f <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> 普通文件 &#34;</span>
+<span class=o>[</span> -d <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> 目录 &#34;</span>
+<span class=o>[</span> -L <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> 链接文件 &#34;</span>
+<span class=o>[</span> -r <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> 可读 &#34;</span>
+<span class=o>[</span> -w <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> write &#34;</span>
+<span class=o>[</span> -x <span class=nv>$file</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34; </span><span class=nv>$file</span><span class=s2> excute &#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=11-for>11. for</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=c1>### 遍历列表</span>
+<span class=k>for</span> var in var1 var2 ... varn <span class=p>;</span> <span class=k>do</span>
+    <span class=nb>echo</span> <span class=nv>$var</span>
+<span class=k>done</span>
+
+<span class=c1>### 遍历数组</span>
+<span class=nv>array</span><span class=o>=(</span> var1 var2 ... varn <span class=o>)</span>
+<span class=k>for</span> var in <span class=si>${</span><span class=nv>array</span><span class=p>[@]</span><span class=si>}</span><span class=p>;</span> <span class=k>do</span>
+    <span class=nb>echo</span> <span class=nv>$var</span>
+<span class=k>done</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=12-算术运算>12. 算术运算</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=nv>size</span><span class=o>=</span><span class=m>512</span>
+<span class=nv>cnt</span><span class=o>=</span><span class=m>8</span>
+<span class=nv>total</span><span class=o>=</span><span class=k>$((</span><span class=nv>$size</span><span class=o>*</span><span class=nv>$cnt</span><span class=k>))</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=13-seq>13. seq</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>$ seq LastNum
+$ seq FirstNum LastNum
+$ seq FirstNum Step LastNum
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=16-echo>16 echo</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=c1>### 输出颜色字符</span>
+$ <span class=nb>echo</span> -ne <span class=s2>&#34;\E[BACK_GROUND_NUM;FOREGROUND_NAME m&#34;</span>  TEXT
+$ <span class=nb>echo</span> -ne <span class=s2>&#34;\E[0m&#34;</span>
+
+<span class=c1>### 输出到（x,y）坐标处</span>
+$ <span class=nb>echo</span> -ne <span class=s2>&#34;\E[x;yH&#34;&#34;TEXT&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=判断>判断</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=o>[[</span> -L <span class=s2>&#34;/path/to/link&#34;</span> <span class=o>]]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34;true&#34;</span> <span class=o>||</span> <span class=nb>echo</span> <span class=s2>&#34;false&#34;</span>
+<span class=o>[[</span> -F <span class=s2>&#34;/path/to/file&#34;</span> <span class=o>]]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34;true&#34;</span> <span class=o>||</span> <span class=nb>echo</span> <span class=s2>&#34;false&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=数组>数组</h2>
+<h2 id=常用操作>常用操作</h2>
+<ol>
+<li>
+<p>批量创建目录</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>mkdir -p /data<span class=o>{</span>0..10<span class=o>}</span>/hdfs/<span class=o>{</span>name,data<span class=o>}</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ol>
+<ul>
+<li>合并行</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>sed -n <span class=s1>&#39;/Throught*/,/Test*/p&#39;</span> /tmp/hdfs_io_test.txt  <span class=p>|</span> awk -F<span class=s2>&#34;: &#34;</span> <span class=s1>&#39;{print $2}&#39;</span> <span class=p>|</span> sed -n <span class=s1>&#39;N;N;N;s/\n/\t/gp&#39;</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>输出奇数/偶数行</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-sh data-lang=sh>sed -n <span class=s1>&#39;n;p&#39;</span> /filename   <span class=c1>#输出偶数行</span>
+sed -n <span class=s1>&#39;p;n&#39;</span> /filename   <span class=c1>#输出奇数行</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=变量替换>变量替换</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=c1>## 从变量 var 的**开头**删除最短或最长匹配 Pattern 的子串</span>
+<span class=c1>## ${var#Pattern}, ${var##Pattern}</span>
+<span class=nv>var</span><span class=o>=</span><span class=s2>&#34;abc:123:456&#34;</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>var</span><span class=p>#*:</span><span class=si>}</span>   <span class=c1>#123:456</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>var</span><span class=p>##*:</span><span class=si>}</span>  <span class=c1>#456</span>
+
+<span class=c1>## 从变量 $var 的结尾删除最短或最长匹配 $Pattern 的子串</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>var</span><span class=p>%:*</span><span class=si>}</span>   <span class=c1>#abc:123</span>
+<span class=nb>echo</span> <span class=si>${</span><span class=nv>var</span><span class=p>%%:*</span><span class=si>}</span>  <span class=c1>#abc</span>
+</code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=nb>set</span> -euo pipefail  <span class=c1>#pipe fail if any reture not 0</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=模板文件变量替换>模板文件变量替换</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=cp>#!/bin/sh
+</span><span class=cp></span>
+<span class=c1># render a template configuration file</span>
+<span class=c1># expand variables + preserve formatting</span>
+render_template<span class=o>()</span> <span class=o>{</span>
+  <span class=nb>eval</span> <span class=s2>&#34;echo \&#34;</span><span class=k>$(</span>cat <span class=nv>$1</span><span class=k>)</span><span class=s2>\&#34;&#34;</span> 2&gt;/dev/null
+<span class=o>}</span>
+
+<span class=nv>user</span><span class=o>=</span><span class=s2>&#34;Gregory&#34;</span>
+render_template /path/to/template.txt &gt; path/to/configuration_file
+</code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

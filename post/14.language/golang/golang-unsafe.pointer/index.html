@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Unsafe Pointer 前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？ 首先，Go 是一门静态语言，所有的变量都必须为">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/golang/golang-unsafe.pointer/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Unsafe Pointer">
-<meta property="og:description" content>
+<meta property="og:description" content="Unsafe Pointer 前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？ 首先，Go 是一门静态语言，所有的变量都必须为">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/golang-unsafe.pointer/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Unsafe Pointer">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="Unsafe Pointer 前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？ 首先，Go 是一门静态语言，所有的变量都必须为"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1608">
 <meta itemprop=keywords content="language,golang,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Unsafe Pointer">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Unsafe Pointer 前言 在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？ 首先，Go 是一门静态语言，所有的变量都必须为"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,220 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#前言>前言</a></li>
+<li><a href=#错误示例>错误示例</a></li>
+<li><a href=#unsafe>unsafe</a>
+<ul>
+<li><a href=#pointer>Pointer</a></li>
+<li><a href=#offsetof>Offsetof</a></li>
+<li><a href=#错误示例-1>错误示例</a></li>
+</ul>
+</li>
+<li><a href=#总结>总结</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=unsafe-pointer>Unsafe Pointer</h1>
+<h2 id=前言>前言</h2>
+<p>在大家学习 Go 的时候，肯定都学过 “Go 的指针是不支持指针运算和转换” 这个知识点。为什么呢？</p>
+<p>首先，Go 是一门静态语言，所有的变量都必须为标量类型。不同的类型不能够进行赋值、计算等跨类型的操作。那么指针也对应着相对的类型，也在 Compile 的静态类型检查的范围内。同时静态语言，也称为强类型。也就是一旦定义了，就不能再改变它</p>
+<h2 id=错误示例>错误示例</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>main</span><span class=p>(){</span>
+    <span class=nx>num</span> <span class=o>:=</span> <span class=mi>5</span>
+    <span class=nx>numPointer</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>num</span>
+
+    <span class=nx>flnum</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=kt>float32</span><span class=p>)(</span><span class=nx>numPointer</span><span class=p>)</span>
+    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>flnum</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>输出结果：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback># command-line-arguments
+...: cannot convert numPointer (type *int) to type *float32
+</code></pre></td></tr></table>
+</div>
+</div><p>在示例中，我们创建了一个 <code>num</code> 变量，值为 5，类型为 <code>int</code>。取了其对于的指针地址后，试图强制转换为 <code>*float32</code>，结果失败&mldr;</p>
+<h2 id=unsafe>unsafe</h2>
+<p>针对刚刚的 “错误示例”，我们可以采用今天的男主角 <code>unsafe</code> 标准库来解决。它是一个神奇的包，在官方的诠释中，有如下概述：</p>
+<ul>
+<li>围绕 Go 程序内存安全及类型的操作</li>
+<li>很可能会是不可移植的</li>
+<li>不受 Go 1 兼容性指南的保护</li>
+</ul>
+<p>简单来讲就是，不怎么推荐你使用。因为它是 unsafe（不安全的），但是在特殊的场景下，使用了它。可以打破 Go 的类型和内存安全机制，让你获得眼前一亮的惊喜效果 😄</p>
+<h3 id=pointer>Pointer</h3>
+<p>为了解决这个问题，需要用到 <code>unsafe.Pointer</code>。它表示任意类型且可寻址的指针值，可以在不同的指针类型之间进行转换（类似 C 语言的 void * 的用途）</p>
+<p>其包含四种核心操作：</p>
+<ul>
+<li>任何类型的指针值都可以转换为 Pointer</li>
+<li>Pointer 可以转换为任何类型的指针值</li>
+<li>uintptr 可以转换为 Pointer</li>
+<li>Pointer 可以转换为 uintptr</li>
+</ul>
+<p>在这一部分，重点看第一点、第二点。你再想想怎么修改 “错误示例” 让它运行起来？</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>main</span><span class=p>(){</span>
+    <span class=nx>num</span> <span class=o>:=</span> <span class=mi>5</span>
+    <span class=nx>numPointer</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>num</span>
+
+    <span class=nx>flnum</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=kt>float32</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=nx>numPointer</span><span class=p>))</span>
+    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>flnum</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>输出结果：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>0xc4200140b0
+</code></pre></td></tr></table>
+</div>
+</div><p>在上述代码中，我们小加改动。通过 <code>unsafe.Pointer</code> 的特性对该指针变量进行了修改，就可以完成任意类型（*T）的指针转换</p>
+<p>需要注意的是，这时还无法对变量进行操作或访问。因为不知道该指针地址指向的东西具体是什么类型。不知道是什么类型，又如何进行解析呢。无法解析也就自然无法对其变更了</p>
+<h3 id=offsetof>Offsetof</h3>
+<p>在上小节中，我们对普通的指针变量进行了修改。那么它是否能做更复杂一点的事呢？</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>Num</span> <span class=kd>struct</span><span class=p>{</span>
+    <span class=nx>i</span> <span class=kt>string</span>
+    <span class=nx>j</span> <span class=kt>int64</span>
+<span class=p>}</span>
+
+<span class=kd>func</span> <span class=nf>main</span><span class=p>(){</span>
+    <span class=nx>n</span> <span class=o>:=</span> <span class=nx>Num</span><span class=p>{</span><span class=nx>i</span><span class=p>:</span> <span class=s>&#34;EDDYCJY&#34;</span><span class=p>,</span> <span class=nx>j</span><span class=p>:</span> <span class=mi>1</span><span class=p>}</span>
+    <span class=nx>nPointer</span> <span class=o>:=</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>n</span><span class=p>)</span>
+
+    <span class=nx>niPointer</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=kt>string</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=nx>nPointer</span><span class=p>))</span>
+    <span class=o>*</span><span class=nx>niPointer</span> <span class=p>=</span> <span class=s>&#34;煎鱼&#34;</span>
+
+    <span class=nx>njPointer</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=kt>int64</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=nb>uintptr</span><span class=p>(</span><span class=nx>nPointer</span><span class=p>)</span> <span class=o>+</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nf>Offsetof</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>j</span><span class=p>)))</span>
+    <span class=o>*</span><span class=nx>njPointer</span> <span class=p>=</span> <span class=mi>2</span>
+
+    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;n.i: %s, n.j: %d&#34;</span><span class=p>,</span> <span class=nx>n</span><span class=p>.</span><span class=nx>i</span><span class=p>,</span> <span class=nx>n</span><span class=p>.</span><span class=nx>j</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>输出结果：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>n.i: 煎鱼, n.j: 2
+</code></pre></td></tr></table>
+</div>
+</div><p>在剖析这段代码做了什么事之前，我们需要了解结构体的一些基本概念：</p>
+<ul>
+<li>结构体的成员变量在内存存储上是一段连续的内存</li>
+<li>结构体的初始地址就是第一个成员变量的内存地址</li>
+<li>基于结构体的成员地址去计算偏移量。就能够得出其他成员变量的内存地址</li>
+</ul>
+<p>再回来看看上述代码，得出执行流程：</p>
+<ul>
+<li>修改 <code>n.i</code> 值：<code>i</code> 为第一个成员变量。因此不需要进行偏移量计算，直接取出指针后转换为 <code>Pointer</code>，再强制转换为字符串类型的指针值即可</li>
+<li>修改 <code>n.j</code> 值：<code>j</code> 为第二个成员变量。需要进行偏移量计算，才可以对其内存地址进行修改。在进行了偏移运算后，当前地址已经指向第二个成员变量。接着重复转换赋值即可</li>
+</ul>
+<p>需要注意的是，这里使用了如下方法（来完成偏移计算的目标）：</p>
+<p>1、<code>uintptr</code>：<code>uintptr</code> 是 Go 的内置类型。返回无符号整数，可存储一个完整的地址。后续常用于指针运算</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=kt>uintptr</span> <span class=kt>uintptr</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>2、unsafe.Offsetof：返回成员变量 x 在结构体当中的偏移量。更具体的讲，就是返回结构体初始位置到 x 之间的字节数。需要注意的是入参 <code>ArbitraryType</code> 表示任意类型，并非定义的 <code>int</code>。它实际作用是一个占位符</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>Offsetof</span><span class=p>(</span><span class=nx>x</span> <span class=nx>ArbitraryType</span><span class=p>)</span> <span class=kt>uintptr</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在这一部分，其实就是巧用了 <code>Pointer</code> 的第三、第四点特性。这时候就已经可以对变量进行操作了 😄</p>
+<h3 id=错误示例-1>错误示例</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>main</span><span class=p>(){</span>
+    <span class=nx>n</span> <span class=o>:=</span> <span class=nx>Num</span><span class=p>{</span><span class=nx>i</span><span class=p>:</span> <span class=s>&#34;EDDYCJY&#34;</span><span class=p>,</span> <span class=nx>j</span><span class=p>:</span> <span class=mi>1</span><span class=p>}</span>
+    <span class=nx>nPointer</span> <span class=o>:=</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>n</span><span class=p>)</span>
+    <span class=o>...</span>
+
+    <span class=nx>ptr</span> <span class=o>:=</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nx>nPointer</span><span class=p>)</span>
+    <span class=nx>njPointer</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=kt>int64</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=nx>ptr</span> <span class=o>+</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nf>Offsetof</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>j</span><span class=p>)))</span>
+    <span class=o>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这里存在一个问题，<code>uintptr</code> 类型是不能存储在临时变量中的。因为从 GC 的角度来看，<code>uintptr</code> 类型的临时变量只是一个无符号整数，并不知道它是一个指针地址</p>
+<p>因此当满足一定条件后，<code>ptr</code> 这个临时变量是可能被垃圾回收掉的，那么接下来的内存操作，岂不成迷？</p>
+<h2 id=总结>总结</h2>
+<p>简洁回顾两个知识点。第一是 <code>unsafe.Pointer</code> 可以让你的变量在不同的指针类型转来转去，也就是表示为任意可寻址的指针类型。第二是 <code>uintptr</code> 常用于与 <code>unsafe.Pointer</code> 打配合，用于做指针运算，巧妙地很</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

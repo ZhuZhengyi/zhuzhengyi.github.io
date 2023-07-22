@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hudi/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Apache Hudi">
-<meta property="og:description" content>
+<meta property="og:description" content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hudi/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Apache Hudi">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="1346">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Apache Hudi">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Apache Hudi 简介 Hudi，全称是Hadoop Upsert Delete and Incremental, 最初的设计目标：在hadoop上实现update和delete操作； Hudi通过COW和MOR两"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,143 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#cow表>COW表</a></li>
+<li><a href=#mor表>MOR表</a></li>
+<li><a href=#index>Index</a></li>
+<li><a href=#查询><strong>查询</strong></a>
+<ul>
+<li><a href=#读优化查询><strong>读优化查询</strong></a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=apache-hudi>Apache Hudi</h1>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p>Hudi，全称是<em>Hadoop Upsert Delete and Incremental</em>, 最初的设计目标：<strong>在</strong>hadoop上实现update和delete操作；</p>
+</li>
+<li>
+<p>Hudi通过<code>COW</code>和<code>MOR</code>两种方式在只能overwrite的文件系统上实现update操作；</p>
+</li>
+<li></li>
+</ul>
+<h2 id=cow表>COW表</h2>
+<ul>
+<li>cow, copy on write，COW表写的时候数据直接写入basefile,（parquet）不写log文件；</li>
+</ul>
+<p>Upsert的过程整体分为3步（这里省略了很多不太重要的步骤）：</p>
+<ol>
+<li>
+<p>根据partitionPath进行重新分区。</p>
+</li>
+<li>
+<p>根据recordKey确定哪些记录需要插入，哪些记录需要更新。对于需要更新的记录，还需要找到旧的记录所在的文件。（这个过程被称为tagging）</p>
+</li>
+<li>
+<p>把记录写入实际的文件。</p>
+</li>
+</ol>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/03/16-19-03-51-2022-03-16-19-03-47-image.png alt></p>
+<h2 id=mor表>MOR表</h2>
+<ul>
+<li>
+<p>merge on read，MOR表写数据时，记录首先会被快速的写进日志文件，稍后会使用时间轴上的压缩操作将其与基础文件合并。</p>
+</li>
+<li>
+<p>MOR表在更新时只会把更新的那部分数据写入一个.log文件;</p>
+</li>
+<li>
+<p>因为.log文件不包含老数据，也不涉及tagging，又是顺序写入的，所以写入会非常快。而当客户端要读取数据时，会有两种选择：</p>
+<ol>
+<li>
+<p>读取时动态地把.log文件和原始数据文件（称为base文件）进行merge</p>
+</li>
+<li>
+<p>异步地把.log文件和base文件merge，如果merge还没完成，只能读到上个版本的数据;</p>
+</li>
+</ol>
+</li>
+</ul>
+<h2 id=index>Index</h2>
+<p>在upsert的工作原理中，我们提到了tagging过程中需要使用index确定每一条数据之前是否已经插入过, 这3种index分别是：<strong>Bloom Index</strong>，<strong>Simple Index</strong>和<strong>HBase Index</strong>。</p>
+<ul>
+<li>
+<p>Bloom Index：实现原理是bloom filter。优点是效率高，缺点是bloom filter固有的假阳性问题，所以Hudi对bloom filter里存在的key，还需要回溯原文件再查找一遍。<strong>Hudi默认使用的是Bloom Index</strong>。</p>
+</li>
+<li>
+<p>Simple Index：实现原理是把新数据和老数据进行join。优点是实现最简单，无需额外的资源。缺点是性能比较差。</p>
+</li>
+<li>
+<p>HBase Index：实现原理是把index存放在HBase里面。优点是性能最高，缺点是需要外部的系统，增加了运维压力。</p>
+</li>
+</ul>
+<h2 id=查询><strong>查询</strong></h2>
+<p>鉴于这种灵活而全面的数据布局和丰富的时间线，Hudi能够支持三种不同的查询表方式，具体取决于表的类型。</p>
+<table>
+<thead>
+<tr>
+<th>查询类型</th>
+<th>COW</th>
+<th>MOR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>快照查询</td>
+<td>查询在给定表或表分区中所有文件片中的最新基本文件上执行，将查看到最新提交的记录。</td>
+<td>通过并到给定表或表分区中的所有文件切片中最新的基本文件及其日志文件合来执行查询，将看到最新的delta-commit操作写入的的记录。</td>
+</tr>
+<tr>
+<td>增量查询</td>
+<td>在给定的开始，结束即时时间范围内，对最新的基本文件执行查询（称为增量查询窗口），同时仅使用Hudi指定的列提取在此窗口中写入的记录。</td>
+<td>查询是在增量查询窗口中对最新的文件片执行的，具体取决于窗口本身，读取基本块或日志块中读取记录的组合。</td>
+</tr>
+<tr>
+<td>读优化查询</td>
+<td>和快照查询相同</td>
+<td>仅访问基本文件，提供给定文件片自上次执行压缩操作以来的数据。通常查询数据的最新程度的保证取决于压缩策略</td>
+</tr>
+</tbody>
+</table>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/03/17-10-12-49-2022-03-17-10-12-42-image.png alt></p>
+<h3 id=读优化查询><strong>读优化查询</strong></h3>
+<p>可查看给定的commit/compact即时操作的表的最新快照。仅将最新文件片的基本/列文件暴露给查询，并保证与非Hudi表相同的列查询性能。</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>读优化查询</th>
+<th>快照查询</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据延迟</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>查询延迟</td>
+<td>低</td>
+<td>高</td>
+</tr>
+</tbody>
+</table>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://mp.weixin.qq.com/s/5LQH50gZkNulDMLlcKABeg>聊一聊Apache Hudi的原理（1）</a></li>
+<li><a href=https://www.cnblogs.com/leesf456/p/12710118.html>Apache Hudi 设计与架构最强解读 - leesf - 博客园</a></li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzIyMzQ0NjA0MQ==&mid=2247485735&idx=1&sn=51915c05f158bdffa96f231a31bb1675&chksm=e81f5c51df68d5471097a8d12c62c83fe8cb0491da50f7d37fae6d831fed1506e14966832229&scene=21#wechat_redirect">https://mp.weixin.qq.com/s?__biz=MzIyMzQ0NjA0MQ==&mid=2247485735&idx=1&sn=51915c05f158bdffa96f231a31bb1675&chksm=e81f5c51df68d5471097a8d12c62c83fe8cb0491da50f7d37fae6d831fed1506e14966832229&scene=21#wechat_redirect</a></li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

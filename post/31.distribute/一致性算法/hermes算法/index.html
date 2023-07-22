@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Hermes算法 简介 基本思想 特性 Strong Consistency: linearizable reads and writes Fault Tolerance: live nodes unblock via write replays after faults High Performance Reads: reads are served locally from all replicas High Performance Writes: decentralized, fully concurrent and fast 1 RTT commit RMW Support: read-modify-write atomics almost as efficient as writes Formally Verified: Hermes is model checked through TLA+">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/hermes%E7%AE%97%E6%B3%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Hermes算法">
-<meta property="og:description" content>
+<meta property="og:description" content="Hermes算法 简介 基本思想 特性 Strong Consistency: linearizable reads and writes Fault Tolerance: live nodes unblock via write replays after faults High Performance Reads: reads are served locally from all replicas High Performance Writes: decentralized, fully concurrent and fast 1 RTT commit RMW Support: read-modify-write atomics almost as efficient as writes Formally Verified: Hermes is model checked through TLA+">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/hermes%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Hermes算法">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="Hermes算法 简介 基本思想 特性 Strong Consistency: linearizable reads and writes Fault Tolerance: live nodes unblock via write replays after faults High Performance Reads: reads are served locally from all replicas High Performance Writes: decentralized, fully concurrent and fast 1 RTT commit RMW Support: read-modify-write atomics almost as efficient as writes Formally Verified: Hermes is model checked through TLA+"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="398">
 <meta itemprop=keywords content="distribute,一致性算法,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Hermes算法">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Hermes算法 简介 基本思想 特性 Strong Consistency: linearizable reads and writes Fault Tolerance: live nodes unblock via write replays after faults High Performance Reads: reads are served locally from all replicas High Performance Writes: decentralized, fully concurrent and fast 1 RTT commit RMW Support: read-modify-write atomics almost as efficient as writes Formally Verified: Hermes is model checked through TLA+"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,47 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#基本思想>基本思想</a></li>
+<li><a href=#特性>特性</a></li>
+<li><a href=#写流程>写流程</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=hermes算法>Hermes算法</h1>
+<h2 id=简介>简介</h2>
+<h2 id=基本思想>基本思想</h2>
+<h2 id=特性>特性</h2>
+<ul>
+<li> <strong>Strong Consistency</strong>: linearizable reads and writes</li>
+<li> <strong>Fault Tolerance</strong>: live nodes unblock via <em>write replays</em> after faults</li>
+<li> <strong>High Performance Reads</strong>: reads are served <em>locally from all replicas</em></li>
+<li> <strong>High Performance Writes</strong>: <em>decentralized</em>, <em>fully concurrent</em> and <em>fast</em> 1 RTT commit</li>
+<li> <strong>RMW Support</strong>: read-modify-write atomics almost as efficient as writes</li>
+<li> <strong>Formally Verified</strong>: Hermes is model checked through TLA+</li>
+</ul>
+<h2 id=写流程>写流程</h2>
+<p>Hermes 的 replica 有 Coordinator 和 Follower 两种，Coordinator 接受 client 的写入请求</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/10/02-13-45-52-2021-10-02-13-45-42-image.png alt></p>
+<ul>
+<li>Coordinator 接受 client 的 write 请求，将 Key 分配一个新的 LT，给其他 followers 也广播一个 Invalidation(INV) 消息。并且将 Key 变成 Write 状态。</li>
+<li>其他 followers 收到 INV 之后，会比较 LT，如果收到消息的 LT 比本地的大，就会将 Key 变成 Invalid 状态（如果这个 Key 之前是 Write 或者 Replay，则会变成 Trans 状态），并且回复 ACK 消息。无论之前比较的结果怎样，ACK 里面的 LT 都是收到的 INV 的 LT。</li>
+<li>如果所有的 ACK 都收到了，write 就认为完成，这个 Key 就变成 Valid 状态（如果之前处于 Trans 状态，则会变成 Invalid 状态）</li>
+<li>Coordinator 再次广播 Validation(VAL) 消息</li>
+<li>当 Follower 收到 VAL 消息，只有 VAL 的 LT 等于之前本地的 local timestamp，才会将 Key 转成 Valid 状态，否则一律丢弃这个 VAL 消息</li>
+</ul>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://hermes-protocol.com/>https://hermes-protocol.com/</a></li>
+<li><a href=https://zhuanlan.zhihu.com/p/141616802>Hermes: 一个快速、容错、线性一致的复制协议</a></li>
+<li><a href=http://cw.hubwiz.com/card/c/block-papers/1/26/4/>区块链论文集 / Hermes BFT共识算法 - 汇智网</a></li>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

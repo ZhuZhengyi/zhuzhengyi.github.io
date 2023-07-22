@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="ssh 简介 常用配置 1. 关闭ssh 首次连接确认提示(yes/no) 两种方式： a. 修改ssh客户端配置文件/etc/ssh/ssh_config： 1 2 Host">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/70.tool/ssh/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="ssh">
-<meta property="og:description" content>
+<meta property="og:description" content="ssh 简介 常用配置 1. 关闭ssh 首次连接确认提示(yes/no) 两种方式： a. 修改ssh客户端配置文件/etc/ssh/ssh_config： 1 2 Host">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/70.tool/ssh/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-03-17T09:56:25+08:00">
 <meta property="article:modified_time" content="2022-03-17T09:56:25+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ssh">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-03-17T09:56:25+08:00">
+<meta itemprop=description content="ssh 简介 常用配置 1. 关闭ssh 首次连接确认提示(yes/no) 两种方式： a. 修改ssh客户端配置文件/etc/ssh/ssh_config： 1 2 Host"><meta itemprop=datePublished content="2022-03-17T09:56:25+08:00">
 <meta itemprop=dateModified content="2022-03-17T09:56:25+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="968">
 <meta itemprop=keywords content="tool,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ssh">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="ssh 简介 常用配置 1. 关闭ssh 首次连接确认提示(yes/no) 两种方式： a. 修改ssh客户端配置文件/etc/ssh/ssh_config： 1 2 Host"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,272 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#常用配置>常用配置</a>
+<ul>
+<li><a href=#1-关闭ssh-首次连接确认提示yesno>1. 关闭ssh 首次连接确认提示(yes/no)</a></li>
+<li><a href=#2-切换用户执行命令>2. 切换用户执行命令</a></li>
+<li><a href=#3-ssh通过代理登录>3. ssh通过代理登录</a></li>
+<li><a href=#4-ssh-做socks5代理>4. ssh 做socks5代理</a></li>
+<li><a href=#5-sshpass--pssh>5. sshpass + pssh</a></li>
+<li><a href=#6-ssh保持连接不断掉>6. ssh保持连接不断掉</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=ssh>ssh</h1>
+<h2 id=简介>简介</h2>
+<h2 id=常用配置>常用配置</h2>
+<h3 id=1-关闭ssh-首次连接确认提示yesno>1. 关闭ssh 首次连接确认提示(yes/no)</h3>
+<p>两种方式：</p>
+<p>a. 修改ssh客户端配置文件<code>/etc/ssh/ssh_config</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=na>Host *</span>
+<span class=na>StrictHostKeyChecking no</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>b. ssh命令增加参数选项：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>ssh -o <span class=s2>&#34;StrictHostKeyChecking no&#34;</span> user@host
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=2-切换用户执行命令>2. 切换用户执行命令</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>ssh <span class=nv>$hostname</span> <span class=s2>&#34;su - </span><span class=nv>$username</span><span class=s2> -c &#39;cmd&#39;&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=3-ssh通过代理登录>3. ssh通过代理登录</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 跳板机</span>
+Host jumper
+    HostName xxxxxx
+    Port <span class=m>20020</span>
+
+<span class=c1># 目标机a, 通过跳板机ssh跳转</span>
+Host target-a
+    HostName xxxxxxx
+    <span class=c1>#User root</span>
+    <span class=c1>#IdentityFile ~/.ssh/hbase_test_id_rsa</span>
+    ProxyCommand ssh jumper -W %h:%p
+
+<span class=c1># 目标机b, 通过跳板机80端口跳转</span>
+Host target-b
+    User root
+    ProxyCommand socat - PROXY:172.20.103.50:%h:%p,proxyport<span class=o>=</span>80,proxyauth<span class=o>=</span>PROXY_USER:PROXY_PASSWD
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=4-ssh-做socks5代理>4. ssh 做socks5代理</h3>
+<p>本地机器在内网，可ssh登录代理机，代理机可访问外网，可在本地机器上开启ssh socks5 代理服务：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ ssh -fC2qTnN -D <span class=m>6080</span> user@ssh-host
+<span class=c1># sshpass</span>
+$ sshpass -e ssh -fC2qTnN -D <span class=m>6080</span> user@ssh-host
+</code></pre></td></tr></table>
+</div>
+</div><p>chrome不支持socket5代理，firefox中使用switchyomega插件(chrome不支持socks5，无法使用)，配置socks5代理模式</p>
+<h3 id=5-sshpass--pssh>5. sshpass + pssh</h3>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>sshpass -f /path/passfile pssh -I -A -h /path/hostfile <span class=s2>&#34;sudo -S apt-get dist-upgrade&#34;</span> &lt; /path/passfile
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=6-ssh保持连接不断掉>6. ssh保持连接不断掉</h3>
+<p>3种方式：</p>
+<p>a. 服务器主动保持连接</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># sshd服务端配置`/etc/ssh/sshd_config</span>
+<span class=c1># 增加参数</span>
+ClientAliveInterval <span class=m>120</span>   <span class=c1># 每隔120s会向客户端发送一个空数据包</span>
+ClientAliveCountMax <span class=m>720</span>   <span class=c1># 最多发送720次</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>b. client主动保持连接</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 客户端配置文件 ~/.ssh/config</span>
+<span class=c1># 增加选项： ServerAliveInterval 120</span>
+Host server
+    ServerAliveInterval <span class=m>120</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>c. client 使用连接选项</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ ssh -o <span class=nv>ServerAliveInterval</span><span class=o>=</span><span class=m>30</span> host
+</code></pre></td></tr></table>
+</div>
+</div><ol start=7>
+<li>ssh反向代理</li>
+</ol>
+<p>存在3台机器：</p>
+<ul>
+<li>
+<p>A &ndash;[ssh]&ndash;> B [IP: BB.BB.BB.BB ]</p>
+</li>
+<li>
+<p>C &ndash;[ssh]&ndash;> B</p>
+</li>
+<li>
+<p>C &ndash; xxxx -> A</p>
+</li>
+</ul>
+<p>如果需要C访问A上的某个端口8500, 可进行如下操作：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># HostA上建立反向代理tunnel，将HostB上的127.0.0.0:9090端口 和 HostA上的127.0.0.1:8500端口做绑定;</span>
+<span class=o>[</span>HOST-A<span class=o>]</span>$ ssh -NfR 9090:127.0.0.1:8500 root@BB.BB.BB.BB
+
+<span class=c1># HostB上建立正向代理tunnel，将BB.BB.BB.BB:9090 -&gt; 127.0.0.1:9090</span>
+<span class=o>[</span>HOST-B<span class=o>]</span>$ ssh -NfL BB.BB.BB.BB:9090:127.0.0.1:9090 root@BB.BB.BB.BB
+
+<span class=c1># 之后，C 直接访问 BB.BB.BB.BB:9090, 请求将被转发两次，到A的8500端口上；</span>
+<span class=c1># 其中，8500是HOST-A上127.0.1上可被访问的应用端口；</span>
+<span class=c1># 9090是HOST-B上可被 HOST-C 通过BB.BB.BB.BB:9090 访问的端口；</span>
+
+<span class=c1>## 也可以在将第二条指令放到HOST-A上通过ssh执行，这样就不用特意登录到HOST-B上执行第二条指令了</span>
+<span class=o>[</span>HOST-A<span class=o>]</span>$ ssh root@BB.BB.BB.BB <span class=s1>&#39;ssh -NL BB.BB.BB.BB:9090:127.0.0.1:9090 root@BB.BB.BB.BB&#39;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>script:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=cp>#!/bin/bash
+</span><span class=cp></span>
+<span class=nv>local_service_port</span><span class=o>=</span><span class=si>${</span><span class=nv>1</span><span class=k>:-</span><span class=nv>8500</span><span class=si>}</span>
+<span class=nv>local_service_ip</span><span class=o>=</span><span class=s2>&#34;127.0.0.1&#34;</span>
+<span class=nv>local_service_endpoint</span><span class=o>=</span><span class=s2>&#34;</span><span class=si>${</span><span class=nv>local_service_ip</span><span class=si>}</span><span class=s2>:</span><span class=si>${</span><span class=nv>local_service_port</span><span class=si>}</span><span class=s2>&#34;</span>
+<span class=nv>tunnel_port</span><span class=o>=</span><span class=si>${</span><span class=nv>TUNNEL_PORT</span><span class=k>:-</span><span class=nv>9090</span><span class=si>}</span>
+<span class=nv>tunnel_local_ip</span><span class=o>=</span><span class=s2>&#34;127.0.0.1&#34;</span>
+<span class=nv>tunnel_export_ip</span><span class=o>=</span><span class=si>${</span><span class=nv>TUNNEL_IP</span><span class=k>:-</span><span class=nv>192</span><span class=p>.26.29.246</span><span class=si>}</span>
+<span class=nv>tunnel_local_endpoint</span><span class=o>=</span><span class=si>${</span><span class=nv>tunnel_local_ip</span><span class=si>}</span>:<span class=si>${</span><span class=nv>tunnel_port</span><span class=si>}</span>
+<span class=nv>tunnel_export_endpoint</span><span class=o>=</span><span class=si>${</span><span class=nv>tunnel_export_ip</span><span class=si>}</span>:<span class=si>${</span><span class=nv>tunnel_port</span><span class=si>}</span>
+<span class=nv>tunnel_user</span><span class=o>=</span><span class=si>${</span><span class=nv>TUNNEL_USER</span><span class=k>:-</span><span class=nv>root</span><span class=si>}</span>
+<span class=nv>tunnel_ssh_uri</span><span class=o>=</span><span class=si>${</span><span class=nv>tunnel_user</span><span class=si>}</span>@<span class=si>${</span><span class=nv>tunnel_export_ip</span><span class=si>}</span>
+
+start_tunnel<span class=o>()</span> <span class=o>{</span>
+        ssh -NfR <span class=si>${</span><span class=nv>tunnel_port</span><span class=si>}</span>:<span class=si>${</span><span class=nv>local_service_endpoint</span><span class=si>}</span> <span class=si>${</span><span class=nv>tunnel_ssh_uri</span><span class=si>}</span>
+        ssh <span class=si>${</span><span class=nv>tunnel_ssh_uri</span><span class=si>}</span> <span class=s2>&#34;ssh -NL </span><span class=si>${</span><span class=nv>tunnel_export_endpoint</span><span class=si>}</span><span class=s2>:</span><span class=si>${</span><span class=nv>tunnel_local_endpoint</span><span class=si>}</span><span class=s2> </span><span class=si>${</span><span class=nv>tunnel_ssh_uri</span><span class=si>}</span><span class=s2>&#34;</span>
+<span class=o>}</span>
+
+stop_tunnel<span class=o>()</span> <span class=o>{</span>
+        <span class=nb>echo</span> <span class=s2>&#34;stop&#34;</span>
+        ps -ef<span class=p>|</span> grep <span class=s2>&#34;ssh -NfR&#34;</span> <span class=p>|</span> grep -v grep <span class=p>|</span> awk <span class=s1>&#39;{print $2}&#39;</span> <span class=p>|</span> xargs <span class=nb>kill</span>
+        ssh <span class=si>${</span><span class=nv>tunell_ssh_uri</span><span class=si>}</span> <span class=s2>&#34;ps -ef| grep &#39;ssh -NL&#39; | grep -v grep | awk &#39;{print \$2}&#39; | xargs kill 2&gt;/dev/null&#34;</span>
+<span class=o>}</span>
+
+stop_tunnel
+start_tunnel <span class=nv>$@</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=参考>参考</h2>
+<ol>
+<li></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

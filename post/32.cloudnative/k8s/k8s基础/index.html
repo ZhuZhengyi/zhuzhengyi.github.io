@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="k8s基础 简介 kubernetes(简称k8s)是google 2015年开源的一个容器编排方案，是google内部使用的大规模集群管理系统B">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E5%9F%BA%E7%A1%80/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="k8s基础">
-<meta property="og:description" content>
+<meta property="og:description" content="k8s基础 简介 kubernetes(简称k8s)是google 2015年开源的一个容器编排方案，是google内部使用的大规模集群管理系统B">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E5%9F%BA%E7%A1%80/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="k8s基础">
-<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content="k8s基础 简介 kubernetes(简称k8s)是google 2015年开源的一个容器编排方案，是google内部使用的大规模集群管理系统B"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="2190">
 <meta itemprop=keywords content="cloudnative,k8s,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="k8s基础">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="k8s基础 简介 kubernetes(简称k8s)是google 2015年开源的一个容器编排方案，是google内部使用的大规模集群管理系统B"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,10 +181,151 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#特性>特性</a></li>
+<li><a href=#架构>架构</a></li>
+<li><a href=#主要组件>主要组件</a>
+<ul>
+<li><a href=#master>Master</a></li>
+<li><a href=#node>Node</a></li>
+<li><a href=#admin>Admin</a></li>
+</ul>
+</li>
+<li><a href=#基本概念>基本概念</a></li>
+<li><a href=#相关组件>相关组件</a></li>
+<li><a href=#容器设计模式>容器设计模式</a>
+<ul>
+<li><a href=#sidecar>Sidecar</a></li>
+</ul>
+</li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=k8s基础>k8s基础</h1>
+<h2 id=简介>简介</h2>
+<p>kubernetes(简称k8s)是google 2015年开源的一个容器编排方案，是google内部使用的大规模集群管理系统Borg的开源版本。Kubernetes具有完备的集群管理能力，包括多层次的安全防护和准入机制、多租户应用支撑能力、透明的服务注册和服务发现机制、内建智能负载均衡器、强大的故障发现和自我修复能力、服务滚动升级和在线扩容能力、可扩展的资源自动调度机制，以及多粒度的资源配额管理能力。同时，Kubernetes提供了完善的管理工具，这些工具涵盖了包括开发、部署测试、运维监控在内的各个环节。</p>
+<h2 id=特性>特性</h2>
+<ul>
+<li>自动装箱</li>
+<li>自我修复</li>
+<li>水平扩展</li>
+<li>服务发现和负载均衡</li>
+<li>自动发布和回滚</li>
+<li>密钥和配置管理</li>
+<li>存储编排</li>
+<li>批量处理运行</li>
+</ul>
+<h2 id=架构>架构</h2>
+<p>k8s主要由：Master、Node、CLI</p>
+<img title src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-12-05-56-image-20190923112334364.png alt=image-20190923112334364 data-align=center>
+<h2 id=主要组件>主要组件</h2>
+<h3 id=master>Master</h3>
+<p>Master节点负责整个集群的控制和管理，所有的控制命令都是发给它，上面运行着一组关键进程：</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-12-22-00-2020-11-17-12-21-51-image.png alt></p>
+<ul>
+<li>
+<p><strong>ApiServer</strong>: 提供了HTTP REST接口，是k8s所有资源增删改查等操作的唯一入口，也是集群控制的入口。</p>
+</li>
+<li>
+<p><strong>Controller</strong>: kube-controller-manager所有资源的自动化控制中心。当集群状态与期望不同时，kcm会努力让集群恢复期望状态，比如：当一个pod死掉，kcm会努力新建一个pod来恢复对应replicas set期望的状态。</p>
+</li>
+<li>
+<p><strong>kube-scheduler</strong>: 负责Pod的调度。</p>
+</li>
+<li>
+<p><strong>etcd</strong>: 是一个分布式的一个存储系统，API Server 中所需要的这些原信息都被放置在 etcd 中，etcd 本身是一个高可用系统，通过 etcd 保证整个 Kubernetes 的 Master 组件的高可用性。</p>
+</li>
+</ul>
+<h3 id=node>Node</h3>
+<p>Node是工作负载节点，运行着Master分配的负载（Pod），但一个Node宕机时，其上的负载会被自动转移到其他Node上。</p>
+<img title src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-12-06-28-image-20190923112454686.png alt=node data-align=center>
+<ul>
+<li>
+<p><strong>kubelet</strong>: 负责Pod的生命周期管理，同时与Master密切协作，实现集群管理的基本功能。</p>
+</li>
+<li>
+<p><strong>kube-proxy</strong>: 实现Service的通信与负载均衡机制的重要组件，老版本主要通过设置iptables规则实现，新版1.9基于kube-proxy-lvs 实现。</p>
+</li>
+<li>
+<p><strong>Docker Engine</strong>: Docker引擎，负责Docker的生命周期管理。</p>
+</li>
+</ul>
+<h3 id=admin>Admin</h3>
+<ul>
+<li><strong>CLI</strong>：kubectl/kubeadmin, k8s 管理命令行工具。</li>
+<li><strong>WEBUI</strong>：web管理页面。</li>
+</ul>
+<h2 id=基本概念>基本概念</h2>
+<ul>
+<li>
+<p><strong>Pod</strong>: Pod是k8s进行资源调度的最小单位，每个Pod中运行着一个或多个密切相关的业务容器，这些业务容器共享这个Pause容器的IP和Volume，我们以这个不易死亡的Pause容器作为Pod的根容器，以它的状态表示整个容器组的状态。一个Pod一旦被创建就会放到Etcd中存储，然后由Master调度到一个Node绑定，由这个Node上的Kubelet进行实例化。</p>
+</li>
+<li>
+<p><strong>Volume</strong>: 用来管理 Kubernetes 存储的，是用来声明在 Pod 中的容器可以访问文件目录的，可以被挂载在 Pod 中一个或者多个容器的指定路径下面。</p>
+</li>
+<li>
+<p><strong>PV</strong>(Persistent Volume): 可以理解成 k8s 集群中的某个网络存储中对应的一块存储。它与 Volume 有以下区别：</p>
+<ul>
+<li>
+<p>PV 只能是网络存储，不属于任何 Node，但是可以在每个 Node 上访问</p>
+</li>
+<li>
+<p>PV 是独立定义于 Pod 之外的</p>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Deployment</strong>: Deployment 是在 Pod 这个抽象上更为上层的一个抽象，它可以定义一组 Pod 的副本数目、以及这个 Pod 的版本。一般大家用 Deployment 这个抽象来做应用的真正的管理，而 Pod 是组成 Deployment 最小的单元。</p>
+</li>
+<li>
+<p><strong>Service</strong>: Service 提供了一个或者多个 Pod 实例的稳定访问地址。</p>
+</li>
+<li>
+<p><strong>Lable</strong>: Label 可以理解为给资源打的标签。 一个 Lable 是一个 Key=Value 的键值对。Label 可以附加到所有资源上面，一个资源可以定义任意数量的 Lable，同一个 Lable 也可以被添加到任意资源对象上。我们可以通过 Lable Selector（标签选择器）查询和筛选拥有某些 Label 的资源对象，k8s 通过这种方式实现了类似 SQL 的对象查询机制。</p>
+</li>
+<li>
+<p><strong>Namespace</strong>: Namespace 是用来做一个集群内部的逻辑隔离的，它包括鉴权、资源管理等。Kubernetes 的每个资源，比如刚才讲的 Pod、Deployment、Service 都属于一个 Namespace，同一个 Namespace 中的资源需要命名的唯一性，不同的 Namespace 中的资源可以重名></p>
+</li>
+<li>
+<p><strong>DaemonSet</strong>: DaemonSet 可以保证集群中所有的或者部分的节点都能够运行同一份 Pod 副本，每当有新的节点被加入到集群时，Pod 就会在目标的节点上启动，如果节点被从集群中剔除，节点上的 Pod 也会被垃圾收集器清除；DaemonSet 的作用就像是计算机中的守护进程，它能够运行集群存储、日志收集和监控等『守护进程』，这些服务一般是集群中必备的基础服务。</p>
+</li>
+<li>
+<p><strong>StatefulSet</strong>: StatefulSet 是K8S中用于有状态的Deploy，其类似于<code>ReplicaSet</code>，但可以处理<code>Pod</code>的启动顺序，为保留每个<code>Pod</code>的状态设置唯一标识。</p>
+</li>
+</ul>
+<h2 id=相关组件>相关组件</h2>
+<ul>
+<li>
+<p><strong>Helm</strong>： Helm是Kubernetes的包管理器，</p>
+</li>
+<li>
+<p><strong>Operator</strong>： 由CoreOS创建，现在归属于红帽，Operator Framework在构建Kubernetes原生应用程序时提供抽象和简单性。operator是在Kubernetes上部署应用程序的方法。</p>
+</li>
+<li>
+<p><strong>gVisor</strong>： 处理容器隔离，这对安全性至关重要。gVisor可用于在沙盒gVisor容器中运行你不完全信任的应用程序。</p>
+</li>
+<li>
+<p><strong>Istio：Kubernetes</strong>容器网络工具。它基于“服务网格”模型。它使用Envoy边车代理——充当代理网格，并在微服务应用程序的各种服务之间实现更好的通信。Istio处理整个网络的负载均衡。它实施控制流量和网络请求加密的策略。</p>
+</li>
+<li>
+<p><strong>Prometheus</strong>：Kubernetes的监控工具。侧重于捕获和提供流式实时指标以供分析。</p>
+</li>
+</ul>
+<h2 id=容器设计模式>容器设计模式</h2>
+<h3 id=sidecar>Sidecar</h3>
+<p>在 Pod 里面，定义一些专门的容器，来执行主业务容器所需要的一些辅助工作。</p>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://zhuanlan.zhihu.com/p/83220717>https://zhuanlan.zhihu.com/p/83220717</a></li>
+<li><a href=https://draveness.me/kubernetes-volume>https://draveness.me/kubernetes-volume</a></li>
+<li><a href=https://draveness.me/kubernetes-daemonset>https://draveness.me/kubernetes-daemonset</a></li>
+<li><a href=https://www.cnblogs.com/xiangsikai/p/9994122.html>Docker Kubernetes 介绍 or 工作原理 - kevin.Xiang - 博客园</a></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

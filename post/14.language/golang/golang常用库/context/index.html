@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="Golang context 简介 context 是 go 1.7 引入，用于在 goroutine之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。 context.Contex">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/golang/golang%E5%B8%B8%E7%94%A8%E5%BA%93/context/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Golang context">
-<meta property="og:description" content>
+<meta property="og:description" content="Golang context 简介 context 是 go 1.7 引入，用于在 goroutine之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。 context.Contex">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/golang%E5%B8%B8%E7%94%A8%E5%BA%93/context/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-31T07:44:24+08:00">
 <meta property="article:modified_time" content="2021-10-31T07:44:24+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Golang context">
-<meta itemprop=description content><meta itemprop=datePublished content="2021-10-31T07:44:24+08:00">
+<meta itemprop=description content="Golang context 简介 context 是 go 1.7 引入，用于在 goroutine之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。 context.Contex"><meta itemprop=datePublished content="2021-10-31T07:44:24+08:00">
 <meta itemprop=dateModified content="2021-10-31T07:44:24+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="951">
 <meta itemprop=keywords content="language,golang,golang常用库,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Golang context">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="Golang context 简介 context 是 go 1.7 引入，用于在 goroutine之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。 context.Contex"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -182,10 +182,245 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#定义>定义</a></li>
+<li><a href=#用法>用法</a></li>
+<li><a href=#context使用准则>Context使用准则</a></li>
+<li><a href=#参考>参考</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=golang-context>Golang context</h1>
+<h2 id=简介>简介</h2>
+<ul>
+<li>
+<p>context 是 go 1.7 引入，用于在 goroutine之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。</p>
+</li>
+<li>
+<p><code>context.Context</code>类型的值可以协调多个 groutine 中的代码执行 “取消” 操作，并且可以存储键值对。</p>
+</li>
+<li>
+<p>它是并发安全的。</p>
+</li>
+<li>
+<p>与它协作的 API 都可以由外部控制执行 “取消” 操作，例如：取消一个 HTTP 请求的执行。</p>
+</li>
+</ul>
+<h2 id=定义>定义</h2>
+<p>context包中的主要对象是<code>Context</code>接口，该接口定义了4个方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>Context</span> <span class=kd>interface</span> <span class=p>{</span>
+    <span class=nf>Done</span><span class=p>()</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{}</span>        <span class=c1>// 当 context 被取消或者到了 deadline，返回一个被关闭的 channel
+</span><span class=c1></span>    <span class=nf>Err</span><span class=p>()</span> <span class=kt>error</span>                   <span class=c1>// 在 channel Done 关闭后，返回 context 取消原因
+</span><span class=c1></span>    <span class=nf>Deadline</span><span class=p>()</span> <span class=p>(</span><span class=nx>deadline</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Time</span><span class=p>,</span> <span class=nx>ok</span> <span class=kt>bool</span><span class=p>)</span>  <span class=c1>// 返回 context 是否会被取消以及自动取消时间（即 deadline）
+</span><span class=c1></span>    <span class=nf>Value</span><span class=p>(</span><span class=nx>key</span> <span class=kd>interface</span><span class=p>{})</span> <span class=kd>interface</span><span class=p>{}</span>        <span class=c1>// 获取 key 对应的 value
+</span><span class=c1></span><span class=p>}</span>
+<span class=kd>type</span> <span class=nx>CancelFunc</span>
+<span class=kd>type</span> <span class=nx>Context</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>共用方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>Background</span><span class=p>()</span> <span class=nx>Context</span>  <span class=c1>// 返回一个空context，一般用于root context
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>TODO</span><span class=p>()</span> <span class=nx>Context</span>        <span class=c1>// 和Background一样，当不清楚用什么的时候或者是还没准备好的时候可以用它
+</span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>Background():</li>
+</ul>
+<p>除了根Context外(实质为空context)，通过4个<code>WithXXX</code>函数可生成3种不同类型的子Context:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>WithCancel</span><span class=p>(</span><span class=nx>parent</span> <span class=nx>Context</span><span class=p>)</span> <span class=p>(</span><span class=nx>ctx</span> <span class=nx>Context</span><span class=p>,</span> <span class=nx>cancel</span> <span class=nx>CancelFunc</span><span class=p>)</span>  <span class=c1>// 创建一个带有新的 Done channel 的 context个取消的方法
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>WithDeadline</span><span class=p>(</span><span class=nx>parent</span> <span class=nx>Context</span><span class=p>,</span> <span class=nx>d</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Time</span><span class=p>)</span> <span class=p>(</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>CancelFunc</span><span class=p>)</span> <span class=c1>// 创建一个具有截止时间的 context
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>WithTimeout</span><span class=p>(</span><span class=nx>parent</span> <span class=nx>Context</span><span class=p>,</span> <span class=nx>timeout</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Duration</span><span class=p>)</span> <span class=p>(</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>CancelFunc</span><span class=p>)</span> <span class=c1>// 其实就是调用的 WithDeadline
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>WithValue</span><span class=p>(</span><span class=nx>parent</span> <span class=nx>Context</span><span class=p>,</span> <span class=nx>key</span><span class=p>,</span> <span class=nx>val</span> <span class=kd>interface</span><span class=p>{})</span> <span class=nx>Context</span>  <span class=c1>//
+</span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>canceler接口</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>canceler</span> <span class=kd>interface</span> <span class=p>{</span>
+    <span class=nf>cancel</span><span class=p>(</span><span class=nx>removeFromParent</span> <span class=kt>bool</span><span class=p>,</span> <span class=nx>err</span> <span class=kt>error</span><span class=p>)</span>
+    <span class=nf>Done</span><span class=p>()</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{}</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>cancelCtx</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>cancelCtx</span> <span class=kd>struct</span> <span class=p>{</span>
+    <span class=nx>Context</span>      <span class=c1>// 保存parent Context
+</span><span class=c1></span>    <span class=nx>done</span> <span class=kd>chan</span> <span class=kd>struct</span><span class=p>{}</span>
+    <span class=nx>mu</span>       <span class=nx>sync</span><span class=p>.</span><span class=nx>Mutex</span>
+    <span class=nx>children</span> <span class=kd>map</span><span class=p>[</span><span class=nx>canceler</span><span class=p>]</span><span class=kd>struct</span><span class=p>{}</span>
+    <span class=nx>err</span>      <span class=kt>error</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>timerCtx:</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>timerCtx</span> <span class=kd>struct</span> <span class=p>{</span>
+    <span class=nx>cancelCtx</span>     <span class=c1>//cancelCtx.Done()关闭的时机：1）用户调用cancel 2）deadline到了 3）父Context的done关闭了
+</span><span class=c1></span>    <span class=nx>timer</span>    <span class=o>*</span><span class=nx>time</span><span class=p>.</span><span class=nx>Timer</span>
+    <span class=nx>deadline</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Time</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=用法>用法</h2>
+<ul>
+<li>context.Done()</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>//context Done() 结束
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>Stream</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>out</span> <span class=kd>chan</span><span class=o>&lt;-</span> <span class=nx>Value</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+    <span class=k>for</span> <span class=p>{</span>
+        <span class=nx>v</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>DoSomething</span><span class=p>(</span><span class=nx>ctx</span><span class=p>)</span>
+        <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+            <span class=k>return</span> <span class=nx>err</span>
+        <span class=p>}</span>
+        <span class=k>select</span> <span class=p>{</span>
+        <span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ctx</span><span class=p>.</span><span class=nf>Done</span><span class=p>():</span>
+            <span class=k>return</span> <span class=nx>ctx</span><span class=p>.</span><span class=nf>Err</span><span class=p>()</span>
+        <span class=k>case</span> <span class=nx>out</span> <span class=o>&lt;-</span> <span class=nx>v</span><span class=p>:</span>
+        <span class=p>}</span>
+    <span class=p>}</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>context.WithValue()</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>//context.WithValue()
+</span><span class=c1></span><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+    <span class=nx>ctx</span><span class=p>,</span> <span class=nx>cancel</span> <span class=o>:=</span> <span class=nx>context</span><span class=p>.</span><span class=nf>WithCancel</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>())</span>
+
+    <span class=nx>valueCtx</span> <span class=o>:=</span> <span class=nx>context</span><span class=p>.</span><span class=nf>WithValue</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>key</span><span class=p>,</span> <span class=s>&#34;add value&#34;</span><span class=p>)</span>
+
+    <span class=k>go</span> <span class=nf>watch</span><span class=p>(</span><span class=nx>valueCtx</span><span class=p>)</span>
+    <span class=nx>time</span><span class=p>.</span><span class=nf>Sleep</span><span class=p>(</span><span class=mi>10</span> <span class=o>*</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>)</span>
+    <span class=nf>cancel</span><span class=p>()</span>
+
+    <span class=nx>time</span><span class=p>.</span><span class=nf>Sleep</span><span class=p>(</span><span class=mi>5</span> <span class=o>*</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>)</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>
+<p>context.WithTimeout()</p>
+</li>
+<li>
+<p>context.WithDeadline()</p>
+</li>
+</ul>
+<h2 id=context使用准则>Context使用准则</h2>
+<ul>
+<li>
+<p>不要将 Context 塞到结构体里。直接将 Context 类型作为函数的第一参数，而且一般都命名为 ctx;</p>
+</li>
+<li>
+<p>不要向函数传入一个 nil 的 context，如果你实在不知道传什么，使用<code>context.TODO()</code>;</p>
+</li>
+<li>
+<p>不要把本应该作为函数参数的类型塞到 context 中，context 存储的应该是一些共同的数据。例如：登陆的 session、cookie 等。</p>
+</li>
+<li>
+<p>同一个 context 可能会被传递到多个 goroutine，别担心，context 是并发安全的。</p>
+</li>
+</ul>
+<h2 id=参考>参考</h2>
+<ol>
+<li><a href=https://learnku.com/articles/29877>https://learnku.com/articles/29877</a></li>
+<li><a href=https://zhuanlan.zhihu.com/p/34417106>https://zhuanlan.zhihu.com/p/34417106</a></li>
+</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

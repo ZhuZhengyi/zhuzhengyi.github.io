@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content>
+<meta name=description content="clonezilla 简介 1. initrd.img修改 1 2 3 4 5 6 7 8 9 ### 解压initrd.img $ xz -d initrd.img.xz #Xz格式 $ gunzip initrd.img.gz #Gz格式 ### 解压cpio $ cpio -i -d &amp;lt; initrd.img ### 打">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/70.tool/clonezilla/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="clonezilla">
-<meta property="og:description" content>
+<meta property="og:description" content="clonezilla 简介 1. initrd.img修改 1 2 3 4 5 6 7 8 9 ### 解压initrd.img $ xz -d initrd.img.xz #Xz格式 $ gunzip initrd.img.gz #Gz格式 ### 解压cpio $ cpio -i -d < initrd.img ### 打">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/70.tool/clonezilla/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="clonezilla">
-<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content="clonezilla 简介 1. initrd.img修改 1 2 3 4 5 6 7 8 9 ### 解压initrd.img $ xz -d initrd.img.xz #Xz格式 $ gunzip initrd.img.gz #Gz格式 ### 解压cpio $ cpio -i -d < initrd.img ### 打"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="0">
+<meta itemprop=wordCount content="278">
 <meta itemprop=keywords content="tool,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="clonezilla">
-<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content="clonezilla 简介 1. initrd.img修改 1 2 3 4 5 6 7 8 9 ### 解压initrd.img $ xz -d initrd.img.xz #Xz格式 $ gunzip initrd.img.gz #Gz格式 ### 解压cpio $ cpio -i -d < initrd.img ### 打"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,10 +180,105 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#1-initrdimg修改>1. initrd.img修改</a></li>
+<li><a href=#2-filesystemsquashfs修改>2. filesystem.squashfs修改</a></li>
+<li><a href=#3-增加驱动>3. 增加驱动</a></li>
+<li><a href=#4-打包squashfs>4. 打包squashfs</a></li>
+<li><a href=#5-pxelinuxcfgdefault>5. pxelinux.cfg/default</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
+<h1 id=clonezilla>clonezilla</h1>
+<h2 id=简介>简介</h2>
+<h2 id=1-initrdimg修改>1. initrd.img修改</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>### 解压initrd.img</span>
+$ xz -d initrd.img.xz  <span class=c1>#Xz格式</span>
+$ gunzip initrd.img.gz  <span class=c1>#Gz格式</span>
+
+<span class=c1>### 解压cpio</span>
+$ cpio -i -d &lt; initrd.img
+
+<span class=c1>### 打包initrd.img</span>
+$ <span class=nb>cd</span> initrd <span class=o>&amp;&amp;</span> find . <span class=p>|</span> cpio -o -H newc <span class=p>|</span> gzip &gt; ../initrd.img
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=2-filesystemsquashfs修改>2. filesystem.squashfs修改</h2>
+<ul>
+<li>解压squashfs</li>
+</ul>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ unsquashfs  filesystem.squashfs
+
+<span class=c1>#或者</span>
+
+$ mount –t squashfs filesystem.squashfs /mnt/tmp
+$ cp –r /mnt/tmp  squashfs-root-dir
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=3-增加驱动>3. 增加驱动</h2>
+<p>将驱动模块拷贝到相应目录下，更新相关配置信息:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ cp *.ko /lib/modules/<span class=k>$(</span>uname -r<span class=k>)</span>/extra/
+$ depmod –a
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=4-打包squashfs>4. 打包squashfs</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ mksquashfs squashfs-root-dir filesystem.squashfs –force-uid <span class=m>0</span> –all-root
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=5-pxelinuxcfgdefault>5. pxelinux.cfg/default</h2>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>LABEL myos
+MENU LABEL myos
+kernel myos/live/vmlinuz
+append initrd=/myos/live/initrd.img boot=live union=overlayfs noswap edd=on nomodeset noprompt config nosplash only-ubiquity ip=frommedia vgz=791 locales=zh_CN.UTF-8 keyboard-layouts=NONE ocs_live_batch=&#34;yes&#34; fetch=tftp://192.18.0.2/myos/live/filesystem.squashfs ocs_premount=&#34;mount -t nfs 192.168.0.2:/tftpboot/myos/home/partimag /home/partimag&#34; ocs_live_run=&#34;ocs-sr -g auto -e1 auto -e2 -c -r -j2 -k1 -p reboot restoredisk ask_user ask_user&#34;
+</code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>
