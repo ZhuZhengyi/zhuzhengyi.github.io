@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="TAILQ-双向有尾队列 简介 TAILQ(双向有尾队列)是 FreeBSD/linux 内核对双向队列操作的一种抽象，在/usr/include/sys/queue.h 文">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/12.data_struct/tailq/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="TAILQ-双向有尾队列">
-<meta property="og:description" content="TAILQ-双向有尾队列 简介 TAILQ(双向有尾队列)是 FreeBSD/linux 内核对双向队列操作的一种抽象，在/usr/include/sys/queue.h 文">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/12.data_struct/tailq/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="TAILQ-双向有尾队列">
-<meta itemprop=description content="TAILQ-双向有尾队列 简介 TAILQ(双向有尾队列)是 FreeBSD/linux 内核对双向队列操作的一种抽象，在/usr/include/sys/queue.h 文"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="960">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="data_struct,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="TAILQ-双向有尾队列">
-<meta name=twitter:description content="TAILQ-双向有尾队列 简介 TAILQ(双向有尾队列)是 FreeBSD/linux 内核对双向队列操作的一种抽象，在/usr/include/sys/queue.h 文"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,173 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#定义>定义</a></li>
-<li><a href=#和-linux-list-区别>和 linux list 区别</a></li>
-<li><a href=#tailq-队列的操作>TAILQ 队列的操作</a>
-<ul>
-<li><a href=#tailq队列中为什么tqh_prev和tqh_last要使用二级指针>*<strong>*TAILQ</strong>队列中为什么<strong>tqh_prev</strong>和<strong>tqh_last</strong>要使用二级指针**</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=tailq-双向有尾队列>TAILQ-双向有尾队列</h1>
-<h2 id=简介>简介</h2>
-<p><strong>TAILQ</strong>(双向有尾队列)是 FreeBSD/linux 内核对双向队列操作的一种抽象，在/usr/include/sys/queue.h 文件中实现各种定义。</p>
-<p>尾队列能实现操作队列需要的各种操作：插入元素，删除元素，遍历队列等。优点是插入元素很快。</p>
-<p>在一些著名的开源库中(如<strong>DPDK</strong>,<strong>libevent</strong>)有广泛的应用</p>
-<h2 id=定义>定义</h2>
-<p>双向有尾队列有一个表头和表尾，表头指向节点 1 和尾节点</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/06/03-10-55-36-2021-06-03-10-55-30-image.png alt></p>
-<p><strong>TAILQ</strong>队列有<strong>HEAD</strong>和<strong>ENTRY</strong>两种基本的数据结构：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// 队列元素
-</span><span class=c1></span><span class=cp>#define TAILQ_ENTRY(type)         \
-</span><span class=cp>struct {                          \
-</span><span class=cp>    struct type *tqe_next;        \
-</span><span class=cp>    struct type **tqe_prev;       \
-</span><span class=cp>}
-</span><span class=cp></span>
-<span class=c1>//
-</span><span class=c1></span><span class=k>struct</span> <span class=n>tailq_entry</span> <span class=p>{</span>
-　　<span class=kt>int</span> <span class=n>val</span><span class=p>;</span>
-　　<span class=n>TAILQ_ENTRY</span><span class=p>(</span><span class=n>int_node</span><span class=p>);</span>
-<span class=p>};</span>
-
-<span class=c1>// 队列头
-</span><span class=c1></span><span class=cp>#define  TAILQ_HEAD(name, type)        \
-</span><span class=cp>struct name {                          \
-</span><span class=cp>    struct type *tqh_first;     </span><span class=cm>/*队列第一个元素的地址*/</span><span class=cp>       \
-</span><span class=cp>    struct type **tqh_last;     </span><span class=cm>/**/</span><span class=cp>       \
-</span><span class=cp>}
-</span><span class=cp></span><span class=n>STAILQ_HEAD</span><span class=p>(</span><span class=n>my_tailq</span><span class=p>,</span>  <span class=n>tailq_entry</span><span class=p>)</span> <span class=n>queue_head</span><span class=p>;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>注意：数据结构中的<strong>filed</strong>都是<strong>type</strong>类型的指针(或者是二级指针)，这里的<strong>type</strong>是用户的队列元素类型，</p>
-<p>将<strong>ENTRY</strong>结构内嵌到用户的<strong>QUEUE_ITEM</strong>结构中：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=k>struct</span> <span class=nc>QUEUE_ITEM</span><span class=p>{</span>
-    <span class=kt>int</span> <span class=n>value</span><span class=p>;</span>
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=和-linux-list-区别>和 linux list 区别</h2>
-<p>和<strong>Linux</strong>中<strong>list</strong>的组织方式不一样，后者是单纯地将<strong>struct list_head</strong>作为链表的一个挂接点，并没有用户的信息，具体差别可以看下图：</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/18-12-06-33-2020-11-18-12-04-56-image.png alt></p>
-<h2 id=tailq-队列的操作>TAILQ 队列的操作</h2>
-<p><strong>TAILQ</strong>提供了多种操作队列的<strong>API</strong>,比如：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=n>TAILQ_HEAD</span><span class=p>(</span><span class=n>name</span><span class=p>,</span> <span class=n>type</span><span class=p>)</span>
-<span class=n>TAILQ_ENTRY</span><span class=p>(</span><span class=n>type</span><span class=p>)</span>
-<span class=n>TAILQ_EMPTY</span><span class=p>(</span><span class=n>head</span><span class=p>)</span>
-<span class=n>TAILQ_FIRST</span><span class=p>(</span><span class=n>head</span><span class=p>)</span>
-<span class=n>TAILQ_FOREACH</span><span class=p>(</span><span class=n>var</span><span class=p>,</span> <span class=n>head</span><span class=p>,</span> <span class=n>field</span><span class=p>)</span>
-<span class=n>TAILQ_INIT</span><span class=p>(</span><span class=n>head</span><span class=p>)</span>
-<span class=n>TAILQ_INSERT_AFTER</span><span class=p>(</span><span class=n>head</span><span class=p>,</span> <span class=n>listelm</span><span class=p>,</span> <span class=n>elm</span><span class=p>,</span> <span class=n>field</span><span class=p>)</span>
-<span class=n>TAILQ_INSERT_BEFORE</span><span class=p>(</span><span class=n>listelm</span><span class=p>,</span> <span class=n>elm</span><span class=p>,</span> <span class=n>field</span><span class=p>)</span>
-<span class=n>TAILQ_INSERT_TAIL</span><span class=p>(</span><span class=n>head</span><span class=p>,</span> <span class=n>elm</span><span class=p>,</span> <span class=n>field</span><span class=p>)</span>
-<span class=p>.....</span>
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=tailq队列中为什么tqh_prev和tqh_last要使用二级指针>*<strong>*TAILQ</strong>队列中为什么<strong>tqh_prev</strong>和<strong>tqh_last</strong>要使用二级指针**</h3>
-<p>要搞清楚这个问题，我们可以考虑如果不使用二级指针会怎么样？ 就像定义成下面这样。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cp>#define    FAKE_TAILQ_HEAD(name, type)                        \
-</span><span class=cp>struct name {                                \
-</span><span class=cp>    struct type *tqh_first;    </span><span class=cm>/* first element */</span><span class=cp>            \
-</span><span class=cp>    struct type *tqh_last;    </span><span class=cm>/* last element */</span><span class=cp>        \
-</span><span class=cp>}
-</span><span class=cp></span>
-<span class=cp>#define FAKE_TAILQ_ENTRY(type)                                            \
-</span><span class=cp>struct {                                                             \
-</span><span class=cp>    struct type *tqe_next;  </span><span class=cm>/* next element */</span><span class=cp>                       \
-</span><span class=cp>    struct type *tqe_prev;  </span><span class=cm>/*   previous element*/</span><span class=cp>        \
-</span><span class=cp>}
-</span></code></pre></td></tr></table>
-</div>
-</div><p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/18-12-08-55-2020-11-18-12-08-37-image.png alt></p>
-<p>如果我们想要删除队列的任意一个元素，对<strong>FAKE_TAILQ</strong>，我们需要特殊处理该元素是第一个元素的情况(第一个元素的<strong>tqe_prev</strong>指针为空)，而<strong>TAILQ</strong>就没有这个烦恼！</p>
-<p>*<strong>*TAILQ</strong>队列的遍历性能**</p>
-<p><strong>Linux</strong>中的<strong>list</strong>只将<strong>struct list_head</strong>作为用户元素的挂接点，因此在正向遍历链表时，需要使用<strong>container_of</strong>这类接口才能获取用户的数据，而<strong>TAILQ</strong>由于<strong>tqe_next</strong>指针直接指向用户元素的类型，所以理论上，正向遍历<strong>TAILQ</strong>比<strong>list</strong>更快.但逆向遍历时,由于<strong>TAILQ</strong>的取用<strong>prev</strong>元素的操作比<strong>next</strong>麻烦的多，因此逆向遍历是比正向慢的：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cp>#define    TAILQ_PREV(elm, headname, field)                \
-</span><span class=cp>    (*(((struct headname *)((elm)-&gt;field.tqe_prev))-&gt;tqh_last))
-</span></code></pre></td></tr></table>
-</div>
-</div><h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://www.sunxidong.com/260.html>https://www.sunxidong.com/260.html</a></p>
-</li>
-<li>
-<p><a href=https://www.cnblogs.com/fuzidage/p/14482501.html>TAILQ 队列实现原理 - fuzidage - 博客园</a></p>
-</li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

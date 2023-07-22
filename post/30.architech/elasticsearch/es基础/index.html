@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="ElasticSearch基础 简介 Elasticsearch 是一个基于Lucene的搜索和分析引擎; 近实时； 分布式可扩展的近实时； 架构 一个 ES Index 在集群模式下，有多个 Node">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%9F%BA%E7%A1%80/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="ElasticSearch基础">
-<meta property="og:description" content="ElasticSearch基础 简介 Elasticsearch 是一个基于Lucene的搜索和分析引擎; 近实时； 分布式可扩展的近实时； 架构 一个 ES Index 在集群模式下，有多个 Node">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/elasticsearch/es%E5%9F%BA%E7%A1%80/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ElasticSearch基础">
-<meta itemprop=description content="ElasticSearch基础 简介 Elasticsearch 是一个基于Lucene的搜索和分析引擎; 近实时； 分布式可扩展的近实时； 架构 一个 ES Index 在集群模式下，有多个 Node"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1528">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,elasticsearch,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ElasticSearch基础">
-<meta name=twitter:description content="ElasticSearch基础 简介 Elasticsearch 是一个基于Lucene的搜索和分析引擎; 近实时； 分布式可扩展的近实时； 架构 一个 ES Index 在集群模式下，有多个 Node"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,284 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#架构>架构</a></li>
-<li><a href=#特点>特点</a></li>
-<li><a href=#核心概念>核心概念</a></li>
-<li><a href=#数据类型>数据类型</a></li>
-<li><a href=#shard分片和replica副本>Shard分片和Replica副本</a></li>
-<li><a href=#master选举>Master选举</a></li>
-<li><a href=#读写流程>读写流程</a>
-<ul>
-<li><a href=#写流程>写流程</a></li>
-</ul>
-</li>
-<li><a href=#单文档写入流程>单文档写入流程</a></li>
-<li><a href=#常用操作>常用操作</a></li>
-<li><a href=#tfidf>TF/IDF</a></li>
-<li><a href=#api>API</a></li>
-<li><a href=#alias索引别名>Alias(索引别名)</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=elasticsearch基础>ElasticSearch基础</h1>
-<h2 id=简介>简介</h2>
-<ul>
-<li>
-<p>Elasticsearch 是一个基于<code>Lucene</code>的搜索和分析引擎;</p>
-</li>
-<li>
-<p>近实时；</p>
-</li>
-<li>
-<p>分布式可扩展的近实时；</p>
-</li>
-</ul>
-<h2 id=架构>架构</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/07-14-03-48-2022-01-07-14-03-43-image.png alt></p>
-<ul>
-<li>一个 ES Index 在集群模式下，有多个 Node （节点）组成。每个节点就是 ES 的Instance (实例)。</li>
-<li>每个节点上会有多个 shard （分片）， P1 P2 是主分片, R1 R2 是副本分片</li>
-<li>每个分片上对应着就是一个 Lucene Index（底层索引文件）</li>
-<li>Lucene Index 是一个统称
-<ul>
-<li>由多个 Segment （段文件，就是倒排索引）组成。每个段文件存储着就是 Doc 文档。</li>
-<li>commit point记录了所有 segments 的信息</li>
-</ul>
-</li>
-</ul>
-<h2 id=特点>特点</h2>
-<ul>
-<li>分布式存储</li>
-<li>近实时检索</li>
-</ul>
-<h2 id=核心概念>核心概念</h2>
-<ul>
-<li>索引(index):</li>
-<li>分片(shard):</li>
-<li>分段(segment):</li>
-<li>Translog:</li>
-</ul>
-<h2 id=数据类型>数据类型</h2>
-<ul>
-<li>
-<p>Elasticsearch中每个field都要精确对应一个数据类型；</p>
-</li>
-<li>
-<p>类型包括：</p>
-<ul>
-<li>
-<p>keyword：不需要分词，进行过滤、排序、聚合等操作；</p>
-</li>
-<li>
-<p>text：分词，用于全文搜索，无法排序，聚合等操作；</p>
-</li>
-<li>
-<p>integer：</p>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id=shard分片和replica副本>Shard分片和Replica副本</h2>
-<ul>
-<li>
-<p>es通过<code>shard（分片）</code>来保证数据的可扩展性；</p>
-</li>
-<li>
-<p>es通过<code>replica（副本）</code>来保证数据的高可用性；</p>
-</li>
-<li>
-<p>默认基于hash的分片规则：<code>shard = hash(routing) % number_of_primary_shards</code>, routing为doc id；</p>
-</li>
-<li>
-<p>在创建索引数据时，可以指定相关的shards数量和replicas，否则默认为5和1；</p>
-</li>
-<li>
-<p>对于索引来说，shards设置后，无法改变；replicas可以通过api更新；</p>
-</li>
-<li>
-<p>分片数量和节点数相关，一般满足：节点最大数 = 分片数 * （副本数 + 1）；</p>
-</li>
-<li>
-<p>每个分片都是一个Lucene Index，所以一个分片只能存放 Integer.MAX_VALUE - 128 = 2,147,483,519个docs。</p>
-</li>
-<li>
-<p>在索引写入时，副本分片做着与主分片相同的工作。新文档首先被索引进主分片然后再同步到其它所有的副本分片。</p>
-</li>
-</ul>
-<h2 id=master选举>Master选举</h2>
-<h2 id=读写流程>读写流程</h2>
-<h3 id=写流程>写流程</h3>
-<p>创建索引的过程：</p>
-<ul>
-<li>准备待索引的原文档，数据来源可能是文件、数据库或网络</li>
-<li>对文档的内容进行分词组件处理，形成一系列的Term</li>
-<li>索引组件对文档和Term处理，形成字典和倒排表</li>
-</ul>
-<p>搜索索引的过程：</p>
-<ul>
-<li>对查询语句进行分词处理，形成一系列Term</li>
-<li>根据倒排索引表查找出包含Term的文档，并进行合并形成符合结果的文档集</li>
-<li>比对查询语句与各个文档相关性得分，并按照得分高低返回</li>
-</ul>
-<h2 id=单文档写入流程>单文档写入流程</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/09-17-17-45-2022-01-09-17-17-40-image.png alt></p>
-<ul>
-<li>客户端向 Node 1 发送新建、索引或者删除请求。</li>
-<li>节点使用文档的 _id 确定文档属于分片 0 。请求会被转发到 Node 3，因为分片 0 的主分片目前被分配在 Node 3 上。</li>
-<li>Node 3 在主分片上面执行请求。如果成功了，它将请求并行转发到 Node 1 和 Node 2 的副本分片上。一旦所有的副本分片都报告成功, Node 3 将向协调节点报告成功，协调节点向客户端报告成功。</li>
-</ul>
-<h2 id=常用操作>常用操作</h2>
-<ul>
-<li>清空index数据</li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># create index</span>
-curl -X PUT http://192.168.0.10:20000/test6 --header <span class=s2>&#34;Content-Type: application/json&#34;</span> -d index.json
-cat index.json
-
-<span class=c1># delete index</span>
-curl -X DELETE http://192.168.0.10:20000/test6
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=tfidf>TF/IDF</h2>
-<ul>
-<li>
-<p>TF(Term Frequency, 词频): 词(Term)在文档中出现的频率；</p>
-<p>$ tf(t\in d) = \sqrt{frequency} $</p>
-</li>
-<li>
-<p>IDF(Invert Doc Frequency, 逆向文档频率): 索引中文档数量除以所有包含该词的文档数</p>
-<p>$ idf(t) = 1 + log ( numDocs / (docFreq + 1)) $</p>
-</li>
-<li>
-<p>norm(字段长度归一值): 字段中词数平方根的倒数,</p>
-<p>$ norm(d) = 1 / \sqrt{numTerms} $</p>
-</li>
-</ul>
-<h2 id=api>API</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>POST /index/_search
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=alias索引别名>Alias(索引别名)</h2>
-<ul>
-<li>
-<p>alias是index的一个快捷方式或软连接，用来实现索引变更的零停机操作；</p>
-</li>
-<li>
-<p>Elasticsearch 中有两种方式管理别名： </p>
-<ul>
-<li>
-<p><code>_alias</code> 用于单个操作；</p>
-</li>
-<li>
-<p> <code>_aliases</code> 用于执行多个原子级操作；</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>   </p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 创建别名</span>
-POST /_aliases
-<span class=o>{</span>
-    <span class=s2>&#34;actions&#34;</span> : <span class=o>[</span>
-        <span class=o>{</span> <span class=s2>&#34;add&#34;</span> : <span class=o>{</span> <span class=s2>&#34;index&#34;</span> : <span class=s2>&#34;test1&#34;</span>, <span class=s2>&#34;alias&#34;</span> : <span class=s2>&#34;alias1&#34;</span> <span class=o>}</span> <span class=o>}</span>
-    <span class=o>]</span>
-<span class=o>}</span>
-
-<span class=c1># 删除别名</span>
-POST /_aliases
-<span class=o>{</span>
-    <span class=s2>&#34;actions&#34;</span> : <span class=o>[</span>
-        <span class=o>{</span> <span class=s2>&#34;remove&#34;</span> : <span class=o>{</span> <span class=s2>&#34;index&#34;</span> : <span class=s2>&#34;test1&#34;</span>, <span class=s2>&#34;alias&#34;</span> : <span class=s2>&#34;alias1&#34;</span> <span class=o>}</span> <span class=o>}</span>
-    <span class=o>]</span>
-<span class=o>}</span>
-
-<span class=c1># 重命名一个别名是一个简单的删除，然后在同一个 API 中添加操作。 这个操作是原子的，不用担心别名不指向索引的短时间：</span>
-POST /_aliases
-<span class=o>{</span>
-    <span class=s2>&#34;actions&#34;</span> : <span class=o>[</span>
-        <span class=o>{</span> <span class=s2>&#34;remove&#34;</span> : <span class=o>{</span> <span class=s2>&#34;index&#34;</span> : <span class=s2>&#34;test1&#34;</span>, <span class=s2>&#34;alias&#34;</span> : <span class=s2>&#34;alias1&#34;</span> <span class=o>}</span> <span class=o>}</span>,
-        <span class=o>{</span> <span class=s2>&#34;add&#34;</span> : <span class=o>{</span> <span class=s2>&#34;index&#34;</span> : <span class=s2>&#34;test2&#34;</span>, <span class=s2>&#34;alias&#34;</span> : <span class=s2>&#34;alias1&#34;</span> <span class=o>}</span> <span class=o>}</span>
-    <span class=o>]</span>
-<span class=o>}</span>
-
-<span class=c1># 别名与多索引关联</span>
-POST /_aliases
-<span class=o>{</span>
-    <span class=s2>&#34;actions&#34;</span> : <span class=o>[</span>
-        <span class=o>{</span> <span class=s2>&#34;add&#34;</span> : <span class=o>{</span> <span class=s2>&#34;indices&#34;</span> : <span class=o>[</span><span class=s2>&#34;test1&#34;</span>, <span class=s2>&#34;test2&#34;</span><span class=o>]</span>, <span class=s2>&#34;alias&#34;</span> : <span class=s2>&#34;alias1&#34;</span> <span class=o>}</span> <span class=o>}</span>
-    <span class=o>]</span>
-<span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://pdai.tech/md/db/nosql-es/elasticsearch-y-th-2.html>ES详解 - 原理：ES原理知识点补充和整体结构 | Java 全栈知识体系</a></p>
-</li>
-<li>
-<p><a href=https://www.cnblogs.com/jajian/p/10152681.html>Elasticsearch 技术分析（三）： 索引别名Aliases问题 - JaJian - 博客园</a></p>
-</li>
-<li>
-<p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/5.5/indices-aliases.html?utm_source=ld246.com">Index Aliases | Elasticsearch Reference [5.5] | Elastic</a></p>
-</li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

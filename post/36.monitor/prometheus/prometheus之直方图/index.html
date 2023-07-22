@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Prometheus直方图 简介 prometheus中的histogram是用来设置直方图指标的； histogram指标是为了消除指标采样中的">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/36.monitor/prometheus/prometheus%E4%B9%8B%E7%9B%B4%E6%96%B9%E5%9B%BE/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Prometheus直方图">
-<meta property="og:description" content="Prometheus直方图 简介 prometheus中的histogram是用来设置直方图指标的； histogram指标是为了消除指标采样中的">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/36.monitor/prometheus/prometheus%E4%B9%8B%E7%9B%B4%E6%96%B9%E5%9B%BE/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Prometheus直方图">
-<meta itemprop=description content="Prometheus直方图 简介 prometheus中的histogram是用来设置直方图指标的； histogram指标是为了消除指标采样中的"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="657">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="monitor,prometheus,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Prometheus直方图">
-<meta name=twitter:description content="Prometheus直方图 简介 prometheus中的histogram是用来设置直方图指标的； histogram指标是为了消除指标采样中的"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,130 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#使用>使用</a></li>
-<li><a href=#分位数>分位数</a></li>
-<li><a href=#histogram和summary的区别>histogram和summary的区别</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=prometheus直方图>Prometheus直方图</h1>
-<h2 id=简介>简介</h2>
-<ul>
-<li>
-<p>prometheus中的histogram是用来设置直方图指标的；</p>
-</li>
-<li>
-<p>histogram指标是为了消除指标采样中的长尾效应；</p>
-</li>
-<li>
-<p>Prometheus 的 histogram 是一种累积直方图;</p>
-</li>
-</ul>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/02/11-12-36-31-2022-02-11-12-36-27-image.png alt></p>
-<h2 id=使用>使用</h2>
-<ul>
-<li>histogram使用时，和其他指标相比，还需要指定buckets分布；</li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=err>#</span> <span class=nx>使用了</span><span class=p>[</span><span class=mf>0.1</span><span class=p>,</span><span class=mf>0.2</span><span class=p>,</span><span class=mf>0.4</span><span class=p>,</span><span class=mi>1</span><span class=p>,</span><span class=mi>3</span><span class=p>,</span><span class=mi>8</span><span class=p>,</span><span class=mi>20</span><span class=p>,</span><span class=mi>60</span><span class=p>,</span><span class=mi>120</span><span class=p>,</span><span class=o>+</span><span class=nx>Inf</span><span class=p>]</span><span class=nx>这几个分桶来采样数据</span><span class=err>。</span>
-<span class=err>#</span> <span class=nx>HELP</span> <span class=nx>prometheus_tsdb_compaction_chunk_range</span> <span class=nx>Final</span> <span class=nx>time</span> <span class=k>range</span> <span class=nx>of</span> <span class=nx>chunks</span> <span class=nx>on</span> <span class=nx>their</span> <span class=nx>first</span> <span class=nx>compaction</span>
-<span class=err>#</span> <span class=nx>TYPE</span> <span class=nx>prometheus_tsdb_compaction_chunk_range</span> <span class=nx>histogram</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;100&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;400&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;1600&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;6400&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;25600&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;102400&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;409600&#34;</span><span class=p>}</span> <span class=mi>0</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;1.6384e+06&#34;</span><span class=p>}</span> <span class=mi>260</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;6.5536e+06&#34;</span><span class=p>}</span> <span class=mi>780</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;2.62144e+07&#34;</span><span class=p>}</span> <span class=mi>780</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_bucket</span><span class=p>{</span><span class=nx>le</span><span class=p>=</span><span class=s>&#34;+Inf&#34;</span><span class=p>}</span> <span class=mi>780</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_sum</span> <span class=mf>1.1540798e+09</span>
-<span class=nx>prometheus_tsdb_compaction_chunk_range_count</span> <span class=mi>780</span>
-
-<span class=c1>// 过去1小时内的P95（95%的请求耗时都小于等于这个值）
-</span><span class=c1></span><span class=nf>histogram_quantile</span><span class=p>(</span><span class=mf>0.95</span><span class=p>,</span> <span class=nf>rate</span><span class=p>(</span><span class=nx>prometheus_http_request_duration_seconds_bucket</span><span class=p>[</span><span class=mi>1</span><span class=nx>h</span><span class=p>]))</span>
-
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=分位数>分位数</h2>
-<ul>
-<li>
-<p>prometheus自带<code>histogram_quantile()</code>函数来计算histogram类型指标的分位数情况；</p>
-</li>
-<li>
-<p>该函数通过线性插值的方式计算出指定分位的指标估算值，如quantile=0.95, 表示指定采样时间范围内第95%个指标的估算值；</p>
-</li>
-<li>
-<p>通过分位数可以很方便的了解指标的异常采样情况；如果分位值出现毛刺，则表明该指标可能出现异常情况；</p>
-</li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>//分位值计算公式
-</span><span class=c1></span><span class=k>return</span> <span class=nx>bucketStart</span> <span class=o>+</span> <span class=p>(</span><span class=nx>bucketEnd</span><span class=o>-</span><span class=nx>bucketStart</span><span class=p>)</span><span class=o>*</span><span class=nb>float64</span><span class=p>(</span><span class=nx>rank</span><span class=o>/</span><span class=nx>count</span><span class=p>)</span>
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=histogram和summary的区别>histogram和summary的区别</h2>
-<ul>
-<li>
-<p>histogram可以聚合，summary无法聚合；</p>
-</li>
-<li>
-<p>histogram在查询时计算分位值；summary在采样时计算；</p>
-</li>
-<li>
-<p>histogram的分位数是通过插值估算来的，summary在采样时直接统计，后者根准确；</p>
-</li>
-<li></li>
-</ul>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://cloud.tencent.com/developer/article/1495303>一文搞懂 Prometheus 的直方图 - 云+社区 - 腾讯云</a></p>
-</li>
-<li>
-<p><a href=https://yunlzheng.gitbook.io/prometheus-book/parti-prometheus-ji-chu/promql/prometheus-metrics-types>Metrics类型 - prometheus-book</a></p>
-</li>
-<li>
-<p><a href=https://www.bookstack.cn/read/prometheus-manual/best_practices-histogram_and_summaries.md>最佳实践 - histograms and summaries直方图和总数 - 《Prometheus 非官方中文手册》 - 书栈网 · BookStack</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

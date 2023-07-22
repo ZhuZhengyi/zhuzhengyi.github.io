@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="BlobFS 简介 blobfs 是 spdk 中基于 blobstore 块设备实现的一个简易的文件系统。 编译 1 2 3 4 5 6 7 8 9 10 11 12 13 14 $ yum install -y libaio libaio-devel ncurses ncureses-devel CUnit fuse3 fuse3-devel jq $ pip3 install meson $ wget https://sourceforge.net/projects/cunit/files/latest/download $ git clone https://github.com/spdk/spdk $ cd spdk $ git">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/40.storage/spdk/blobfs%E6%BA%90%E7%A0%81/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="BlobFS">
-<meta property="og:description" content="BlobFS 简介 blobfs 是 spdk 中基于 blobstore 块设备实现的一个简易的文件系统。 编译 1 2 3 4 5 6 7 8 9 10 11 12 13 14 $ yum install -y libaio libaio-devel ncurses ncureses-devel CUnit fuse3 fuse3-devel jq $ pip3 install meson $ wget https://sourceforge.net/projects/cunit/files/latest/download $ git clone https://github.com/spdk/spdk $ cd spdk $ git">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/spdk/blobfs%E6%BA%90%E7%A0%81/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T14:35:02+08:00">
 <meta property="article:modified_time" content="2021-10-10T14:35:02+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="BlobFS">
-<meta itemprop=description content="BlobFS 简介 blobfs 是 spdk 中基于 blobstore 块设备实现的一个简易的文件系统。 编译 1 2 3 4 5 6 7 8 9 10 11 12 13 14 $ yum install -y libaio libaio-devel ncurses ncureses-devel CUnit fuse3 fuse3-devel jq $ pip3 install meson $ wget https://sourceforge.net/projects/cunit/files/latest/download $ git clone https://github.com/spdk/spdk $ cd spdk $ git"><meta itemprop=datePublished content="2021-10-10T14:35:02+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T14:35:02+08:00">
 <meta itemprop=dateModified content="2021-10-10T14:35:02+08:00">
-<meta itemprop=wordCount content="861">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="storage,spdk,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="BlobFS">
-<meta name=twitter:description content="BlobFS 简介 blobfs 是 spdk 中基于 blobstore 块设备实现的一个简易的文件系统。 编译 1 2 3 4 5 6 7 8 9 10 11 12 13 14 $ yum install -y libaio libaio-devel ncurses ncureses-devel CUnit fuse3 fuse3-devel jq $ pip3 install meson $ wget https://sourceforge.net/projects/cunit/files/latest/download $ git clone https://github.com/spdk/spdk $ cd spdk $ git"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,276 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#编译>编译</a></li>
-<li><a href=#挂载-blobfs>挂载 blobfs</a></li>
-<li><a href=#源码解读>源码解读</a></li>
-<li><a href=#blobfs-patch>blobfs patch</a></li>
-<li><a href=#patch>Patch</a>
-<ul>
-<li><a href=#5420-random-write>5420: random write</a></li>
-</ul>
-</li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=blobfs>BlobFS</h1>
-<h2 id=简介>简介</h2>
-<p>blobfs 是 spdk 中基于 blobstore 块设备实现的一个简易的文件系统。</p>
-<h2 id=编译>编译</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ yum install -y libaio libaio-devel ncurses ncureses-devel CUnit fuse3 fuse3-devel jq
-$ pip3 install meson
-$ wget https://sourceforge.net/projects/cunit/files/latest/download
-
-$ git clone https://github.com/spdk/spdk
-$ <span class=nb>cd</span> spdk
-$ git submodule update --init
-
-$ sh scripts/pkgdep.sh
-$ wget -O /tmp/ninja-linux.zip https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip <span class=o>&amp;&amp;</span> unzip /tmp/ninja-linux.zip <span class=o>&amp;&amp;</span> mv ninja /usr/local/bin/
-$ ./configure --with-fuse
-$ wget http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/libaio-devel-0.3.112-1.el8.x86_64.rpm -o /tmp/
-$ sudo rpm -ivh /tmp/
-$ make -j8
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=挂载-blobfs>挂载 blobfs</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span><span class=lnt>41
-</span><span class=lnt>42
-</span><span class=lnt>43
-</span><span class=lnt>44
-</span><span class=lnt>45
-</span><span class=lnt>46
-</span><span class=lnt>47
-</span><span class=lnt>48
-</span><span class=lnt>49
-</span><span class=lnt>50
-</span><span class=lnt>51
-</span><span class=lnt>52
-</span><span class=lnt>53
-</span><span class=lnt>54
-</span><span class=lnt>55
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>#iommu 设置</span>
-<span class=c1>#/etc/default/grub中，增加</span>
-<span class=nv>GRUB_CMDLINE_LINUX</span><span class=o>=</span><span class=s2>&#34;xxx default_hugepagesz=1G hugepagesz=1G hugepages=16 hugepagesz=2M hugepages=2048 intel_iommu=on&#34;</span>
-$ grub2-mkconfig -o /boot/efi/EFI/centos/grub.cfg <span class=c1>#uefi</span>
-$ grub2-mkconfig -o /boot/grub2/grub.cfg   <span class=c1>#no uefi</span>
-
-$ mkdir -p /mnt/huge1G
-$ <span class=nb>echo</span> <span class=s2>&#34;nodev /mnt/huge1G hugetlbfs pagesize=1GB 0 0&#34;</span> &gt;&gt; /etc/fstab
-
-<span class=c1># 设置hugepage</span>
-$ <span class=nb>echo</span> <span class=m>16</span> &gt; /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages
-$ mount -t hugetlbfs none /mnt/huge1G -o <span class=nv>pagesize</span><span class=o>=</span>1G
-
-<span class=c1># 加载vfio-pci 驱动模块</span>
-$ modprobe vfio-pci
-$ modprobe
-
-<span class=c1># 查看nvme 设备</span>
-$ lspci -nn <span class=p>|</span> grep <span class=s2>&#34;Non-Volatile&#34;</span>
-<span class=c1>#&gt; 84:00.0 Non-Volatile memory controller [0108]: Intel Corporation NVMe Datacenter SSD [3DNAND, Beta Rock Controller] [8086:0a54]</span>
-<span class=c1># [[[[&lt;domain&gt;]:]&lt;bus&gt;]:][&lt;device&gt;][.[&lt;func&gt;]]：0000:84:00.0</span>
-<span class=c1># [&lt;vendor&gt;]:[&lt;device&gt;]： 8086:0a54</span>
-
-<span class=c1># 解绑nvme驱动</span>
-$ <span class=nb>echo</span> <span class=s2>&#34;0000:84:00.0&#34;</span> &gt;/sys/bus/pci/devices/0000:84:00.0/driver/unbind
-
-<span class=c1># 绑定到vfio驱动</span>
-$ <span class=nb>echo</span> <span class=m>8086</span> 0a54 <span class=p>|</span> tee /sys/bus/pci/drivers/vfio-pci/new_id
-<span class=c1>#&gt; 绑定成功后，检查</span>
-<span class=c1>#&gt; - lsblk 看不到nvme盘</span>
-<span class=c1>#&gt; - vfio下面多了一个设备文件：ls /dev/vfio/4</span>
-
-<span class=c1># 或者绑定到uio</span>
-$ <span class=nb>echo</span> <span class=m>8086</span> 0a54 &gt; /sys/bus/pci/drivers/uio_pci_generic/new_id
-
-<span class=c1># 驱动准备完成</span>
-$ <span class=nb>cd</span> &lt;SPDK_HOME&gt;
-
-<span class=c1># 生成nvme配置文件</span>
-$ scripts/gen_nvme.sh --json-with-subsystems &gt; nvme.json
-
-<span class=c1># 查看状态</span>
-$ sudo scripts/setup.sh status
-
-<span class=c1># 设置hugepage</span>
-$ <span class=nv>HUGEMEM</span><span class=o>=</span><span class=m>5120</span> scripts/setup.sh
-
-<span class=c1># 生成配置文件</span>
-$ scripts/gen_nvme.sh --json-with-subsystems &gt; nvme.json
-
-<span class=c1># 初始化blobfs</span>
-$ ./test/blobfs/mkfs/mkfs ./nvme.json Nvme0n1
-
-<span class=c1># 挂载至/mnt/fuse</span>
-$ ./test/blobfs/fuse/fuse ./nvme.json Nvme0n1 /mnt/fuse
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=源码解读>源码解读</h2>
-<ul>
-<li>
-<p>lib</p>
-</li>
-<li>
-<p><code>module/blobfs</code>目录</p>
-</li>
-</ul>
-<p>module</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span><span class=lnt>7
-</span><span class=lnt>8
-</span><span class=lnt>9
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// spdk/module/blobfs/bdev/blobfs_bdev.c
-</span><span class=c1></span>
-<span class=c1>// 检测bdev设备是否存在blobfs，若存在，则加载blobfs
-</span><span class=c1></span><span class=kt>void</span> <span class=n>spdk_blobfs_bdev_detect</span><span class=p>()</span>
-<span class=c1>//
-</span><span class=c1></span><span class=k>static</span> <span class=kt>void</span> <span class=n>spdk_blobfs_bdev_create</span><span class=p>()</span>
-
-<span class=c1>// 挂载
-</span><span class=c1></span><span class=k>static</span> <span class=kt>void</span> <span class=n>spdk_blobfs_bdev_mount</span><span class=p>(</span><span class=k>const</span> <span class=kt>char</span><span class=o>*</span> <span class=n>bdev_name</span><span class=p>,</span> <span class=k>const</span> <span class=kt>char</span> <span class=o>*</span><span class=n>mountpoint</span><span class=p>,</span> <span class=n>spdk_blobfs_bdev_op_complete</span> <span class=n>cb_fn</span><span class=p>,</span> <span class=kt>void</span> <span class=o>*</span><span class=n>cb_arg</span><span class=p>)</span>
-</code></pre></td></tr></table>
-</div>
-</div><ul>
-<li></li>
-</ul>
-<ul>
-<li></li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// include 目录
-</span><span class=c1>// spdk/include/blobfs.h
-</span><span class=c1></span>
-<span class=c1>// lib 目录
-</span><span class=c1>// spdk/lib/blobfs.c
-</span><span class=c1></span>
-<span class=c1>// module目录
-</span><span class=c1>// spdk/module/blobfs/bdev/blobfs_bdev.c
-</span><span class=c1>// spdk/module/blobfs/bdev/blobfs_bdev_rpc.c
-</span><span class=c1>// spdk/module/blobfs/bdev/blobfs_fuse.c
-</span><span class=c1>// spdk/module/blobfs/bdev/blobfs_fuse.h
-</span><span class=c1></span>
-<span class=c1>// test目录
-</span><span class=c1>// spdk/test/blobfs/blobfs.sh        //blobfs 功能测试启动脚本
-</span><span class=c1>// spdk/test/blobfs/fuse/fuse.c
-</span><span class=c1>// spdk/test/blobfs/mkfs/mkfs.c
-</span><span class=c1></span>
-<span class=c1>// spdk/test/blobfs/rocksdb/
-</span></code></pre></td></tr></table>
-</div>
-</div><h2 id=blobfs-patch>blobfs patch</h2>
-<ul>
-<li><a href=https://review.spdk.io/gerrit/c/spdk/spdk/+/5420>https://review.spdk.io/gerrit/c/spdk/spdk/+/5420</a></li>
-</ul>
-<h2 id=patch>Patch</h2>
-<h3 id=5420-random-write>5420: random write</h3>
-<p>新 API<code>spdk_file_randomwrite()</code>用于支持文件随机写。原有代码仅支持追加写，在追加写和随机读之间有一个内存缓存。</p>
-<p>为了支持随机写特性，需要进行如下工作：</p>
-<ol>
-<li>
-<p>将缓存中的数据刷入到后端 blobstore 中；</p>
-</li>
-<li>
-<p>删除所有的缓存</p>
-</li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

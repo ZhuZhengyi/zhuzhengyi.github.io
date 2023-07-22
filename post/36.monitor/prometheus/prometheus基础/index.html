@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Prometheus基础 简介 Prometheus(普罗米修斯)受启发于Google的Brogmon监控系统，是继Kubernetes之后成为">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/36.monitor/prometheus/prometheus%E5%9F%BA%E7%A1%80/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Prometheus基础">
-<meta property="og:description" content="Prometheus基础 简介 Prometheus(普罗米修斯)受启发于Google的Brogmon监控系统，是继Kubernetes之后成为">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/36.monitor/prometheus/prometheus%E5%9F%BA%E7%A1%80/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Prometheus基础">
-<meta itemprop=description content="Prometheus基础 简介 Prometheus(普罗米修斯)受启发于Google的Brogmon监控系统，是继Kubernetes之后成为"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1830">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="monitor,prometheus,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Prometheus基础">
-<meta name=twitter:description content="Prometheus基础 简介 Prometheus(普罗米修斯)受启发于Google的Brogmon监控系统，是继Kubernetes之后成为"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,188 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#特点>特点</a></li>
-<li><a href=#架构>架构</a></li>
-<li><a href=#工作流程>工作流程</a></li>
-<li><a href=#数据模型>数据模型</a></li>
-<li><a href=#指标类型>指标类型</a></li>
-<li><a href=#存储模型>存储模型</a></li>
-<li><a href=#服务发现>服务发现</a></li>
-<li><a href=#扩展高可用>扩展高可用</a></li>
-<li><a href=#alertmanager>AlertManager</a>
-<ul>
-<li><a href=#告警规则>告警规则</a></li>
-<li><a href=#告警处理>告警处理</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=prometheus基础>Prometheus基础</h1>
-<hr>
-<h2 id=简介>简介</h2>
-<p><strong>Prometheus</strong>(普罗米修斯)受启发于Google的Brogmon监控系统，是继Kubernetes之后成为第二个正式加入CNCF基金会的项目。</p>
-<ul>
-<li>
-<p>2012年，由前Google工程师在Soundcloud以开源软件的形式进行研发；</p>
-</li>
-<li>
-<p>2015年，对外发布早期版本；</p>
-</li>
-<li>
-<p>2016年5月，加入CNCF基金会；</p>
-</li>
-<li>
-<p>2016年6月，发布1.0版本；</p>
-</li>
-<li>
-<p>2017年底，发布2.0版本，基于全新存储层，能更好地与容器平台、云平台配合。</p>
-</li>
-</ul>
-<hr>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-10-43-2020-11-03-16-18-50-image.png alt></p>
-<hr>
-<h2 id=特点>特点</h2>
-<p>Prometheus作为新一代的云原生监控系统，基于中央化的规则计算、统一分析和告警的模型，特点如下：</p>
-<ul>
-<li><strong>易于部署</strong>：单一二进制文件，无第三方依赖，不会有潜在级联故障的风险，部署简单；</li>
-<li><strong>强大数据模型</strong>：监控指标以时序序列保存在存储中，并可灵活设置<strong>标签</strong>来对数据不同维度进行区分；</li>
-<li><strong>强大查询语言</strong>PromQL：内置的PromQL支持查询、聚合、过滤等复杂操作，可实现高效的查询；</li>
-<li><strong>易于扩展</strong>：支持分区和联邦集群部署，并可结合thano实现分布式部署；</li>
-<li><strong>易于集成</strong>：支持多种语言SDK，拥有大量第三方集成模块，可方便与第三方系统进行集成；</li>
-<li><strong>可视化</strong>：自带web ui， 与grafana很好的集成；</li>
-</ul>
-<hr>
-<h2 id=架构>架构</h2>
-<p>Prometheus 的主要模块如下：</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-11-10-2020-06-05-15-09-02-image.png alt></p>
-<hr>
-<h2 id=工作流程>工作流程</h2>
-<ol>
-<li>Prometheus server 定期从配置好的 jobs 或者 exporters 中拉 metrics，或者接收来自 Pushgateway 发过来的 metrics，或者从其他的 Prometheus server 中拉 metrics。</li>
-<li>Prometheus server 在本地存储收集到的 metrics，并运行已定义好的 alert.rules，记录新的时间序列或者向 Alertmanager 推送警报。</li>
-<li>Alertmanager 根据配置文件，对接收到的警报进行处理，发出告警。</li>
-<li>在图形界面中，可视化采集数据。</li>
-</ol>
-<hr>
-<h2 id=数据模型>数据模型</h2>
-<p>Prometheus 中存储的数据为时间序列，是由 metric 的名字和一系列的标签（键值对）唯一标识的，不同的标签则代表不同的时间序列，如：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>api_http_requests_total{path=&#34;/users&#34;,status=200,method=&#34;GET&#34;,instance=&#34;10.111.201.26&#34;}  100
-</code></pre></td></tr></table>
-</div>
-</div><p>该时序的名字为 api_http_requests_total，标签为 path、status、method 和 instance，只有时序名字和标签键值完全相同的时序才是同一个时序。事实上，时序名字就是一个隐藏标签：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>{name=&#34;api_http_requests_total&#34;,path=&#34;/users&#34;,status=200,method=&#34;GET&#34;,instance=&#34;10.111.201.26&#34;}  100
-</code></pre></td></tr></table>
-</div>
-</div><hr>
-<h2 id=指标类型>指标类型</h2>
-<p>四种类型：</p>
-<ul>
-<li><strong>Counter</strong>: 用于累计计数，例如用来记录请求次数。Counter的特点是一直增加不会减少。</li>
-<li><strong>Gauge</strong>：用于记录常规数值，可以增加或减少。例如用来记录CPU、内存的变化</li>
-<li><strong>Histogram</strong>：可理解为直方图，常用于跟踪事件发生的规模，如请求耗时、响应大小。可对记录的内容分组和聚合(count,sum等)，例如响应时间小于500毫秒的多少次、500毫秒~1000毫秒之间多少次、1000毫秒以上的多少次</li>
-<li><strong>Summary</strong>：与Histogram类似，但支持按百分比跟踪结果</li>
-</ul>
-<hr>
-<h2 id=存储模型>存储模型</h2>
-<p>prometheus是一个时序型KV数据库，时序数据拥有<em>垂直写，水平读</em>的特点，在此基础上</p>
-<ul>
-<li>
-<p>第1代: Prototype：直接利用LevelDB进行kv存储；</p>
-</li>
-<li>
-<p>第2代: Prometheus V1：chunk file，压缩存储；</p>
-</li>
-<li>
-<p>第3代: Prometheus V2：合并的chunk+index 文件；</p>
-</li>
-</ul>
-<hr>
-<h2 id=服务发现>服务发现</h2>
-<p>Prometheus基于Pull模式, 无法主动发现新的监控节点，Prometheus引入**SD(Service Discovery)**服务发现机制来解决。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-11-30-2020-11-03-16-50-06-image.png alt></p>
-<hr>
-<p>支持服务发现的组件类型：</p>
-<ul>
-<li>
-<p>Static</p>
-</li>
-<li></li>
-<li>
-<p>DNS</p>
-</li>
-<li>
-<p>Consul</p>
-</li>
-<li>
-<p>K8s</p>
-</li>
-<li>
-<p>&mldr;</p>
-</li>
-</ul>
-<p>服务发现支持Relabeling机制，可对默认label进行map、replace、filter等操作。</p>
-<hr>
-<h2 id=扩展高可用>扩展高可用</h2>
-<ul>
-<li>
-<p>HA + LB</p>
-</li>
-<li>
-<p>HA + remote storage</p>
-</li>
-<li>
-<p>联邦（federate）集群</p>
-</li>
-</ul>
-<p>每一个Prometheus Server都包含一个/federate的接口，可用来获取当前节点中的监控数据。因此可通过该接口对整个prometheus集群进行拆分组合，建立分级节点，以做到集群的扩展，此模式称为联邦模式。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-12-04-image-20190425092255032.png alt=image20190425092255032></p>
-<hr>
-<ul>
-<li><strong>Thanos</strong>(灭霸)：是一个专门用于prometheus的高可用方案，可以一次查询多个 Prometheus 实例，并且能够对来自多个实例的相同指标进行去重</li>
-</ul>
-<hr>
-<h2 id=alertmanager>AlertManager</h2>
-<p>alertmanger是promtheus的独立组件，通过在Prometheus中定义AlertRule（告警规则），Prometheus会周期性的对告警规则进行计算，如果满足告警触发条件就会向Alertmanager发送告警信息。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-12-21-2020-11-03-17-19-46-image.png alt></p>
-<hr>
-<h3 id=告警规则>告警规则</h3>
-<ul>
-<li>
-<p>告警名称：用户需要为告警规则命名，当然对于命名而言，需要能够直接表达出该告警的主要内容</p>
-</li>
-<li>
-<p>告警规则：告警规则实际上主要由PromQL进行定义，其实际意义是当表达式（PromQL）查询结果持续多长时间（During）后出发告警</p>
-</li>
-</ul>
-<h3 id=告警处理>告警处理</h3>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-12-42-2020-11-03-17-22-20-image.png alt></p>
-<hr>
-<hr>
-<h2 id=参考>参考</h2>
-<ol>
-<li><a href=https://yunlzheng.gitbook.io/prometheus-book/parti-prometheus-ji-chu/quickstart/why-monitor>https://yunlzheng.gitbook.io/prometheus-book/parti-prometheus-ji-chu/quickstart/why-monitor</a></li>
-<li><a href=http://dockerone.com/article/8605>Prometheus 不完全避坑指南 - DockOne.io</a></li>
-<li><a href=http://dockerone.com/article/10143>Prometheus Metrics 设计的最佳实践和应用实例 - DockOne.io</a></li>
-<li><a href=https://www.qikqiak.com/k8strain/monitor/thanos/>Thanos - K8S训练营</a></li>
-<li><a href=https://prometheus.io/docs/introduction/overview/>Overview | Prometheus</a></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

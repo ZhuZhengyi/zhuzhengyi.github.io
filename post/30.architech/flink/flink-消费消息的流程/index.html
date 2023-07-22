@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Flink消息消费流程 简介 准备一个ResultPartition； 通知JobMaster； JobMaster通知下游节点；如果下游节点尚未部">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/flink/flink-%E6%B6%88%E8%B4%B9%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Flink消息消费流程">
-<meta property="og:description" content="Flink消息消费流程 简介 准备一个ResultPartition； 通知JobMaster； JobMaster通知下游节点；如果下游节点尚未部">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/flink/flink-%E6%B6%88%E8%B4%B9%E6%B6%88%E6%81%AF%E7%9A%84%E6%B5%81%E7%A8%8B/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-06-14T19:20:14+08:00">
 <meta property="article:modified_time" content="2022-06-14T19:20:14+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Flink消息消费流程">
-<meta itemprop=description content="Flink消息消费流程 简介 准备一个ResultPartition； 通知JobMaster； JobMaster通知下游节点；如果下游节点尚未部"><meta itemprop=datePublished content="2022-06-14T19:20:14+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-06-14T19:20:14+08:00">
 <meta itemprop=dateModified content="2022-06-14T19:20:14+08:00">
-<meta itemprop=wordCount content="525">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,flink,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Flink消息消费流程">
-<meta name=twitter:description content="Flink消息消费流程 简介 准备一个ResultPartition； 通知JobMaster； JobMaster通知下游节点；如果下游节点尚未部"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,65 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a>
-<ul>
-<li><a href=#数据跨-task-传输>数据跨 task 传输</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=flink消息消费流程>Flink消息消费流程</h1>
-<h2 id=简介>简介</h2>
-<ol>
-<li>
-<p>准备一个ResultPartition；</p>
-</li>
-<li>
-<p>通知JobMaster；</p>
-</li>
-<li>
-<p>JobMaster通知下游节点；如果下游节点尚未部署，则部署之；</p>
-</li>
-<li>
-<p>下游节点向上游请求数据</p>
-</li>
-<li>
-<p>开始传输数据</p>
-</li>
-</ol>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/03-21-34-50-2022-01-03-21-34-42-image.png alt></p>
-<h3 id=数据跨-task-传输>数据跨 task 传输</h3>
-<ol>
-<li>
-<p>数据在本operator处理完后，交给RecordWriter。每条记录都要选择一个下游节点，所以要经过ChannelSelector。</p>
-</li>
-<li>
-<p>每个channel都有一个serializer（我认为这应该是为了避免多线程写的麻烦），把这条Record序列化为ByteBuffer</p>
-</li>
-<li>
-<p>接下来数据被写入ResultPartition下的各个subPartition里，此时该数据已经存入DirectBuffer（MemorySegment）</p>
-</li>
-<li>
-<p>单独的线程控制数据的flush速度，一旦触发flush，则通过Netty的nio通道向对端写入</p>
-</li>
-<li>
-<p>对端的netty client接收到数据，decode出来，把数据拷贝到buffer里，然后通知InputChannel</p>
-</li>
-<li>
-<p>有可用的数据时，下游算子从阻塞醒来，从InputChannel取出buffer，再解序列化成record，交给算子执行用户代码</p>
-</li>
-</ol>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/03-21-39-06-2022-01-03-21-39-02-image.png alt></p>
-<h2 id=参考>参考</h2>
-<ol>
-<li><a href=https://blog.csdn.net/jsjsjs1789/article/details/106526982>一文搞定 Flink 消费消息的全流程_shengjk1的博客-CSDN博客_flink阻塞消费</a></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

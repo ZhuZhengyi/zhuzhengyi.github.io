@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="BlueStore 简介 Ceph早期的单机对象存储引擎是FileStore，为了维护数据的一致性，写入之前数据会先写Journal，然后再写到文件系统，会有一">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/40.storage/ceph/ceph-bluestore/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="BlueStore">
-<meta property="og:description" content="BlueStore 简介 Ceph早期的单机对象存储引擎是FileStore，为了维护数据的一致性，写入之前数据会先写Journal，然后再写到文件系统，会有一">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/ceph/ceph-bluestore/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T14:35:02+08:00">
 <meta property="article:modified_time" content="2021-10-10T14:35:02+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="BlueStore">
-<meta itemprop=description content="BlueStore 简介 Ceph早期的单机对象存储引擎是FileStore，为了维护数据的一致性，写入之前数据会先写Journal，然后再写到文件系统，会有一"><meta itemprop=datePublished content="2021-10-10T14:35:02+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T14:35:02+08:00">
 <meta itemprop=dateModified content="2021-10-10T14:35:02+08:00">
-<meta itemprop=wordCount content="8143">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="storage,ceph,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="BlueStore">
-<meta name=twitter:description content="BlueStore 简介 Ceph早期的单机对象存储引擎是FileStore，为了维护数据的一致性，写入之前数据会先写Journal，然后再写到文件系统，会有一"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,207 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#为什么需要bluestore>为什么需要BlueStore</a></li>
-<li><a href=#bluestore介绍><strong>BlueStore介绍</strong></a></li>
-<li><a href=#需求><strong>需求</strong></a></li>
-<li><a href=#逻辑架构><strong>逻辑架构</strong></a></li>
-<li><a href=#设计思想><strong>设计思想</strong></a></li>
-<li><a href=#存储模型>存储模型</a>
-<ul>
-<li><a href=#缓存模块>缓存模块</a></li>
-<li><a href=#freelistmanager模块>FreelistManager模块</a></li>
-<li><a href=#allocator模块>Allocator模块</a></li>
-</ul>
-</li>
-<li><a href=#bluestore的元数据管理><strong>BlueStore的元数据管理</strong></a></li>
-<li><a href=#bluestore的写路径><strong>BlueStore的写路径</strong></a></li>
-<li><a href=#bluefs的架构>BlueFS的架构</a></li>
-<li><a href=#总结><strong>总结</strong></a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=bluestore>BlueStore</h1>
-<h2 id=简介>简介</h2>
-<p>Ceph早期的单机对象存储引擎是<code>FileStore</code>，为了维护数据的一致性，写入之前数据会先写<code>Journal</code>，然后再写到文件系统，会有一倍的写放大，而同时现在的文件系统一般都是日志型文件系统(ext系列、xfs)，文件系统本身为了数据的一致性，也会写<code>Journal</code>，此时便相当于维护了两份<code>Journal</code>；另外<code>FileStore</code>是针对<code>HDD</code>的，并没有对<code>SSD</code>作优化，随着<code>SSD</code>的普及，针对<code>SSD</code>优化的单机对象存储也被提上了日程，<code>BlueStore</code>便由此应运而出。</p>
-<p><code>BlueStore</code>最早在<code>Jewel</code>版本中引入，用于在<code>SSD</code>上替代传统的<code>FileStore</code>。作为新一代的高性能对象存储后端，<code>BlueStore</code>在设计中便充分考虑了对<code>SSD</code>以及<code>NVME</code>的适配。针对<code>FileStore</code>的缺陷，<code>BlueStore</code>选择绕过文件系统，直接接管裸设备，直接进行对象数据IO操作，同时元数据存放在<code>RocksDB</code>，大大缩短了整个对象存储的IO路径。<code>BlueStore</code>可以理解为一个支持<code>ACID</code>事物型的本地日志文件系统。</p>
-<h2 id=为什么需要bluestore>为什么需要BlueStore</h2>
-<p>ceph是目前业内比较普遍使用的开源分布式存储系统，实现有多种类型的本地存储系统；在较早的版本当中，ceph默认使用FileStore作为后端存储，但是由于FileStore存在一些缺陷，重新设计开发了BlueStore，并在L版本之后作为默认的后端存储。</p>
-<p><img src=https://pic1.zhimg.com/80/v2-04d2616b034660107a7fadccd7ea4fa0_1440w.jpg alt></p>
-<ul>
-<li><strong>IO放大</strong></li>
-</ul>
-<p>FileStore底层使用POSIX规范的文件系统接口，例如xfs、ext4、btrfs，然而这类文件系统本身不支持数据或元数据的事务操作接口（btrfs提供事务钩子的接口，但是测试过程中发现会导致系统宕机），而ceph对于数据写入要求十分严格，需要满足事务的特性（ACID）；为此FileStore实现了FileJournal功能，所有的事务都需要先写到FileJournal中，之后才会写入对应的文件中，以此来保证事务的原子性，但是这导致了数据“双写”的问题，造成至少一半磁盘带宽的浪费。</p>
-<p>此外xfs、ext4、btrfs这类文件系统本身存在一定的IO放大（即一次读写请求实际在低层磁盘发生的IO次数），再加上FileStore的日志双写，放大倍数成倍增加。</p>
-<p>下图中的数据表示了以block大小为单位对不同文件系统进行读写，在不同场景下的读写放大及空间放大情况。我们以ext4文件系统说明下个参数的含义。在对文件进行Overwrite时，即将数据覆盖写入到文件中，除了写入数据外，还涉及到日志的写入（其中日志写入两次，一次记录更改的inode，一次为commit记录，具体可参考[5])、文件inode的更改，每次写的最小单位是block，因此最终相当于写入次数以及空间放大了四倍；而在进行Append写入时，由于需要新分配空间，因此相对于Overwrite增加了bitmap的更改以及superblock的更改（superblock记录总的空间分配情况），写放大和空间放大均为六倍。读文件时，在没有命中任何缓存的情况下（cold cache），需要读大量元数据，例如：目录、文件inode、superblock等，最终读放大为六倍；而如果是在顺序读的情况下（warm cache），像superblock、bitmap、目录等这些元数据都缓存在内存中，只需读取文件inode和文件数据。</p>
-<p>同理，其他文件系统由于不同的结构和设计原理，其IO放大和空间放大系数也各不相同。</p>
-<p><img src=https://pic2.zhimg.com/80/v2-39087a1897ba0faa3597ca786d579471_1440w.jpg alt></p>
-<ul>
-<li><strong>对象遍历</strong></li>
-</ul>
-<p>ceph的数据被划分为object存放，object以32位的hash值进行标识，ceph在进行scrubbing、backfill或者recovery时都需要根据hash值遍历这些object；POSIX文件系统不提供有序的文件遍历接口，为此FileStore根据文件的数量和hash的前缀将object划分到不同的子目录，其原则如下：</p>
-<ul>
-<li>当目录下的文件个数>100个时，拆分子目录；目录名以文件名的hash前缀为依据（拆分一级目录时，以hash第一位为拆分依据，二级目录以第二位hash为拆分依据，依次类推）</li>
-<li>当所有子目录下的文件个数&lt;50个时，将合并到上级目录</li>
-</ul>
-<p>因此FileStore在使用过程中需要不断合并拆分目录结构；这种方式将文件按照前缀放到不同目录，但对于同一目录中的文件依然无法很好排序，因此需要将目录中的所有文件读到内存进行排序，这样在一定程度上增加了CPU开销。</p>
-<p><img src=https://pic3.zhimg.com/80/v2-3c8f6b97fea136794ccb7cb2a1f3d006_1440w.jpg alt></p>
-<ul>
-<li>
-<p><strong>其他</strong></p>
-</li>
-<li>
-<p>FileStore由于设计的较早，无法支持当前较新的存储技术，例如使用spdk技术读写NVMe盘。</p>
-</li>
-<li>
-<p>数据和元数据分离不彻底。</p>
-</li>
-<li>
-<p>流控机制不完整导致IOPS和带宽抖动（FileStore自身无法控制本地文件系统的刷盘行为）。</p>
-</li>
-<li>
-<p>频繁syncfs系统调用导致CPU利用率居高不下。</p>
-</li>
-</ul>
-<h2 id=bluestore介绍><strong>BlueStore介绍</strong></h2>
-<h2 id=需求><strong>需求</strong></h2>
-<p>首先看下BlueStore设计之初的一些需求：</p>
-<ul>
-<li>对全SSD及全NVMe SSD闪存适配</li>
-<li>绕过本地文件系统层，直接管理裸设备，缩短IO路径</li>
-<li>严格分离元数据和数据，提高索引效率</li>
-<li>使用KV索引，解决文件系统目录结构遍历效率低的问题</li>
-<li>支持多种设备类型</li>
-<li>解决日志“双写”问题</li>
-<li>期望带来至少2倍的写性能提升和同等读性能</li>
-<li>增加数据校验及数据压缩等功能</li>
-</ul>
-<h2 id=逻辑架构><strong>逻辑架构</strong></h2>
-<p><img src=https://pic3.zhimg.com/80/v2-c3c40bb427a8a562eed3d2040b5f8a5e_1440w.jpg alt></p>
-<p>BlueStore的逻辑架构如上图所示，模块的划分都还比较清晰，我们来看下各模块的作用：</p>
-<ul>
-<li><strong>RocksDB</strong>：rocksdb是facebook基于leveldb开发的一款kv数据库，BlueStore将元数据全部存放至RocksDB中，这些元数据包括存储预写式日志、数据对象元数据、Ceph的omap数据信息、以及分配器的元数据 。</li>
-<li><strong>BlueRocksEnv</strong>：这是RocksDB与BlueFS交互的接口；RocksDB提供了文件操作的接口EnvWrapper，用户可以通过继承实现该接口来自定义底层的读写操作，BlueRocksEnv就是继承自EnvWrapper实现对BlueFS的读写。</li>
-<li><strong>BlueFS</strong>：BlueFS是BlueStore针对RocksDB开发的轻量级文件系统，用于存放RocksDB产生的.sst和.log等文件。</li>
-<li><strong>BlockDecive</strong>：BlueStore抛弃了传统的ext4、xfs文件系统，使用直接管理裸盘的方式；BlueStore支持同时使用多种不同类型的设备，在逻辑上BlueStore将存储空间划分为三层：慢速（Slow）空间、高速（DB）空间、超高速（WAL）空间，不同的空间可以指定使用不同的设备类型，当然也可使用同一块设备，具体我们会在后面的文章进行说明。</li>
-<li><strong>Allocator</strong>：负责裸设备的空间管理，只在内存做标记，目前支持StupidAllocator和BitmapAllocator两种分配器,Stupid基于extent的方式实现 。</li>
-</ul>
-<h2 id=设计思想><strong>设计思想</strong></h2>
-<p>在设计分布式文件系统的本地存储时，我们必须考虑数据的一致性和可靠性。在数据写入的过程中，由于可能存在异常掉电、进程崩溃等突发情况，导致数据还未全部写入成功便结束。虽然硬盘本身可以保证在扇区级别写入的原子性，但是一般文件系统的一个写请求通常包含多个扇区的数据和元数据更新，无法做到原子写。</p>
-<p>常用的解决办法是引入日志系统，数据写入磁盘之前先写到日志系统，然后再将数据落盘；日志写入成功后，即便写数据时出现异常，也可以通过日志回放重新写入这部分数据；如果写日志的过程中出现异常，则直接放弃这部分日志，视为写入失败即可，以此保证原子写入。但是这种方式导致每份数据都需要在磁盘上写入两次，严重降低了数据的写入效率。</p>
-<p>另一种方式则是采用ROW（Redirect on write）的方式，即数据需要覆盖写入时，将数据写到新的位置，然后更新元数据索引，这种方式由于不存在覆盖写，只需保证元数据更新的原子性即可。对于对齐的覆盖写入时，这种方式没有问题，但是如果是非对齐的覆盖写呢？</p>
-<p>我们举个例子：某文件的逻辑空间 [0,4096) 区间的数据在磁盘上的物理映射地址为[0, 4096)，磁盘的块（即磁盘读写的最小单元）大小为4096；如果要覆盖写文件[0,4096)区间的数据，那使用ROW的方式没有问题，重新再磁盘上分配一个新的块写入，然后更新元数据中的映射关系即可；但是如果写文件[512,4096)区域，也就是非对齐的覆盖写时，新分配的块中只有部分数据，旧的物理空间中仍有部分数据有效，这样元数据中需要维护两份索引，而且在读取文件的该块数据时，需要从多块磁盘块中读取数据，如果多次进行非对齐覆盖写，这种问题将更严重。</p>
-<p>解决这种问题办法是使用RMW（Read Modify Write）的方法，即在发生非对齐覆盖写时，先读取旧的数据，更新的数据合并后，对齐写入到磁盘中，从而减少元数据、提高读性能，但这种方式也存在一种缺点，写数据时需要先读数据，存在一定的性能损耗。</p>
-<p>分析完ROW的方式后，读者是否会有疑问，每次写入都放到新的位置，那么文件在磁盘中的物理连续性岂不是无法保证？的确，在传统的文件系统设计时，都是面向HDD盘，这种类型的盘在读写时会有磁头寻道的时间，对于非连续的物理空间读写，性能极差，在设计时会尽可能考虑数据存放的连续性，因此很少会采用ROW的方式。但是随着SSD盘的逐渐普及，随机读写的性能不再成为主要的性能关注点，越来越多的存储系统开始采用全闪存的磁盘阵列，相信ROW的方式会成为更加主流的方式。</p>
-<p>我们再来看下BlueStore是怎么实现的，BlueStore在设计时便考虑了全闪存的磁盘阵列，但是仍要考虑使用HDD盘的场景，因此并未完全采用ROW的方式。</p>
-<p>我们以下图为例进行说明，BlueStore提供了一个最小分配单元min_alloc_size的配置项，一般为磁盘块大小的整数倍，在此例中min_alloc_size为block大小的4倍。</p>
-<p>写入的数据如果与min_alloc_size大小对齐，则使用ROW的方式，将数据写到新的地址空间，然后更改元数据索引，并回收原先占用的空间，元数据更新的原子性由RocksDB的事务特性进行保障。</p>
-<p>而对于非min_alloc_size对齐的区域，则使用RMW的方式进行原地覆盖写（只读取非块大小对齐区域所在块，一般就是写入数据的第一个或最后一个块），写入的这部分数据可能跨多个块（因为min_alloc_size是块大小的整数倍），而磁盘只保证单个块大小的原子写入，对于多个块的原子写需要引入类似日志的功能，BlueStore用RocksDB来实现日志功能，将覆盖的这部分数据记到RocksDB中，完成以后再将数据覆盖写入到实际的数据区域，落盘成功以后再删除日志中的记录。</p>
-<p><img src=https://pic3.zhimg.com/80/v2-206c24ef8e2e39e070256e2478a8f676_1440w.jpg alt></p>
-<p> bluestore不使用本地文件系统，直接接管裸设备，并且只使用一个原始分区，HDD/SSD所在的物理块设备实现在用户态下使用linux aio直接对裸设备进行I/O操作。由于操作系统支持的aio操作只支持directIO，所以对BlockDevice的写操作直接写入磁盘，并且需要按照page对齐。其内部有一个aio_thread 线程，用来检查aio是否完成。其完成后，通过回调函数aio_callback 通知调用方。</p>
-<h2 id=存储模型>存储模型</h2>
-<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/03-14-38-09-2020-11-03-14-37-46-image.png?token=AARMIEXD2SMH33GE2RKURI27UD5RA" alt></p>
-<h3 id=缓存模块>缓存模块</h3>
-<p>BlueStore抛弃了文件系统，直接管理裸设备，用不了文件系统的Cache机制，自己实现元数据和数据的Cache。</p>
-<p><code>BlueStore</code>有两种Cache算法：<code>LRU</code>和<code>2Q</code>。元数据使用<code>LRU</code>Cache策略，数据使用<code>2Q</code>Cache策略。</p>
-<p>Bluestore实现了自己的缓存机制，定义了structure ：</p>
-<ul>
-<li>
-<p>OnodeSpace，用来map 到内存中的ONODE；</p>
-</li>
-<li>
-<p>BufferSpace，用来map 块信息blob，每个blob都在bufferSpace中缓存了状态数据。</p>
-<p>二者在缓存中依照LRU的方式决定生命周期。 </p>
-</li>
-</ul>
-<h3 id=freelistmanager模块>FreelistManager模块</h3>
-<p>FreelistManager用来映射磁盘的使用信息，最初实现是采用k-v的方式来存储对应的磁盘块的使用情况，但是由于更新数据时需要修改映射，需要线程锁来控制修改，而且这种方式对内存消耗很大；后续修改为bitmap的映射方式，设定一个offset来以bitmap的方式map多个block使用信息，使用XOR计算来更新块的使用情况，这种方式不会出现in-memory 状态。 </p>
-<h3 id=allocator模块>Allocator模块</h3>
-<p>用来委派具体哪个实际存储块用来存储当前的object数据；同样采用bitmap的方式来实现allocator，同时采用层级索引来存储多种状态，这种方式对内存的消耗相对较小，平均1TB磁盘需要大概35M左右的ram空间</p>
-<h2 id=bluestore的元数据管理><strong>BlueStore的元数据管理</strong></h2>
-<p>bluestore自己管理裸盘，因此需要有元数据来管理对象，对应的就是Onode，Onode是常驻内存的数据结构，持久化的时候会以kv的形式存到rocksdb里。</p>
-<p>在onode里又分为lextent，表示逻辑的数据块，用一个map来记录，一个onode里会存在多个lextent，lextent通过blob的id对应到blob（bluestore_blob_t ），blob里通过pextent对应到实际物理盘上的区域（pextent里就是offset和length来定位物理盘的位置区域）。一个onode里的多个lextent可能在同一个blob里，而一个blob也可能对应到多个pextent。</p>
-<p>另外还有Bnode这个元数据，它是用来表示多个object可能共享extent，目前在做了快照后写I/O触发的cow进行clone的时候会用到。</p>
-<p>Onode代表对象，名字大概是从Linux VFS的Inode沿袭过来的。Onode常驻内存，在RocksDB中以KeyValue形式持久化；关于内存Cache的结构，在CDM的Slides中有讲。Onode包含多个lextent，即逻辑extent。Blob通过映射pextent、即物理extent，映射到磁盘上的物理区域。Blob通常包括来自同一个对象的多段数据，但是也可能被其它对象引用。Bnode是对象快照后，被用于多个对象共享数据的。</p>
-<p><img src=/Users/zhuzhengyi/code/github/gitnote/img/2020-11-03-13-53-30-image.png alt></p>
-<p>上面仅是关于对象映射的。更进一步，RocksDB中存储有许多类型的元数据，包括块分配、对象集合、快照、延迟写（Deferred Writes）、对象属性（Omap，即一个对象上可以附加一些KeyValue对作为属性，例如给图片加上地点、日期等），等等。在CDM的Slides中有详述。</p>
-<h2 id=bluestore的写路径><strong>BlueStore的写路径</strong></h2>
-<p>写路径包含了对事务的处理，也回答了BlueStore如何解决日志双写问题。</p>
-<p>首先，Ceph的事务只工作于单个OSD内，能够保证多个对象操作被ACID地执行，主要是用于实现自身的高级功能。每个PG（Placement Group，类似Dynamo的vnode，将hash映射到同一个组内的对象组到一起）内有一个OpSequencer，通过它保证PG内的操作按序执行。事务需要处理的写分三种：</p>
-<ol>
-<li>
-<p>写到新分配的区域。考虑ACID，因为此写不覆盖已有数据，即使中途断电，因为RocksDB中的元数据没有更新，不用担心ACID语义被破坏。后文可见RocksDB的元数据更新是在数据写之后做的。因而，日志是不需要的。在数据写完之后，元数据更新写入RocksDB；RocksDB本身支持事务，元数据更新作为RocksDB的事务提交即可。</p>
-</li>
-<li>
-<p>写到Blob中的新位置。同理，日志是不需要的。</p>
-</li>
-<li>
-<p>Deferred Writes（延迟写），只用于覆写（Overwrite）情况。从上面也可以看到，只有覆写需要考虑日志问题。如果新写比块大小（min_alloc_size）更小，那么会将其数据与元数据合并写入到RocksDB中，之后异步地把数据搬到实际落盘位置；这就是日志了。如果新写比块大小更大，那么分割它，整块的部分写入新分配块中，即按（1）处理，；不足的部分按（3）中上种情况处理。</p>
-</li>
-</ol>
-<p>上述基本概述了BlueStore的写处理。可以看到其是如何解决FileStore的日志双写问题的。首先，没有Linux文件系统了，也就没有了多余的Journaling of Journal问题。然后，大部分写是写到新位置的，而不是覆写，因此不需要对它们使用日志；写仍然发生了两次，第一次是数据落盘，然后是RocksDB事务提交，但不再需要在日志中包含数据了。最后，小的覆写合并到日志中提交，一次写完即可返回用户，之后异步地把数据搬到实际位置（小数据合并到日志是个常用技巧）；大的覆写被分割，整块部分用Append-only方式处理，也绕开了日志的需要。至此，成为一个自然而正常的处理方式。（P.S.总之，个人感觉日志双写不是一个该存在的问题，不知为何成了一个问题，好在今天终于不是问题了。）</p>
-<p>更深入地，Ceph的开发文档中列出了所有的写策略处理方式。可以看到Inline Compression也是BlueStore的功能点之一；其中也有对Partial-write问题的处理。</p>
-<p>CDM的Slides中有BlueStore写的状态机图。状态机是存储中常用的处理方式，处理写路径，Ceph的PG Peering过程也有相应的状态机。数据落盘，对应的是PREPARE->AIO_WAIT间的“Initiate some AIO”一步。之后经过多个队列，向RocksDB提交事务，以及完成Deferred Write和Cleanup。直到最终完成。</p>
-<p><img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/03-13-56-33-2020-11-03-13-56-11-image.png?token=AARMIEVN2WIMILBRLCACEIC7UDYU6" alt></p>
-<p>另外，BlueStore使用Direct IO提交数据，这样数据会立即落盘，而不是在内核中缓存；从而，存储系统可以完全自主地控制写的持久化。这是一个如今常见的做法。但代价是，不能利用内核缓存，需要自己处理缓存问题；也必须处理好数据对齐，以及写小于一扇区时的Partial-write问题。</p>
-<h2 id=bluefs的架构>BlueFS的架构</h2>
-<p>BlueFS以尽量简单为目的设计，专门用于支持RocksDB；RocksDB总之还是需要一个文件系统来工作的。BlueFS不支持POSIX接口。总的来说，它有这些特点：</p>
-<ol>
-<li>
-<p>目录结构方面，BlueFS只有扁平的目录结构，没有树形层次关系；用于放置RocksDB的db.wal/，db/，db.slow/文件。这些文件可以被挂载到不同的硬盘上，例如db.wal/放在NVMRAM上；db/包含热SST数据，放在SSD上；db.slow/放在磁盘上。</p>
-</li>
-<li>
-<p>数据写入方面，BlueFS不支持覆写，只支持追加（Append-only）。块分配粒度较粗，越1MB。有垃圾回收机制定期处理被浪费掉的空间。</p>
-</li>
-<li>
-<p>对元数据的操作记录到日志，每次挂载时重放日志，来获得当前的元数据。元数据生存在内存中，并没有持久化在磁盘上，不需要存储诸如空闲块链表之类的。当日志过大时，会进行重写Compact。</p>
-</li>
-</ol>
-<p>Superblock用于存储整个文件系统级别的元数据，日志和数据本着尽量简单的设计，按照追加的方式不断写入。关于写放大的问题，这是Append-only式通有的，在Write Behaviors论文中有详述。</p>
-<h2 id=总结><strong>总结</strong></h2>
-<p>BlueStore的设计考虑了FileStore中存在的一些硬伤，抛弃了传统的文件系统直接管理裸设备，缩短了IO路径，同时采用ROW的方式，避免了日志双写的问题，在写入性能上有了极大的提高。</p>
-<p>通过分析BlueStore的基本结构、考虑的问题以及设计思想，我们对于BlueStore有了大概的了解；BlueStore在设计时有考虑到未来存储的应用环境，是一种比较先进的本地文件系统，但也不可避免存在一些缺陷，例如较为复杂的元数据结构和IO逻辑，在大量小IO下可能存在的double write问题，较大的元数据内存占用等（当然有些问题在ceph的使用场景下可能不存在，但是我们如果希望借鉴BlueStore来设计本地文件系统就不得不考虑这些问题）。</p>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://cloud.tencent.com/developer/news/45599>Ceph BlueStore 和双写问题 - 云+社区 - 腾讯云</a></p>
-</li>
-<li>
-<p><a href=https://cloud-atlas.readthedocs.io/zh_CN/latest/ceph/bluestore.html>https://cloud-atlas.readthedocs.io/zh_CN/latest/ceph/bluestore.html</a></p>
-</li>
-<li>
-<p><a href=https://www.cnblogs.com/fengjian2016/p/9747689.html>Ceph的BlueStore总体介绍 - fengjian1585 - 博客园</a></p>
-</li>
-<li>
-<p><a href=https://zhuanlan.zhihu.com/p/46362124>https://zhuanlan.zhihu.com/p/46362124</a></p>
-</li>
-<li>
-<p><a href=https://zhuanlan.zhihu.com/p/91015613>https://zhuanlan.zhihu.com/p/91015613</a></p>
-</li>
-<li>
-<p><a href=https://blog.51cto.com/wendashuai/2500499>BlueStore源码分析之对象IO-Darren_Wen-51CTO博客</a></p>
-</li>
-<li>
-<p><a href=https://www.codeleading.com/article/8882498924/>ceph bluestore 磁盘空间管理源码解析 - 代码先锋网</a></p>
-</li>
-<li>
-<p><a href=https://zhuanlan.zhihu.com/p/68067068>https://zhuanlan.zhihu.com/p/68067068</a></p>
-</li>
-<li>
-<p><a href=https://zhuanlan.zhihu.com/p/91018497>BlueStore源码分析之BitMap分配器</a></p>
-</li>
-<li>
-<p><a href="https://docs.google.com/presentation/d/1_1Otkgv76fbCU2Zogjz748sEAG-1Nfiidbb6mgTON-A/edit#slide=id.p">https://docs.google.com/presentation/d/1_1Otkgv76fbCU2Zogjz748sEAG-1Nfiidbb6mgTON-A/edit#slide=id.p</a></p>
-</li>
-<li>
-<p><a href=https://www.e-learn.cn/topic/3434557>BlueStore源码分析之FreelistManager | 易学教程</a></p>
-</li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="RCFile 简介 RCFile文件格式是FaceBook开源的一种Hive的文件存储格式，首先将表分为几个行组，对每个行组内的数据进行按列存储，每一列的">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/rcfile/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="RCFile">
-<meta property="og:description" content="RCFile 简介 RCFile文件格式是FaceBook开源的一种Hive的文件存储格式，首先将表分为几个行组，对每个行组内的数据进行按列存储，每一列的">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/rcfile/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-02-11T20:24:35+08:00">
 <meta property="article:modified_time" content="2022-02-11T20:24:35+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="RCFile">
-<meta itemprop=description content="RCFile 简介 RCFile文件格式是FaceBook开源的一种Hive的文件存储格式，首先将表分为几个行组，对每个行组内的数据进行按列存储，每一列的"><meta itemprop=datePublished content="2022-02-11T20:24:35+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-02-11T20:24:35+08:00">
 <meta itemprop=dateModified content="2022-02-11T20:24:35+08:00">
-<meta itemprop=wordCount content="1475">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="RCFile">
-<meta name=twitter:description content="RCFile 简介 RCFile文件格式是FaceBook开源的一种Hive的文件存储格式，首先将表分为几个行组，对每个行组内的数据进行按列存储，每一列的"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,60 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=rcfile>RCFile</h1>
-<h2 id=简介>简介</h2>
-<p>RCFile文件格式是FaceBook开源的一种Hive的文件存储格式，首先将表分为几个行组，对每个行组内的数据进行按列存储，每一列的数据都是分开存储，正是先水平划分，再垂直划分的理念。</p>
-<p>在存储结构上：
-如上图是HDFS内RCFile的存储结构，我们可以看到，首先对表进行行划分，分成多个行组。一个行组主要包括：16字节的HDFS同步块信息，主要是为了区分一个HDFS块上的相邻行组；元数据的头部信息主要包括该行组内的存储的行数、列的字段信息等等；数据部分我们可以看出RCFile将每一行，存储为一列，将一列存储为一行，因为当表很大，我们的字段很多的时候，我们往往只需要取出固定的一列就可以。
-在一般的行存储中 select a from table，虽然只是取出一个字段的值，但是还是会遍历整个表，所以效果和select * from table 一样，在RCFile中，像前面说的情况，只会读取该行组的一行。
-在一般的列存储中，会将不同的列分开存储，这样在查询的时候会跳过某些列，但是有时候存在一个表的有些列不在同一个HDFS块上（如下图），所以在查询的时候，Hive重组列的过程会浪费很多IO开销。</p>
-<p>而RCFile由于相同的列都是在一个HDFS块上，所以相对列存储而言会节省很多资源。</p>
-<p>在存储空间上：
-RCFile采用游程编码，相同的数据不会重复存储，很大程度上节约了存储空间，尤其是字段中包含大量重复数据的时候。</p>
-<p>懒加载：
-数据存储到表中都是压缩的数据，Hive读取数据的时候会对其进行解压缩，但是会针对特定的查询跳过不需要的列，这样也就省去了无用的列解压缩。</p>
-<p>select c from table where a>1
-1
-针对行组来说，会对一个行组的a列进行解压缩，如果当前列中有a>1的值，然后才去解压缩c。若当前行组中不存在a>1的列，那就不用解压缩c，从而跳过整个行组。</p>
-<p>2.ORCFile
-ORC是在一定程度上扩展了RCFile，是对RCFile的优化。</p>
-<p>存储结构上
-根据结构图，我们可以看到ORCFile在RCFile基础上引申出来Stripe和Footer等。每个ORC文件首先会被横向切分成多个Stripe，而每个Stripe内部以列存储，所有的列存储在一个文件中，而且每个stripe默认的大小是250MB，相对于RCFile默认的行组大小是4MB，所以比RCFile更高效。</p>
-<p>Postscripts中存储该表的行数，压缩参数，压缩大小，列等信息
-Stripe Footer中包含该stripe的统计结果，包括Max，Min，count等信息
-FileFooter中包含该表的统计结果，以及各个Stripe的位置信息
-IndexData中保存了该stripe上数据的位置信息，总行数等信息
-RowData以stream的形式保存了数据的具体信息
-1
-2
-3
-4
-5
-Hive读取数据的时候，根据FileFooter读出Stripe的信息，根据IndexData读出数据的偏移量从而读取出数据。
-网友有一幅图，形象的说明了这个问题：</p>
-<p>存储空间上
-ORCFile扩展了RCFile的压缩，除了Run-length（游程编码），引入了字典编码和Bit编码。
-采用字典编码，最后存储的数据便是
-字典中的值，每个字典值得长度以及字段在字典中的位置</p>
-<p>至于Bit编码，对所有字段都可采用Bit编码来判断该列是否为null，
-如果为null则Bit值存为0，否则存为1，对于为null的字段在实际编码的时候不需要存储，也就是说字段若为null，是不占用存储空间的。
-————————————————</p>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://blog.csdn.net/u014307117/article/details/52381383>RCFile和ORCFile_夫唯不争，故天下莫能与之争。-CSDN博客_rcfile和orcfile的区别</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

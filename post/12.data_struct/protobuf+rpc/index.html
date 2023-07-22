@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="protobuf+RPC 简介 protobuf是是一种google定义的结构化数据格式，与json，XML功能相似的一种结构化数据格式， 用于在网络通讯间的数据序列化">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/12.data_struct/protobuf+rpc/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="protobuf+RPC">
-<meta property="og:description" content="protobuf+RPC 简介 protobuf是是一种google定义的结构化数据格式，与json，XML功能相似的一种结构化数据格式， 用于在网络通讯间的数据序列化">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/12.data_struct/protobuf+rpc/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T15:57:04+08:00">
 <meta property="article:modified_time" content="2021-10-10T15:57:04+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="protobuf+RPC">
-<meta itemprop=description content="protobuf+RPC 简介 protobuf是是一种google定义的结构化数据格式，与json，XML功能相似的一种结构化数据格式， 用于在网络通讯间的数据序列化"><meta itemprop=datePublished content="2021-10-10T15:57:04+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T15:57:04+08:00">
 <meta itemprop=dateModified content="2021-10-10T15:57:04+08:00">
-<meta itemprop=wordCount content="1799">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="data_struct,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="protobuf+RPC">
-<meta name=twitter:description content="protobuf+RPC 简介 protobuf是是一种google定义的结构化数据格式，与json，XML功能相似的一种结构化数据格式， 用于在网络通讯间的数据序列化"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,81 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#特点>特点</a></li>
-<li><a href=#原理>原理</a></li>
-<li><a href=#总结>总结</a></li>
-<li><a href=#rpc>RPC</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=protobufrpc>protobuf+RPC</h1>
-<h2 id=简介>简介</h2>
-<p>protobuf是是一种google定义的结构化数据格式，与json，XML功能相似的一种结构化数据格式，</p>
-<p>用于在网络通讯间的数据序列化和反序列化，以用于网络传输。</p>
-<h2 id=特点>特点</h2>
-<ul>
-<li>
-<p>解析速度快；</p>
-</li>
-<li>
-<p>占用空间小；</p>
-</li>
-<li>
-<p>兼容性好；</p>
-</li>
-<li>
-<p>很适合做数据存储或网络通讯间的数据传输。</p>
-</li>
-</ul>
-<h2 id=原理>原理</h2>
-<p>序列化 & 反序列化简单 & 速度快的原因是：</p>
-<p>a. 编码 / 解码 方式简单（只需要简单的数学运算 = 位移等等，Varint、Zigzag编码）</p>
-<p>b. 采用protobuf自身的框架代码和编译器共同完成</p>
-<p>即序列化后的数据量体积小的原因是：</p>
-<p>a. 采用了独特的编码方式，如Varint、Zigzag编码方式等等</p>
-<p>b. 采用T - L - V 的数据存储方式：减少了分隔符的使用 & 数据存储得紧凑</p>
-<p><img src=https://pic4.zhimg.com/80/v2-bf6e2c6b94fcdad9bfec8f9e6a13e6b9_1440w.jpg alt></p>
-<p><code>Varint</code> 中每个 字节 的最高位 都有特殊含义：</p>
-<ul>
-<li>如果是 1，表示后续的 字节 也是该数字的一部分</li>
-<li>如果是 0，表示这是最后一个字节，且剩余 7位 都用来表示数字</li>
-</ul>
-<p>为了更好地减少 表示负数时 的字节数，protobuf在varint编码上又增加了zigzag编码方式进行编码（移位操作）</p>
-<p>T-L-V数据存储方式：</p>
-<p><img src=https://pic2.zhimg.com/80/v2-0b58d898a19b4de1a4d32e4d2d5ec0e6_1440w.jpg alt></p>
-<p><code>T - L - V</code>存储方式的优点是</p>
-<ol>
-<li>不需要<strong>分隔符</strong> 就能 分隔开<strong>字段</strong>，减少了 <strong>分隔符</strong> 的使用</li>
-<li>各字段 存储得非常紧凑，存储空间利用率非常高</li>
-<li>若 字段没有被设置字段值，那么该字段在序列化时的数据中是完全不存在的，即不需要编码</li>
-</ol>
-<p>在使用varint编码后，只需要用T-V来表示，大大节省了空间。</p>
-<h2 id=总结>总结</h2>
-<p>protobuf使用varint编码和T-V表示方式，大大节省序列化后的数据空间，并且编码方式简单，序列化速度很快，并且protobuf直接对数据进行处理，与语言平台无关，可以供任意语言使用。</p>
-<h2 id=rpc>RPC</h2>
-<p>RPC远程过程调用，是一种封装了各层网络协议，并包含序列化和反序列化功能的一种通讯框架，基于protobuf的gRPC相当于序列化和反序列化功能是用protobuf实现的。</p>
-<p><img src=https://picb.zhimg.com/80/v2-13406d33b3d881a9dbf9eaf3581edcb9_1440w.jpg alt></p>
-<p>参考链接：https://blog.csdn.net/b1303110335/article/details/79557292</p>
-<p><img src=https://pic1.zhimg.com/80/v2-334b870798e7d9b7b2544a576a522e20_1440w.jpg alt></p>
-<p><img src=https://picb.zhimg.com/80/v2-82ece14387fad20500f9fb537ff16d59_1440w.jpg alt></p>
-<p><img src=https://picb.zhimg.com/80/v2-9fe0e88b18b1952a68addb53751b4b08_1440w.jpg alt></p>
-<p><img src=https://pic2.zhimg.com/80/v2-6ca4003c2710420111549a0fd5b830eb_1440w.jpg alt></p>
-<ul>
-<li>Client A的应用层代码中，调用了Calculator的一个实现类的add方法，希望执行一个加法运算；</li>
-<li>这个Calculator实现类，内部并不是直接实现计算器的加减乘除逻辑，而是通过远程调用Service B的RPC接口，来获取运算结果，因此称之为<strong>Stub</strong>；</li>
-<li>Stub怎么和Service B建立远程通讯呢？这时候就要用到<strong>远程通讯工具</strong>了，也就是图中的<strong>Run-time Library</strong>，这个工具将帮你实现远程通讯的功能，比如Java的<strong>Socket</strong>，就是这样一个库，当然，你也可以用基于Http协议的<strong>HttpClient</strong>，或者其他通讯工具类，都可以，<strong>RPC并没有规定说你要用何种协议进行通讯</strong>；</li>
-<li>Stub通过调用通讯工具提供的方法，和Service B建立起了通讯，然后将请求数据发给Service B。需要注意的是，由于底层的网络通讯是基于<strong>二进制格式</strong>的，因此这里Stub传给通讯工具类的数据也必须是二进制，比如calculator.add(1,2)，你必须把参数值1和2放到一个Request对象里头（这个Request对象当然不只这些信息，还包括要调用哪个服务的哪个RPC接口等其他信息），然后<strong>序列化</strong>为二进制，再传给通讯工具类，这一点也将在下面的代码实现中体现；</li>
-<li>二进制的数据传到Service B这一边了，Service B当然也有自己的通讯工具，通过这个通讯工具接收二进制的请求；</li>
-<li>既然数据是二进制的，那么自然要进行<strong>反序列化</strong>了，将二进制的数据反序列化为请求对象，然后将这个请求对象交给Service B的Stub处理；</li>
-<li>和之前的Service A的Stub一样，这里的Stub也同样是个“假玩意”，它所负责的，只是去解析请求对象，知道调用方要调的是哪个RPC接口，传进来的参数又是什么，然后再把这些参数传给对应的RPC接口，也就是Calculator的实际实现类去执行。很明显，如果是Java，那这里肯定用到了<strong>反射</strong>。</li>
-<li>RPC接口执行完毕，返回执行结果，现在轮到Service B要把数据发给Service A了，怎么发？一样的道理，一样的流程，只是现在Service B变成了Client，Service A变成了Server而已：Service B反序列化执行结果->传输给Service A->Service A反序列化执行结果 -> 将结果返回给Application，完毕。</li>
-</ul>
-<p>总结：RPC包含了网络传输，序列化和反序列化，call id映射等。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="linux-0.11 启动流程 1. BIOS 引导 BIOS将 bootsect(启动盘第一个扇区)加载到内存 0x7C00 处，并跳转到 bootsect 处。 1.1 加电 初始化 CS,IP 寄存器. CS=0xFFFF, IP=0x0000, CS:IP=0xFFFF0, 执行该处 BIOS 程序。 1.2">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-0.11%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="linux-0.11 启动流程">
-<meta property="og:description" content="linux-0.11 启动流程 1. BIOS 引导 BIOS将 bootsect(启动盘第一个扇区)加载到内存 0x7C00 处，并跳转到 bootsect 处。 1.1 加电 初始化 CS,IP 寄存器. CS=0xFFFF, IP=0x0000, CS:IP=0xFFFF0, 执行该处 BIOS 程序。 1.2">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="linux-0.11 启动流程">
-<meta itemprop=description content="linux-0.11 启动流程 1. BIOS 引导 BIOS将 bootsect(启动盘第一个扇区)加载到内存 0x7C00 处，并跳转到 bootsect 处。 1.1 加电 初始化 CS,IP 寄存器. CS=0xFFFF, IP=0x0000, CS:IP=0xFFFF0, 执行该处 BIOS 程序。 1.2"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1090">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="linux-0.11 启动流程">
-<meta name=twitter:description content="linux-0.11 启动流程 1. BIOS 引导 BIOS将 bootsect(启动盘第一个扇区)加载到内存 0x7C00 处，并跳转到 bootsect 处。 1.1 加电 初始化 CS,IP 寄存器. CS=0xFFFF, IP=0x0000, CS:IP=0xFFFF0, 执行该处 BIOS 程序。 1.2"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,171 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#1-bios-引导>1. BIOS 引导</a>
-<ul>
-<li><a href=#11-加电>1.1 加电</a></li>
-<li><a href=#12-系统自检>1.2 系统自检</a></li>
-<li><a href=#13-加载-bootsect>1.3 加载 bootsect</a></li>
-</ul>
-</li>
-<li><a href=#2-启动扇区引导bootbootsects>2. 启动扇区引导（boot/bootsect.s）</a>
-<ul>
-<li><a href=#21-移动-bootsect-自身>2.1 移动 bootsect 自身</a></li>
-<li><a href=#22-加载-setup-模块>2.2 加载 setup 模块</a></li>
-<li><a href=#23-加载-system-模块>2.3 加载 system 模块</a></li>
-</ul>
-</li>
-</ul>
-<ul>
-<li>
-<ul>
-<li><a href=#24-跳转到-setup>2.4 跳转到 setup</a></li>
-</ul>
-</li>
-<li><a href=#3-保护模式准备32-位bootsetups>3. 保护模式准备（32 位）(boot/setup.s)</a>
-<ul>
-<li><a href=#32-关中断>3.2 关中断</a></li>
-<li><a href=#33-移动-system>3.3 移动 system</a></li>
-<li><a href=#34-初始化-idtrgdtr>3.4 初始化 IDTR,GDTR</a></li>
-<li><a href=#35-开启-32-位寻址>3.5 开启 32 位寻址</a></li>
-<li><a href=#36-建立保护模式中断>3.6 建立保护模式中断</a></li>
-<li><a href=#37-设置保护模式寄存器>3.7 设置保护模式寄存器</a></li>
-</ul>
-</li>
-<li><a href=#4-main-执行前准备bootheads>4. main 执行前准备(boot/head.s)</a>
-<ul>
-<li><a href=#41-设置寄存器>4.1 设置寄存器</a></li>
-<li><a href=#42-设置中断描述符表>4.2 设置中断描述符表。</a></li>
-<li><a href=#43-重建保护模式-gdt>4.3 重建保护模式 GDT</a></li>
-<li><a href=#44-检测-a20>4.4 检测 A20</a></li>
-<li><a href=#45-main-函数压栈>4.5 main 函数压栈</a></li>
-<li><a href=#46-建立页表>4.6 建立页表</a></li>
-<li><a href=#47-跳转到-main>4.7 跳转到 main</a></li>
-</ul>
-</li>
-<li><a href=#5-执行-maininitmainc>5. 执行 main（init/main.c）</a>
-<ul>
-<li><a href=#51-创建进程-0>5.1 创建进程 0</a></li>
-</ul>
-</li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=linux-011-启动流程>linux-0.11 启动流程</h1>
-<hr>
-<h2 id=1-bios-引导>1. BIOS 引导</h2>
-<p><code>BIOS</code>将 bootsect(启动盘第一个扇区)加载到内存 0x7C00 处，并跳转到 bootsect 处。</p>
-<h3 id=11-加电>1.1 加电</h3>
-<p>初始化 CS,IP 寄存器. CS=0xFFFF, IP=0x0000, CS:IP=0xFFFF0, 执行该处 BIOS 程序。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-26-42-image001.gif alt=bios></p>
-<h3 id=12-系统自检>1.2 系统自检</h3>
-<p>在内存 0x00000 ～ 0x003FF（1KB）处构建<strong>BIOS 中断向量表</strong>，在 0x00400~0x4FF（256B）处建立<strong>BIOS 数据区</strong>，在 0x0E05B 处加载 8KB 的<strong>BIOS 中断服务程序</strong>。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-26-58-image002.gif alt=image002></p>
-<h3 id=13-加载-bootsect>1.3 加载 bootsect</h3>
-<p>执行 0x19h 中断服务程序，将启动设备（软盘）第一个扇区（0 ～ 512B）中的<strong>bootsect</strong>程序载入到内存 0x07C00（BOOTSEG）处，并跳到 BOOTSEG 处执行。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-28-02-image003.gif alt=image003></p>
-<h2 id=2-启动扇区引导bootbootsects>2. 启动扇区引导（boot/bootsect.s）</h2>
-<p>bootsect 依次将自身、setup、system 模块加载到 0x9000 开始的物理内存区中, 并跳转到 setup 处。</p>
-<h3 id=21-移动-bootsect-自身>2.1 移动 bootsect 自身</h3>
-<p>bootsect 将自身从 0x07C00 复制到 0x90000（512B），并在新内存处继续执行。（主要作用是）</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-28-28-image004.gif alt=image004></p>
-<h3 id=22-加载-setup-模块>2.2 加载 setup 模块</h3>
-<p>加载 setup 模块（启动盘 2 ～ 5 扇区）到 0x90200(SETUPSEG)处（2KB）。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-25-08-image005.gif alt=image005></p>
-<h3 id=23-加载-system-模块>2.3 加载 system 模块</h3>
-<p>加载 system 模块（6 ～ 245 扇区）到 0x10000(SYSSEG）处（120KB）。</p>
-<h1 id=image006httpsrawgithubusercontentcomzhuzhengyinotebook-imagesmaster20201114-09-25-20-image006gif><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-25-20-image006.gif alt=image006></h1>
-<h3 id=24-跳转到-setup>2.4 跳转到 setup</h3>
-<p>确定根设备号，并跳转到 0x90200 处执行 setup 模块。</p>
-<p><img src=./linux-0.11_bootstrap/image007.gif alt=image007></p>
-<hr>
-<h2 id=3-保护模式准备32-位bootsetups>3. 保护模式准备（32 位）(boot/setup.s)</h2>
-<p>执行 setup.s，建立保护模式数据结构，关中断，设置保护模式寄存器。</p>
-<p>获取系统配置数据并保存到 0x90000~0x901FD 处（原有 bootsect 被覆盖）</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-27-36-image008.gif alt=image008>08.gif)</p>
-<h3 id=32-关中断>3.2 关中断</h3>
-<h3 id=33-移动-system>3.3 移动 system</h3>
-<p>将 system 内核从 0x10000 移至 0x00000 处（head 模块）。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-25-52-image009.gif alt=image009></p>
-<h3 id=34-初始化-idtrgdtr>3.4 初始化 IDTR,GDTR</h3>
-<p>初始化<strong>中断描述符表</strong>寄存器（IDTR）和<strong>全局描述符表</strong>寄存器（GDTR）。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-30-37-image010.gif alt=loading-ag-1381></p>
-<h3 id=35-开启-32-位寻址>3.5 开启 32 位寻址</h3>
-<p>打开 A20，开启 32 位寻址。</p>
-<h3 id=36-建立保护模式中断>3.6 建立保护模式中断</h3>
-<p>对可编程中断控制器 8259A 重新编程，以建立保护模式下的中断机制。</p>
-<h3 id=37-设置保护模式寄存器>3.7 设置保护模式寄存器</h3>
-<p>将 CPU 设为保护模式（CR0 寄存器 PE 位置 1），跳至 head 模块（0x00000000）处执行。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-31-13-image011.gif alt=image011></p>
-<hr>
-<h2 id=4-main-执行前准备bootheads>4. main 执行前准备(boot/head.s)</h2>
-<p>执行 head.s, 保护模式完成，为 main 函数做准备（boot/head.s）</p>
-<h3 id=41-设置寄存器>4.1 设置寄存器</h3>
-<p>将 DS、ES、FS、GS 等寄存器设置为保护模式，将 SS 转变为<strong>栈段选择符</strong>。</p>
-<h3 id=42-设置中断描述符表>4.2 设置中断描述符表。</h3>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-31-32-image012.gif alt=image012></p>
-<h3 id=43-重建保护模式-gdt>4.3 重建保护模式 GDT</h3>
-<p>废除已有 GDT，在内核新的位置重建 GDT，并重新设置段选择符。</p>
-<h3 id=44-检测-a20>4.4 检测 A20</h3>
-<h3 id=45-main-函数压栈>4.5 main 函数压栈</h3>
-<p>将 main 函数入口压栈。</p>
-<h3 id=46-建立页表>4.6 建立页表</h3>
-<p>在 0x00000000 处将建立 1 个页目录表和 4 个页表，创建分页机制。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-26-40-image013.gif alt=image013></p>
-<h3 id=47-跳转到-main>4.7 跳转到 main</h3>
-<p>跳转到 main 函数入口执行。</p>
-<h2 id=5-执行-maininitmainc>5. 执行 main（init/main.c）</h2>
-<pre><code>执行main.c, 创建0号进程，正式启动
-</code></pre>
-<h3 id=51-创建进程-0>5.1 创建进程 0</h3>
-<ul>
-<li>
-<p>5.1.1 获取根设备号和硬盘参数</p>
-</li>
-<li>
-<p>5.1.2 物理内存划分</p>
-</li>
-</ul>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-26-53-image014.gif alt=image014></p>
-<ul>
-<li>
-<p>5.1.3 设置中断函数入口</p>
-</li>
-<li>
-<p>5.1.4 初始化块设备请求</p>
-</li>
-<li>
-<p>5.1.5 初始化字符设备</p>
-</li>
-<li>
-<p>5.1.6 初始化 tty</p>
-</li>
-<li>
-<p>5.1.7 初始化时间</p>
-</li>
-<li>
-<p>5.1.8 初始化进程调度</p>
-<ul>
-<li>5.1.8.1 挂接进程 0 的 GDT 和 task 接口表入口；</li>
-<li>5.1.8.2 设置时钟中断</li>
-<li>5.1.8.3 挂接系统调用至 0x80 软中断入口</li>
-</ul>
-</li>
-<li>
-<p>5.1.9 初始化缓冲区</p>
-</li>
-<li>
-<p>5.1.10 初始化硬盘</p>
-</li>
-<li>
-<p>5.1.11 初始化软盘</p>
-</li>
-<li></li>
-</ul>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

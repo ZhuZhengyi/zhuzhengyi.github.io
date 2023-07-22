@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔&amp;lt;30s的节点isActive为false; met">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-master/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="ChubaoFS Master">
-<meta property="og:description" content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-master/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-11-25T15:52:28+08:00">
 <meta property="article:modified_time" content="2021-11-25T15:52:28+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ChubaoFS Master">
-<meta itemprop=description content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met"><meta itemprop=datePublished content="2021-11-25T15:52:28+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2021-11-25T15:52:28+08:00">
 <meta itemprop=dateModified content="2021-11-25T15:52:28+08:00">
-<meta itemprop=wordCount content="955">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ChubaoFS Master">
-<meta name=twitter:description content="ChubaoFS Master 简介 MetaNode管理 Metanode 是否可写 节点存活（isActive）: 心跳上报时间间隔<30s的节点isActive为false; met"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,254 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#metanode管理>MetaNode管理</a>
-<ul>
-<li><a href=#metanode-是否可写>Metanode 是否可写</a></li>
-</ul>
-</li>
-<li><a href=#主要数据结构>主要数据结构</a></li>
-<li><a href=#启动>启动</a></li>
-<li><a href=#id分配>ID分配</a>
-<ul>
-<li><a href=#创建vol>创建Vol</a></li>
-<li><a href=#vol-zone信息>vol zone信息</a></li>
-<li><a href=#carry>Carry</a></li>
-<li><a href=#metapartition管理>metaPartition管理</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=chubaofs-master>ChubaoFS Master</h1>
-<h2 id=简介>简介</h2>
-<h2 id=metanode管理>MetaNode管理</h2>
-<h3 id=metanode-是否可写>Metanode 是否可写</h3>
-<ul>
-<li>
-<p>节点存活（isActive）: 心跳上报时间间隔&lt;30s的节点isActive为false;</p>
-</li>
-<li>
-<p>metanode最大可用内存 > master配置中设置的metanode保留内存;</p>
-</li>
-<li>
-<p>metanode已用内存/metanode总内存 不高于限制比例 (默认: 0.75)</p>
-</li>
-<li>
-<p>metanode mp 数量 &lt; 最大mp数量(默认：10000)</p>
-</li>
-</ul>
-<h2 id=主要数据结构>主要数据结构</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>//master server
-</span><span class=c1>//master 进程服务
-</span><span class=c1></span><span class=kd>type</span> <span class=nx>Server</span> <span class=kd>struct</span> <span class=p>{</span>
-    <span class=nx>cluster</span> <span class=o>*</span><span class=nx>Cluster</span>     <span class=c1>//
-</span><span class=c1></span>    <span class=c1>//...
-</span><span class=c1></span><span class=p>}</span>
-
-<span class=c1>//
-</span><span class=c1></span><span class=kd>type</span> <span class=nx>Cluster</span> <span class=kd>struct</span> <span class=p>{</span>
-    <span class=nx>Name</span>         <span class=kt>string</span>
-    <span class=nx>vols</span>         <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=o>*</span><span class=nx>Vol</span>
-    <span class=nx>dataNodes</span>     <span class=nx>sync</span><span class=p>.</span><span class=nx>Map</span>
-    <span class=nx>metaNodes</span>     <span class=nx>sync</span><span class=p>.</span><span class=nx>Map</span>
-    <span class=nx>fsm</span>          <span class=o>*</span><span class=nx>MetadataFsm</span>
-    <span class=nx>partition</span>    <span class=nx>raftstore</span><span class=p>.</span><span class=nx>Partition</span>
-    <span class=nx>t</span>            <span class=o>*</span><span class=nx>topology</span>
-    <span class=c1>//... 
-</span><span class=c1></span><span class=p>}</span> 
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=启动>启动</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span><span class=lnt>41
-</span><span class=lnt>42
-</span><span class=lnt>43
-</span><span class=lnt>44
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>// cmd/cmd.go
-</span><span class=c1>// 入口
-</span><span class=c1></span><span class=nf>main</span><span class=p>(){</span>
-    <span class=nx>server</span> <span class=o>:=-</span> <span class=nx>master</span><span class=p>.</span><span class=nf>NewServer</span><span class=p>()</span>
-    <span class=nx>server</span><span class=p>.</span><span class=nf>Start</span><span class=p>(</span><span class=nx>cfg</span><span class=p>)</span>
-<span class=p>}</span>
-<span class=c1>// 
-</span><span class=c1>// master/server.go
-</span><span class=c1></span><span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>server</span><span class=p>)</span><span class=nf>Start</span><span class=p>()</span> <span class=p>{</span>
-    <span class=nx>m</span><span class=p>.</span><span class=nf>newReverseProxy</span><span class=p>()</span>              <span class=c1>//启动反向代理服务
-</span><span class=c1></span>    <span class=nx>raftstore</span><span class=p>.</span><span class=nf>NewRocksDBStore</span><span class=p>()</span>       <span class=c1>//
-</span><span class=c1></span>    <span class=nx>m</span><span class=p>.</span><span class=nf>createRaftServer</span><span class=p>()</span>            <span class=c1>//创建raft服务
-</span><span class=c1></span>    <span class=nx>m</span><span class=p>.</span><span class=nf>initCluster</span><span class=p>()</span>                  <span class=c1>//初始化集群
-</span><span class=c1></span>    <span class=nx>m</span><span class=p>.</span><span class=nf>initUser</span><span class=p>()</span>                    <span class=c1>//初始化用户
-</span><span class=c1></span>    <span class=nx>m</span><span class=p>.</span><span class=nx>cluster</span><span class=p>.</span><span class=nf>scheduleTask</span><span class=p>()</span>        <span class=c1>//
-</span><span class=c1></span>    <span class=nx>m</span><span class=p>.</span><span class=nf>startHTTPService</span><span class=p>()</span>
-    <span class=nx>metricsService</span><span class=p>.</span><span class=nf>start</span><span class=p>()</span>
-<span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>Server</span><span class=p>)</span><span class=nf>createRaftServer</span><span class=p>()</span> <span class=p>{</span>
-    <span class=nx>m</span><span class=p>.</span><span class=nx>raftStore</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>raftstore</span><span class=p>.</span><span class=nf>NewRaftStore</span><span class=p>()</span>
-    <span class=nx>m</span><span class=p>.</span><span class=nf>initFsm</span><span class=p>()</span> <span class=c1>//--&gt; loadMetadata()
-</span><span class=c1></span>    <span class=c1>//...
-</span><span class=c1></span><span class=p>}</span>
-
-<span class=kd>func</span> <span class=p>(</span><span class=nx>m</span> <span class=o>*</span><span class=nx>Server</span><span class=p>)</span><span class=nf>loadMetadata</span><span class=p>()</span> <span class=p>{</span>
-
-<span class=p>}</span>
-
-<span class=c1>// master/cluster.go
-</span><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>c</span> <span class=o>*</span><span class=nx>Cluster</span><span class=p>)</span> <span class=nf>scheduleTask</span><span class=p>()</span> <span class=p>{</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckDataPartitions</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToLoadDataPartitions</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckReleaseDataPartitions</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckHeartbeat</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckMetaPartitions</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToUpdateStatInfo</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckAutoDataPartitionCreation</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckVolStatus</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckDiskRecoveryProgress</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToCheckMetaPartitionRecoveryProgress</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToLoadMetaPartitions</span><span class=p>()</span>
-    <span class=nx>c</span><span class=p>.</span><span class=nf>scheduleToReduceReplicaNum</span><span class=p>()</span>
-<span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=id分配>ID分配</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>IDAllocator</span> <span class=kd>struct</span><span class=p>{</span>
-    <span class=nx>dataPartitionID</span> <span class=kt>uint64</span>  
-<span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=创建vol>创建Vol</h3>
-<p>chubaofs 创建vol由master的http提供接口，http uri为<code>/admin/createVol</code>。流程如下：</p>
-<ol>
-<li>
-<p>master接收到上述uri请求后，进入<code>master/api_service.go</code>中的<code>(m *Server)createVol()</code>；流程如下：</p>
-<ol>
-<li>
-<p>首先解析参数；</p>
-</li>
-<li>
-<p>然后通过<code>cluster.createVol()</code>创建vol；</p>
-</li>
-<li>
-<p><code>associateVolWithUser()</code>关联新建的卷和用户；</p>
-</li>
-<li>
-<p>返回结果给用户；</p>
-</li>
-</ol>
-</li>
-<li>
-<p><code>cluster.createVol()</code>流程如下：</p>
-<ol>
-<li>
-<p><code>checkVolInfo()</code>检查zone信息；</p>
-</li>
-<li>
-<p>通过<code>(c *Cluster)doCreateVol()</code>在master内存中分配并初始化一个<code>Vol</code>对象；</p>
-</li>
-<li>
-<p>通过<code>vol.initMetaPartitions()</code>初始化vol的mp, 该命令会选择合适的metanode并在其上新建mp;</p>
-</li>
-<li></li>
-</ol>
-</li>
-</ol>
-<h3 id=vol-zone信息>vol zone信息</h3>
-<h3 id=carry>Carry</h3>
-<p>master在创建dp，mp时，通过carry来选择有效的metanode，datanode进资源分配，保证资源均匀分布在各个节点上。</p>
-<h3 id=metapartition管理>metaPartition管理</h3>
-<ul>
-<li>
-<p><code>master/meta_partition_manager.go</code></p>
-</li>
-<li>
-<p>master开启一个后台goroutine, 默认每5秒检查一遍BadMetaPartitionIDs中个mp的状态；</p>
-</li>
-<li>
-<p>metapartition 各副本<code>MaxInodeID</code>和第一个副本差距> 1000, 则将该分片IsRecover设为true，开启分片数据同步；</p>
-</li>
-</ul>
-<h2 id=参考>参考</h2>
-<ol>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

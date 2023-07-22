@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Golang之syscall 简介 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/golang/golang%E4%B9%8Bsyscall/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Golang之syscall">
-<meta property="og:description" content="Golang之syscall 简介 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/golang/golang%E4%B9%8Bsyscall/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-01-25T09:54:18+08:00">
 <meta property="article:modified_time" content="2022-01-25T09:54:18+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Golang之syscall">
-<meta itemprop=description content="Golang之syscall 简介 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─"><meta itemprop=datePublished content="2022-01-25T09:54:18+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-01-25T09:54:18+08:00">
 <meta itemprop=dateModified content="2022-01-25T09:54:18+08:00">
-<meta itemprop=wordCount content="1946">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="language,golang,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Golang之syscall">
-<meta name=twitter:description content="Golang之syscall 简介 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,253 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a>
-<ul>
-<li></li>
-</ul>
-</li>
-<li><a href=#vsdo>vsdo</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=golang之syscall>Golang之syscall</h1>
-<h2 id=简介>简介</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─   User Mode   ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─                                  
-                                                                                 │                                 
-│       Application                               syscall library                                                  
-          program                                   /src/syscall                 │                                 
-│                                                                                                                  
-                                                                                 │                                 
-│   ┌───────────────────┐                      ┌──────────────────────┐                                            
-    │                   │        ┌────────────▶│Faccessat {           │          │                                 
-│   │                   │        │             │                      │                                            
-    │                   │        │             │  runtime·Syscall6 {  │          │                                 
-│   │...                │        │             │                      │                                            
-    │syscall.Access(    │        │             │    ...               │          │                                 
-│   │     path, mode)───┼────────┘             │    SYSCALL ──────────┼────────────────┐                           
-    │...     ◀──────────┼──────┐               │    ...    ◀──────────┼──────────┼─────┼────────┐                  
-│   │                   │      └───────────────┼─── return;           │                │        │                  
-    │                   │                      │  }                   │          │     │        │                  
-│   │                   │                      │}                     │                │        │                  
-    └───────────────────┘                      └──────────────────────┘          │     │        │                  
-│                                                                                      │        │                  
- ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘     │        ▲                  
-                                                                                       │        │                  
-                                                                       switch to kernel mode    │                  
-┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ Kernel Mode ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─      ▼        │                  
-                                                                                 │     │        │                  
-│        System call                                 Trap handler                      │        │                  
-       service routine                                                           │     │        │                  
-│    ┌──────────────────┐                       ┌───────────────────────┐              │        │                  
-     │sys_faccessat() ◀─┼───────────┐           │system call:   ◀───────┼────────┼─────┘        │                  
-│    │{                 │           │           │                       │                       │                  
-     │                  │           │           │                       │        │              │                  
-│    │                  │           │           │   ...                 │                       │                  
-     │                  │           │           │                       │        │              │                  
-│    │  ...             │           └───────────┼───call sys_call_table │                  switch to user mode     
-     │                  │                       │                       │        │              │                  
-│    │                  │           ┌───────────┼─▶ ...                 │                       │                  
-     │  return error; ──┼───────────┘           │                       │        │              │                  
-│    │}                 │                       │    ───────────────────┼───────────▶───────────┘                  
-     └──────────────────┘                       └───────────────────────┘        │                                 
-│                                                                                                                  
- ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘                                 
-</code></pre></td></tr></table>
-</div>
-</div><div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>/syscall/syscall_linux.go
-</code></pre></td></tr></table>
-</div>
-</div><p>可以把系统调用分为三类:</p>
-<ol>
-<li>阻塞系统调用</li>
-<li>非阻塞系统调用</li>
-<li>wrapped 系统调用</li>
-</ol>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=c1>//sys   Madvise(b []byte, advice int) (err error)
-</span><span class=c1>//sysnb    EpollCreate(size int) (fd int, err error)
-</span><span class=c1></span>
-
-<span class=c1>//mksyscall.pl 脚本 将上面的定义生成如下
-</span><span class=c1>//sys
-</span><span class=c1></span><span class=kd>func</span> <span class=nf>Madvise</span><span class=p>(</span><span class=nx>b</span> <span class=p>[]</span><span class=kt>byte</span><span class=p>,</span> <span class=nx>advice</span> <span class=kt>int</span><span class=p>)</span> <span class=p>(</span><span class=nx>err</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-    <span class=kd>var</span> <span class=nx>_p0</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nx>Pointer</span>
-    <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>b</span><span class=p>)</span> <span class=p>&gt;</span> <span class=mi>0</span> <span class=p>{</span>
-        <span class=nx>_p0</span> <span class=p>=</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>b</span><span class=p>[</span><span class=mi>0</span><span class=p>])</span>
-    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
-        <span class=nx>_p0</span> <span class=p>=</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>_zero</span><span class=p>)</span>
-    <span class=p>}</span>
-    <span class=nx>_</span><span class=p>,</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>e1</span> <span class=o>:=</span> <span class=nf>Syscall</span><span class=p>(</span><span class=nx>SYS_MADVISE</span><span class=p>,</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nx>_p0</span><span class=p>),</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=nx>b</span><span class=p>)),</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nx>advice</span><span class=p>))</span>
-    <span class=k>if</span> <span class=nx>e1</span> <span class=o>!=</span> <span class=mi>0</span> <span class=p>{</span>
-        <span class=nx>err</span> <span class=p>=</span> <span class=nf>errnoErr</span><span class=p>(</span><span class=nx>e1</span><span class=p>)</span>
-    <span class=p>}</span>
-    <span class=k>return</span>
-<span class=p>}</span>
-<span class=c1>//sysnb
-</span><span class=c1></span><span class=kd>func</span> <span class=nf>EpollCreate</span><span class=p>(</span><span class=nx>size</span> <span class=kt>int</span><span class=p>)</span> <span class=p>(</span><span class=nx>fd</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>err</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-    <span class=nx>r0</span><span class=p>,</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>e1</span> <span class=o>:=</span> <span class=nf>RawSyscall</span><span class=p>(</span><span class=nx>SYS_EPOLL_CREATE</span><span class=p>,</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nx>size</span><span class=p>),</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>)</span>
-    <span class=nx>fd</span> <span class=p>=</span> <span class=nb>int</span><span class=p>(</span><span class=nx>r0</span><span class=p>)</span>
-    <span class=k>if</span> <span class=nx>e1</span> <span class=o>!=</span> <span class=mi>0</span> <span class=p>{</span>
-        <span class=nx>err</span> <span class=p>=</span> <span class=nf>errnoErr</span><span class=p>(</span><span class=nx>e1</span><span class=p>)</span>
-    <span class=p>}</span>
-    <span class=k>return</span>
-<span class=p>}</span>
-
-<span class=c1>//wrapped
-</span><span class=c1></span><span class=kd>func</span> <span class=nf>Rename</span><span class=p>(</span><span class=nx>oldpath</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>newpath</span> <span class=kt>string</span><span class=p>)</span> <span class=p>(</span><span class=nx>err</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
-    <span class=k>return</span> <span class=nf>Renameat</span><span class=p>(</span><span class=nx>_AT_FDCWD</span><span class=p>,</span> <span class=nx>oldpath</span><span class=p>,</span> <span class=nx>_AT_FDCWD</span><span class=p>,</span> <span class=nx>newpath</span><span class=p>)</span>
-<span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>入口：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>Syscall</span><span class=p>(</span><span class=nx>trap</span><span class=p>,</span> <span class=nx>a1</span><span class=p>,</span> <span class=nx>a2</span><span class=p>,</span> <span class=nx>a3</span> <span class=kt>uintptr</span><span class=p>)</span> <span class=p>(</span><span class=nx>r1</span><span class=p>,</span> <span class=nx>r2</span> <span class=kt>uintptr</span><span class=p>,</span> <span class=nx>err</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>Errno</span><span class=p>)</span>
-<span class=kd>func</span> <span class=nf>Syscall6</span><span class=p>(</span><span class=nx>trap</span><span class=p>,</span> <span class=nx>a1</span><span class=p>,</span> <span class=nx>a2</span><span class=p>,</span> <span class=nx>a3</span><span class=p>,</span> <span class=nx>a4</span><span class=p>,</span> <span class=nx>a5</span><span class=p>,</span> <span class=nx>a6</span> <span class=kt>uintptr</span><span class=p>)</span> <span class=p>(</span><span class=nx>r1</span><span class=p>,</span> <span class=nx>r2</span> <span class=kt>uintptr</span><span class=p>,</span> <span class=nx>err</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>Errno</span><span class=p>)</span>
-<span class=kd>func</span> <span class=nf>RawSyscall</span><span class=p>(</span><span class=nx>trap</span><span class=p>,</span> <span class=nx>a1</span><span class=p>,</span> <span class=nx>a2</span><span class=p>,</span> <span class=nx>a3</span> <span class=kt>uintptr</span><span class=p>)</span> <span class=p>(</span><span class=nx>r1</span><span class=p>,</span> <span class=nx>r2</span> <span class=kt>uintptr</span><span class=p>,</span> <span class=nx>err</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>Errno</span><span class=p>)</span>
-<span class=kd>func</span> <span class=nf>RawSyscall6</span><span class=p>(</span><span class=nx>trap</span><span class=p>,</span> <span class=nx>a1</span><span class=p>,</span> <span class=nx>a2</span><span class=p>,</span> <span class=nx>a3</span><span class=p>,</span> <span class=nx>a4</span><span class=p>,</span> <span class=nx>a5</span><span class=p>,</span> <span class=nx>a6</span> <span class=kt>uintptr</span><span class=p>)</span> <span class=p>(</span><span class=nx>r1</span><span class=p>,</span> <span class=nx>r2</span> <span class=kt>uintptr</span><span class=p>,</span> <span class=nx>err</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>Errno</span><span class=p>)</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>这些函数的实现都是汇编，按照 linux 的 syscall 调用规范，我们只要在汇编中把参数依次传入寄存器，并调用 SYSCALL 指令即可进入内核处理逻辑，系统调用执行完毕之后，返回值放在 RAX 中:</p>
-<table>
-<thead>
-<tr>
-<th>RDI</th>
-<th>RSI</th>
-<th>RDX</th>
-<th>R10</th>
-<th>R8</th>
-<th>R9</th>
-<th>RAX</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>参数一</td>
-<td>参数二</td>
-<td>参数三</td>
-<td>参数四</td>
-<td>参数五</td>
-<td>参数六</td>
-<td>系统调用编号/返回值</td>
-</tr>
-</tbody>
-</table>
-<p>Syscall 和 Syscall6 的区别只有传入参数不一样</p>
-<p>Syscall 和 Syscall6在进入和退出Syscall时，分别调用了<code>runtime·entersyscall(SB)</code>和<code>runtime·exitsyscall(SB)</code>;</p>
-<p>RawSyscall 和 RawSyscall6 在进入和退出Syscall 时候没有调用；</p>
-<h4 id=新版本抢占式调度中的-rawsyscall-和-syscall>新版本抢占式调度中的 RawSyscall 和 Syscall</h4>
-<p>由于 <code>RawSyscall</code> 相较于 <code>Syscall</code> 缺少了 <code>runtime·entersyscall(SB)</code> 以及 <code>runtime·exitsyscall(SB)</code> 的调用，当 <code>g</code> 执行的是阻塞性质的系统调用的时候，当前 <code>g</code> 会维持 <code>running</code> 状态，runtime 系统监控在进行全局调度的时候一旦发现运行超过 10ms 的 <code>g</code> 就会执行抢占操作（1.14.3 版本, linux_amd64 下为例），通过发送信号量给 <code>g</code> 对应的线程，而由于线程在初始化的时候进行了信号量的监听以及设置了相应的 <code>sa_flags</code> 参数，虽然包含诸如<code>SA_RESTART</code>参数会让系统调用在信号中断后自动恢复，但是不是对所有系统调用都会有效，这将会导致在收到信号量的时候对正在阻塞的系统调用产生中断，</p>
-<p>提供给用户使用的系统调用，基本都会通知 runtime，以 entersyscall，exitsyscall 的形式来告诉 runtime，在这个 syscall 阻塞的时候，由 runtime 判断是否把 P 腾出来给其它的 M 用。解绑定指的是把 M 和 P 之间解绑，如果绑定被解除，在 syscall 返回时，这个 g 会被放入执行队列 runq 中。</p>
-<p>同时 runtime 又保留了自己的特权，在执行自己的逻辑的时候，我的 P 不会被调走，这样保证了在 Go 自己“底层”使用的这些 syscall 返回之后都能被立刻处理。</p>
-<p>所以同样是 epollwait，runtime 用的是不能被别人打断的，你用的 syscall.EpollWait 那显然是没有这种特权的。</p>
-<h2 id=vsdo>vsdo</h2>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://github.com/cch123/golang-notes/blob/master/syscall.md>https://github.com/cch123/golang-notes/blob/master/syscall.md</a></p>
-</li>
-<li>
-<p><a href=http://blog.itpub.net/69908606/viewspace-2642153/>曹春晖：谈一谈 Go 和 Syscall_ITPUB博客</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

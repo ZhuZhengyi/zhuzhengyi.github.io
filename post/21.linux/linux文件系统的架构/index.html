@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Linux IO 之 文件系统的架构(转) VFS和文件系统总结 一切都是文件： VFS 文件系统的设计，类似 抽象基类，面向对象的思想。 虚函数都必须由底层派生出的实例实">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/21.linux/linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%9E%B6%E6%9E%84/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Linux IO 之 文件系统的架构(转)">
-<meta property="og:description" content="Linux IO 之 文件系统的架构(转) VFS和文件系统总结 一切都是文件： VFS 文件系统的设计，类似 抽象基类，面向对象的思想。 虚函数都必须由底层派生出的实例实">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%9E%B6%E6%9E%84/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-06-04T10:26:13+08:00">
 <meta property="article:modified_time" content="2022-06-04T10:26:13+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Linux IO 之 文件系统的架构(转)">
-<meta itemprop=description content="Linux IO 之 文件系统的架构(转) VFS和文件系统总结 一切都是文件： VFS 文件系统的设计，类似 抽象基类，面向对象的思想。 虚函数都必须由底层派生出的实例实"><meta itemprop=datePublished content="2022-06-04T10:26:13+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-06-04T10:26:13+08:00">
 <meta itemprop=dateModified content="2022-06-04T10:26:13+08:00">
-<meta itemprop=wordCount content="2109">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Linux IO 之 文件系统的架构(转)">
-<meta name=twitter:description content="Linux IO 之 文件系统的架构(转) VFS和文件系统总结 一切都是文件： VFS 文件系统的设计，类似 抽象基类，面向对象的思想。 虚函数都必须由底层派生出的实例实"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,126 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li>
-<ul>
-<li><a href=#vfs和文件系统总结>VFS和文件系统总结</a></li>
-<li><a href=#文件最终如何转化成对磁盘的访问>文件最终如何转化成对磁盘的访问？</a></li>
-<li><a href=#超级块目录inode>超级块、目录、inode</a></li>
-<li><a href=#目录的组织>目录的组织</a></li>
-<li><a href=#发现并读取usrbinxxx的全流程>发现并读取/usr/bin/xxx的全流程</a></li>
-</ul>
-</li>
-<li><a href=#符号链接-与-硬链接>符号链接 与 硬链接</a></li>
-<li><a href=#文件系统中的icache-和-dcache>文件系统中的icache 和 dcache</a></li>
-<li><a href=#文件读写如何通过file_operation-和pagecache的关系>文件读写如何通过file_operation 和pagecache的关系，</a></li>
-<li><a href=#heading></a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=linux-io-之-文件系统的架构转>Linux IO 之 文件系统的架构(转)</h1>
-<h3 id=vfs和文件系统总结>VFS和文件系统总结</h3>
-<p>一切都是文件： VFS</p>
-<p><img src=https://box.kancloud.cn/42fc84d8385cd6f0bf3c2573f2e58eea_1702x1054.png alt></p>
-<p>文件系统的设计，类似 抽象基类，面向对象的思想。</p>
-<p>虚函数都必须由底层派生出的实例实现，使用成员函数 file_operations。在linux里面的文件操作，底层都要实现file_operations，抽象出owner，write，open，release。所以，无论是字符块，还是文件系统的文件，最终操作就必须是file_operations。</p>
-<p>例如，实现一个字符设备驱动，就是去实现file_operations。VFS_read时就会调用字符设备的file_operations。</p>
-<hr>
-<p>块设备的两种访问方法，一是访问裸分区，二是访问文件系统。</p>
-<p>当直接访问裸分区，是通过fs/block_dev.c 中的 file_operations def_blk_fops，也有read,write,open，一切继承到file_operations。如果是访问文件系统，就会通过实现 {ext4}_file_operations 来对接VFS对文件的操作。</p>
-<p>块设备驱动就不需要知道file_operations，无论是裸设备，还是文件系统的file。他们实现的file_operations是把linux中的各种设备，hook进 VFS的方法。</p>
-<h3 id=文件最终如何转化成对磁盘的访问>文件最终如何转化成对磁盘的访问？</h3>
-<p>file_operation 跟pagecache 以及硬盘的关系？</p>
-<p><img src=https://box.kancloud.cn/1072c5381bd5ae4a96ebd0ec110a1a25_1686x1186.png alt></p>
-<p>整个文件系统里，除了放文件本身的数据，还包括文件的管理数据，包括</p>
-<ul>
-<li>
-<p>super block，保存在全局的 superblock结构中。</p>
-</li>
-<li>
-<p>inode，是文件的唯一特定标识，文件系统使用bitmap来标识，inode是否使用。</p>
-</li>
-<li>
-<p>block bitmap，来表示这些block是否占用，它在改变文件大小，创建删除等操作时，都会改变。</p>
-</li>
-<li>
-<p>inode table/diagram ： bitmap 只是表示inode和block是否被占用。</p>
-</li>
-</ul>
-<p><img src=https://box.kancloud.cn/f00f3c82d9785e742b49db1975721a00_1666x1202.png alt></p>
-<h3 id=超级块目录inode>超级块、目录、inode</h3>
-<ul>
-<li>
-<p>file_system_type 数据结构： 指的是 文件系统的类型，mount/umount 的时候会用。</p>
-</li>
-<li>
-<p>superblock数据结构：包含super_operations，其中包含如何分配/销毁一个inode。</p>
-</li>
-<li>
-<p>inode 数据结构：包含 inode_operations 和 file_operations。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>  file_operations里面记录这种类型的文件，包含哪些操作。
-
-  inode_operations里面包含如何生成新的inode，根据文件名字找到inode，如何mkdir,unlink.
-</code></pre></td></tr></table>
-</div>
-</div></li>
-<li>
-<p>dentry 数据结构: 对应路径，目录在文件系统里面是一个特殊的文件，文件的内容是一个inode和文件的表格。</p>
-</li>
-<li>
-<p>file 数据结构:</p>
-</li>
-</ul>
-<p><img src=https://box.kancloud.cn/8d9afa6c6797f98151f5f2ef9835d096_796x509.png alt></p>
-<ul>
-<li>inode表：包含文件的一些基本信息，大小，创建日期，属性。还有一些成员指向硬盘所在的位置。<br>
-申请slab区域，比如 ext4_inode_cache , ext3_inode_cache. 这些cache会创建单独的slab，这些slab和内存里的page一一对应。</li>
-</ul>
-<p>ext2/ext4文件系统中存在间接映射表。</p>
-<p><img src=https://box.kancloud.cn/aedf91b68e0ddc9140f5cca3a57f162b_1574x1116.png alt></p>
-<p><img src=https://box.kancloud.cn/d2504c197b79aecf377855f29a810ba1_1498x1112.png alt></p>
-<p><img src=https://box.kancloud.cn/8116806badcf819ebf297c067976978c_1596x1094.png alt></p>
-<p>硬盘里的inode diagram里的数据结构，在内存中会通过slab分配器，组织成 xxx_inode_cache，出现在meminfo的可回收的内存。 inode表也会记录每一个inode 在硬盘中摆放的位置。</p>
-<h3 id=目录的组织>目录的组织</h3>
-<p><img src=https://box.kancloud.cn/43f11c7e2cc0fcc45e7891c932f82895_1464x1074.png alt></p>
-<p>目录在硬盘里是一个特殊的文件，和之前的file结构体不同。目录在硬盘中对应一个inode，记录文件的名字和inode号。查找一个文件时，文件系统的 根inode和目录，根据根目录和根inode，找到根目录所在硬盘的位置。再去做字符串匹配，能够找到 /A/B/ 。inode表也会记录每一个inode 在硬盘中摆放的位置。</p>
-<h3 id=发现并读取usrbinxxx的全流程>发现并读取/usr/bin/xxx的全流程</h3>
-<p><img src=https://box.kancloud.cn/44f2fbe905a636b07986d3b69f795351_1680x1066.png alt></p>
-<p>如上图，当你在硬盘查找 /usr/bin/emacs文件时，从根的inode和dentry，根据/的inode表，找到/ 目录文件所在的硬盘中的位置，读硬盘/目录文件的内容，发现 usr 对应inode 2, bin 对应inode 3, share 对应inode4。再去查inode表，inode 2所在硬盘的位置，即/usr 目录文件所在硬盘的位置。读出内容包括 var 对应 inode 10, bin 对应inode 11, opt对应inode 12，。</p>
-<p>这个过程会查找很多inode和 dentry，这些都会通过 icache 和dcache缓存。</p>
-<h2 id=符号链接-与-硬链接>符号链接 与 硬链接</h2>
-<p><img src=https://box.kancloud.cn/b52f2fdfec772ded1282a69aa9e56b53_1216x794.png alt></p>
-<p>文件名是特殊目录文件的内容，比如 A目录下有b\c\d，其实就是 A这个目录文件，里面对应目录b,c,d和对应inode的表。</p>
-<p>硬链接：在硬盘中是同一个inode存在，在目录文件中多了一个目录和inode对应。</p>
-<p>符号链接：是linux中是真实存在的实体文件，文件内容指向 其他文件。符号链接和文件是不同的inode。</p>
-<ol>
-<li>硬链接不能跨本地文件系统</li>
-<li>硬链接不能针对目录</li>
-<li>针对目录的软链接，用rm -fr 删除不了目录里的内容</li>
-<li>针对目录的软链接，&ldquo;cd ..&ldquo;进的是软链接所在目录的上级目录</li>
-<li>可以对文件执行unlink或rm，但是不能对目录执行unlink</li>
-</ol>
-<h2 id=文件系统中的icache-和-dcache>文件系统中的icache 和 dcache</h2>
-<p><img src=https://box.kancloud.cn/4200715ec3487a8ffb56d2281824275b_1204x806.png alt></p>
-<p>文件系统在实现时，在vfs这一层的 inode cache 和 dentry cache，不管硬盘的系统，跨所有文件系统的通用信息。</p>
-<p>针对这些cache，这些可以回收的slab，linux提供了专门的slab shrink- 收缩函数。<br>
-最后所有可回收的内存，都必须通过<code>LRU算法</code>去回收。<br>
-有些自己申请的 reclaim的内存，由于没有写 shrink函数，所以就无法进行内存的回收。</p>
-<h2 id=文件读写如何通过file_operation-和pagecache的关系>文件读写如何通过file_operation 和pagecache的关系，</h2>
-<p><img src=https://box.kancloud.cn/71ce1fb31cdeed119f972c8b1771972c_1524x1100.png alt></p>
-<p><img src=https://box.kancloud.cn/6ed93b05cf6600220d744a0dcae115f9_1126x724.png alt></p>
-<p><img src=https://box.kancloud.cn/bdbb3ff0a3278c93493379a0f6076fc8_1202x730.png alt></p>
-<h2 id=heading></h2>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

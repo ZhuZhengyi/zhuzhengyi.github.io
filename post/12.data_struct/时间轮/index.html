@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Kafka时间轮算法 Kafka 中存在一些定时任务(DelayedOperation)，如 DelayedFetch、DelayedProduce、De">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/12.data_struct/%E6%97%B6%E9%97%B4%E8%BD%AE/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Kafka时间轮算法">
-<meta property="og:description" content="Kafka时间轮算法 Kafka 中存在一些定时任务(DelayedOperation)，如 DelayedFetch、DelayedProduce、De">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/12.data_struct/%E6%97%B6%E9%97%B4%E8%BD%AE/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-04-30T11:32:24+08:00">
 <meta property="article:modified_time" content="2022-04-30T11:32:24+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Kafka时间轮算法">
-<meta itemprop=description content="Kafka时间轮算法 Kafka 中存在一些定时任务(DelayedOperation)，如 DelayedFetch、DelayedProduce、De"><meta itemprop=datePublished content="2022-04-30T11:32:24+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-04-30T11:32:24+08:00">
 <meta itemprop=dateModified content="2022-04-30T11:32:24+08:00">
-<meta itemprop=wordCount content="1072">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="data_struct,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Kafka时间轮算法">
-<meta name=twitter:description content="Kafka时间轮算法 Kafka 中存在一些定时任务(DelayedOperation)，如 DelayedFetch、DelayedProduce、De"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,65 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#1-时间轮是什么>1.  时间轮是什么</a></li>
-<li><a href=#2-时间的推进>2.  时间的“推进”</a></li>
-<li><a href=#3-为什么要用时间轮>3.  为什么要用时间轮</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=kafka时间轮算法>Kafka时间轮算法</h1>
-<p>Kafka 中存在一些定时任务(DelayedOperation)，如 DelayedFetch、DelayedProduce、DelayedHeartbeat 等，在 Kafka 中，定时任务的添加、轮转、执行、消亡等是通过时间轮来实现的。(时间轮并不是 Kafka 独有的设计，而是一种通用的实现方式，Netty 中也有用到时间轮的方式)</p>
-<h2 id=1-时间轮是什么>1.  时间轮是什么</h2>
-<p><img src="https://static001.geekbang.org/infoq/36/36293d8f2a75cd09852f9189092cbe9e.jpeg?x-oss-process=image/resize,p_80/auto-orient,1" alt></p>
-<p><img src="https://static001.geekbang.org/infoq/cb/cb615fcfbc43cd42a73b65644701d2a2.jpeg?x-oss-process=image/resize,p_80/auto-orient,1" alt></p>
-<p>Kafka 时间轮由多个环形数组组成，每个环形数组包含 20 个时间单位，表示一个时间维度（一轮），如：第一层时间轮，数组中的每个元素代表 1ms，一圈就是 20ms，当延迟时间大于 20ms 时，就“进位”到第二层时间轮，第二层中，每“一格”表示 20ms，依此类推…</p>
-<p>对于一个延迟任务，大体包含三个过程：进入时间轮、降级和到期执行。</p>
-<ul>
-<li><strong>进入时间轮</strong></li>
-</ul>
-<ol>
-<li>
-<p>根据延迟时间计算对应的时间轮“层次”（如钟表中的“小时级”还是“分钟级”还是“秒级”，实际上是一个不断“升级”的过程，直到找到合适的“层次”）</p>
-</li>
-<li>
-<p>计算在该轮中的位置，并插入该位置（每个 bucket 是一个双向链表，可能包含多个延迟任务，这也是时间轮提高效率的一大原因，后面会提到）</p>
-</li>
-<li>
-<p>若该 bucket 是首次插入，需要将该 bucket 加入 DelayQueue 中（DelayQueue 的引入是为了解决“空推进”，后面会提到）</p>
-</li>
-</ol>
-<p><img src="https://static001.geekbang.org/infoq/7b/7b74698c1815c0f86af8d1820da6b838.jpeg?x-oss-process=image/resize,p_80/auto-orient,1" alt></p>
-<ul>
-<li><strong>降级</strong></li>
-</ul>
-<ol>
-<li>当时间“推进”到某个 bucket 时，说明该 bucket 中的任务在当前时间轮中的时间已经走完，需要进行“降级”，即进入更小粒度的时间轮中，reinsert 的过程和进入时间轮是类似的</li>
-</ol>
-<p><img src="https://static001.geekbang.org/infoq/d4/d4af2f2054bf00f89bcbf4e36044aa56.jpeg?x-oss-process=image/resize,p_80/auto-orient,1" alt></p>
-<ul>
-<li><strong>到期执行</strong></li>
-</ul>
-<ol>
-<li>在 reinsert 的过程中，若发现已经到期，则执行这些任务</li>
-</ol>
-<p><img src=https://static001.geekbang.org/infoq/19/19bb4299ca84652634ea5eade9471905.png alt></p>
-<p>整体过程大致如下：</p>
-<p><img src="https://static001.geekbang.org/infoq/e9/e901a56d80092cda0bdbb4260ed21a91.jpeg?x-oss-process=image/resize,p_80/auto-orient,1" alt></p>
-<h2 id=2-时间的推进>2.  时间的“推进”</h2>
-<p>一种直观的想法是，像现实中的钟表一样，“一格一格”地走，这样就需要有一个线程一直不停的执行，而大多数情况下，时间轮中的 bucket 大部分是空的，指针的“推进”就没有实质作用，因此，为了减少这种“空推进”，Kafka 引入了 DelayQueue，以 bucket 为单位入队，每当有 bucket 到期，即 queue.poll 能拿到结果时，才进行时间的“推进”，减少了 ExpiredOperationReaper 线程空转的开销。</p>
-<p><img src="https://static001.geekbang.org/infoq/5e/5e190488738e81a0ab996eb2c155e54f.jpeg?x-oss-process=image/resize,p_80/auto-orient,1" alt></p>
-<h2 id=3-为什么要用时间轮>3.  为什么要用时间轮</h2>
-<p>用到延迟任务时，比较直接的想法是 DelayQueue、ScheduledThreadPoolExecutor 这些，而时间轮相比之下，最大的优势是在时间复杂度上：</p>
-<p>时间复杂度对比：</p>
-<p><img src=https://static001.geekbang.org/infoq/cc/ccc843d13e25a1fec3e375b14e6658ac.png alt></p>
-<p>因此，理论上，当任务较多时，TimingWheel 的时间性能优势会更明显</p>
-<p>总结一下 Kafka 时间轮性能高的几个主要原因：</p>
-<p>（1）时间轮的结构+双向列表 bucket，使得插入操作可以达到 O(1)的时间复杂度</p>
-<p>（2）Bucket 的设计让多个任务“合并”，使得同一个 bucket 的多次插入只需要在 delayQueue 中入队一次，同时减少了 delayQueue 中元素数量，堆的深度也减小，delayqueue 的插入和弹出操作开销也更小</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

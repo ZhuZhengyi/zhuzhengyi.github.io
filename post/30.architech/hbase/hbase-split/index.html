@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="HBase Region Split split 作用 在 HBase 中，split 其实是进行 sharding 的一种技术手段，通过 HBase 的 split 条件和 split 策略，将 region 进行合理的 split，再通过 HBase 的 balance 策略，将分裂的 region 负载">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hbase/hbase-split/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="HBase Region Split">
-<meta property="og:description" content="HBase Region Split split 作用 在 HBase 中，split 其实是进行 sharding 的一种技术手段，通过 HBase 的 split 条件和 split 策略，将 region 进行合理的 split，再通过 HBase 的 balance 策略，将分裂的 region 负载">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hbase/hbase-split/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="HBase Region Split">
-<meta itemprop=description content="HBase Region Split split 作用 在 HBase 中，split 其实是进行 sharding 的一种技术手段，通过 HBase 的 split 条件和 split 策略，将 region 进行合理的 split，再通过 HBase 的 balance 策略，将分裂的 region 负载"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1548">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,hbase,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="HBase Region Split">
-<meta name=twitter:description content="HBase Region Split split 作用 在 HBase 中，split 其实是进行 sharding 的一种技术手段，通过 HBase 的 split 条件和 split 策略，将 region 进行合理的 split，再通过 HBase 的 balance 策略，将分裂的 region 负载"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,209 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#split-作用>split 作用</a></li>
-<li><a href=#split-触发条件>split 触发条件</a></li>
-<li><a href=#split-策略>split 策略</a></li>
-<li><a href=#步骤>步骤</a></li>
-<li><a href=#自定义拆分策略>自定义拆分策略</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=hbase-region-split>HBase Region Split</h1>
-<h2 id=split-作用>split 作用</h2>
-<p>在 HBase 中，split 其实是进行 sharding 的一种技术手段，通过 HBase 的 split 条件和 split 策略，将 region 进行合理的 split，再通过 HBase 的 balance 策略，将分裂的 region 负载均衡到各个 regionserver 上，最大化的发挥分布式系统的优点。HBase 这种自动的 sharding 技术比传统的数据库 sharding 要省事的多，减轻了维护的成本，但是这样也会给 HBase 带来额外的 IO 开销，因此在很多系统中如果能很好的预计 rowkey 的分布和数据增长情况，可以通过预先分区，事先将 region 分配好，再将 HBase 的自动分区禁掉。</p>
-<h2 id=split-触发条件>split 触发条件</h2>
-<ul>
-<li>自动</li>
-<li>手动</li>
-</ul>
-<h2 id=split-策略>split 策略</h2>
-<h2 id=步骤>步骤</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>private</span> <span class=kt>boolean</span> <span class=nf>flushRegion</span><span class=o>(</span><span class=kd>final</span> <span class=n>Region</span> <span class=n>region</span><span class=o>,</span> <span class=kd>final</span> <span class=kt>boolean</span> <span class=n>emergencyFlush</span><span class=o>,</span>
-      <span class=kt>boolean</span> <span class=n>forceFlushAllStores</span><span class=o>)</span> <span class=o>{</span>
-    <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>regionsInQueue</span><span class=o>)</span> <span class=o>{</span>
-      <span class=n>FlushRegionEntry</span> <span class=n>fqe</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>regionsInQueue</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>region</span><span class=o>);</span>
-      <span class=c1>// Use the start time of the FlushRegionEntry if available
-</span><span class=c1></span>      <span class=k>if</span> <span class=o>(</span><span class=n>fqe</span> <span class=o>!=</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=n>emergencyFlush</span><span class=o>)</span> <span class=o>{</span>
-        <span class=c1>// Need to remove from region from delay queue.  When NOT an
-</span><span class=c1></span>        <span class=c1>// emergencyFlush, then item was removed via a flushQueue.poll.
-</span><span class=c1></span>        <span class=n>flushQueue</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>fqe</span><span class=o>);</span>
-      <span class=o>}</span>
-    <span class=o>}</span>
-
-    <span class=n>lock</span><span class=o>.</span><span class=na>readLock</span><span class=o>().</span><span class=na>lock</span><span class=o>();</span>
-    <span class=k>try</span> <span class=o>{</span>
-      <span class=n>notifyFlushRequest</span><span class=o>(</span><span class=n>region</span><span class=o>,</span> <span class=n>emergencyFlush</span><span class=o>);</span>
-      <span class=n>FlushResult</span> <span class=n>flushResult</span> <span class=o>=</span> <span class=n>region</span><span class=o>.</span><span class=na>flush</span><span class=o>(</span><span class=n>forceFlushAllStores</span><span class=o>);</span>
-      <span class=kt>boolean</span> <span class=n>shouldCompact</span> <span class=o>=</span> <span class=n>flushResult</span><span class=o>.</span><span class=na>isCompactionNeeded</span><span class=o>();</span>
-      <span class=c1>// We just want to check the size
-</span><span class=c1></span>      <span class=kt>boolean</span> <span class=n>shouldSplit</span> <span class=o>=</span> <span class=o>((</span><span class=n>HRegion</span><span class=o>)</span><span class=n>region</span><span class=o>).</span><span class=na>checkSplit</span><span class=o>()</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>;</span>
-      <span class=k>if</span> <span class=o>(</span><span class=n>shouldSplit</span><span class=o>)</span> <span class=o>{</span>
-        <span class=k>this</span><span class=o>.</span><span class=na>server</span><span class=o>.</span><span class=na>compactSplitThread</span><span class=o>.</span><span class=na>requestSplit</span><span class=o>(</span><span class=n>region</span><span class=o>);</span>
-      <span class=o>}</span> <span class=k>else</span> <span class=k>if</span> <span class=o>(</span><span class=n>shouldCompact</span><span class=o>)</span> <span class=o>{</span>
-        <span class=n>server</span><span class=o>.</span><span class=na>compactSplitThread</span><span class=o>.</span><span class=na>requestSystemCompaction</span><span class=o>(</span>
-            <span class=n>region</span><span class=o>,</span> <span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>());</span>
-      <span class=o>}</span>
-    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=n>DroppedSnapshotException</span> <span class=n>ex</span><span class=o>)</span> <span class=o>{</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>HBase 将整个切分过程包装成了一个事务，意图能够保证切分事务的原子性。整个分裂事务过程分为三个阶段：prepare – execute – (rollback) ，操作模版如下：</p>
-<ul>
-<li>prepare 阶段：</li>
-</ul>
-<p>在内存中初始化两个子 region，具体是生成两个 HRegionInfo 对象，包含 tableName、regionName、startkey、endkey 等。同时会生成一个 transaction journal，这个对象用来记录切分的进展，具体见 rollback 阶段。</p>
-<ul>
-<li>
-<p>execute 阶段：</p>
-<p>切分的核心操作。见下图（来自<a href=http://zh.hortonworks.com/blog/apache-hbase-region-splitting-and-merging/>Hortonworks</a>）：</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/10/10-12-53-10-image-20190430151418404.png alt=image-20190430151418404></p>
-</li>
-</ul>
-<ol>
-<li>
-<p>regionserver 更改 ZK 节点 /region-in-transition 中该 region 的状态为 SPLITING。</p>
-</li>
-<li>
-<p>master 通过 watch 节点/region-in-transition 检测到 region 状态改变，并修改内存中 region 的状态，在 master 页面 RIT 模块就可以看到 region 执行 split 的状态信息。</p>
-</li>
-<li>
-<p>在父存储目录下新建临时文件夹.split 保存 split 后的 daughter region 信息。</p>
-</li>
-<li>
-<p>关闭 parent region：parent region 关闭数据写入并触发 flush 操作，将写入 region 的数据全部持久化到磁盘。此后短时间内客户端落在父 region 上的请求都会抛出异常 NotServingRegionException。</p>
-</li>
-<li>
-<p>核心分裂步骤：在.split 文件夹下新建两个子文件夹，称之为 daughter A、daughter B，并在文件夹中生成 reference 文件，分别指向父 region 中对应文件。这个步骤是所有步骤中最核心的一个环节，生成 reference 文件日志如下所示：</p>
-<img src=/Users/zhuzhengyi/Documents/gitnote/img/2019-12-24-09-38-29-image.png title alt data-align=center>
-</li>
-<li>
-<p>父 region 分裂为两个子 region 后，将 daughter A、daughter B 拷贝到 HBase 根目录下，形成两个新的 region。</p>
-</li>
-<li>
-<p>父 region 通知修改 hbase.meta 表后下线，不再提供服务。下线后 parent region 在 meta 表中的信息并不会马上删除，而是标注 split 列、offline 列为 true，并记录两个子 region</p>
-</li>
-<li>
-<p>开启 daughter A、daughter B 两个子 region。通知修改 hbase.meta 表，正式对外提供服务。</p>
-</li>
-</ol>
-<ul>
-<li>
-<p>rollback</p>
-<p>如果 execute 阶段出现异常，则执行 rollback 操作。为了实现回滚，整个切分过程被分为很多子阶段，回滚程序会根据当前进展到哪个子阶段清理对应的垃圾数据。代码中使用 JournalEntryType 来表征各个子阶段，具体见下图：</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/10/10-12-52-59-image-20190430151907154.png alt=image-20190430151907154></p>
-</li>
-</ul>
-<h2 id=自定义拆分策略>自定义拆分策略</h2>
-<p>您可以使用自定义 RegionSplitPolicy（HBase 0.94+）重写默认拆分策略。通常，自定义拆分策略应该扩展 HBase 的默认拆分策略： IncreasingToUpperBoundRegionSplitPolicy。</p>
-<p>该策略可以通过 HBase 配置或者也可以基于每个表在全局范围内进行设置。</p>
-<p>在 hbase-site.xml 中全局配置拆分策略：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=nt>&lt;property&gt;</span>
-  <span class=nt>&lt;name&gt;</span>hbase.regionserver.region.split.policy<span class=nt>&lt;/name&gt;</span>
-  <span class=nt>&lt;value&gt;</span>org.apache.hadoop.hbase.regionserver.IncreasingToUpperBoundRegionSplitPolicy<span class=nt>&lt;/value&gt;</span>
-<span class=nt>&lt;/property&gt;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>使用 Java API 在表上配置拆分策略：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>HTableDescriptor tableDesc = new HTableDescriptor(&#34;test&#34;);
-tableDesc.setValue(HTableDescriptor.SPLIT_POLICY, ConstantSizeRegionSplitPolicy.class.getName());
-tableDesc.addFamily(new HColumnDescriptor(Bytes.toBytes(&#34;cf1&#34;)));
-admin.createTable(tableDesc);
-----
-</code></pre></td></tr></table>
-</div>
-</div><p>使用 HBase Shell 在表上配置拆分策略：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>hbase&gt; create <span class=s1>&#39;test&#39;</span>, <span class=o>{</span><span class=nv>METADATA</span> <span class=o>=</span>&gt; <span class=o>{</span><span class=s1>&#39;SPLIT_POLICY&#39;</span> <span class=o>=</span>&gt; <span class=s1>&#39;org.apache.hadoop.hbase.regionserver.ConstantSizeRegionSplitPolicy&#39;</span>， <span class=o>}}</span>,<span class=o>{</span><span class=nv>NAME</span> <span class=o>=</span>&gt; <span class=s1>&#39;cf1&#39;</span><span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>该策略可以通过使用的 HBaseConfiguration 或按表进行全局设置：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=n>HTableDescriptor</span> <span class=n>myHtd</span> <span class=o>=</span> <span class=o>...;</span>
-<span class=n>myHtd</span><span class=o>.</span><span class=na>setValue</span><span class=o>(</span><span class=n>HTableDescriptor</span><span class=o>.</span><span class=na>SPLIT_POLICY</span><span class=o>,</span> <span class=n>MyCustomSplitPolicy</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getName</span><span class=o>());</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>该<code>DisabledRegionSplitPolicy</code>策略阻止手动区域拆分。</p>
-<p>在线修改 split 策略</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>hbase&gt; <span class=nv>t</span><span class=o>=</span><span class=s2>&#34;test_66_snappy5&#34;</span>
-hbase&gt; disable t<span class=p>;</span> alter t, <span class=o>{</span><span class=nv>METADATA</span> <span class=o>=</span>&gt; <span class=o>{</span><span class=s1>&#39;SPLIT_POLICY&#39;</span> <span class=o>=</span>&gt; <span class=s1>&#39;org.apache.hadoop.hbase.regionserver.ConstantSizeRegionSplitPolicy&#39;</span>, <span class=s1>&#39;MAX_FILESIZE&#39;</span> <span class=o>=</span>&gt; <span class=m>214748364800</span> <span class=o>}}</span> <span class=p>;</span> <span class=nb>enable</span> t
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=参考>参考</h2>
-<ol>
-<li><a href=https://zhuanlan.zhihu.com/p/39648692>https://zhuanlan.zhihu.com/p/39648692</a></li>
-<li><a href=https://cloud.tencent.com/developer/article/1005586>https://cloud.tencent.com/developer/article/1005586</a></li>
-<li><a href=https://www.jianshu.com/p/f9abe7ddf5a1>HBase 原理–所有 Region 切分的细节都在这里了 - 简书</a></li>
-<li><a href=https://andr-robot.github.io/HBase%E4%B8%ADRegion%E7%9A%84%E5%88%87%E5%88%86/>https://andr-robot.github.io/HBase%E4%B8%ADRegion%E7%9A%84%E5%88%87%E5%88%86/</a></li>
-<li><a href=https://blog.csdn.net/u010039929/article/details/74295869>Hbase Split 解析_大数据_Kuzury-CSDN 博客</a></li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

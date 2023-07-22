@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="XDP 简介 XDP（eXpress Data Path）为Linux内核提供了高性能、可编程的网络数据路径。由于网络包在还未进入网络协议栈之前就处理，它给L">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/21.linux/xdp/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="XDP">
-<meta property="og:description" content="XDP 简介 XDP（eXpress Data Path）为Linux内核提供了高性能、可编程的网络数据路径。由于网络包在还未进入网络协议栈之前就处理，它给L">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/xdp/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="XDP">
-<meta itemprop=description content="XDP 简介 XDP（eXpress Data Path）为Linux内核提供了高性能、可编程的网络数据路径。由于网络包在还未进入网络协议栈之前就处理，它给L"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1438">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="XDP">
-<meta name=twitter:description content="XDP 简介 XDP（eXpress Data Path）为Linux内核提供了高性能、可编程的网络数据路径。由于网络包在还未进入网络协议栈之前就处理，它给L"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,126 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#架构>架构</a></li>
-<li><a href=#特性>特性</a></li>
-<li><a href=#操作>操作</a>
-<ul>
-<li><a href=#xdp输入参数>XDP输入参数</a></li>
-<li><a href=#xdp输出参数>XDP输出参数</a></li>
-</ul>
-</li>
-<li><a href=#引入xdp之后网络data-path>引入XDP之后网络Data Path</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=xdp>XDP</h1>
-<h2 id=简介>简介</h2>
-<p>XDP（eXpress Data Path）为Linux内核提供了高性能、可编程的网络数据路径。由于网络包在还未进入网络协议栈之前就处理，它给Linux网络带来了巨大的性能提升（性能比DPDK还要高）。</p>
-<h2 id=架构>架构</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-14-22-16-xdp-packet-processing.png alt=xdppacketprocessing></p>
-<h2 id=特性>特性</h2>
-<ul>
-<li>在网络协议栈前处理</li>
-<li>无锁设计</li>
-<li>批量I/O操作</li>
-<li>轮询式</li>
-<li>直接队列访问</li>
-<li>不需要分配skbuff</li>
-<li>支持网络卸载</li>
-<li>DDIO</li>
-<li>XDP程序快速执行并结束，没有循环</li>
-<li>Packeting steering</li>
-</ul>
-<p>相对于DPDK，XDP具有以下优点</p>
-<ul>
-<li>无需第三方代码库和许可</li>
-<li>同时支持轮询式和中断式网络</li>
-<li>无需分配大页</li>
-<li>无需专用的CPU</li>
-<li>无需定义新的安全网络模型</li>
-</ul>
-<h2 id=操作>操作</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 检查内核是否支持xdp</span>
-$ sudo sysctl net/core/bpf_jit_enable
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=xdp输入参数>XDP输入参数</h3>
-<p>XDP暴露的钩子具有特定的输入上下文，它是单一输入参数。它的类型为 <strong>struct xdp_md</strong>，在内核头文件<a href=https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h#L3309>bpf.h</a> 中定义，具体字段如下所示：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cm>/* user accessible metadata for XDP packet hook
-</span><span class=cm> * new fields must be added to the end of this structure
-</span><span class=cm> */</span>
-<span class=k>struct</span> <span class=n>xdp_md</span> <span class=p>{</span>
-    <span class=n>__u32</span> <span class=n>data</span><span class=p>;</span>        <span class=c1>//数据包开始指针
-</span><span class=c1></span>    <span class=n>__u32</span> <span class=n>data_end</span><span class=p>;</span>    <span class=c1>//数据包结束的指针
-</span><span class=c1></span>    <span class=n>__u32</span> <span class=n>data_meta</span><span class=p>;</span>   <span class=c1>//XDP程序与其他层交换数据包元数据
-</span><span class=c1></span>    <span class=cm>/* Below access go through struct xdp_rxq_info */</span>
-    <span class=n>__u32</span> <span class=n>ingress_ifindex</span><span class=p>;</span> <span class=cm>/* rxq-&gt;dev-&gt;ifindex */</span>
-    <span class=n>__u32</span> <span class=n>rx_queue_index</span><span class=p>;</span>  <span class=cm>/* rxq-&gt;queue_index  */</span>
-<span class=p>};</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>程序执行时，<strong>data</strong>和<strong>data_end</strong>字段分别是数据包开始和结束的指针，它们是用来获取和解析传来的数据，第三个值是<strong>data_meta</strong>指针，初始阶段它是一个空闲的内存地址，供XDP程序与其他层交换数据包元数据时使用。最后两个字段分别是接收数据包的接口和对应的RX队列的索引。当访问这两个值时，BPF代码会在内核内部重写，以访问实际持有这些值的内核结构<strong>struct xdp_rxq_info</strong>。</p>
-<h3 id=xdp输出参数>XDP输出参数</h3>
-<p>在处理完一个数据包后，XDP程序会返回一个动作（Action）作为输出，它代表了程序退出后对数据包应该做什么样的最终裁决，也是在内核头文件<a href=https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h#L3298>bpf.h</a> 定义了以下5种动作类型：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span><span class=lnt>7
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=k>enum</span> <span class=nc>xdp_action</span> <span class=p>{</span>
- <span class=n>XDP_ABORTED</span> <span class=o>=</span> <span class=mi>0</span><span class=p>,</span> <span class=c1>// 丢弃数据包并报告一个异常
-</span><span class=c1></span> <span class=n>XDP_DROP</span><span class=p>,</span> <span class=c1>// 安静的丢弃数据包
-</span><span class=c1></span> <span class=n>XDP_PASS</span><span class=p>,</span> <span class=c1>// 允许内核栈对数据包进行进一步处理
-</span><span class=c1></span> <span class=n>XDP_TX</span><span class=p>,</span> <span class=c1>// Transmit from the interface it came from
-</span><span class=c1></span> <span class=n>XDP_REDIRECT</span><span class=p>,</span> <span class=c1>// Transmit packet from another interface
-</span><span class=c1></span><span class=p>};</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>可以看出这个动作的本质是一个int值。前面4个动作是不需要参数的，最后一个动作需要额外指定一个NIC网络设备名称，作为转发这个数据包的目的地。</p>
-<h2 id=引入xdp之后网络data-path>引入XDP之后网络Data Path</h2>
-<p>在没有引入XDP之前，原来是的网络数据包传输路径是这样的：</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/10-13-29-46-2020-09-29-17-44-18-image.png alt></p>
-<p>启用XDP后，网络包传输路径是这样的：</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/10-13-29-38-2020-09-29-17-44-47-image.png alt></p>
-<p>可以看到多了3个红色方框圈起来的新链路，我们来一一介绍：</p>
-<ul>
-<li><strong>offload</strong>模式，XDP程序直接hook到可编程网卡硬件设备上，与其他两种模式相比，它的处理性能最强；由于处于数据链路的最前端，过滤效率也是最高的。如果需要使用这种模式，需要在加载程序时明确声明。目前支持这种模式的网卡设备不多，有一家叫<a href=https://www.netronome.com/>netronome</a>。</li>
-<li><strong>native</strong>模式，XDP程序hook到网络设备的驱动上，它是XDP最原始的模式，因为还是先于操作系统进行数据处理，它的执行性能还是很高的，当然你的网络驱动需要支持，目前已知的有<strong>i40e</strong>, <strong>nfp</strong>, <strong>mlx系列</strong>和<strong>ixgbe系列</strong>。</li>
-<li><strong>generic</strong>模式，这是操作系统内核提供的<strong>通用 XDP兼容模式</strong>，它可以在没有硬件或驱动程序支持的主机上执行XDP程序。在这种模式下，XDP的执行是由操作系统本身来完成的，以模拟native模式执行。好处是，只要内核够高，人人都能玩XDP；缺点是由于是仿真执行，需要分配额外的套接字缓冲区（SKB），导致处理性能下降，跟native模式在10倍左右的差距。</li>
-</ul>
-<p>当前主流内核版本的Linux系统在加载XDP BPF程序时，会自动在native和generic这两种模式选择，完成加载后，可以使用<code>ip</code>命令行工具来查看选择的模式。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

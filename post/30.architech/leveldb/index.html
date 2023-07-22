@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="LevelDB 简介 LevelDB是Google的 Jeff Dean和Sanjay Ghemawat设计开发的key-value存储引擎，底层存储利用了LSM tre">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/leveldb/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="LevelDB">
-<meta property="og:description" content="LevelDB 简介 LevelDB是Google的 Jeff Dean和Sanjay Ghemawat设计开发的key-value存储引擎，底层存储利用了LSM tre">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/leveldb/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="LevelDB">
-<meta itemprop=description content="LevelDB 简介 LevelDB是Google的 Jeff Dean和Sanjay Ghemawat设计开发的key-value存储引擎，底层存储利用了LSM tre"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="2823">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="LevelDB">
-<meta name=twitter:description content="LevelDB 简介 LevelDB是Google的 Jeff Dean和Sanjay Ghemawat设计开发的key-value存储引擎，底层存储利用了LSM tre"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,193 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#特点>特点</a></li>
-<li><a href=#设计思路><strong>设计思路</strong></a></li>
-<li><a href=#架构>架构</a></li>
-<li><a href=#组成>组成</a>
-<ul>
-<li><a href=#写操作流程>写操作流程</a></li>
-<li><a href=#读操作流程>读操作流程</a></li>
-</ul>
-</li>
-<li><a href=#sstable文件>SSTable文件</a></li>
-<li><a href=#compaction操作>Compaction操作</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=leveldb>LevelDB</h1>
-<h2 id=简介>简介</h2>
-<p>LevelDB是Google的 Jeff Dean和Sanjay Ghemawat设计开发的key-value存储引擎，底层存储利用了LSM tree思想，具有很高的随机写，顺序读/写性能，但是随机读的性能很一般，适合应用在查询较少，而写很多的场景。</p>
-<h2 id=特点>特点</h2>
-<ul>
-<li>
-<p>key和value都是任意长度的字节数组；</p>
-</li>
-<li>
-<p>entry（即一条K-V记录）默认是按照key的字典顺序存储的，也可以重载这个排序函数；</p>
-</li>
-<li>
-<p>提供的基本操作接口：Put()、Delete()、Get()、Batch()；</p>
-</li>
-<li>
-<p>支持批量操作以原子操作进行；</p>
-</li>
-<li>
-<p>可以创建数据全景的snapshot(快照)，并允许在快照中查找数据；</p>
-</li>
-<li>
-<p>可以通过前向（或后向）迭代器遍历数据（迭代器会隐含的创建一个snapshot）；</p>
-</li>
-<li>
-<p>自动使用Snappy压缩数据；</p>
-</li>
-<li>
-<p>可移植性；</p>
-</li>
-<li>
-<p>非关系型数据模型（NoSQL），不支持sql语句，也不支持索引；</p>
-</li>
-<li>
-<p>一次只允许一个进程访问一个特定的数据库；</p>
-</li>
-<li></li>
-</ul>
-<h2 id=设计思路><strong>设计思路</strong></h2>
-<p>LevelDB的数据是存储在磁盘上的，采用LSM-Tree的结构实现。LSM-Tree将磁盘的随机写转化为顺序写，从而大大提高了写速度。为了做到这一点LSM-Tree的思路是将索引树结构拆成一大一小两颗树，较小的一个常驻内存，较大的一个持久化到磁盘，他们共同维护一个有序的key空间。写入操作会首先操作内存中的树，随着内存中树的不断变大，会触发与磁盘中树的归并操作，而归并操作本身仅有顺序写。</p>
-<p>随着数据的不断写入，磁盘中的树会不断膨胀，为了避免每次参与归并操作的数据量过大，以及优化读操作的考虑，LevelDB将磁盘中的数据又拆分成多层，每一层的数据达到一定容量后会触发向下一层的归并操作，每一层的数据量比其上一层成倍增长。这也就是LevelDB的名称来源。</p>
-<h2 id=架构>架构</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-28-01-2020-05-04-18-14-13-image.png alt></p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-28-20-2020-04-05-09-13-43-image.png alt></p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-29-05-image-20190522180414680.png alt=image-20190522180414680></p>
-<h2 id=组成>组成</h2>
-<ul>
-<li>
-<p><strong>Memtable</strong>：内存数据结构，跳表实现，新的数据会首先写入这里；</p>
-</li>
-<li>
-<p><strong>Immutable Memtable</strong>：达到Memtable设置的容量上限后，Memtable会变为Immutable为之后向SST文件的归并做准备，顾名思义，Immutable Mumtable不再接受用户写入，同时会有新的Memtable生成； </p>
-</li>
-<li>
-<p>Log文件：写Memtable前会先写Log文件，Log通过append的方式顺序写入。Log的存在使得机器宕机导致的内存数据丢失得以恢复； </p>
-</li>
-<li>
-<p><strong>SST文件</strong>：磁盘数据存储文件。分为Level 0到Level N多层，每一层包含多个SST文件；单层SST文件总量随层次增加成倍增长；文件内数据有序；其中Level0的SST文件由Immutable直接Dump产生，其他Level的SST文件由其上一层的文件和本层文件归并产生；SST文件在归并过程中顺序写生成，生成后仅可能在之后的归并中被删除，而不会有任何的修改操作。 </p>
-</li>
-<li>
-<p><strong>Manifest文件</strong>：Manifest文件中记录SST文件在不同Level的分布，单个SST文件的最大最小key，以及其他一些LevelDB需要的元信息。 </p>
-</li>
-<li>
-<p><strong>Current文件</strong>:  从上面的介绍可以看出，LevelDB启动时的首要任务就是找到当前的Manifest，而Manifest可能有多个。Current文件简单的记录了当前Manifest的文件名，从而让这个过程变得非常简单。</p>
-</li>
-</ul>
-<h3 id=写操作流程>写操作流程</h3>
-<ol>
-<li>
-<p>顺序写入磁盘log文件；</p>
-</li>
-<li>
-<p>写入内存memtable（采用skiplist结构实现）；</p>
-</li>
-<li>
-<p>MemTable 的大小达到设定阈值的时候，转换成 Immutable MemTable。</p>
-</li>
-<li>
-<p>Immutable Table 由后台线程异步 Flush 到磁盘上，成为 Level0 上的一个 sst 文件。</p>
-</li>
-<li>
-<p>在某些条件下，会触发后台线程对 Level0 ~ LevelN 的文件进行 Compaction。</p>
-</li>
-</ol>
-<h3 id=读操作流程>读操作流程</h3>
-<ol>
-<li>
-<p>在内存中依次查找memtable、immutable memtable；</p>
-</li>
-<li>
-<p>如果配置了cache，查找cache；</p>
-</li>
-<li>
-<p>根据mainfest索引文件，在磁盘中查找SST文件；</p>
-</li>
-</ol>
-<h2 id=sstable文件>SSTable文件</h2>
-<p>SST文件并不是平坦的结构，而是分层组织的，这也是LevelDB名称的来源。</p>
-<ol>
-<li>
-<p>每个SST文件大小上限为2MB，所以，LevelDB通常存储了大量的SST文件；</p>
-</li>
-<li>
-<p>SST文件由若干个4K大小的blocks组成，block也是读/写操作的最小单元；</p>
-</li>
-<li>
-<p>SST文件的最后一个block是一个index，指向每个data block的起始位置，以及每个block第一个entry的key值（block内的key有序存储）；</p>
-</li>
-<li>
-<p>使用<a href=http://www.cnblogs.com/chenny7/p/4074250.html>Bloom filter</a>加速查找，只要扫描index，就可以快速找出所有可能包含指定entry的block。</p>
-</li>
-<li>
-<p>同一个block内的key可以共享前缀（只存储一次），这样每个key只要存储自己唯一的后缀就行了。如果block中只有部分key需要共享前缀，在这部分key与其它key之间插入"reset"标识。</p>
-</li>
-</ol>
-<p>由log直接读取的entry会写到Level 0的SST中（最多4个文件）；</p>
-<p>当Level 0的4个文件都存储满了，会选择其中一个文件Compact到Level 1的SST中；</p>
-<ul>
-<li>注意：Level 0的SSTable文件和其它Level的文件相比有特殊性：这个层级内的.sst文件，两个文件可能存在key重叠，比如有两个level 0的sst文件，文件A和文件B，文件A的key范围是：{bar, car}，文件B的Key范围是{blue,samecity}，那么很可能两个文件都存在key=”blood”的记录。对于其它Level的SSTable文件来说，则不会出现同一层级内.sst文件的key重叠现象，就是说Level L中任意两个.sst文件，那么可以保证它们的key值是不会重叠的。</li>
-</ul>
-<p>Log：最大4MB (可配置), 会写入Level 0；</p>
-<ul>
-<li>
-<p>Level 0：最多4个SST文件,；</p>
-</li>
-<li>
-<p>Level 1：总大小不超过10MB；</p>
-</li>
-<li>
-<p>Level 2：总大小不超过100MB；</p>
-</li>
-<li>
-<p>Level 3+：总大小不超过上一个Level ×10的大小。</p>
-</li>
-</ul>
-<p>比如：0 ↠ 4 SST, 1 ↠ 10M, 2 ↠ 100M, 3 ↠ 1G, 4 ↠ 10G, 5 ↠ 100G, 6 ↠ 1T, 7 ↠ 10T</p>
-<h2 id=compaction操作>Compaction操作</h2>
-<p>对于LevelDb来说，写入记录操作很简单，删除记录仅仅写入一个删除标记就算完事，但是读取记录比较复杂，需要在内存以及各个层级文件中依照新鲜程度依次查找，代价很高。为了加快读取速度，levelDb采取了compaction的方式来对已有的记录进行整理压缩，通过这种方式，来删除掉一些不再有效的KV数据，减小数据规模，减少文件数量等。</p>
-<p>LevelDb的compaction机制和过程与Bigtable所讲述的是基本一致的，Bigtable中讲到三种类型的compaction: minor ，major和full：</p>
-<ul>
-<li>minor Compaction，就是把memtable中的数据导出到SSTable文件中；</li>
-<li>major compaction就是合并不同层级的SSTable文件；</li>
-<li>full compaction就是将所有SSTable进行合并；</li>
-</ul>
-<p>LevelDb包含其中两种，minor和major。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-29-26-2020-04-04-16-34-46-image.png alt></p>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://zhuanlan.zhihu.com/p/62979903>https://zhuanlan.zhihu.com/p/62979903</a></p>
-</li>
-<li>
-<p><a href=https://www.cnblogs.com/chenny7/p/4026447.html>LevelDB库简介 - 如果的事 - 博客园</a></p>
-</li>
-<li>
-<p><a href=https://juejin.im/post/5c22e049e51d45206d12568e>https://juejin.im/post/5c22e049e51d45206d12568e</a></p>
-</li>
-<li>
-<p><a href=https://catkang.github.io/2017/01/07/leveldb-summary.html>庖丁解LevelDB之概览 | CatKang的博客</a></p>
-</li>
-<li>
-<p><a href=https://draveness.me/bigtable-leveldb>https://draveness.me/bigtable-leveldb</a></p>
-</li>
-<li>
-<p><a href=https://cloud.tencent.com/developer/article/1602204>【深度知识】LevelDB从入门到原理详解 - 云+社区 - 腾讯云</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

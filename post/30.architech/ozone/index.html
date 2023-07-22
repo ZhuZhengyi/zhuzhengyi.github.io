@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Ozone 简介 Ozone是专门为Hadoop设计的可扩展的分布式对象存储系统。Hadoop生态中的其它组件如Spark、Hive和Yarn不需要任何">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/ozone/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Ozone">
-<meta property="og:description" content="Ozone 简介 Ozone是专门为Hadoop设计的可扩展的分布式对象存储系统。Hadoop生态中的其它组件如Spark、Hive和Yarn不需要任何">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/ozone/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Ozone">
-<meta itemprop=description content="Ozone 简介 Ozone是专门为Hadoop设计的可扩展的分布式对象存储系统。Hadoop生态中的其它组件如Spark、Hive和Yarn不需要任何"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1942">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Ozone">
-<meta name=twitter:description content="Ozone 简介 Ozone是专门为Hadoop设计的可扩展的分布式对象存储系统。Hadoop生态中的其它组件如Spark、Hive和Yarn不需要任何"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,83 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#特点>特点</a></li>
-<li><a href=#架构>架构</a></li>
-<li><a href=#基本概念>基本概念</a></li>
-<li><a href=#组件>组件</a></li>
-<li><a href=#pipeline>Pipeline</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=ozone>Ozone</h1>
-<h2 id=简介>简介</h2>
-<p>Ozone是专门为Hadoop设计的可扩展的分布式对象存储系统。Hadoop生态中的其它组件如Spark、Hive和Yarn不需要任何修改就可以直接运行在Ozone之上。<em>Ozone的使用方式也较为丰富，可以通过命令行直接使用也有java客户端接口，而且接口支持RPC和REST。</em></p>
-<p>Ozone的提出在2014年，由Hortonworks率先提出，并建立了一个JIRA：<a href=https://issues.apache.org/jira/browse/HDFS-7240>HDFS-7240</a>(<strong>Object store in HDFS</strong>)。一个大背景是当时许多企业已经推出了对象存储的服务而HDFS还不支持。</p>
-<h2 id=特点>特点</h2>
-<ul>
-<li>SCALABLE(可扩展性)：Ozone可扩展到数百亿个文件和块，并在未来甚至更多。</li>
-<li>CONSISTENT(一致性)：Ozone是一个非常一致的对象存储。 通过使用诸如RAFT之类的协议来实现这种一致性。</li>
-<li>SECURE(安全)：Ozone与kerberos基础设施集成，用于访问控制，并支持TDE和线上加密。</li>
-<li>MULTI-PROTOCOL SUPPORT(多协议支持)：Ozone支持不同的协议，如S3和Hadoop文件系统API</li>
-<li>HIGHLY AVAILABLE(高可用性)：Ozone是一个完全复制的系统，旨在经受多次故障。</li>
-<li>Interoperability with Hadoop Ecosystem：Ozone的设计适用于YARN和Kubernetes等集装箱化环境；Ozone可以被现存的Hadoop生态和相关的应用(如 apache hive、apache spark 和传统的 mapreduce)使用，因此Ozone支持: Hadoop Compatible FileSystem API(也叫OzoneFS) – hive、spark等可以使用OzoneFS API Ozone作为存储层，而不需要做任务修改。</li>
-</ul>
-<h2 id=架构>架构</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-31-52-image-20191011123950940.png alt=image-20191011123950940></p>
-<p>在架构上Ozone由三部分组成，分别为<code>Ozone Manager</code>、<code>Storage Container Manager</code>和<code>Datanodes</code></p>
-<ul>
-<li>
-<p>Ozone Manager: OzoneManager是一个server服务，<em>主要负责Ozone的namespace，记录所有的volume, bucket和key操作</em>。<strong>有点类似HDFS的namenode</strong></p>
-</li>
-<li>
-<p>SCM: 类似HDFS中的block manager，是Ozone中一个非常重要的组件，用来管理container的，<em>为OM提供基于block和container的服务</em>。</p>
-</li>
-<li></li>
-</ul>
-<h2 id=基本概念>基本概念</h2>
-<ul>
-<li>Container：容器，由这些容器对外提供块存储服务。每个容器有自己的大小空间，即所属的 DN 节点。在 HDDS 模式下，DN 管理的将不再是直接的块副本数据，而是 Container 容器副本。Replication 操作以及 DN 的心跳汇报都是基于容器层面来做的。</li>
-<li>Block：块存储单元，与 HDFS 模式下的块类似。是存储数据的单元，也是客户端实际数据写入单元。</li>
-<li>Chunk：实际文件存储，一个 Block 块单元由一组 Chunk 文件组成。</li>
-<li>Pipeline：管道，这个管道信息指容器实际位置的节点信息。比如 Pipeline 中包含 3 个节点，意为容器需要 Replication 在这 3 个节点上。当然，在后续容器数据写入的时候，也会保证 Pipeline 节点上的数据一致。</li>
-<li>SCM：容器管理服务（Storage Container Manager）。这个服务类似于 HDFS 的 NN 这样的角色。SCM 服务是 HDDS 中十分核心的服务，它负责管理所有的容器分配、删除等操作。对于外部使用者而言，它们都需要向 SCM 请求分配容器来提供块的存储写入。</li>
-<li>KSM（OM）：对象存储管理服务（Key Space Manager，命名空间管理服务）。原先 KSM 服务与 SCM 服务都是偏向于底层服务的，但是 KSM 实际的功能属性是对象存储的元数据管理，所以后来更名为 Ozone Manager（OM）服务了。KSM 服务属于构建于 HDDS 其上的一个应用服务。</li>
-</ul>
-<p>Container作为Ozone中的一个基本存储单元，它只包含2大类信息，一个是key，一个是文件对象。key由bucket、volume名称拼装而成，而文件对象由其内部的ChunkInfo信息所维护。下图是Container的内部结构图：</p>
-<p><img src=/Users/zhuzhengyi/tmp/gitnote-img/2020-02-03-13-20-00-image.png alt>ng)</p>
-<h2 id=组件>组件</h2>
-<ul>
-<li>KSM(Key Space Manager)</li>
-<li>SCM(Storage Container Manager)</li>
-<li>HDDS(Hadoop Distributed Data Store)</li>
-</ul>
-<p>Ozone的调用过程可以理解为是一个<strong>寻找Container的过程</strong>。中间过程中，需要向2大服务KSM、SCM进行Container的定位和获取。前者负责提供Container的位置，然后后者负责返回Container对象。(但是目前代码中这2个功能都耦合在了SCM上面）。社区将其分离化的一个主要目的是为了方便后续的扩展。</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-32-44-image-20191011182230499.png alt=image-20191011182230499></p>
-<p><img src=/Users/zhuzhengyi/tmp/30-assets/image-20191011182423041.png alt=loading-ag-14673></p>
-<h2 id=pipeline>Pipeline</h2>
-<p>目前Ozone可提供2种副本机制：</p>
-<ul>
-<li>1.完全单副本方式，就是standalone模式。</li>
-<li>2.用外部框架Apache Ratis（分布式一致性算法Raft的Java实现）实现多副本方式。</li>
-</ul>
-<h2 id=参考>参考</h2>
-<ol>
-<li><a href=https://blog.csdn.net/Androidlushangderen/article/details/78450332>https://blog.csdn.net/Androidlushangderen/article/details/78450332</a></li>
-<li><a href=http://blogspring.cn/view/73>http://blogspring.cn/view/73</a></li>
-<li><a href=https://blog.csdn.net/Androidlushangderen/article/details/50767774>HDFS对象存储&ndash;Ozone架构设计_走在前往架构师的路上-CSDN博客</a></li>
-<li><a href=https://blog.csdn.net/Androidlushangderen/article/details/78010639>HDFS Ozone的Pipeline实现机制_走在前往架构师的路上-CSDN博客</a></li>
-<li><a href="https://www.zhihu.com/search?type=content&q=ozone%20hadoop">https://www.zhihu.com/search?type=content&q=ozone%20hadoop</a></li>
-<li><a href=https://www.cnblogs.com/zsychanpin/p/7356076.html>HDFS对象存储&ndash;Ozone架构设计 - zsychanpin - 博客园</a></li>
-<li><a href=https://cloud.tencent.com/developer/article/1530715>Hadoop 对象存储 Ozone - 云+社区 - 腾讯云</a></li>
-<li><a href=http://www.voidcn.com/article/p-osyqejzb-pk.html>HDFS对象存储&ndash;Ozone架构设计 - 程序园</a></li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

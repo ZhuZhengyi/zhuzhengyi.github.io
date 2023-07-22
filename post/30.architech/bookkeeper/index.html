@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="BookKeeper 简介 BookKeeper是一个可靠的日志流记录系统，用于将系统产生的日志(也可以是其他数据)记录在BookKeeper集群上，由BookK">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/bookkeeper/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="BookKeeper">
-<meta property="og:description" content="BookKeeper 简介 BookKeeper是一个可靠的日志流记录系统，用于将系统产生的日志(也可以是其他数据)记录在BookKeeper集群上，由BookK">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/bookkeeper/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="BookKeeper">
-<meta itemprop=description content="BookKeeper 简介 BookKeeper是一个可靠的日志流记录系统，用于将系统产生的日志(也可以是其他数据)记录在BookKeeper集群上，由BookK"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="2757">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="BookKeeper">
-<meta name=twitter:description content="BookKeeper 简介 BookKeeper是一个可靠的日志流记录系统，用于将系统产生的日志(也可以是其他数据)记录在BookKeeper集群上，由BookK"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,183 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#架构>架构</a></li>
-<li><a href=#复制>复制</a></li>
-<li><a href=#持久性>持久性</a>
-<ul>
-<li><a href=#一致性>一致性</a></li>
-<li><a href=#高可用>高可用</a></li>
-<li><a href=#低延迟>低延迟</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=bookkeeper>BookKeeper</h1>
-<h2 id=简介>简介</h2>
-<ul>
-<li>
-<p>BookKeeper是一个可靠的日志流记录系统，用于将系统产生的日志(也可以是其他数据)记录在BookKeeper集群上，由BookKeeper这个第三方Storage保证数据存储的可靠和一致性。</p>
-</li>
-<li>
-<p>典型场景是系统写write-ahead log，即先把log写到BookKeeper上，BookKeeper诞生于Hadoop2.0的namenode HA，由yahoo于2009年创建，并在2011年开源。</p>
-</li>
-</ul>
-<h2 id=架构>架构</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-49-25-2019-12-10-19-03-10-image.png alt></p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-49-44-2019-12-10-18-03-31-image.png alt="Apache BookKeeper 架构图"></p>
-<h2 id=复制>复制</h2>
-<ul>
-<li>
-<p>BookKeeper对所有数据都会复制和存储相同的多份拷贝——一般是三份或是五份——到不同的机器上，可以是同一数据中心，也可以是跨数据中心。</p>
-</li>
-<li>
-<p>不像其他使用主/从或是管道复制算法在副本之间复制数据的分布式系统（例如Apache HDFS、Ceph、Kafka），Apache BookKeeper使用一种多数投票并行复制算法在确保可预测的低延时的基础上复制数据。</p>
-</li>
-</ul>
-<p>BookKeeper复制基于以下核心思想：</p>
-<ul>
-<li>
-<p>日志流的原子结构是记录而不是字节。也就是说，数据总是以不可分割的记录形式（包括了元数据）存放的，而不是一个个字节组成的数组。</p>
-</li>
-<li>
-<p>日志流中记录的顺序与实际记录的实际存储是解耦的。</p>
-</li>
-</ul>
-<p>一个 <strong>BookKeeper 集群</strong>包括：</p>
-<ul>
-<li>
-<p>Bookies：一组独立的存储服务器</p>
-</li>
-<li>
-<p><strong>元数据存储</strong>系统：用于服务发现和元数据管理</p>
-<p>BookKeeper 客户端可以使用较高级别的 DistributedLog API（也称为<strong>日志流 API</strong>）或较低级别的** ledger API**。Ledger API 允许用户直接与 bookies 交互。下图即为 BookKeeper 安装的典型示例。</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/4ibRRsibIGr0agzRnWA5xz0jmRCKR0arKkHv9TACJCDicQzzDs25hTzvIgQ4axO43jbDOj4pFdicP1dgEhPwmUWnSg/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
-<p>典型的 BookKeeper 安装（通过多个 API 连接的应用程序）</p>
-<hr>
-<p><strong>流存储要求</strong></p>
-<p>在上篇文章中已经提到，实时存储平台应该<strong>同时</strong>满足以下要求：</p>
-</li>
-<li>
-<p><strong>即使在强持久性条件下</strong>，客户端也能够以极低的延迟（小于 5 毫秒）读写 entry 流</p>
-</li>
-<li>
-<p>能够持久、一致、容错地存储数据</p>
-</li>
-<li>
-<p>在写入时，客户端能够进行流式传输或追尾传输</p>
-</li>
-<li>
-<p>有效存储数据，支持访问历史数据与实时数据</p>
-<p>BookKeeper 通过提供以下保证来<strong>同时</strong>满足上述各项要求：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/4ibRRsibIGr0agzRnWA5xz0jmRCKR0arKkPUekjeqBcL7WaPz8S1zgIcqW2pTDdaG0aOzQfp26Uyo2fJiaZrE2b8A/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
-<p><strong>多副本</strong></p>
-<p>BookKeeper 在一个数据中心内的多个机器上，或是多个数据中心之间，复制每条数据记录并存储多个副本（通常是 3 个或 5 个副本）。</p>
-<p>一些分布式系统使用主/从或管道复制算法在副本之间复制数据（例如，Apache HDFS、Ceph、Kafka 等），BookKeeper 的不同之处在于使用 <strong>quorum-vote 并行复制算法</strong>来复制数据，以确保可预测的低延迟。下图即为 BookKeeper 集成中的多副本。</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/4ibRRsibIGr0agzRnWA5xz0jmRCKR0arKkZNRjkWuaYuybA5bYIgbia5IGCScA5TnMYiaRsaWZdIeKwZLia4TOQpGag/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt>BookKeeper 多副本中的 ensemble、写入、ack quorum</p>
-<p>在上图中：</p>
-</li>
-</ul>
-<ol>
-<li>
-<p>从 BookKeeper 集群中（自动）选择一组 bookies（图例中为 bookies 1-5）。这一组 bookies 即为给定 **ledger **上用于存储数据记录的 <strong>ensemble</strong>。</p>
-</li>
-<li>
-<p>Ledger 中的数据分布在 bookies 的 ensemble 中。也就是说，每条记录都存有多个副本。用户可以在客户端级别配置副本数，即<strong>写入 quorum 大小</strong>。在上图中，写入 quorum 大小为 3，即记录写入到 bookie 2、bookie 3 与 bookie 4。</p>
-</li>
-<li>
-<p>客户端向 ensemble 中写入数据记录时，需要等待直至有指定数量的副本发送确认（ack）。副本数即为 <strong>ack quorum 大小</strong>。接收到指定数量的 ack 后，客户端默认写入成功。在上图中，ack quorum 大小为 2，也就是说，比如 bookie 3 和 bookie 4 存储数据记录，则向客户端发送一条确认。</p>
-</li>
-<li>
-<p>当 bookie 发生故障时，ensemble 的组成会发生变化。正常的 bookies 会取代终止的 bookies，这种取代可能只是暂时的。例如：如果 <strong>Bookie 5</strong> 终止，<strong>Bookie x</strong> 可能会取代它。</p>
-<p><strong>多副本：核心理念</strong></p>
-<p>BookKeeper 多副本基于以下核心理念：</p>
-</li>
-<li>
-<p>日志流面向记录而不是面向字节。这意味着，数据总是存储为不可分割的记录（包括元数据），而不是存储为单个字节数组。</p>
-</li>
-<li>
-<p>日志（流）中记录的顺序与记录副本的实际存储顺序分离。</p>
-<p>这两个核心理念确保 BookKeeper 多副本能够实现以下几项功能：</p>
-</li>
-</ol>
-<ul>
-<li>
-<p>为向 bookies 写入记录提供多种选择，从而确保即使集群中多个 bookies 终止或运行缓慢，写入操作仍然可以完成（只要有足够的容量来处理负载）。可以通过改变 ensemble 来实现。</p>
-</li>
-<li>
-<p>通过增加 ensemble 大小来最大化单个日志（流）的带宽，以使单个日志不受一台或一小组机器的限制。可以通过将 ensemble 大小配置为大于写入 quorum 大小来实现。</p>
-</li>
-<li>
-<p>通过调整 ack quorum 大小来改善追加时的延迟。这对于确保 BookKeeper 的低延迟十分重要，同时还可以提供一致性与持久性保证。</p>
-</li>
-<li>
-<p>通过多对多副本恢复提供快速<strong>再复制</strong>（再复制为复制不足的记录创建更多副本，例如：副本数小于写入 quorum 大小）。所有的 bookies 都可以作为记录副本的提供者<em>与</em>接受者。</p>
-</li>
-</ul>
-<h2 id=持久性>持久性</h2>
-<p>保证复制每条写入 BookKeeper 的数据记录，并持久化到指定数量的 bookies 中。可以通过使用磁盘 fsync 和写入确认来实现。</p>
-<ol>
-<li>
-<p>在单个 bookie 上，将确认发送给客户端之前，数据记录已明确写入（启用 fsync）磁盘，以便在发生故障时能够持久保存数据。这样可以保证数据写入到持久化存储中不依赖电源，可以被重新读取使用。</p>
-</li>
-<li>
-<p>在单个集群内，复制数据记录到多个 bookies，以实现容错。</p>
-</li>
-<li>
-<p>仅当客户端收到指定数量（通过 ack quorum 大小指定）的 bookies 响应时，才 ack 数据记录。</p>
-<p>最新的 NoSQL 类型数据库、分布式文件系统和消息系统（例如：Apache Kafka）都假定：保证最佳持久化的有效方式是将数据复制到多个节点的内存中。但问题是，这些系统允许潜在的数据丢失。</p>
-<p><strong>BookKeeper 旨在提供更强的持久性保证，完全防止数据丢失，从而满足企业的严格要求。</strong></p>
-</li>
-</ol>
-<h3 id=一致性>一致性</h3>
-<p>保证一致性是分布式系统中的常见问题，尤其是在引入多副本以确保持久性和高可用时。BookKeeper 为存储在日志中的数据提供了简单而强大的一致性保证（可重复读取的一致性）：</p>
-<ul>
-<li>
-<p>如果记录已被引用程序 ack，则必须<strong>立即</strong>可读。</p>
-</li>
-<li>
-<p>如果记录被读取一次，则必须<strong>始终</strong>可读。如果记录 <strong>R</strong> 成功写入，则在 <strong>R</strong> 之前的所有记录都已成功提交/保存，并且将始终可读。</p>
-</li>
-<li>
-<p>在不同读者之间，存储记录的顺序必须完全相同且可重复。</p>
-<p>这种可重复读取的一致性由 BookKeeper 中的 LastAddConfirmed（LAC）协议实现。</p>
-</li>
-</ul>
-<h3 id=高可用>高可用</h3>
-<p>在 CAP（Consistency：一致性、Availability：高可用、Partition tolerance：分区容错）条件下，BookKeeper 是一个 CP 系统。</p>
-<p>但实际上，即使存在硬件、网络或其他故障，Apache BookKeeper 仍然可以提供高可用性。为保证写入与读取的高可用性能，BookKeeper 采用了以下机制：</p>
-<p><img src="https://mmbiz.qpic.cn/mmbiz_png/4ibRRsibIGr0agzRnWA5xz0jmRCKR0arKkkeiauEpNQvI7UticfwQkH4NGerkEJkgLnEIO8Wpd0wEicOLX36SrhVN4Q/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1" alt></p>
-<h3 id=低延迟>低延迟</h3>
-<p>强持久性和一致性是分布式系统的复杂问题，特别是当分布式系统还需要满足企业级低延迟时。BookKeeper 通过以下方式满足这些要求：</p>
-<ul>
-<li>
-<p>在单个 bookie 上，bookie 服务器旨在用于不同工作负载（写入、追尾读、追赶读/随机读）之间的I/O 隔离。在 journal 上部署 <strong>group-committing 机制</strong>以平衡延迟与吞吐量。</p>
-</li>
-<li>
-<p>采用 <strong>quorum-vote 并行复制 schema</strong> 缓解由于网络故障、JVM 垃圾回收暂停和磁盘运行缓慢引起的延迟损失。这样不仅可以改善追尾延迟，还能保证可预测的 p99 低延迟。</p>
-</li>
-<li>
-<p>采用长轮询机制在 ack 并确认新记录后，立刻向追尾的写入者发出通知并发送记录。</p>
-<p>最后，值得一提的是，明确 fsync 和写入确认的持久性与可重复的读取一致性对于状态处理（尤其是流应用程序的 effectively-once 处理）非常重要。</p>
-</li>
-</ul>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=http://matt33.com/2019/01/28/bk-store-realize/>http://matt33.com/2019/01/28/bk-store-realize/</a></p>
-</li>
-<li>
-<p><a href=https://cloud.tencent.com/developer/news/339495>为何选择Apache BookKeeper？第一部分：一致性、持久性以及可用性 - 云+社区 - 腾讯云</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

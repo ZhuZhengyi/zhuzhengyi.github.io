@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="HBase读流程解析 pread 在Scan中，用户可以设置ReadType: 1 2 3 4 @InterfaceAudience.Public public enum ReadType { DEFAULT, STREAM, PREAD } 具体到HBase代码中的HFileBLock#r">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/hbase/hbase%E6%BA%90%E7%A0%81/hbase%E8%AF%BB%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="HBase读流程解析">
-<meta property="og:description" content="HBase读流程解析 pread 在Scan中，用户可以设置ReadType: 1 2 3 4 @InterfaceAudience.Public public enum ReadType { DEFAULT, STREAM, PREAD } 具体到HBase代码中的HFileBLock#r">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/hbase/hbase%E6%BA%90%E7%A0%81/hbase%E8%AF%BB%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2021-10-10T12:59:52+08:00">
 <meta property="article:modified_time" content="2021-10-10T12:59:52+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="HBase读流程解析">
-<meta itemprop=description content="HBase读流程解析 pread 在Scan中，用户可以设置ReadType: 1 2 3 4 @InterfaceAudience.Public public enum ReadType { DEFAULT, STREAM, PREAD } 具体到HBase代码中的HFileBLock#r"><meta itemprop=datePublished content="2021-10-10T12:59:52+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2021-10-10T12:59:52+08:00">
 <meta itemprop=dateModified content="2021-10-10T12:59:52+08:00">
-<meta itemprop=wordCount content="662">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,hbase,hbase源码,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="HBase读流程解析">
-<meta name=twitter:description content="HBase读流程解析 pread 在Scan中，用户可以设置ReadType: 1 2 3 4 @InterfaceAudience.Public public enum ReadType { DEFAULT, STREAM, PREAD } 具体到HBase代码中的HFileBLock#r"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -182,71 +182,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li>
-<ul>
-<li><a href=#pread>pread</a></li>
-</ul>
-</li>
-<li><a href=#hbase-scan-优化>hbase scan 优化</a>
-<ul>
-<li><a href=#hdfs-2246-曾经实现的short-circuit-localreads>HDFS-2246 曾经实现的Short-Circuit LocalReads</a></li>
-</ul>
-</li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=hbase读流程解析>HBase读流程解析</h1>
-<h3 id=pread>pread</h3>
-<p>在Scan中，用户可以设置ReadType:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=nd>@InterfaceAudience.Public</span>
-<span class=kd>public</span> <span class=kd>enum</span> <span class=n>ReadType</span> <span class=o>{</span>
-<span class=n>DEFAULT</span><span class=o>,</span> <span class=n>STREAM</span><span class=o>,</span> <span class=n>PREAD</span>
-<span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>具体到HBase代码中的<strong>HFileBLock#readAtOffset</strong>方法，可以比较好的说明PREAD和STREAM的区别．</p>
-<ol>
-<li>pread其实就是positional read, 每次都会发一个offset到datanode，让datanode去seek到对应的位置，然后读取数据．　在同一个DFSInputStream上可以跑多个pread操作．pread适合的场景是小数据量的随机读，就是频率高且数据量小的操作，典型的例如<strong>small scan操作</strong>以及***读取meta表定位rowKey所在region的操作***，这些操作一般默认都用PREAD．</li>
-<li>stream其实是seek + read，就是发一个offset到datanode，然后就不需要你再发offset给datanode了，然后datanode依次吐数据给你．因此，同一个DFSInputStream上跑多个stream的话，吐出来的数据就乱了．<strong>*stream更适合较大数据量的顺序scan操作</strong>*，典型的场景例如业务扫表操作以及Compaction的扫表操作．</li>
-</ol>
-<h2 id=hbase-scan-优化>hbase scan 优化</h2>
-<ul>
-<li>
-<p>Lazy-seek optimization <a href=https://issues.apache.org/jira/browse/HBASE-4465>https://issues.apache.org/jira/browse/HBASE-4465</a></p>
-</li>
-<li>
-<p>Improve performance for small scan <a href=https://issues.apache.org/jira/browse/HBASE-9488>https://issues.apache.org/jira/browse/HBASE-9488</a></p>
-</li>
-<li>
-<p>Using pread for non-compaction read request <a href=https://issues.apache.org/jira/browse/HBASE-7266>https://issues.apache.org/jira/browse/HBASE-7266</a></p>
-</li>
-</ul>
-<h3 id=hdfs-2246-曾经实现的short-circuit-localreads>HDFS-2246 曾经实现的Short-Circuit LocalReads</h3>
-<p>其关键思想如下：因为客户端和数据在同一个节点，所以没必要再去和DN交互。客户端本身直接就从本地磁盘读出数据。这个性能优化被加入了CDH3u3。</p>
-<p><a href=https://www.cnblogs.com/smartloli/p/9462835.html>https://www.cnblogs.com/smartloli/p/9462835.html</a></p>
-<configuration>
-<property>
-​ <name>dfs.client.read.shortcircuit</name>
-​ <value>true</value>
-</property>
-<property>
-​ <name>dfs.domain.socket.path</name>
-​ <value>/var/lib/hadoop-hdfs/dn_socket</value>
-</property>
-</configuration>
-<p>如果正在读某个block比较慢，hdfs客户端会启动另一个并行的线程去读此block的副本。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

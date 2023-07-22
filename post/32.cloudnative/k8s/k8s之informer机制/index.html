@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="k8s中informer机制 简介 kubernetes中的informer机制可能是实现集群控制模块的最核心的设计之一了， 本文从informe">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E4%B9%8Binformer%E6%9C%BA%E5%88%B6/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="k8s中informer机制">
-<meta property="og:description" content="k8s中informer机制 简介 kubernetes中的informer机制可能是实现集群控制模块的最核心的设计之一了， 本文从informe">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s%E4%B9%8Binformer%E6%9C%BA%E5%88%B6/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="k8s中informer机制">
-<meta itemprop=description content="k8s中informer机制 简介 kubernetes中的informer机制可能是实现集群控制模块的最核心的设计之一了， 本文从informe"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1588">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="cloudnative,k8s,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="k8s中informer机制">
-<meta name=twitter:description content="k8s中informer机制 简介 kubernetes中的informer机制可能是实现集群控制模块的最核心的设计之一了， 本文从informe"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,69 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#1-informer的本质>1. informer的本质</a></li>
-<li><a href=#11-设计目标>1.1 设计目标</a></li>
-<li><a href=#12-基于chunk的消息通知>1.2 基于chunk的消息通知</a></li>
-<li><a href=#13-reflector>1.3 reflector</a></li>
-<li><a href=#2-设计优化>2. 设计优化</a></li>
-<li><a href=#21-本地缓存>2.1 本地缓存</a></li>
-<li><a href=#22-本地索引>2.2 本地索引</a></li>
-<li><a href=#23-无界队列>2.3 无界队列</a></li>
-<li><a href=#24-事件去重>2.4 事件去重</a></li>
-<li><a href=#25-复用连接>2.5 复用连接</a></li>
-<li><a href=#26-基于观察者模式的注册>2.6 基于观察者模式的注册</a></li>
-<li><a href=#27-无界队列>2.7 无界队列</a></li>
-<li><a href=#3-设计总结>3. 设计总结</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=k8s中informer机制>k8s中informer机制</h1>
-<h2 id=简介>简介</h2>
-<ul>
-<li>
-<p>kubernetes中的informer机制可能是实现集群控制模块的最核心的设计之一了，</p>
-</li>
-<li>
-<p>本文从informer如何获取数据开始,</p>
-</li>
-<li>
-<p>然后介绍了为了减少apiserver而设计的缓存、索引、无界队列、共享informer等机制欢迎一起交流学习</p>
-</li>
-</ul>
-<h2 id=1-informer的本质>1. informer的本质</h2>
-<h2 id=11-设计目标>1.1 设计目标</h2>
-<p><img src=https://p6-ad.bytecdn.cn/large/pgc-image/d563af01252249688218b7eeb2e6a2e5 alt=图解kubernetes中informer机制基础设计原理></p>
-<p>之前说到kubernetes里面的apiserver的只负责数据的CRUD接口实现，并不负责业务逻辑的处理，</p>
-<p>所以k8s中就通过外挂controller通过对应资源的控制器来负责事件的处理，controller如何感知事件呢？答案就是informer</p>
-<h2 id=12-基于chunk的消息通知>1.2 基于chunk的消息通知</h2>
-<p><img src=https://p1-ad.bytecdn.cn/large/pgc-image/e5ec93f0261044dd8a0f1bbe765af717 alt=图解kubernetes中informer机制基础设计原理></p>
-<p>watcher的设计在之前的文章中已经介绍，服务端是如何将watcher感知到的事件发送给informer呢？我们提到过apiserver本质上就是一个http的rest接口实现，watch机制则也是基于http协议，不过不同于一般的get其通过chunk机制，来实现消息的通知</p>
-<h2 id=13-reflector>1.3 reflector</h2>
-<p>服务端通过chunk进行数据的发送，在客户端同样的需要根据对应的chunk来进行数据的解包，同时还要维护这个长链接</p>
-<h2 id=2-设计优化>2. 设计优化</h2>
-<p>为了缓解apiserver的压力,informer自身做了很多相关的优化工作，其本质上为两个大的方面：优先使用本地缓存和复用连接，每个人看到的可能都不太一样，本文是基于源码的个人理解，欢迎交流</p>
-<h2 id=21-本地缓存>2.1 本地缓存</h2>
-<p>通过listwatch接口主要分为两部分，list接口我们可以获取到对应资源当前版本的全量资源，watch接口可以获取到后续变更的资源，通过全量加增量的数据，就构成了在client端一份完整的数据(基于当前版本的)，那后续如果要获取对应的数据，就直接可以通过本地的缓存来进行获取，为此informer抽象了cache这个组件，并且实现了store接口，如果后续要获取资源，则就可以通过本地的缓存来进行获取</p>
-<h2 id=22-本地索引>2.2 本地索引</h2>
-<p>上面将资源缓存在本地的内存中，那如果我们要进行数据查询，快速检索数据，这个时候就需要用到informer里面的indexer, 我们可以注册不同的索引函数，在添加对象的时候，会通过indexer为其建立对应的索引，这样后续我们就可以通过key来检索获取元数据</p>
-<h2 id=23-无界队列>2.3 无界队列</h2>
-<p>为了协调数据生产与消费的不一致状态，在cleint-go中通过实现了一个无界队列来进行数据的缓冲，当reflector获取到数据之后，只需要将数据写入到无界队列中，则就可以继续watch后续事件，从而减少阻塞时间， 下面的事件去重也是在该队列中实现的</p>
-<h2 id=24-事件去重>2.4 事件去重</h2>
-<p>事件去重是指的，在上面的无界队列中，如果针对某个资源的事件重复被触发，则就只会保留相同事件最后一个事件作为后续处理</p>
-<p>到此对于事件接收和数据缓存相关优化就结束了，接下就是处理层的优化</p>
-<h2 id=25-复用连接>2.5 复用连接</h2>
-<p>在k8s中一些控制器可能会关注多种资源，比如Deployment可能会关注Pod和replicaset，replicaSet可能还会关注Pod，为了避免每个控制器都独立的去与apiserver建立链接，k8s中抽象了sharedInformer的概念，即共享的informer, 针对同一资源只建立一个链接</p>
-<h2 id=26-基于观察者模式的注册>2.6 基于观察者模式的注册</h2>
-<p>因为彼此共用informer,但是每个组件的处理逻辑可能各部相同，在informer中通过观察者模式，各个组件可以注册一个EventHandler来实现业务逻辑的注入</p>
-<h2 id=27-无界队列>2.7 无界队列</h2>
-<p>前面提到过一个无界队列，而此处是针对单个eventHandler的无界队列，其实主要是为了协调各个组件的处理速度的不一致</p>
-<h2 id=3-设计总结>3. 设计总结</h2>
-<p>本文从informer如何获取数据开始,然后介绍了为了减少apiserver而设计的缓存、索引、无界队列、共享informer等机制, 抛个小问题, 基于listwatch和informer机制会不会丢事件,如果丢事件会不会影响最终的结果</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

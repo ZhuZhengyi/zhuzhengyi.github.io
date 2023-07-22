@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Linux网络命名空间 简介 Linux network namespace是Linux上容器技术的基础之一； network namespace 实现单个节点上了网络的隔离 虚拟网络 namespace veth pair 网桥(brid">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/linux%E7%BD%91%E7%BB%9C%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Linux网络命名空间">
-<meta property="og:description" content="Linux网络命名空间 简介 Linux network namespace是Linux上容器技术的基础之一； network namespace 实现单个节点上了网络的隔离 虚拟网络 namespace veth pair 网桥(brid">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/linux%E7%BD%91%E7%BB%9C%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Linux网络命名空间">
-<meta itemprop=description content="Linux网络命名空间 简介 Linux network namespace是Linux上容器技术的基础之一； network namespace 实现单个节点上了网络的隔离 虚拟网络 namespace veth pair 网桥(brid"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="324">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="cloudnative,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Linux网络命名空间">
-<meta name=twitter:description content="Linux网络命名空间 简介 Linux network namespace是Linux上容器技术的基础之一； network namespace 实现单个节点上了网络的隔离 虚拟网络 namespace veth pair 网桥(brid"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,116 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#虚拟网络>虚拟网络</a></li>
-<li><a href=#iptables>iptables</a></li>
-<li><a href=#路由>路由</a></li>
-<li><a href=#tuntap>tun/tap</a></li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=linux网络命名空间>Linux网络命名空间</h1>
-<h2 id=简介>简介</h2>
-<ul>
-<li>
-<p>Linux network namespace是Linux上容器技术的基础之一；</p>
-</li>
-<li>
-<p>network namespace 实现单个节点上了网络的隔离</p>
-</li>
-</ul>
-<h2 id=虚拟网络>虚拟网络</h2>
-<ul>
-<li>
-<p>namespace</p>
-</li>
-<li>
-<p>veth pair</p>
-</li>
-<li>
-<p>网桥(bridge)</p>
-</li>
-<li>
-<p>tun/tap</p>
-</li>
-</ul>
-<h2 id=iptables>iptables</h2>
-<ul>
-<li>
-<p>iptables通过设置规则，通知内核netfilter实现；</p>
-</li>
-<li>
-<p>netfilter是linux内核实现的网络包过滤框架，定义了5个hook点：</p>
-<ul>
-<li>
-<p>prerouting</p>
-</li>
-<li>
-<p>postrouting</p>
-</li>
-<li>
-<p>forward</p>
-</li>
-<li>
-<p>input</p>
-</li>
-<li>
-<p>output</p>
-</li>
-</ul>
-</li>
-<li>
-<p>用户态可以通过iptables来为每个网络设备在这5个hook中设置处理规则，实现相应的功能；</p>
-</li>
-</ul>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/05/06-18-41-35-2022-05-06-18-41-27-image.png alt></p>
-<ul>
-<li>
-<p>iptables支持的表类型有RAW, MANGLE, NAT, FILTER,优先级依次降低；</p>
-</li>
-<li>
-<p>数据处理时，依次调用hook上的所有挂钩函数，直到数据包被明确拒绝或接收。</p>
-</li>
-<li></li>
-</ul>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/05/06-18-45-39-2022-05-06-18-45-34-image.png alt></p>
-<ul>
-<li>操作</li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1>## 查看chain</span>
-$ iptables --list 
-<span class=c1>## 查看rules</span>
-$ iptables --list-rules
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=路由>路由</h2>
-<ul>
-<li>route</li>
-</ul>
-<h2 id=tuntap>tun/tap</h2>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://zhuanlan.zhihu.com/p/133437144>https://zhuanlan.zhihu.com/p/133437144</a></p>
-</li>
-<li>
-<p><a href=https://www.jianshu.com/p/6d77d73325bf>linux：iptables详解 - 简书</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Jump一致性哈希算法 简介 Jump consistent hash是一种一致性哈希算法, 此算法零内存消耗，均匀分配，快速，并且只有5行代码。 这个算法是 Google 的 John Lamping 和 Eric Veach 创造">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/13.algorithm/jumpconsistenthash%E7%AE%97%E6%B3%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Jump一致性哈希算法">
-<meta property="og:description" content="Jump一致性哈希算法 简介 Jump consistent hash是一种一致性哈希算法, 此算法零内存消耗，均匀分配，快速，并且只有5行代码。 这个算法是 Google 的 John Lamping 和 Eric Veach 创造">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/13.algorithm/jumpconsistenthash%E7%AE%97%E6%B3%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-04-30T17:04:39+08:00">
 <meta property="article:modified_time" content="2022-04-30T17:04:39+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Jump一致性哈希算法">
-<meta itemprop=description content="Jump一致性哈希算法 简介 Jump consistent hash是一种一致性哈希算法, 此算法零内存消耗，均匀分配，快速，并且只有5行代码。 这个算法是 Google 的 John Lamping 和 Eric Veach 创造"><meta itemprop=datePublished content="2022-04-30T17:04:39+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-04-30T17:04:39+08:00">
 <meta itemprop=dateModified content="2022-04-30T17:04:39+08:00">
-<meta itemprop=wordCount content="884">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="algorithm,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Jump一致性哈希算法">
-<meta name=twitter:description content="Jump一致性哈希算法 简介 Jump consistent hash是一种一致性哈希算法, 此算法零内存消耗，均匀分配，快速，并且只有5行代码。 这个算法是 Google 的 John Lamping 和 Eric Veach 创造"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,73 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#算法原理>算法原理</a></li>
-<li><a href=#算法优化>算法优化</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=jump一致性哈希算法>Jump一致性哈希算法</h1>
-<h2 id=简介>简介</h2>
-<p>Jump consistent hash是一种一致性哈希算法,</p>
-<p>此算法<strong>零内存消耗</strong>，<strong>均匀分配</strong>，<strong>快速</strong>，并且<strong>只有5行代码</strong>。</p>
-<p>这个算法是 Google 的 John Lamping 和 Eric Veach 创造的。<br>
-他们为这个算法写了一篇论文：《A Fast, Minimal Memory, Consistent Hash Algorithm》。</p>
-<p>看了论文后，我才恍然大悟，原来是这样，果然是合理的。<br>
-如果你阅读原文论文，可以公众号后台回复“谷歌算法”获取论文。</p>
-<h2 id=算法原理>算法原理</h2>
-<p>一致性哈希算法有两个目标：</p>
-<ol>
-<li>平衡性。即把数据平均的分布在所有节点中。</li>
-<li>单调性。即节点的数量变化时，只需要把一部分数据从旧节点移动到新节点，不需要做其他的移动。</li>
-</ol>
-<p>我们根据这个单调性可以推算出一些性质来。<br>
-这里先另<code>f(key, n)</code>为一致性哈希算法，输出的为<code>[0,n)</code>之间的数字，代表数据在对应的节点上。</p>
-<ol>
-<li><code>n=1</code> 时，对于任意的<code>key</code>，输出应该都是<code>0</code>。</li>
-<li><code>n=2</code> 时，为了保持均匀，应该有<code>1/2</code>的结果保持为<code>0</code>，<code>1/2</code>的结果输出为<code>1</code>。</li>
-<li><code>n=3</code> 时，应该有<code>1/3</code>的结果保持为<code>0</code>，<code>1/3</code>的结果保持为<code>1</code>，<code>1/3</code>的结果保持为<code>2</code>。</li>
-<li>依次递推，节点数由<code>n</code>变为<code>n+1</code>时，<code>f(key, n)</code>里面应该有<code>n/(n+1)</code>的结果不变，有<code>1/(n+1)</code>的结果变为<code>n</code>。</li>
-</ol>
-<p>这个使用概率公式来表示，就是这样的代码。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span><span class=lnt>7
-</span><span class=lnt>8
-</span><span class=lnt>9
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int32_t</span> <span class=nf>JumpConsistentHash</span><span class=p>(</span><span class=kt>uint64_t</span> <span class=n>key</span><span class=p>,</span> <span class=kt>int32_t</span> <span class=n>num_buckets</span><span class=p>)</span> <span class=p>{</span> 
-    <span class=kt>int64_t</span> <span class=n>b</span> <span class=o>=</span> <span class=o>-</span><span class=mi>1</span><span class=p>,</span> <span class=n>j</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> 
-    <span class=k>while</span> <span class=p>(</span><span class=n>j</span> <span class=o>&lt;</span> <span class=n>num_buckets</span><span class=p>)</span> <span class=p>{</span> 
-        <span class=n>b</span> <span class=o>=</span> <span class=n>j</span><span class=p>;</span> 
-        <span class=n>key</span> <span class=o>=</span> <span class=n>key</span> <span class=o>*</span> <span class=mi>2862933555777941757ULL</span> <span class=o>+</span> <span class=mi>1</span><span class=p>;</span> 
-        <span class=n>j</span> <span class=o>=</span> <span class=p>(</span><span class=n>b</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>*</span> <span class=p>(</span><span class=kt>double</span><span class=p>(</span><span class=mi>1LL</span> <span class=o>&lt;&lt;</span> <span class=mi>31</span><span class=p>)</span> <span class=o>/</span> <span class=kt>double</span><span class=p>((</span><span class=n>key</span> <span class=o>&gt;&gt;</span> <span class=mi>33</span><span class=p>)</span> <span class=o>+</span> <span class=mi>1</span><span class=p>));</span> 
-    <span class=p>}</span> 
-    <span class=k>return</span> <span class=n>b</span><span class=p>;</span>
-<span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=算法优化>算法优化</h2>
-<p>除了复杂度是<code>O(n)</code>外，我们还可以确定，循环越往后，结果改变的概率会越来越低。</p>
-<p>结果改变指的是，增加一个节点后，一个固定的<code>key</code>输出的结果发生了改变。<br>
-如果我们能够快速计算出这个固定的<code>key</code>在哪些节点下发生了改变，就可以快速计算出最终答案。</p>
-<p>假设某一次结果是<code>b</code>，经过若干次概率测试，下一次改变为<code>a</code>，则从<code>b+1</code>到<code>a-1</code>这中间，不管节点如何变化，这个<code>key</code>的结果都是不会变化的。<br>
-根据上一小节的到的概率变化公式，新增一个节点数字不变化的概率是<code>n/(n+1)</code>。<br>
-那从<code>b+1</code>到<code>i</code>不变化的概率就是<code>(b+1)/i</code>（中间的抵消了）。</p>
-<p>如果我们有一个均匀的随机函数<code>r</code>，可以确定当<code>r&lt;(b+1)/i</code>时，<code>f(i)=f(b+1)</code>。<br>
-那么<code>i</code>的上界就是<code>(b+1)/r</code>向上取整。<br>
-这个上限也是下一次<code>key</code>发生变化的节点数量。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

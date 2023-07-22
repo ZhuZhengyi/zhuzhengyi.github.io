@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="zookeeper 简介 Zookeeper是一个分布式开源框架，提供了协调分布式应用的基本服务，它向外部应用暴露一组通用服务——分布式同步（Distribut">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/30.architech/zookeeper/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="zookeeper">
-<meta property="og:description" content="zookeeper 简介 Zookeeper是一个分布式开源框架，提供了协调分布式应用的基本服务，它向外部应用暴露一组通用服务——分布式同步（Distribut">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/30.architech/zookeeper/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="zookeeper">
-<meta itemprop=description content="zookeeper 简介 Zookeeper是一个分布式开源框架，提供了协调分布式应用的基本服务，它向外部应用暴露一组通用服务——分布式同步（Distribut"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="860">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="zookeeper">
-<meta name=twitter:description content="zookeeper 简介 Zookeeper是一个分布式开源框架，提供了协调分布式应用的基本服务，它向外部应用暴露一组通用服务——分布式同步（Distribut"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,145 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#组成>组成</a></li>
-<li><a href=#节点znode>节点(Znode)</a>
-<ul>
-<li><a href=#节点类型>节点类型</a></li>
-<li><a href=#节点属性>节点属性</a></li>
-</ul>
-</li>
-<li><a href=#会话session>会话(Session)</a></li>
-<li><a href=#监视watches>监视(Watches)</a></li>
-<li><a href=#操作>操作</a></li>
-<li><a href=#leader选举算法>leader选举算法</a></li>
-<li><a href=#应用>应用</a></li>
-<li><a href=#安装>安装</a></li>
-<li><a href=#操作-1>操作</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=zookeeper>zookeeper</h1>
-<h2 id=简介>简介</h2>
-<p>Zookeeper是一个分布式开源框架，提供了协调分布式应用的基本服务，它向外部应用暴露一组通用服务——分布式同步（Distributed Synchronization）、命名服务（Naming Service）、集群维护（Group Maintenance）等，简化分布式应用协调及其管理的难度，提供高性能的分布式服务。ZooKeeper本身可以以单机模式安装运行，不过它的长处在于通过分布式ZooKeeper集群（一个Leader，多个Follower），基于一定的策略来保证ZooKeeper集群的稳定性和可用性，从而实现分布式应用的可靠性。</p>
-<h2 id=组成>组成</h2>
-<ul>
-<li>znode</li>
-<li>原语</li>
-<li>watcher机制</li>
-</ul>
-<h2 id=节点znode>节点(Znode)</h2>
-<h3 id=节点类型>节点类型</h3>
-<ul>
-<li>临时节点(ephemeral): 依赖于会话,会话结束,临时节点被自动删除; 没有子节点;</li>
-<li>永久节点(persistent): 不依赖于会话, 需显式删除;</li>
-<li>顺序节点(sequential): 节点创建时,在末尾添加一个递增计数,该计数对父节点唯一;</li>
-</ul>
-<h3 id=节点属性>节点属性</h3>
-<h2 id=会话session>会话(Session)</h2>
-<h2 id=监视watches>监视(Watches)</h2>
-<h2 id=操作>操作</h2>
-<ul>
-<li>create</li>
-<li>delete</li>
-<li>exists</li>
-<li>getACL/setACL</li>
-<li>getChildren</li>
-<li>getData/setData</li>
-<li>sync</li>
-</ul>
-<h2 id=leader选举算法>leader选举算法</h2>
-<ul>
-<li>所有节点都创建相同路径的顺序临时node;</li>
-<li>创建序号最小的node的节点成为leader, 其他节点成为follower;</li>
-<li>follower节点监视下一个最小序号的znode, 例如: 8 -> 7;</li>
-<li>若leader关闭, leader节点创建的znode将会被删除;</li>
-<li>下一个节点获取leader的移除通知, 检查是否存在其他更小的znode, 若无, 这成为leader; 否则, 该最小znode节点成为leader;</li>
-<li>其他节点遵循同样算法;</li>
-</ul>
-<h2 id=应用>应用</h2>
-<ul>
-<li>分布式锁:</li>
-<li>统一命名服务:</li>
-<li>配置管理:</li>
-<li>集群管理:</li>
-<li>队列服务:
-<ul>
-<li>同步队列</li>
-<li>FIFO队列</li>
-</ul>
-</li>
-</ul>
-<h2 id=安装>安装</h2>
-<ol>
-<li>
-<p>下载：http://www.apache.org/dyn/closer.cgi/zookeeper/</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>tar xf zookeeper-3.4.10.tar.gz
-<span class=nb>cd</span> zookeeper-3.4.10
-cp conf/zoo_sample.cfg conf/zoo.cfg
-</code></pre></td></tr></table>
-</div>
-</div><p>Zoo.cfg 文件配置如下：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>dataDir=/data/zookeeper/
-server.1=note1:2888:3888
-server.2=note2:2888:3888
-server.3=note3:2888:3888
-</code></pre></td></tr></table>
-</div>
-</div></li>
-<li>
-<p>个节点分别设置myid</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>$ mkdir -p /data/zookeeper
-$ echo &#34;1&#34; &gt; /data/zookeeper/data/myid
-</code></pre></td></tr></table>
-</div>
-</div></li>
-</ol>
-<h2 id=操作-1>操作</h2>
-<ul>
-<li>
-<p>启动：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ bin/zkServer.sh start          <span class=c1># 启动当前节点</span>
-$ bin/zkServer.sh status      <span class=c1># 查看节点状态</span>
-$ bin/zkServer.sh stop        <span class=c1># 停止当前节点</span>
-$ bin/zkCli.sh                <span class=c1># 启动命令行客户端</span>
-</code></pre></td></tr></table>
-</div>
-</div></li>
-</ul>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

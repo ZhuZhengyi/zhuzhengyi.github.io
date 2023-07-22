@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="ChubaoFS vs NFS 性能对比测试 目的 使用fio，对chubaofs 和 nfs 进行读写测试，对比两者性能； 测试说明 所有机器都在一个机房内； nfs： nfs为两套nf">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-vs-nfs%E5%AF%B9%E6%AF%94%E6%B5%8B%E8%AF%95/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="ChubaoFS vs NFS 性能对比测试">
-<meta property="og:description" content="ChubaoFS vs NFS 性能对比测试 目的 使用fio，对chubaofs 和 nfs 进行读写测试，对比两者性能； 测试说明 所有机器都在一个机房内； nfs： nfs为两套nf">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/chubaofs-vs-nfs%E5%AF%B9%E6%AF%94%E6%B5%8B%E8%AF%95/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ChubaoFS vs NFS 性能对比测试">
-<meta itemprop=description content="ChubaoFS vs NFS 性能对比测试 目的 使用fio，对chubaofs 和 nfs 进行读写测试，对比两者性能； 测试说明 所有机器都在一个机房内； nfs： nfs为两套nf"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="663">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ChubaoFS vs NFS 性能对比测试">
-<meta name=twitter:description content="ChubaoFS vs NFS 性能对比测试 目的 使用fio，对chubaofs 和 nfs 进行读写测试，对比两者性能； 测试说明 所有机器都在一个机房内； nfs： nfs为两套nf"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,227 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#目的>目的</a>
-<ul>
-<li><a href=#测试说明>测试说明</a></li>
-</ul>
-</li>
-<li><a href=#测试脚本>测试脚本</a></li>
-<li><a href=#测试过程>测试过程</a></li>
-<li><a href=#测试结果>测试结果</a></li>
-<li><a href=#结论>结论</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=chubaofs-vs-nfs-性能对比测试>ChubaoFS vs NFS 性能对比测试</h1>
-<h2 id=目的>目的</h2>
-<p>使用fio，对chubaofs 和 nfs 进行读写测试，对比两者性能；</p>
-<h3 id=测试说明>测试说明</h3>
-<ul>
-<li>
-<p>所有机器都在一个机房内；</p>
-</li>
-<li>
-<p>nfs： nfs为两套nfs1,nfs2，<code>nfs1</code>为nvme磁盘，<code>nfs2</code>为hdd磁盘；</p>
-</li>
-<li>
-<p>chubaofs： chubaofs 磁盘为hdd磁盘，8个datanode节点；</p>
-</li>
-<li>
-<p>测试服务器：4台测试服务器，每台建立三个挂载目录，每个目录分别挂载<code>nfs1</code>, <code>nfs2</code>, <code>chubaofs</code>待测试卷；</p>
-</li>
-<li>
-<p>读写类型：顺序读(read), 顺序写(write),混合读写(rw), 随机读(randread), 随机写(randwrite), 随机混合读写(randrw)</p>
-</li>
-<li>
-<p>数据块大小：4M，1M，256K, 64K, 16K, 4K</p>
-</li>
-</ul>
-<h2 id=测试脚本>测试脚本</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>    fio <span class=se>\
-</span><span class=se></span>        -name<span class=o>=</span><span class=si>${</span><span class=nv>test_name</span><span class=si>}</span> <span class=se>\
-</span><span class=se></span>        -directory<span class=o>=</span><span class=nv>$1</span> <span class=se>\
-</span><span class=se></span>        -direct<span class=o>=</span><span class=m>0</span> <span class=se>\
-</span><span class=se></span>        -fallocate<span class=o>=</span><span class=m>0</span> <span class=se>\
-</span><span class=se></span>        -iodepth <span class=m>1</span> <span class=se>\
-</span><span class=se></span>        -thread <span class=se>\
-</span><span class=se></span>        -rw<span class=o>=</span><span class=si>${</span><span class=nv>RW_TYPE</span><span class=si>}</span> <span class=se>\
-</span><span class=se></span>        -ioengine<span class=o>=</span>psync <span class=se>\
-</span><span class=se></span>        -bs<span class=o>=</span><span class=si>${</span><span class=nv>FIO_BS</span><span class=si>}</span> <span class=se>\
-</span><span class=se></span>        -size<span class=o>=</span>4G <span class=se>\
-</span><span class=se></span>        -numjobs<span class=o>=</span><span class=m>20</span> <span class=se>\
-</span><span class=se></span>        -runtime<span class=o>=</span><span class=m>180</span> <span class=se>\
-</span><span class=se></span>        -group_reporting 
-</code></pre></td></tr></table>
-</div>
-</div><h2 id=测试过程>测试过程</h2>
-<ol>
-<li>
-<p>分别准备nfs1，nfs2，chubaofs待测试卷；</p>
-</li>
-<li>
-<p>在4台测试服务器上分别挂载测试卷到相应目录；</p>
-</li>
-<li>
-<p>在4台测试服务器中同时发起fio测试脚本，依次测试nfs1，nfs2, chubaofs的性能数据；</p>
-</li>
-<li>
-<p>将各个服务器中的性能数据相加，得到总的数据;</p>
-</li>
-</ol>
-<h2 id=测试结果>测试结果</h2>
-<table>
-<thead>
-<tr>
-<th></th>
-<th><strong>cfshdd</strong></th>
-<th><strong>nfsnvme</strong></th>
-<th><strong>nfshdd</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>write-4M</strong></td>
-<td>3618</td>
-<td>2095</td>
-<td>762</td>
-</tr>
-<tr>
-<td><strong>read-4M</strong></td>
-<td>9654</td>
-<td>4091</td>
-<td>215.8</td>
-</tr>
-<tr>
-<td><strong>rw-4M</strong></td>
-<td>711</td>
-<td>1880</td>
-<td>200.3</td>
-</tr>
-<tr>
-<td><strong>write-1M</strong></td>
-<td>4251</td>
-<td>1955</td>
-<td>772</td>
-</tr>
-<tr>
-<td><strong>read-1M</strong></td>
-<td>7770</td>
-<td>3995</td>
-<td>221.9</td>
-</tr>
-<tr>
-<td><strong>rw-1M</strong></td>
-<td>683</td>
-<td>2549</td>
-<td>177</td>
-</tr>
-<tr>
-<td><strong>write-256k</strong></td>
-<td>5683</td>
-<td>1932</td>
-<td>784</td>
-</tr>
-<tr>
-<td><strong>read-256k</strong></td>
-<td>8570</td>
-<td>3908</td>
-<td>219.3</td>
-</tr>
-<tr>
-<td><strong>rw-256k</strong></td>
-<td>732</td>
-<td>1714</td>
-<td>184.5</td>
-</tr>
-<tr>
-<td><strong>write-64k</strong></td>
-<td>3465</td>
-<td>1988</td>
-<td>781</td>
-</tr>
-<tr>
-<td><strong>read-64k</strong></td>
-<td>9239</td>
-<td>3901</td>
-<td>216.6</td>
-</tr>
-<tr>
-<td><strong>rw-64k</strong></td>
-<td>702</td>
-<td>1718</td>
-<td>172.7</td>
-</tr>
-<tr>
-<td><strong>write-16k</strong></td>
-<td>3478</td>
-<td>2034</td>
-<td>784</td>
-</tr>
-<tr>
-<td><strong>read-16k</strong></td>
-<td>4952</td>
-<td>3992</td>
-<td>226.7</td>
-</tr>
-<tr>
-<td><strong>rw-16k</strong></td>
-<td>670</td>
-<td>1773</td>
-<td>187.1</td>
-</tr>
-<tr>
-<td><strong>write-4k</strong></td>
-<td>2631</td>
-<td>1924</td>
-<td>787</td>
-</tr>
-<tr>
-<td><strong>read-4k</strong></td>
-<td>4250</td>
-<td>3840</td>
-<td>240.9</td>
-</tr>
-<tr>
-<td><strong>rw-4k</strong></td>
-<td>409.9</td>
-<td>1726</td>
-<td>183.4</td>
-</tr>
-</tbody>
-</table>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/08/30-09-44-15-2021-08-30-09-44-10-image.png alt></p>
-<h2 id=结论>结论</h2>
-<ol>
-<li>
-<p>chubaofs-hdd在各种情形下，性能均优于nfs-hdd，顺序写性能为5-8倍，顺序读性能为30~40倍；</p>
-</li>
-<li>
-<p>混合读写时，nfs-nvme高于chubaofs，约为chubaofs的3-5倍；其他情形下chubaofs性能高于nfs-nvme；为2~3倍；</p>
-</li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

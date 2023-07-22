@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="五种 IO 模型 在 操作系统中，IO 模型有如下五种： 在上文已经说到，其实 IO 操作就是将数据在用户空间与内核空间进行相互转换，这个过程是通过系统调用来完">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-io-%E6%A8%A1%E5%9E%8B/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="五种 IO 模型">
-<meta property="og:description" content="五种 IO 模型 在 操作系统中，IO 模型有如下五种： 在上文已经说到，其实 IO 操作就是将数据在用户空间与内核空间进行相互转换，这个过程是通过系统调用来完">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-io-%E6%A8%A1%E5%9E%8B/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2020-12-25T10:57:29+08:00">
 <meta property="article:modified_time" content="2020-12-25T10:57:29+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="五种 IO 模型">
-<meta itemprop=description content="五种 IO 模型 在 操作系统中，IO 模型有如下五种： 在上文已经说到，其实 IO 操作就是将数据在用户空间与内核空间进行相互转换，这个过程是通过系统调用来完"><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2020-12-25T10:57:29+08:00">
 <meta itemprop=dateModified content="2020-12-25T10:57:29+08:00">
-<meta itemprop=wordCount content="965">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="linux,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="五种 IO 模型">
-<meta name=twitter:description content="五种 IO 模型 在 操作系统中，IO 模型有如下五种： 在上文已经说到，其实 IO 操作就是将数据在用户空间与内核空间进行相互转换，这个过程是通过系统调用来完"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -180,65 +180,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#五种-io-模型>五种 IO 模型</a>
-<ul>
-<li><a href=#bio>BIO</a></li>
-<li><a href=#nio>NIO</a></li>
-<li><a href=#io-多路复用>IO 多路复用</a></li>
-<li><a href=#信号驱动-io>信号驱动 IO</a></li>
-<li><a href=#aio>AIO</a></li>
-</ul>
-</li>
-<li><a href=#java-中-io-的实现>Java 中 IO 的实现</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h2 id=五种-io-模型>五种 IO 模型</h2>
-<p>在 操作系统中，IO 模型有如下五种：</p>
-<p><img src=https://static001.geekbang.org/infoq/97/97182b7b0e5ee15aaf84dc82a9a26812.png alt></p>
-<p>在上文已经说到，其实 IO 操作就是将数据在用户空间与内核空间进行相互转换，这个过程是通过<code>系统调用</code>来完成的。 IO 技术的发展目标就是如何使用尽可能少的资源来完成数据的传输，这里资源主要就是指 CPU 资源。</p>
-<p>无论是文件 IO，还是网络 IO，最后都可以统一为用户空间和内核空间数据的交换。</p>
-<h3 id=bio>BIO</h3>
-<p>BIO 是最经典的一种 IO 方式，也是最简单粗暴的方式，在发起 IO 操作之后，当前调用线程就会处在阻塞状态，直到数据传输完成。</p>
-<p><img src=https://static001.geekbang.org/infoq/a7/a792571b3500e39de14a0a415fb6301a.png alt></p>
-<h3 id=nio>NIO</h3>
-<p>NIO 是在 BIO 基础之上的一个改进，NIO 在数据还未准备好的情况下，不会阻塞进程，而是通过轮询的方式，不断的去查询数据时候准备好，当数据可以被读取时，当前线程就会处在阻塞状态，直到数据读取完成。</p>
-<p><img src=https://static001.geekbang.org/infoq/bf/bf5f0a1c7aef722436940a119d2a3b35.png alt></p>
-<p>所以 NIO 中的非阻塞指的是在等待数据的阶段，实际进行数据传输时，还是阻塞的，这点需要注意。</p>
-<h3 id=io-多路复用>IO 多路复用</h3>
-<p>IO 多路复用是对 NIO 的一个改进，在 NIO 中，需要不断轮询查看数据是否准备好，IO 多路复用的改进是不再主动去查询数据状态是否准备完成，而是等数据准备好的通知，当数据准备完成之后，才会开始传输数据。</p>
-<p><img src=https://static001.geekbang.org/infoq/9d/9dbce77bc87c81d68abeb75743d3bab6.png alt></p>
-<p>与 NIO 一样，在数据的传输阶段，当前线程依然是阻塞的。</p>
-<p>在 Linux 系统中，IO 多路复用的方式有多种：</p>
-<ul>
-<li>
-<p>select</p>
-</li>
-<li>
-<p>poll</p>
-</li>
-<li>
-<p>epoll</p>
-</li>
-</ul>
-<h3 id=信号驱动-io>信号驱动 IO</h3>
-<p>信号驱动 IO 通过 sigaction 系统调用，向内核发送一个信号，当内核中数据准备好之后，当前线程也会接收到一个信号，在这个过程中，当前线程也是非阻塞的。在接收到信号之后，就可以开始传输数据。</p>
-<p><img src=https://static001.geekbang.org/infoq/18/18ced1776ad0db587bd0dc83676d6d27.png alt></p>
-<h3 id=aio>AIO</h3>
-<p>上面的这些 IO 模型虽然有些号称是不阻塞的，那是指在等待数据就绪的过程中是不阻塞的，但是在接收数据的时候，依然还是阻塞的。</p>
-<p>AIO 是这些 IO 模型中真正实现完全不阻塞，AIO 在被调用之后直接返回，连接收数据的阶段也是非阻塞的，等到数据接收完成之后，内核才会返回一个通知，也就是说当用户进程接收到通知时，数据已经接收完成。</p>
-<p><img src=https://static001.geekbang.org/infoq/80/80017d16e9749b90f97beffb404cdebc.png alt></p>
-<p>在 Linux 中提供了 AIO 的实现，但是实际上使用的并不多，更多还是使用独立的异步 IO 库，比如libevent、libev、libuv。</p>
-<p>五种 IO 模式的总结如下：</p>
-<p><img src=https://static001.geekbang.org/infoq/55/55b2d6d82ff910584915d453fc706123.png alt></p>
-<h2 id=java-中-io-的实现>Java 中 IO 的实现</h2>
-<p>Java 中的 IO 也不例外，实际的 IO 是调用了系统的能力来完成，在用户态通过系统调转到内核态，最终实现文件的读写或者通信。</p>
-<p>Java 中 IO 就是典型的 BIO，而且 NIO 则不是对应五种 IO 模型中的 NIO，Java 中的 NIO 实际上是使用 IO 多路复用来实现的。</p>
-<p>Java 中的 NIO2 也称之为 AIO，正是对应操作系统中的 AIO，当然具体的实现可能是其他的库。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

@@ -15,25 +15,25 @@
 <meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
 <meta name=mobile-web-app-capable content="yes">
 <meta name=author content="Justice">
-<meta name=description content="Java线程池 简介 创建线程需要操作系统资源（线程资源，栈空间等），频繁创建和销毁大量线程需要消耗大量时间。 可以把很多小任务让一组线程来执行，">
+<meta name=description content>
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
 <link rel=canonical href=https://justice.bj.cn/post/14.language/java/java%E7%BA%BF%E7%A8%8B%E6%B1%A0/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="Java线程池">
-<meta property="og:description" content="Java线程池 简介 创建线程需要操作系统资源（线程资源，栈空间等），频繁创建和销毁大量线程需要消耗大量时间。 可以把很多小任务让一组线程来执行，">
+<meta property="og:description" content>
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/14.language/java/java%E7%BA%BF%E7%A8%8B%E6%B1%A0/"><meta property="article:section" content="post">
 <meta property="article:published_time" content="2022-05-21T21:27:53+08:00">
 <meta property="article:modified_time" content="2022-05-21T21:27:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Java线程池">
-<meta itemprop=description content="Java线程池 简介 创建线程需要操作系统资源（线程资源，栈空间等），频繁创建和销毁大量线程需要消耗大量时间。 可以把很多小任务让一组线程来执行，"><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
+<meta itemprop=description content><meta itemprop=datePublished content="2022-05-21T21:27:53+08:00">
 <meta itemprop=dateModified content="2022-05-21T21:27:53+08:00">
-<meta itemprop=wordCount content="1806">
+<meta itemprop=wordCount content="0">
 <meta itemprop=keywords content="language,java,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Java线程池">
-<meta name=twitter:description content="Java线程池 简介 创建线程需要操作系统资源（线程资源，栈空间等），频繁创建和销毁大量线程需要消耗大量时间。 可以把很多小任务让一组线程来执行，"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<meta name=twitter:description content><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
 </head>
 <body>
@@ -181,193 +181,10 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#简介>简介</a></li>
-<li><a href=#java线程实现方式>java线程实现方式</a></li>
-<li><a href=#executor>Executor</a></li>
-<li><a href=#原理>原理</a></li>
-<li><a href=#线程池的使用>线程池的使用</a>
-<ul>
-<li><a href=#threadpoolexecutor>ThreadPoolExecutor</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
+<nav id=TableOfContents></nav>
 </div>
 </div>
 <div class=post-content>
-<h1 id=java线程池>Java线程池</h1>
-<h2 id=简介>简介</h2>
-<p>创建线程需要操作系统资源（线程资源，栈空间等），频繁创建和销毁大量线程需要消耗大量时间。</p>
-<p>可以把很多小任务让一组线程来执行，而不是一个任务对应一个新线程。这种能接收大量小任务并进行分发处理的就是线程池。</p>
-<p>线程池内部维护了若干个线程，没有任务的时候，这些线程都处于等待状态。如果有新任务，就分配一个空闲线程执行。如果所有线程都处于忙碌状态，新任务要么放入队列等待，要么增加一个新线程进行处理。</p>
-<h2 id=java线程实现方式>java线程实现方式</h2>
-<p>Thread、Runnable、Callable</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>//实现Runnable接口的类将被Thread执行，表示一个基本任务
-</span><span class=c1></span><span class=kd>public</span> <span class=kd>interface</span> <span class=nc>Runnable</span> <span class=o>{</span>
-    <span class=c1>//run方法就是它所有内容，就是实际执行的任务
-</span><span class=c1></span>    <span class=kd>public</span> <span class=kd>abstract</span> <span class=kt>void</span> <span class=nf>run</span><span class=o>();</span>
-<span class=o>}</span>
-
-<span class=c1>//Callable同样是任务，与Runnable接口的区别在于它接口泛型，同时它执行任务候带有返回值；
-</span><span class=c1>//Callable的使用通过外层封装成Future来使用
-</span><span class=c1></span><span class=kd>public</span> <span class=kd>interface</span> <span class=nc>Callable</span><span class=o>&lt;</span><span class=n>V</span><span class=o>&gt;</span> <span class=o>{</span>
-    <span class=c1>//相对于run方法，call方法带有返回值
-</span><span class=c1></span>    <span class=n>V</span> <span class=nf>call</span><span class=o>()</span> <span class=kd>throws</span> <span class=n>Exception</span><span class=o>;</span>
-<span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>Java标准库提供了<code>ExecutorService</code>接口表示线程池；</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span><span class=lnt>7
-</span><span class=lnt>8
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// 创建固定大小的线程池:
-</span><span class=c1></span><span class=n>ExecutorService</span> <span class=n>executor</span> <span class=o>=</span> <span class=n>Executors</span><span class=o>.</span><span class=na>newFixedThreadPool</span><span class=o>(</span><span class=n>3</span><span class=o>);</span>
-<span class=c1>// 提交任务:
-</span><span class=c1></span><span class=n>executor</span><span class=o>.</span><span class=na>submit</span><span class=o>(</span><span class=n>task1</span><span class=o>);</span>
-<span class=n>executor</span><span class=o>.</span><span class=na>submit</span><span class=o>(</span><span class=n>task2</span><span class=o>);</span>
-<span class=n>executor</span><span class=o>.</span><span class=na>submit</span><span class=o>(</span><span class=n>task3</span><span class=o>);</span>
-<span class=n>executor</span><span class=o>.</span><span class=na>submit</span><span class=o>(</span><span class=n>task4</span><span class=o>);</span>
-<span class=n>executor</span><span class=o>.</span><span class=na>submit</span><span class=o>(</span><span class=n>task5</span><span class=o>);</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>ExecutorService</code>是接口，Java标准库提供的几个常用实现类有：</p>
-<ul>
-<li>FixedThreadPool：线程数固定的线程池；</li>
-<li>CachedThreadPool：线程数根据任务动态调整的线程池；</li>
-<li>SingleThreadExecutor：仅单线程执行的线程池。</li>
-</ul>
-<h2 id=executor>Executor</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/03-17-27-59-2022-01-03-17-27-55-image.png alt></p>
-<h2 id=原理>原理</h2>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/03-17-19-56-2022-01-03-17-19-48-image.png alt></p>
-<p>线程池的状态：</p>
-<p>RUNNING = ­1 &#171; COUNT_BITS; //高3位为111
-SHUTDOWN = 0 &#171; COUNT_BITS; //高3位为000
-STOP = 1 &#171; COUNT_BITS; //高3位为001
-TIDYING = 2 &#171; COUNT_BITS; //高3位为010
-TERMINATED = 3 &#171; COUNT_BITS; //高3位为011</p>
-<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/03-19-51-15-2022-01-03-19-51-02-image.png alt></p>
-<h2 id=线程池的使用>线程池的使用</h2>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>//
-</span><span class=c1></span><span class=kd>public</span> <span class=kd>class</span> <span class=nc>RunTask</span> <span class=kd>implements</span> <span class=n>Runnable</span> <span class=o>{</span>
-    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>run</span><span class=o>()</span> <span class=o>{</span>
-        <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;Thread name:&#34;</span><span class=o>+</span><span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>getName</span><span class=o>());</span>
-    <span class=o>}</span>
-<span class=o>}</span>
-
-<span class=kd>public</span> <span class=kd>class</span> <span class=nc>ExecutorSample</span> <span class=o>{</span>
-    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
-        <span class=n>ExecutorService</span> <span class=n>executor</span> <span class=o>=</span> <span class=n>Executors</span><span class=o>.</span><span class=na>newFixedThreadPool</span><span class=o>(</span><span class=n>5</span><span class=o>);</span>
-        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span><span class=o>=</span><span class=n>0</span><span class=o>;</span><span class=n>i</span><span class=o>&lt;</span><span class=n>20</span><span class=o>;</span><span class=n>i</span><span class=o>++){</span>
-            <span class=c1>//提交任务无返回值
-</span><span class=c1></span>            <span class=n>executor</span><span class=o>.</span><span class=na>execute</span><span class=o>(</span><span class=k>new</span> <span class=n>RunTask</span><span class=o>());</span>
-            <span class=c1>//任务执行完成后有返回值
-</span><span class=c1></span>            <span class=n>Future</span><span class=o>&lt;</span><span class=n>Object</span><span class=o>&gt;</span> <span class=n>future</span> <span class=o>=</span> <span class=n>executor</span><span class=o>.</span><span class=na>submit</span><span class=o>(</span><span class=k>new</span> <span class=n>RunTask</span><span class=o>());</span>
-        <span class=o>}</span>
-    <span class=o>}</span>
-<span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=threadpoolexecutor>ThreadPoolExecutor</h3>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=nf>ThreadPoolExecutor</span><span class=o>(</span><span class=kt>int</span> <span class=n>corePoolSize</span><span class=o>,</span>
-                          <span class=kt>int</span> <span class=n>maximumPoolSize</span><span class=o>,</span>
-                          <span class=kt>long</span> <span class=n>keepAliveTime</span><span class=o>,</span>
-                          <span class=n>TimeUnit</span> <span class=n>unit</span><span class=o>,</span>
-                          <span class=n>BlockingQueue</span><span class=o>&lt;</span><span class=n>Runnable</span><span class=o>&gt;</span> <span class=n>workQueue</span><span class=o>,</span>
-                          <span class=n>ThreadFactory</span> <span class=n>threadFactory</span><span class=o>,</span>
-                          <span class=n>RejectedExecutionHandler</span> <span class=n>handler</span><span class=o>)</span> <span class=o>{</span>
-    <span class=k>this</span><span class=o>(</span><span class=n>corePoolSize</span><span class=o>,</span> <span class=n>maximumPoolSize</span><span class=o>,</span> <span class=n>keepAliveTime</span><span class=o>,</span> <span class=n>unit</span><span class=o>,</span> <span class=n>workQueue</span><span class=o>,</span>
-         <span class=n>threadFactory</span><span class=o>,</span> <span class=n>defaultHandler</span><span class=o>);</span>
-<span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>corePoolSize：线程池中的核心线程数。当提交一个任务时，线程池创建一个新线程执行任务，直到当前线程数等于corePoolSize；如果当前线程数为corePoolSize，继续提交的任务被保存到阻塞队列中，等待被执行；如果执行了线程池的prestartAllCoreThreads()方法，线程池会提前创建并启动所有核心线程。</li>
-<li>maximumPoolSize：线程池中允许的最大线程数。如果当前阻塞队列满了，且继续提交任务，则创建新的线程执行任务，前提是当前线程数小于maximumPoolSize。</li>
-<li>keepAliveTime：线程池维护线程所允许的空闲时间。当线程池中的线程数量大于corePoolSize时候，如果这时候没有新的任务提交，核心线程外的线程不会立即被销毁，而是会等待，直到等待的时间超过了keepAliveTime<br>
-unit：keepAliveTime的单位时间</li>
-<li>workQueue：用于保存等待被执行的任务的阻塞队列，且任务必须实现Runnable接口，在JDK中提供了如下阻塞队列：<br>
-ArrayBlockingQueue：基于数组结构的有界阻塞队列，按FIFO排序任务。<br>
-LinkedBlockingQueue：基于链表结构的阻塞队列，按FIFO排序任务，吞吐量通常要高于ArrayBlockingQueue。<br>
-SynchronousQueue：一个不存储元素的阻塞队列，每个插入操作必须等到另一个线程调用移除操作，否则插入操作一直处于阻塞状态，吞吐量通常高于LinkedBlockingQueue。</li>
-<li>PriorityBlockingQueue：具有优先级的无界阻塞队列。</li>
-<li>threadFactory：ThreadFactory 类型的变量，用来创建新线程。默认使用ThreadFactory.defaultThreadFactory来创建线程， 会使新创建线程具有相同的NORM_PRIORITY优先级并且都是非守护线程，同时也设置了线程名称。</li>
-<li>handler：线程池的饱和策略。当阻塞队列满了，且没有空闲的工作队列，如果继续提交任务，必须采用一种策略处理该任务.</li>
-</ul>
-<h2 id=参考>参考</h2>
-<ol>
-<li>
-<p><a href=https://www.liaoxuefeng.com/wiki/1252599548343744/1306581130018849>使用线程池 - 廖雪峰的官方网站</a></p>
-</li>
-<li>
-<p><a href=https://juejin.cn/post/6844903920511221768>Executor线程池只看这一篇就够了 - 掘金</a></p>
-</li>
-<li></li>
-</ol>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>
