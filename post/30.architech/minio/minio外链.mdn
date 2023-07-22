@@ -1,0 +1,110 @@
+# minio外链
+
+## 简介
+
+## 外链
+
+* 原理：使用`secretKey, date, region, s3 `作为key，对对象请求()进行签名，生成包含过期时间，签名算法、分享时间及签名的对象链接。
+  
+  在访问时，通过检查签名和有效时间等信息来确认链接的有效性。
+1. 生成外链
+
+```json
+request:
+    POST http://minio-test01.cfsapps.svc.ht1.n.jd.local/minio/webrpc
+    {
+    "id":1,
+    "jsonrpc":"2.0",
+    "params":{
+      "host":"minio-test01.cfsapps.svc.ht1.n.jd.local",
+      "bucket":"bucket03",
+      "object":"prefix01-a.txt",
+      "expiry": "2019-10-25 00:00:00"
+    },
+    "method":"Web.PresignedGet"
+  }
+
+response:
+    {
+        "jsonrpc":"2.0",
+        "result":{
+            "uiVersion":"2019-04-12T09:33:47Z",
+            "url":"minio-test01.cfsapps.svc.ht1.n.jd.local/bucket03/WechatIMG127.jpeg?X-Amz-Algorithm=AWS4-HMAC-SHA256\u0026X-Amz-Credential=miniot01%2F20191022%2F%2Fs3%2Faws4_request\u0026X-Amz-Date=20191022T024524Z\u0026X-Amz-Expires=604800\u0026X-Amz-SignedHeaders=host\u0026X-Amz-Signature=733ac879c7917833b045576ef60a8b91a1637d0c5587ad06de17d89db692b055"
+        },
+        "id":1
+    }
+```
+
+2. 使用外链
+
+```
+request:
+    GET http://minio-test01.cfsapps.svc.ht1.n.jd.local/bucket03/WechatIMG127.jpeg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=miniot01%2F20191022%2F%2Fs3%2Faws4_request&X-Amz-Date=20191022T024524Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=733ac879c7917833b045576ef60a8b91a1637d0c5587ad06de17d89db692b055
+
+response:
+```
+
+## 源码
+
+```go
+//cmd/web-handler.go
+
+//生成预签名
+func (web *webAPIHanders) PresignedGet(...) error {
+    //对请求进行认证
+  claims, owner, authErr := webRequestAuthenticate(r)
+    if authErr != nil {
+        return toJSONError(authErr)
+    }
+  //认证成功，获取用户凭证
+    var creds auth.Credentials
+    if !owner {
+        var ok bool
+        creds, ok = globalIAMSys.GetUser(claims.Subject)
+        if !ok {
+            return toJSONError(errInvalidAccessKeyID)
+        }
+    } else {
+        creds = globalServerConfig.GetCredential()
+    }
+    //获取分区
+    region := globalServerConfig.GetRegion()
+  //检查bucketName、objectName参数
+    if args.BucketName == "" || args.ObjectName == "" {
+        return &json2.Error{
+            Message: "Bucket and Object are mandatory arguments.",
+        }
+    }
+
+    // Check if bucket is a reserved bucket name or invalid.
+    if isReservedOrInvalidBucket(args.BucketName, false) {
+        return toJSONError(errInvalidBucketName)
+    }
+
+    reply.UIVersion = browser.UIVersion
+  //生成预签名url
+    reply.URL = presignedGet(args.HostName, args.BucketName, args.ObjectName, args.Expiry, creds, region)
+    return nil
+}
+
+//认证
+//cmd/signature-v4-parser.go
+func prasePreSignV4(quer url.Values, region string, stype serviceType)(psv preSignValues, aec APIErrorCode)
+//cmd/signature-v4.go
+func doesPresignedSignatureMatch()
+
+//cmd/signature-v2.go
+func doesPresignV2SignatureMatch(r *http.Request) APIErrorCode
+
+//cmd/auth-handler.go
+func reqSignatureV4Verify()
+
+//cmd/object-handlers.go
+func GetObjectHandler() 
+    --> checkRequestAuthType() 
+        --> doesPresignedSignatureMatch()
+```
+
+## 参考
+
+1. https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/API/sigv4-query-string-auth.html

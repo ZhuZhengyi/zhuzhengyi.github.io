@@ -1,0 +1,444 @@
+# C++11左值与右值
+
+## 简介
+
+在C++11之前，表达式的值按出现在`=`的位置不同可简单分为`左值`和`右值`2种；
+
+在C++11中，为了实现函数参数传递的零拷贝开销，对值类型进行了更详细的划分：
+
+- **glvalue**（泛左值）：拥有身份的表达式，“泛化的”左值，包括左值或将亡值；
+- **lvalue**（左值）：拥有身份且不可被移动值，用于标识一个函数或对象，是在表达式（不一定是赋值表达式）后依然存在的持久对象。左值可以出现在`=`的左边）；
+- **xvalue**（将亡值）：一个接近声明周期末尾的对象。将亡值是某些涉及右值引用的表达式的结果，拥有身份且可被移动的表达式；
+- **prvalue**（纯右值）：是不拥有身份且可被移动的表达式，非将亡值的右值；
+- **rvalue**（右值）：是可移动的表达式值，在表达式结束后就不再存在的临时对象；包括将亡值、临时对象或其子对象、不关联对象的值，右值是等号右边的值；
+
+|         | 拥有ID | 可移动 |     |     |
+| ------- | ---- | --- | --- | --- |
+| glvalue | 是    | -   |     |     |
+| lvalue  | 是    | 否   |     |     |
+| xvalue  | 是    | 是   |     |     |
+| prvalue | 否    | 是   |     |     |
+| rvalue  | -    | 是   |     |     |
+
+![](/Users/justice/tmp/notebook-img/2021-12-11-09-39-48-image.png)
+
+### 左值、右值
+
+#### 左值(lvalue)
+
+* 拥有身份（identity）且不可被移动的值；
+
+* 可以放到等号左边；
+
+* 可以获取内存地址(拥有id)并安全(不可被移动)的使用它；
+
+* 常见的左值：
+  
+  * 已命名的变量或常量；
+  
+  * 函数名；
+  
+  * 返回左值引用的函数调用；
+  
+  * 前置自增自减表达式++i、--i；
+  
+  * 赋值表达式或赋值运算符连接的表达式(a=b, a += b等)；
+  
+  * 解引用表达式`*p`;
+  
+  * 字符串字面值"abcd";
+
+#### 右值(rvalue)
+
+* 可被移动的值；
+
+* 不能取地址,没有名字;
+- 右值包含：
+  
+  - 纯右值：可移动且拥有ID；
+  
+  - 将亡值：可移动且不拥有ID；
+
+#### 纯右值(prvalue)
+
+* 不拥有ID且可被移动的值；
+* 纯右值包括：
+  * 运算表达式产生的临时变量；
+  * 不和对象关联的原始字面量；
+  * 非引用返回的临时变量；
+  * lambda表达式等；
+
+举例：
+
+- 除字符串字面值外的字面值；
+- 返回非引用类型的函数调用；
+- 后置自增自减表达式i++、i--；
+- 算术表达式(a+b, a*b, a&&b, a==b等)；
+- this指针；
+- 所有内建数值运算表达式：`a + b, a % b, a & b, a << b`
+- 取址表达式:`&a`;
+
+#### 将亡值(xvalue)
+
+* 拥有ID且可被移动的值；
+
+* 将亡值是即将要销毁的值，通过“盗取”其它变量内存空间方式获取的值；
+
+* 在确保其它变量不再被使用或者即将被销毁时，可以避免内存空间的释放和分配，延长变量值的生命周期；
+
+* 常用来完成移动构造或者移动赋值的特殊任务；
+
+* 将亡值包括：
+  
+  * 将要被移动的对象；
+  
+  * T&&函数的返回值；
+  
+  * std::move函数的返回值；
+  
+  * 转换为T&&类型转换函数的返回值；
+
+举例：
+
+```cpp
+class A {
+    xxx;
+};
+A a;                           // a是左值
+auto c = std::move(a);         // c是将亡值
+auto d = static_cast<A&&>(a);  // d是将亡值
+```
+
+## 左值引用
+
+先看一下传统的左值引用。
+
+```cpp
+int a = 10;
+int &b = a;  // 定义一个左值引用变量
+b = 20;      // 通过左值引用修改引用内存的值
+```
+
+左值引用在汇编层面其实和普通的指针是一样的；定义引用变量必须初始化，因为引用其实就是一个别名，需要告诉编译器定义的是谁的引用。
+
+```cpp
+int &var = 10;           //错误， 10是立即数，无法取地址；
+const int &var = 10;     //正确， 常引用参数临时变量保存10，可取地址，但只能读取，无法修改var值；
+```
+
+根据上述分析，得出如下结论：
+
+- 左值引用要求右边的值必须能够取地址，如果无法取地址，可以用常引用；  
+  但使用常引用后，我们只能通过引用来读取数据，无法去修改数据，因为其被const修饰成常量引用了。
+
+那么C++11 引入了右值引用的概念，使用右值引用能够很好的解决这个问题。
+
+### 右值引用
+
+从本质上理解，创建和销毁由编译器幕后控制，程序员只能确保在本行代码有效的，就是右值(包括立即数)；
+
+而用户创建的，通过作用域规则可知其生存期的，就是左值(包括函数返回的局部变量的引用以及const对象)。
+
+定义右值引用的格式如下：
+
+```cpp
+<TYPE_NAME> && <ref_name> = 右值表达式;
+```
+
+右值引用是C++ 11新增的特性，所以C++ 98的引用为左值引用。
+
+右值引用用来绑定到右值，绑定到右值以后本来会被销毁的右值的生存期会延长至与绑定到它的右值引用的生存期。
+
+```cpp
+const int &var = 10;     //常量引用只能读取，无法修改var值；
+int &&var = 10;          //右值引用可以进行读写操作；
+```
+
+右值引用充分利用右值(特别是临时对象)的构造来减少对象构造和析构操作以达到提高效率的目的。
+
+### std::move
+
+`std::move`将左值强转为可以被移动的右值（将亡值）引用，指示了该对象可移动，从而使得我们可以通过右值引用的方式继续使用该对象，以用于移动语义。
+
+```cpp
+// simple impl
+template <typename T>
+typename remove_reference<T>::type&& move(T &&t)
+{
+    return static_cast<remove_reference<T>::type&&>(t);
+}
+```
+
+* 参数`T &&t`并不是代表右值引用，而是转发引用（也叫万能引用）。
+
+* 转发引用既能是右值引用，也可以是左值引用，这与类型推导和引用折叠有关。
+
+* 如果用右值初始化转发引用，那么得到的是右值引用。
+
+* 如果用左值初始化转发引用，那么得到的是左值引用。
+
+用C++实现一个简单的顺序栈：
+
+```cpp
+class Stack
+{
+public:
+    // 构造
+    Stack(int size = 1000) 
+        :msize(size), mtop(0)
+    {
+        cout << "Stack(int)" << endl;
+        mpstack = new int[size];
+    }
+
+    // 析构
+    ~Stack()
+    {
+        cout << "~Stack()" << endl;
+        delete[]mpstack;
+        mpstack = nullptr;
+    }
+
+    // 拷贝构造
+    Stack(const Stack &src)
+        :msize(src.msize), mtop(src.mtop)
+    {
+        cout << "Stack(const Stack&)" << endl;
+        mpstack = new int[src.msize];
+        for (int i = 0; i < mtop; ++i) {
+            mpstack[i] = src.mpstack[i];
+        }
+    }
+
+    // 赋值重载
+    Stack& operator=(const Stack &src)
+    {
+        cout << "operator=" << endl;
+        if (this == &src)
+             return *this;
+
+        delete[]mpstack;
+
+        msize = src.msize;
+        mtop = src.mtop;
+        mpstack = new int[src.msize];
+        for (int i = 0; i < mtop; ++i) {
+            mpstack[i] = src.mpstack[i];
+        }
+        return *this;
+    }
+
+    int getSize() 
+    {
+        return msize;
+    }
+private:
+    int *mpstack;
+    int mtop;
+    int msize;
+};
+
+Stack GetStack(Stack &stack)
+{
+    Stack tmp(stack.getSize());
+    return tmp;
+}
+
+int main()
+{
+    Stack s;
+    s = GetStack(s);
+    return 0;
+}
+```
+
+运行结果如下：
+
+```cpp
+Stack(int)             // 构造s
+Stack(int)             // 构造tmp
+Stack(const Stack&)    // tmp拷贝构造main函数栈帧上的临时对象
+~Stack()               // tmp析构
+operator=              // 临时对象赋值给s
+~Stack()               // 临时对象析构
+~Stack()               // s析构
+```
+
+为了解决浅拷贝问题，为类提供了自定义的拷贝构造函数和赋值运算符重载函数，并且这两个函数内部实现都是非常的耗费时间和资源(首先开辟较大的空间，然后将数据逐个复制)，我们通过上述运行结果发现了两处使用了拷贝构造和赋值重载，分别是tmp拷贝构造main函数栈帧上的临时对象、临时对象赋值给s，其中tmp和临时对象都在各自的操作结束后便销毁了，使得程序效率非常低下。
+
+那么我们为了提高效率，是否可以把tmp持有的内存资源直接给临时对象？是否可以把临时对象的资源直接给s？
+
+在C++11中，我们可以解决上述问题，方式是提供带右值引用参数的拷贝构造函数和赋值运算符重载函数.
+
+```cpp
+// 带右值引用参数的拷贝构造函数
+Stack(Stack &&src)
+    :msize(src.msize), mtop(src.mtop)
+{
+    cout << "Stack(Stack&&)" << endl;
+
+    /*此处没有重新开辟内存拷贝数据，把src的资源直接给当前对象，再把src置空*/
+    mpstack = src.mpstack;  
+    src.mpstack = nullptr;
+}
+
+// 带右值引用参数的赋值运算符重载函数
+Stack& operator=(Stack &&src)
+{
+    cout << "operator=(Stack&&)" << endl;
+
+    if(this == &src)
+        return *this;
+
+    delete[]mpstack;
+
+    msize = src.msize;
+    mtop = src.mtop;
+
+    /*此处没有重新开辟内存拷贝数据，把src的资源直接给当前对象，再把src置空*/
+    mpstack = src.mpstack;
+    src.mpstack = nullptr;
+
+    return *this;
+}
+```
+
+运行结果如下：
+
+```cpp
+Stack(int)             // 构造s
+Stack(int)             // 构造tmp
+Stack(Stack&&)         // 调用带右值引用的拷贝构造函数，直接将tmp的资源给临时对象
+~Stack()               // tmp析构
+operator=(Stack&&)     // 调用带右值引用的赋值运算符重载函数，直接将临时对象资源给s
+~Stack()               // 临时对象析构
+~Stack()               // s析构
+```
+
+程序自动调用了带右值引用的拷贝构造函数和赋值运算符重载函数，使得程序的效率得到了很大的提升，因为并没有重新开辟内存拷贝数据。
+
+```cpp
+mpstack = src.mpstack;  
+```
+
+可以直接赋值的原因是临时对象即将销毁，不会出现浅拷贝的问题，我们直接把临时对象持有的资源赋给新对象就可以了。
+
+所以，临时量都会自动匹配右值引用版本的成员方法，旨在提高内存资源使用效率。
+
+带右值引用参数的拷贝构造和赋值重载函数，又叫移动构造函数和移动赋值函数，这里的移动指的是把临时量的资源移动给了当前对象，临时对象就不持有资源，为nullptr了，实际上没有进行任何的数据移动，没发生任何的内存开辟和数据拷贝。
+
+### 完美转发
+
+完美转发指可以写一个接受任意实参的函数模板，并转发到其它函数，目标函数会收到与转发函数完全相同的实参，转发函数实参是左值那目标函数实参也是左值，转发函数实参是右值那目标函数实参也是右值。那如何实现完美转发呢，答案是使用std::forward()。
+
+```cpp
+void PrintV(int &t) {
+    cout << "lvalue" << endl;
+}
+
+void PrintV(int &&t) {
+    cout << "rvalue" << endl;
+}
+
+template<typename T>
+void Test(T &&t) {
+    PrintV(t);
+    PrintV(std::forward<T>(t));
+
+    PrintV(std::move(t));
+}
+
+int main() {
+    Test(1); // lvalue rvalue rvalue
+    int a = 1;
+    Test(a); // lvalue lvalue rvalue
+    Test(std::forward<int>(a)); // lvalue rvalue rvalue
+    Test(std::forward<int&>(a)); // lvalue lvalue rvalue
+    Test(std::forward<int&&>(a)); // lvalue rvalue rvalue
+    return 0;
+}
+```
+
+- Test(1)：1是右值，模板中T &&t这种为万能引用，右值1传到Test函数中变成了右值引用，但是调用PrintV()时候，t变成了左值，因为它变成了一个拥有名字的变量，所以打印lvalue，而PrintV(std::forward(t))时候，会进行完美转发，按照原来的类型转发，所以打印rvalue，PrintV(std::move(t))毫无疑问会打印rvalue。
+
+- Test(a)：a是左值，模板中T &&这种为万能引用，左值a传到Test函数中变成了左值引用，所以有代码中打印。
+
+- Test(std::forward(a))：转发为左值还是右值，依赖于T，T是左值那就转发为左值，T是右值那就转发为右值。
+
+### 返回值优化
+
+返回值优化(RVO)是一种C++编译优化技术，当函数需要返回一个对象实例时候，就会创建一个临时对象并通过复制构造函数将目标对象复制到临时对象，这里有复制构造函数和析构函数会被多余的调用到，有代价，而通过返回值优化，C++标准允许省略调用这些复制构造函数。
+
+那什么时候编译器会进行返回值优化呢?
+
+- return的值类型与函数的返回值类型相同
+
+- return的是一个局部对象
+
+看几个例子:
+
+示例1：
+
+```cpp
+std::vector<int> return_vector(void) {
+    std::vector<int> tmp {1,2,3,4,5};
+    return tmp;
+}
+std::vector<int> &&rval_ref = return_vector();
+```
+
+不会触发RVO，拷贝构造了一个临时的对象，临时对象的生命周期和rval_ref绑定，等价于下面这段代码：
+
+```cpp
+const std::vector<int>& rval_ref = return_vector();
+```
+
+示例2：
+
+```cpp
+std::vector<int>&& return_vector(void) {
+    std::vector<int> tmp {1,2,3,4,5};
+    return std::move(tmp);
+}
+
+std::vector<int> &&rval_ref = return_vector();
+```
+
+这段代码会造成运行时错误，因为rval_ref引用了被析构的tmp。讲道理来说这段代码是错的，但我自己运行过程中却成功了，我没有那么幸运，这里不纠结，继续向下看什么时候会触发RVO。
+
+示例3：
+
+```cpp
+std::vector<int> return_vector(void)
+{
+    std::vector<int> tmp {1,2,3,4,5};
+    return std::move(tmp);
+}
+std::vector<int> &&rval_ref = return_vector();
+```
+
+和示例1类似，std::move一个临时对象是没有必要的，也会忽略掉返回值优化。
+
+最好的代码：
+
+```cpp
+std::vector<int> return_vector(void)
+{
+    std::vector<int> tmp {1,2,3,4,5};
+    return tmp;
+}
+
+std::vector<int> rval_ref = return_vector();
+```
+
+这段代码会触发RVO，不拷贝也不移动，不生成临时对象。
+
+## 参考
+
+1. [C++: 左值引用(&amp;), 右值引用(&amp;&amp;),万能引用(template &amp;&amp;)详解 与 完美转发(forward) 实现剖析 - woder - 博客园](https://www.cnblogs.com/ishen/p/13771991.html)
+
+2. https://www.zhihu.com/question/454291992
+
+3. https://www.zhihu.com/question/363686723
+
+4. [什么是move？理解C++ Value categories，move， move in Rust](https://zhuanlan.zhihu.com/p/374392832)

@@ -1,0 +1,161 @@
+# linux-0.11 启动流程
+
+---
+
+## 1. BIOS 引导
+
+`BIOS`将 bootsect(启动盘第一个扇区)加载到内存 0x7C00 处，并跳转到 bootsect 处。
+
+### 1.1 加电
+
+初始化 CS,IP 寄存器. CS=0xFFFF, IP=0x0000, CS:IP=0xFFFF0, 执行该处 BIOS 程序。
+
+![bios](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-26-42-image001.gif)
+
+### 1.2 系统自检
+
+在内存 0x00000 ～ 0x003FF（1KB）处构建**BIOS 中断向量表**，在 0x00400~0x4FF（256B）处建立**BIOS 数据区**，在 0x0E05B 处加载 8KB 的**BIOS 中断服务程序**。
+
+![image002](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-26-58-image002.gif)
+
+### 1.3 加载 bootsect
+
+执行 0x19h 中断服务程序，将启动设备（软盘）第一个扇区（0 ～ 512B）中的**bootsect**程序载入到内存 0x07C00（BOOTSEG）处，并跳到 BOOTSEG 处执行。
+
+![image003](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-28-02-image003.gif)
+
+## 2. 启动扇区引导（boot/bootsect.s）
+
+bootsect 依次将自身、setup、system 模块加载到 0x9000 开始的物理内存区中, 并跳转到 setup 处。
+
+### 2.1 移动 bootsect 自身
+
+bootsect 将自身从 0x07C00 复制到 0x90000（512B），并在新内存处继续执行。（主要作用是）
+
+![image004](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-28-28-image004.gif)
+
+### 2.2 加载 setup 模块
+
+加载 setup 模块（启动盘 2 ～ 5 扇区）到 0x90200(SETUPSEG)处（2KB）。
+
+![image005](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-25-08-image005.gif)
+
+### 2.3 加载 system 模块
+
+加载 system 模块（6 ～ 245 扇区）到 0x10000(SYSSEG）处（120KB）。
+
+# ![image006](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-25-20-image006.gif)
+
+### 2.4 跳转到 setup
+
+确定根设备号，并跳转到 0x90200 处执行 setup 模块。
+
+![image007](./linux-0.11_bootstrap/image007.gif)
+
+---
+
+## 3. 保护模式准备（32 位）(boot/setup.s)
+
+执行 setup.s，建立保护模式数据结构，关中断，设置保护模式寄存器。
+
+获取系统配置数据并保存到 0x90000~0x901FD 处（原有 bootsect 被覆盖）
+
+![image008](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-27-36-image008.gif)08.gif)
+
+### 3.2 关中断
+
+### 3.3 移动 system
+
+将 system 内核从 0x10000 移至 0x00000 处（head 模块）。
+
+![image009](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-25-52-image009.gif)
+
+### 3.4 初始化 IDTR,GDTR
+
+初始化**中断描述符表**寄存器（IDTR）和**全局描述符表**寄存器（GDTR）。
+
+![loading-ag-1381](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-30-37-image010.gif)
+
+### 3.5 开启 32 位寻址
+
+打开 A20，开启 32 位寻址。
+
+### 3.6 建立保护模式中断
+
+对可编程中断控制器 8259A 重新编程，以建立保护模式下的中断机制。
+
+### 3.7 设置保护模式寄存器
+
+将 CPU 设为保护模式（CR0 寄存器 PE 位置 1），跳至 head 模块（0x00000000）处执行。
+
+![image011](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-31-13-image011.gif)
+
+---
+
+## 4. main 执行前准备(boot/head.s)
+
+执行 head.s, 保护模式完成，为 main 函数做准备（boot/head.s）
+
+### 4.1 设置寄存器
+
+将 DS、ES、FS、GS 等寄存器设置为保护模式，将 SS 转变为**栈段选择符**。
+
+### 4.2 设置中断描述符表。
+
+![image012](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-10-31-32-image012.gif)
+
+### 4.3 重建保护模式 GDT
+
+废除已有 GDT，在内核新的位置重建 GDT，并重新设置段选择符。
+
+### 4.4 检测 A20
+
+### 4.5 main 函数压栈
+
+将 main 函数入口压栈。
+
+### 4.6 建立页表
+
+在 0x00000000 处将建立 1 个页目录表和 4 个页表，创建分页机制。
+
+![image013](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-26-40-image013.gif)
+
+### 4.7 跳转到 main
+
+跳转到 main 函数入口执行。
+
+## 5. 执行 main（init/main.c）
+
+    执行main.c, 创建0号进程，正式启动
+
+### 5.1 创建进程 0
+
+- 5.1.1 获取根设备号和硬盘参数
+
+- 5.1.2 物理内存划分
+
+![image014](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/14-09-26-53-image014.gif)
+
+- 5.1.3 设置中断函数入口
+
+- 5.1.4 初始化块设备请求
+
+- 5.1.5 初始化字符设备
+
+- 5.1.6 初始化 tty
+
+- 5.1.7 初始化时间
+
+- 5.1.8 初始化进程调度
+  
+  - 5.1.8.1 挂接进程 0 的 GDT 和 task 接口表入口；
+  - 5.1.8.2 设置时钟中断
+  - 5.1.8.3 挂接系统调用至 0x80 软中断入口
+
+- 5.1.9 初始化缓冲区
+
+- 5.1.10 初始化硬盘
+
+- 5.1.11 初始化软盘
+
+-

@@ -1,0 +1,94 @@
+# C语言main函数
+
+## 简介
+
+`main`函数是一个c语言程序的入口函数。
+
+## 定义
+
+```c
+// main函数的定义方式
+
+int main(void);                  // 无参；
+// main参数含义：argc，传入参数的个数；argv，指向的字符串参数的指针数组，每一个元素指向一个参数；
+// argv[argc]为NULL ，表示参数的结尾。
+int main(int argc, char* argv[]); // 包含参数；
+// envp: 用户环境中的变量字符串，以NULL结束。
+// envp每一个元素都包含ENVVAR=value形式的字符串，其中ENVVAR为环境变量，value为其对应的值。
+int main(int argc ,char* argv[] ,char* envp[]); //
+```
+
+## 返回值
+
+* main函数有返回值，类型是int；
+
+* main函数有返回值：0，正常退出；非零，异常退出；
+
+* 如果代码中main函数没有return 语句的话，C99 和C++89都规定编译器要自动在生成的目标文件中加入return 0，表示程序正常退出。
+
+## main原理
+
+* 包含main函数的c语言源程序经过编译后，需要和glibc标准库进行链接，最终生成目标二进制文件；
+
+* 目标文件的glibc程序包含了各个平台的二进制程序入口，在linux中，这个入口为`_start`汇编入口；
+
+* 在`_start`入口程序中，经过一系列初始化后，会最终跳转到main的汇编地址并执行；
+
+```nasm
+_start:
+ xor ebp, ebp //清空ebp
+ pop esi //保存argc，esi = argc
+ mov esp, ecx //保存argv, ecx = argv
+
+ push esp //参数7保存当前栈顶
+ push edx //参数6
+ push __libc_csu_fini//参数5
+ push __libc_csu_init//参数4
+ push ecx //参数3
+ push esi //参数2
+ push main//参数1
+ call _libc_start_main
+
+hlt
+```
+
+### main函数运行之前
+
+1. 设置栈指针；
+
+2. 初始化static静态和global全局变量，即data段的内容；
+
+3. 将未初始化部分的赋初值：数值型short，int，long等为0，bool为FALSE，指针为NULL，等等，即.bss段的内容
+
+4. 运行全局构造器，类似c++中全局构造函数；
+
+5. 将main函数的参数，argc，argv等传递给main函数，然后才真正运行main函数；
+
+下面，我们就来说说在mian函数执行之前到底会运行哪些代码：
+
+（1）全局对象的构造函数会在main 函数之前执行。
+
+（2）一些全局变量、对象和静态变量、对象的空间分配和赋初值就是在执行main函数之前，而main函数执行完后，还要去执行一些诸如释放空间、释放资源使用权等操作
+
+（3）进程启动后，要执行一些初始化代码（如设置环境变量等），然后跳转到main执行。全局对象的构造也在main之前。
+
+（4）通过关键字**attribute**，让一个函数在主函数之前运行，进行一些数据初始化、模块加载验证等。
+
+### **main函数之后执行的函数**
+
+1. 全局对象的析构函数会在main函数之后执行；　
+
+2. 用`atexit`注册的函数也会在main之后执行。
+
+```c
+//atexit函数可以“注册”一个函数，使这个函数将在main函数正常终止时被调用;
+// 当程序异常终止时，通过它注册的函数并不会被调用;
+// 编译器必须至少允许程序员注册32个函数。
+// 如果注册成功，atexit 返回0，否则返回非零值，没有办法取消一个函数的注册。
+// 在 exit 所执行的任何标准清理操作之前，被注册的函数按照与注册顺序相反的顺序被依次调用
+int atexit(void (*func)(void));  //func在main之后执行；
+```
+
+## 参考
+
+1. [C语言的main函数解析-腾讯云开发者社区-腾讯云](https://cloud.tencent.com/developer/article/1765338)

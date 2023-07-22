@@ -96,9 +96,7 @@ impl Solution {
         dp[0][0] = true;
         let (s1, s2, s3) = (s1.as_bytes(), s2.as_bytes(), s3.as_bytes());
         (0..l1).for_each(|i| dp[i + 1][0] = s1[i] == s3[i] && dp[i][0]);
-        for j in 0..l2 {
-            dp[0][j + 1] = s2[j] == s3[j] && dp[0][j];
-        }
+        (0..l2).for_each(|i| dp[0][i + 1] = s2[i] == s3[i] && dp[0][i]);
         for i in 0..l1 {
             for j in 0..l2 {
                 dp[i + 1][j + 1] = (s1[i] == s3[i + j + 1] && dp[i][j + 1])

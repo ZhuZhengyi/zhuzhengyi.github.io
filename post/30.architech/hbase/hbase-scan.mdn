@@ -1,0 +1,98 @@
+# HBase Scan
+
+## Filter
+
+- 过滤器是在get或者scan时候过滤结果用的. HBase中的过滤器被用户创建出来后会被序列化为可以网络传输的格式,然后被分发到各个RegionServer.然后在RegionServer中Filter被还原出来,这样在Scan遍历过程中,不满足条件的结果都不会被返回客户端，叫做谓语下推(predicate push down), 可以保证被过滤掉的数据不会被传送到客户端。
+- 所有的过滤器都要实现Filter接口.HBase同时还提供了FilterBase抽象类,它提供了Filter接口的默认实现
+
+![image-20190816095904279](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/10/10-12-54-39-image-20190816095904279.png)
+
+### 比较器
+
+HBase的filter有四种比较器： 
+
+* **binary**：二进制比较器，如’binary:abc’，按字典排序跟’abc’进行比较 
+* **binaryprefix**：二进制前缀比较器：如’binaryprefix:abc’，按字典顺序只跟’abc’比较前3个字符 
+* **regexstring**：正则表达式比较器：如’regexstring:ab*yz’，按正则表达式匹配以ab开头，以yz结尾的值。这个比较器只能使用=、!=两个比较运算符。 
+* **substring**：子串比较器：如’substring:abc123’，匹配以abc123开头的值。这个比较顺也只能使用=、!=两个比较运算符。
+
+### 比较运算符
+
+* LESS (<)
+* LESS_OR_EQUAL (<=)
+* EQUAL (=)
+* NOT_EQUAL (!=)
+* GREATER_OR_EQUAL (>=)
+* GREATER (>)
+* NO_OP (no operation)（不知道这个怎么用）
+
+### SingleColumnValueFilter
+
+```shell
+#//
+hbase> scan ‘tweet0’, {FILTER=>”SingleColumnValueFilter(‘info’,’pubtime’,>=,’binary:2014-11-08 19:26:27’) AND SingleColumnValueFilter(‘info’,’pubtime’,<=,’binary:2014-11-10 20:20:00’)”}
+hbase> scan ‘tweet0’, {FILTER=>”SingleColumnValueFilter(‘emotion’,’PB’,=,’binary:\x00\x00\x00\x05’)”, COLUMNS=>[‘emotion:PB’]} 
+```
+
+SingleColumnValueFilter 这个过滤器有6个参数：列族、列名、比较运算符、比较器和两个可选参数：filterIfColumnMissing和setLatestVersionOnly。 
+
+* filterIfColumnMissing：如果设置为true，则会把没有过滤器所指定列的行都过滤掉。默认值是false，所以看上去，当没有过滤器所指定的列时，过滤器不起作用。 
+* setLatestVersionOnly：如果设置为false，则除了检查最新版本，还会检查以前的版本。默认值是true，只检查最新版本的值。 
+  这两个参数要么一起使用，要么都不使用。
+
+### FuzzyRowFilter
+
+```java
+// rowkey: 2016_06_22_beijing
+// 查找2016年什么时间去北京了和2012年什么时间去干什么了
+Pair<byte[], byte[]> par1 = new Pair<>(Bytes.toBytes("2016_??_??_beijing"),new byte[]{
+        0,0,0,0,0,1,1,0,1,1,0,0,0,0,0,0,0,0
+});
+Pair<byte[], byte[]> par2 = new Pair<>(Bytes.toBytes("2012"),new byte[]{
+        0,0,0,0
+});
+List<Pair<byte[], byte[]>> fuzzy = Arrays.asList(par1,par2);
+FuzzyRowFilter filter = new FuzzyRowFilter(fuzzy);
+Scan scan = new Scan();
+scan.setFilter(filter);
+```
+
+```
+scan 'blog', FILTER => org.apache.hadoop.hbase.filter.FuzzyRowFilter.new(Arrays.asList(Pair.new(Bytes.toBytes("00?"),Bytes.toBytes("\x00\x00\x01"))))
+
+scan "journalq:send_log", {LIMIT=>10, STARTROW=> "\x00\x00\x00\x08\x00\x00\x01j\xC16=\x98\x03E\xD2\x02\xE1", STOPROW=>"\x00\x00\x00\x08\x00\x00\x01j\xDA\x9F\x85\x17\xF7\xBDbr" }
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x08\x00\x00\x01j\xC16=\x98\x03E\xD2\x02\xE1", STOPROW=>"\x00\x00\x00\x14\x00\x00\x01l=.\xFB\xAF\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~7D\xD7\xF4s\xB1\x80\xB1V\xA1\xB3\xA2\xDE\x9F\xDE\x9A", FILTER=>org.apache.hadoop.hbase.filter.FuzzyRowFilter.new(Arrays.asList(Pair.new(Bytes.toBytes("0008????????0000000000000000????????????????"),Bytes.toBytes("\x00\x00\x00\x01\x01\x01\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01")))) }
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x08\x00\x00\x01j\xC16=\x98\x03E\xD2\x02\xE1", STOPROW=>"\x00\x00\x00\x14\x00\x00\x01l=.\xFB\xAF\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~7D\xD7\xF4s\xB1\x80\xB1V\xA1\xB3\xA2\xDE\x9F\xDE\x9A", FILTER=>org.apache.hadoop.hbase.filter.FuzzyRowFilter.new(Arrays.asList(Pair.new(Bytes.toBytes("0008????????0000000000000000????????????????"),Bytes.toBytes("\x00\x00\x00\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01")))) }
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x08\x00\x00\x01j\xC16=\x98\x03E\xD2\x02\xE1", STOPROW=>"\x00\x00\x00\x14\x00\x00\x01l=.\xFB\xAF\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~7D\xD7\xF4s\xB1\x80\xB1V\xA1\xB3\xA2\xDE\x9F\xDE\x9A", FILTER=>org.apache.hadoop.hbase.filter.FuzzyRowFilter.new(Arrays.asList(Pair.new(Bytes.toBytes("0000"),Bytes.toBytes("\x01\x01\x01\x01")))), LIMIT=> 10 }
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x13\x00\x00\x01", FILTER=>org.apache.hadoop.hbase.filter.FuzzyRowFilter.new(Arrays.asList(Pair.new(Bytes.toBytes("0000"),Bytes.toBytes("\x01\x01\x01\x01")))), LIMIT=> 1000 }
+
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x08\x00\x00\x01j\xC16=\x98\x03E\xD2\x02\xE1", STOPROW=>"\x00\x00\x00\x14\x00\x00\x01l=.\xFB\xAF\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~7D\xD7\xF4s\xB1\x80\xB1V\xA1\xB3\xA2\xDE\x9F\xDE\x9A", LIMIT=>10 }
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x02\x00\x00\x01k\x0C\x168\x92\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~\xC2\x8Fl-\xD3\x04\xB5F(\x9F\x89\xED\x13\xDD\xE5!", STOPROW=>"\x00\x00\x00\x8D\x00\x00\x01l#]\xAF)", LIMIT=>10 }
+
+scan "journalq:send_log", {STARTROW=> "\x00\x00\x00\x02\x00\x00\x01k\x0C\x168\x92\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~\xC2\x8Fl-\xD3\x04\xB5F(\x9F\x89\xED\x13\xDD\xE5!", STOPROW=>"\x00\x00\x00\x8D\x00\x00\x01l#]\xAF)", FILTER=>org.apache.hadoop.hbase.filter.FuzzyRowFilter.new(Arrays.asList(Pair.new(Bytes.toBytes("0008????0000????0000????"),Bytes.toBytes("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00")))) }
+
+
+scan "journalq:send_log", {FILTER=>"SingleColumnValueFilter('cf','create_time',=,'regexstring:2014-11-08.*')"} 
+```
+
+```
+\x00\x00\x00\x02\x00\x00\x01k\x0C\x168\x92\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~\xC2\x8Fl-\xD3\x04\xB5F(\x9F\x89\xED\x13\xDD\xE5!
+
+\x00\x00\x00\x14\x00\x00\x01l=.\xFB\xAF\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~7D\xD7\xF4s\xB1\x80\xB1V\xA1\xB3\xA2\xDE\x9F\xDE\x9A
+
+
+\x00\x00\x00\x01\x00\x00\x01jD3\x06\xEC\xD4\x1D\x8C\xD9\x8F\x00\xB2\x04\xE9\x80\x09\x98\xEC\xF8B~\xDA\x9EtW\x86\xD0\xF9o'\xB3\xEC\xFF\x14\xC6\xD5F
+
+\x00\x00\x00\x08\x00\x00\x01j\xC16=\x97r\x02~\x0C\xC0^\xADM\x84\x10\xB3\xFB\x8FW\xF3\xE8\xFD\xEF\xCE\xDFd.}\x90\x1Dj\x9A\xBB\x9F\x98\x19
+```
+
+## 参考
+
+1. https://yq.aliyun.com/articles/676094
+2. 

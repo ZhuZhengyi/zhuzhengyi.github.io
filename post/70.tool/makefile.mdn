@@ -1,0 +1,221 @@
+# Makefile
+
+## 简介
+
+## 语法
+
+### 内部变量
+
+```
+$@            : 规则的目标名
+$%            : 当目标为文件时，为目标成员名，否则为空
+$<            : 第一个依赖的文件名
+$?            : 所有比目标新的依赖名
+$^            : 所有依赖名，出除重复
+$+            : 所有依赖名，不出除重复
+$*            : 目标模式中%及其之前的部分
+$(@D)        : 目标文件名中的路径部分
+$(@F)        : 目标文件名中的真正文件名部分
+
+VPATH        : 指定make查找依赖文件和目标文件的目录
+vpath        : 指定对应模式的文件搜索目录
+```
+
+### 变量替换
+
+## 单独编译内核模块
+
+```shell
+$ cd /usr/src/kernel/
+$ make silentoldconfig       #载入当前系统内核配置 
+$ make menuconfig            #
+$ make prepare scripts
+$ make M=driver/module
+```
+
+## 内核模块Makefile模板
+
+```makefile
+$ cat Makefile
+
+    obj-m := mod_name.o
+    KERNEL_DIR := /lib/modules/$(shell uname -r)/build
+    PWD := $(shell pwd)
+    all: mod_name
+    mod_name:
+        $(MAKE) -C $(KERNEL_DIR) M=$(PWD) LDDINC=$(PWD) modules
+    clean:
+       rm -rf .*.cmd *.o *.mod.c *.cmd *.ko .tmp_versions modules.order Module.symvers
+
+
+    ############样式输出
+
+    CROSS_COMPILE=
+    #arm-linux-
+    CC := $(CROSS_COMPILE)gcc
+    LD := $(CROSS_COMPILE)ld
+
+    ######### DEBUG部分
+    #DEBUG = y
+    ifeq ($(DEBUG), y)
+
+    DEBFLAGS = -O -g
+    else
+
+    DEBFLAGS = -O1
+    endif
+
+    #########驱动模块名称以及源文件部分
+    # module name here
+    MODULE = VSD_FOR_RAID
+    # obj-m = module
+    # obj-y = into kernel
+    # foo.o -> foo.ko
+    ifneq ($(KERNELRELEASE), )
+
+    obj-m := $(MODULE).o
+
+    # 驱动源代码文件，.o形式
+    # your obj file(s) here
+
+    KBUILD_EXTRA_SYMBOLS=$(common_symbol)
+
+    $(MODULE)-objs := vsd.o\
+          vsd_manager.o \
+          vsd_ctl.o vsd_event.o vsd_io.o\
+          vsd_io_create_remove.o vsd_io_get_put.o \
+          vsd_io_rw.o\
+          vsd_request.o vsd_request_disk.o\
+          vsd_super.o\
+          vsd_bbr.o\
+          $(COMMON_OBJ)
+
+    else
+
+    #KERNELDIR ?= /usr/src/linux-headers-3.2.0-4-amd64
+    #../git/kernel/linux-3.4.13/
+    # ../linux-2.6.38.8/linux-2.6.38.8/
+
+    PWD := $(shell pwd)
+
+    ##########真正编译部分，添加了if语句
+    all:
+      ln -nsf ../common/*.[ch] ./
+      $(MAKE) -C $(KERNELDIR) M=$(PWD) modules;
+      rm -f $(COMMON_SRC)
+    endif
+
+    #####这个clean把生成的杂七杂八文件都删除，可用ls –al查看
+    clean:
+      rm -rf $(COMMON_SRC) *.bak *~ *.o *.ko *.symvers *.mod.c *.html *.order .*.cmd .tmp_versions
+      rm -rf ./user_test/*.bak
+
+    ########伪目标部分
+    install:
+
+
+    modules:
+
+    modules_install:
+
+    .PHONY: all clean install modules modules_install
+
+    ############# Makefile end here
+```
+
+## 普通模板
+
+```makefile
+#
+# app Makefile
+# 
+# Copyright (C) user@mail.com
+#
+
+
+# Parameters
+OBJ_DIR = ../.objs
+BIN_DIR = ../bin
+LIB_DIR = ../lib
+INC_DIR = ../include
+RPC_DIR = ../rpc
+
+# Compiler flags 
+DEBUG = -g 
+INCLUDE += -I$(INC_DIR)
+CFLAGS += $(DEBUG) $(INCLUDE)
+NVR_FS = nvrfs
+LIBS += -lpthread -l$(NVR_FS) 
+LIBINC += -L$(LIB_DIR)
+LFLAGS += $(LIBINC) $(LIBS)
+RM = rm -rf
+PWD = $(shell pwd)
+
+# Source file
+
+SRC.h = $(wildcard *.h)
+SRC.c = $(wildcard *.c)
+SRC.o = $(SRC.c:.c=.o)
+SRC_xdr = $(wildcard *_xdr.c)
+SRC_svc = $(wildcard *_svc.c)
+
+# vpath
+vpath %.o     $(OBJ_DIR)
+vpath %.so    $(LIB_DIR)
+vpath %.x     $(RPC_DIR)
+
+# TARGETS 
+TARGETS = nvr_svc
+
+all : init  $(TARGETS) 
+
+init :
+  @mkdir -p $(OBJ_DIR)  
+  @mkdir -p $(BIN_DIR)
+
+$(TARGETS) : $(SRC.o)
+  $(CC) -o $(BIN_DIR)/$@ $(SRC.o:%=$(OBJ_DIR)/%) $(LFLAGS)
+
+%.o : %.c
+  $(CC) -c -o $(OBJ_DIR)/$@ $(CFLAGS) $< 
+
+%_xdr.c : %.x
+  @rpcgen $(RPCGENFLAGS) $<
+  @cd $(RPC_DIR); mv -f $@ $(PWD) ; rm -rf *.c
+
+%_svc.c : %.x
+  @rpcgen $(RPCGENFLAGS) $< 
+  @cd $(RPC_DIR); mv -f $@ $(PWD); rm -rf *.c
+
+# install
+#
+PHONY += install 
+install :
+  @echo "install done."
+
+# clean
+#
+PHONY += clean 
+clean : 
+  $(RM) $(OBJ_DIR)/* $(BIN_DIR)/$(TARGETS)
+
+.PHONY : $(PHONY)
+```
+
+## cmake
+
+- 可执行程序
+
+```cmake
+$ cat CMakeLists.txt
+ project(app_name)
+ cmake_minimum_required(VERSION 2.8)
+ aux_source_directory(. SRC_LIST)
+ add_executable(${PROJECT_NAME} ${SRC_LIST})
+```
+
+## build
+
+```shell
+$ mkdir .build ; cd .build ; cmake .. ; make
+```

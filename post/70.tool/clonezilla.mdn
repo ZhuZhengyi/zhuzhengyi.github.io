@@ -1,0 +1,54 @@
+# clonezilla
+
+## 简介
+
+## 1. initrd.img修改
+
+```shell
+### 解压initrd.img
+$ xz -d initrd.img.xz  #Xz格式
+$ gunzip initrd.img.gz  #Gz格式
+
+### 解压cpio
+$ cpio -i -d < initrd.img
+
+### 打包initrd.img
+$ cd initrd && find . | cpio -o -H newc | gzip > ../initrd.img
+```
+
+## 2. filesystem.squashfs修改
+
+- 解压squashfs
+
+```shell
+$ unsquashfs  filesystem.squashfs
+
+#或者
+
+$ mount –t squashfs filesystem.squashfs /mnt/tmp
+$ cp –r /mnt/tmp  squashfs-root-dir
+```
+
+## 3. 增加驱动
+
+将驱动模块拷贝到相应目录下，更新相关配置信息:
+
+```shell
+$ cp *.ko /lib/modules/$(uname -r)/extra/
+$ depmod –a
+```
+
+## 4. 打包squashfs
+
+```shell
+$ mksquashfs squashfs-root-dir filesystem.squashfs –force-uid 0 –all-root
+```
+
+## 5. pxelinux.cfg/default
+
+```
+LABEL myos
+MENU LABEL myos
+kernel myos/live/vmlinuz
+append initrd=/myos/live/initrd.img boot=live union=overlayfs noswap edd=on nomodeset noprompt config nosplash only-ubiquity ip=frommedia vgz=791 locales=zh_CN.UTF-8 keyboard-layouts=NONE ocs_live_batch="yes" fetch=tftp://192.18.0.2/myos/live/filesystem.squashfs ocs_premount="mount -t nfs 192.168.0.2:/tftpboot/myos/home/partimag /home/partimag" ocs_live_run="ocs-sr -g auto -e1 auto -e2 -c -r -j2 -k1 -p reboot restoredisk ask_user ask_user"
+```

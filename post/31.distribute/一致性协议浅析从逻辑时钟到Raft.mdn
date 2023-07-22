@@ -1,0 +1,136 @@
+---
+title: 一致性协议浅析：从逻辑时钟到Raft
+toc: true
+tags: []
+categories: [distribute]
+series: []
+comment: true
+date: 2021-09-26
+draft: true
+---
+
+# 一致性协议浅析：从逻辑时钟到 Raft
+
+## 逻辑时钟
+
+逻辑时钟其实算不上是一个一致性协议，它是 Lamport 大神在 1987 年就提出来的一个想法，用来解决分布式系统中，不同的机器时钟不一致可能带来的问题。在单机系统中，我们用机器的时间来标识事件，就可以非常清晰地知道两个不同事件的发生次序。但是在分布式系统中，由于每台机器的时间可能存在误差，无法通过物理时钟来准确分辨两个事件发生的先后顺序。但实际上，在分布式系统中，只有两个发生关联的事件，我们才会去关心两者的先来后到关系。比如说两个事务，一个修改了 rowa，一个修改了 rowb，他们两个谁先发生，谁后发生，其实我们并不关心。那所谓逻辑时钟，就是用来定义两个关联事件的发生次序，即‘happens before’。而对于不关联的事件，逻辑时钟并不能决定其先后，所以说这种‘happens before’的关系，是一种偏序关系。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d3e996a19c7cd9a3870c9f8e14b510a1.png "image.png")
+
+图和例子来自于这篇[博客](https://yq.aliyun.com/go/articleRenderRedirect?url=https%3A%2F%2Fwww.cnblogs.com%2Fbangerlee%2Fp%2F5448766.html)  
+此图中，箭头表示进程间通讯，ABC 分别代表分布式系统中的三个进程。  
+逻辑时钟的算法其实很简单：每个事件对应一个 Lamport 时间戳，初始值为 0  
+如果事件在节点内发生，时间戳加 1  
+如果事件属于发送事件，时间戳加 1 并在消息中带上该时间戳  
+如果事件属于接收事件，时间戳 = Max(本地时间戳，消息中的时间戳) + 1  
+这样，所有关联的发送接收事件，我们都能保证发送事件的时间戳小于接收事件。如果两个事件之间没有关联，比如说 A3 和 B5，他们的逻辑时间一样。正是由于他们没有关系，我们可以随意约定他们之间的发生顺序。比如说我们规定，当 Lamport 时间戳一样时，A 进程的事件发生早于 B 进程早于 C 进程，这样我们可以得出 A3 ‘happens before’ B5。而实际在物理世界中，明显 B5 是要早于 A3 发生的，但这都没有关系。
+
+逻辑时钟貌似目前并没有被广泛的应用，除了 DynamoDB 使用了 vector clock 来解决多版本的先后问题（如果有其他实际应用的话请指出，可能是我孤陋寡闻了），Google 的 Spanner 也是采用物理的原子时钟来解决时钟问题。但是从 Larmport 大师的逻辑时钟算法上，已经可以看到一些一致性协议的影子。
+
+## Replicated State Machine
+
+说到一致性协议，我们通常就会讲到复制状态机。因为通常我们会用复制状态机加上一致性协议算法来解决分布式系统中的高可用和容错。许多分布式系统，都是采用复制状态机来进行副本之间的数据同步，比如 HDFS，Chubby 和 Zookeeper。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8e571d16292bb63f45ce076ff7694d.png "image.png")  
+所谓复制状态机，就是在分布式系统的每一个实例副本中，都维持一个持久化的日志，然后用一定的一致性协议算法，保证每个实例的这个 log 都完全保持一致，这样，实例内部的状态机按照日志的顺序回放日志中的每一条命令，这样客户端来读时，在每个副本上都能读到一样的数据。复制状态机的核心就是图中 的 Consensus 模块，即今天我们要讨论的 Paxos，ZAB，Raft 等一致性协议算法。
+
+## Paxos
+
+Paxos 是 Lamport 大神在 90 年代提出的一致性协议算法，大家一直都觉得难懂，所以 Lamport 在 2001 又发表了一篇新的论文《Paxos made simple》，在文中他自己说 Paxos 是世界上最简单的一致性算法，非常容易懂……但是业界还是一致认为 Paxos 比较难以理解。在我看过 Lamport 大神的论文后，我觉得，除去复杂的正确性论证过程，Paxos 协议本身还是比较好理解的。但是，Paxos 协议还是过于理论，离具体的工程实践还有太远的距离。我一开始看 Paxos 协议的时候也是一头雾水，看来看去发现 Paxos 协议只是为了单次事件答成一致，而且答成一致后的值无法再被修改，怎么用 Paxos 去实现复制状态机呢？另外，Paxos 协议答成一致的值只有 Propose 和部分 follower 知道，这协议到底怎么用……但是，如果你只是把 Paxos 协议当做一个理论去看，而不是考虑实际工程上会遇到什么问题的话，会容易理解的多。Lamport 的论文中对 StateMachine 的应用只有一个大概的想法，并没有具体的实现逻辑，想要直接把 Paxos 放到复制状态机里使用是不可能的，得在 Paxos 上补充很多的东西。这些是为什么 Paxos 有这么多的变种。
+
+### Basic-Paxos
+
+Basic-Paxos 即 Lamport 最初提出的 Paxos 算法，其实很简单，用三言两语就可以讲完，下面我尝试着用我自己的语言描述下 Paxos 协议，然后会举出一个例子。要理解 Paxos，只要记住一点就好了，Paxos 只能为一个值形成共识，一旦 Propose 被确定，之后值永远不会变，也就是说整个 Paxos Group 只会接受一个提案（或者说接受多个提案，但这些提案的值都一样）。至于怎么才能接受多个值来形成复制状态机，大家可以看下一节 Multi-Paxos.
+
+Paxos 协议中是没有 Leader 这个概念的，除去 Learner（只是学习 Propose 的结果，我们可以不去讨论这个角色），只有 Proposer 和 Acceptor。Paxos 并且允许多个 Proposer 同时提案。Proposer 要提出一个值让所有 Acceptor 答成一个共识。首先是 Prepare 阶段，Proposer 会给出一个 ProposeID n（注意，此阶段 Proposer 不会把值传给 Acceptor）给每个 Acceptor，如果某个 Acceptor 发现自己从来没有接收过大于等于 n 的 Proposer，则会回复 Proposer，同时承诺不再接收 ProposeID 小于等于 n 的提议的 Prepare。如果这个 Acceptor 已经承诺过比 n 更大的 propose，则不会回复 Proposer。如果 Acceptor 之前已经 Accept 了（完成了第二个阶段）一个小于 n 的 Propose，则会把这个 Propose 的值返回给 Propose，否则会返回一个 null 值。当 Proposer 收到大于半数的 Acceptor 的回复后，就可以开始第二阶段 accept 阶段。但是这个阶段 Propose 能够提出的值是受限的，只有它收到的回复中不含有之前 Propose 的值，他才能自由提出一个新的 value，否则只能是用回复中 Propose 最大的值做为提议的值。Proposer 用这个值和 ProposeID n 对每个 Acceptor 发起 Accept 请求。也就是说就算 Proposer 之前已经得到过 acceptor 的承诺，但是在 accept 发起之前，Acceptor 可能给了 proposeID 更高的 Propose 承诺，导致 accept 失败。也就是说由于有多个 Proposer 的存在，虽然第一阶段成功，第二阶段仍然可能会被拒绝掉。  
+下面我举一个例子，这个例子来源于这篇[博客](https://yq.aliyun.com/go/articleRenderRedirect?url=https%3A%2F%2Fwww.cnblogs.com%2Fstudy-everyday%2Fp%2F7279829.html)
+
+假设有 Server1，Server2， Server3 三个服务器，他们都想通过 Paxos 协议，让所有人答成一致他们是 leader，这些 Server 都是 Proposer 角色，他们的提案的值就是他们自己 server 的名字。他们要获取 Acceptor1~3 这三个成员同意。首先 Server2 发起一个提案【1】,也就是说 ProposeID 为 1，接下来 Server1 发起来一个提案【2】,Server3 发起一个提案【3】.
+
+首先是 Prepare 阶段：  
+假设这时 Server1 发送的消息先到达 acceptor1 和 acceptor2，它们都没有接收过请求，所以接收该请求并返回【2，null】给 Server1，同时承诺不再接受编号小于 2 的请求；  
+   紧接着，Server2 的消息到达 acceptor2 和 acceptor3，acceptor3 没有接受过请求，所以返回 proposer2 【1，null】，并承诺不再接受编号小于 1 的消息。而 acceptor2 已经接受 Server1 的请求并承诺不再接收编号小于 2 的请求，所以 acceptor2 拒绝 Server2 的请求；  
+   最后，Server3 的消息到达 acceptor2 和 acceptor3，它们都接受过提议，但编号 3 的消息大于 acceptor2 已接受的 2 和 acceptor3 已接受的 1，所以他们都接受该提议，并返回 Server3 【3，null】；  
+   此时，Server2 没有收到过半的回复，所以重新取得编号 4，并发送给 acceptor2 和 acceptor3，此时编号 4 大于它们已接受的提案编号 3，所以接受该提案，并返回 Server2 【4，null】。
+
+接下来进入 Accept 阶段，  
+Server3 收到半数以上（2 个）的回复，并且返回的 value 为 null，所以，Server3 提交了【3，server3】的提案。  
+Server1 在 Prepare 阶段也收到过半回复，返回的 value 为 null，所以 Server1 提交了【2，server1】的提案。  
+Server2 也收到过半回复，返回的 value 为 null，所以 Server2 提交了【4，server2】的提案。  
+Acceptor1 和 acceptor2 接收到 Server1 的提案【2，server1】，acceptor1 通过该请求，acceptor2 承诺不再接受编号小于 4 的提案，所以拒绝；  
+Acceptor2 和 acceptor3 接收到 Server2 的提案【4，server2】，都通过该提案；  
+Acceptor2 和 acceptor3 接收到 Server3 的提案【3，server3】，它们都承诺不再接受编号小于 4 的提案，所以都拒绝。  
+此时，过半的 acceptor（acceptor2 和 acceptor3）都接受了提案【4，server2】，learner 感知到提案的通过，learner 开始学习提案，所以 server2 成为最终的 leader。
+
+### Multi-Paxos
+
+刚才我讲了，Paxos 还过于理论，无法直接用到复制状态机中，总的来说，有以下几个原因
+
+- Paxos 只能确定一个值，无法用做 Log 的连续复制
+- 由于有多个 Proposer，可能会出现活锁，如我在上面举的例子中，Server2 的一共提了两次 Propose 才最终让提案通过，极端情况下，次数可能会更多
+- 提案的最终结果可能只有部分 Acceptor 知晓，没法达到复制状态机每个 instance 都必须有完全一致 log 的需求。
+
+那么其实 Multi-Paxos，其实就是为了解决上述三个问题，使 Paxos 协议能够实际使用在状态机中。解决第一个问题其实很简单。为 Log Entry 每个 index 的值都是用一个独立的 Paxos instance。解决第二个问题也很简答，让一个 Paxos group 中不要有多个 Proposer，在写入时先用 Paxos 协议选出一个 leader（如我上面的例子），然后之后只由这个 leader 做写入，就可以避免活锁问题。并且，有了单一的 leader 之后，我们还可以省略掉大部分的 prepare 过程。只需要在 leader 当选后做一次 prepare，所有 Acceptor 都没有接受过其他 Leader 的 prepare 请求，那每次写入，都可以直接进行 Accept，除非有 Acceptor 拒绝，这说明有新的 leader 在写入。为了解决第三个问题，Multi-Paxos 给每个 Server 引入了一个 firstUnchosenIndex，让 leader 能够向向每个 Acceptor 同步被选中的值。解决这些问题之后 Paxos 就可以用于实际工程了。  
+Paxos 到目前已经有了很多的补充和变种，实际上，之后我要讨论的 ZAB 也好，Raft 也好，都可以看做是对 Paxos 的修改和变种，另外还有一句流传甚广的话，“世上只有一种一致性算法，那就是 Paxos”。
+
+## ZAB
+
+ZAB 即 Zookeeper Atomic BoardCast，是 Zookeeper 中使用的一致性协议。ZAB 是 Zookeeper 的专用协议，与 Zookeeper 强绑定，并没有抽离成独立的库，因此它的应用也不是很广泛，仅限于 Zookeeper。但 ZAB 协议的论文中对 ZAB 协议进行了详细的证明，证明 ZAB 协议是能够严格满足一致性要求的。
+
+ZAB 随着 Zookeeper 诞生于 2007 年，此时 Raft 协议还没有发明，根据 ZAB 的论文，之所以 Zookeeper 没有直接使用 Paxos 而是自己造轮子，是因为他们认为 Paxos 并不能满足他们的要求。比如 Paxos 允许多个 proposer，可能会造成客户端提交的多个命令没法按照 FIFO 次序执行。同时在恢复过程中，有一些 follower 的数据不全。这些断论都是基于最原始的 Paxos 协议的，实际上后来一些 Paxos 的变种，比如 Multi-Paxos 已经解决了这些问题。当然我们只能站在历史的角度去看待这个问题，由于当时的 Paxos 并不能很好的解决这些问题，因此 Zookeeper 的开发者创造了一个新的一致性协议 ZAB。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/81f5d7874e4a1af1935258d582f094f9.png "image.png")
+
+ZAB 其实和后来的 Raft 非常像，有选主过程，有恢复过程，写入也是两阶段提交，先从 leader 发起一轮投票，获得超过半数同意后，再发起一次 commit。ZAB 中每个主的 epoch number 其实就相当于我接下来要讲的 Raft 中的 term。只不过 ZAB 中把这个 epoch number 和 transition number 组成了一个 zxid 存在了每个 entry 中。
+
+ZAB 在做 log 复制时，两阶段提交时，一个阶段是投票阶段，只要收到过半数的同意票就可以，这个阶段并不会真正把数据传输给 follower，实际作用是保证当时有超过半数的机器是没有挂掉，或者在同一个网络分区里的。第二个阶段 commit，才会把数据传输给每个 follower，每个 follower（包括 leader）再把数据追加到 log 里，这次写操作就算完成。如果第一个阶段投票成功，第二个阶段有 follower 挂掉，也没有关系，重启后 leader 也会保证 follower 数据和 leader 对其。如果 commit 阶段 leader 挂掉，如果这次写操作已经在至少一个 follower 上 commit 了，那这个 follower 一定会被选为 leader，因为他的 zxid 是最大的，那么他选为 leader 后，会让所有 follower 都 commit 这条消息。如果 leader 挂时没有 follower commit 这条消息，那么这个写入就当做没写完。
+
+由于只有在 commit 的时候才需要追加写日志，因此 ZAB 的 log，只需要 append-only 的能力，就可以了。
+
+另外，ZAB 支持在从 replica 里做 stale read，如果要做强一致的读，可以用 sync read，原理也是先发起一次虚拟的写操作，到不做任何写入，等这个操作完成后，本地也 commit 了这次 sync 操作，再在本地 replica 上读，能够保证读到 sync 这个时间点前所有的正确数据，而 Raft 所有的读和写都是经过主节点的
+
+## Raft
+
+Raft 是斯坦福大学在 2014 年提出的一种新的一致性协议。作者表示之所以要设计一种全新的一致性协议，是因为 Paxos 实在太难理解，而且 Paxos 只是一个理论，离实际的工程实现还有很远的路。因此作者狠狠地吐槽了 Paxos 一把：
+
+1. Paxos 协议中，是不需要 Leader 的，每个 Proposer 都可以提出一个 propose。相比 Raft 这种一开始设计时就把选主和协议达成一致分开相比，Paxos 等于是把选主和 propose 阶段杂糅在了一起，造成 Paxos 比较难以理解。
+2. 最原始的 Paxos 协议只是对单一的一次事件答成一致，一旦这个值被确定，就无法被更改，而在我们的现实生活中，包括我们数据库的一致性，都需要连续地对 log entry 的值答成一致，所以单单理解 Paxos 协议本身是不够的，我们还需要对 Paxos 协议进行改进和补充，才能真正把 Paxos 协议应用到工程中。而对 Paxos 协议的补充本身又非常复杂，而且虽然 Paxos 协议被 Lamport 证明过，而添加了这些补充后，这些基于 Paxos 的改进算法，如 Multi-Paxos，又是未经证明的。
+3. 第三个槽点是 Paxos 协议只提供了一个非常粗略的描述，导致后续每一个对 Paxos 的改进，以及使用 Paxos 的工程，如 Google 的 Chubby，都是自己实现了一套工程来解决 Paxos 中的一些具体问题。而像 Chubby 的实现细节其实并没有公开。也就是说要想在自己的工程中使用 Paxos，基本上每个人都需要自己定制和实现一套适合自己的 Paxos 协议。
+
+因此，Raft 的作者在设计 Raft 的时候，有一个非常明确的目标，就是让这个协议能够更好的理解，在设计 Raft 的过程中，如果遇到有多种方案可以选择的，就选择更加容易理解的那个。作者举了一个例子。在 Raft 的选主阶段，本来可以给每个 server 附上一个 id,大家都去投 id 最大的那个 server 做 leader，会更快地达成一致（类似 ZAB 协议），但这个方案又增加了一个 serverid 的概念，同时在高 id 的 server 挂掉时，低 id 的 server 要想成为主必须有一个等待时间，影响可用性。因此 Raft 的选主使用了一个非常简单的方案：每个 server 都随机 sleep 一段时间，最早醒过来的 server 来发起一次投票，获取了大多数投票即可为主。在通常的网络环境下，最早发起投票的 server 也会最早收到其他 server 的赞成票，因此基本上只需要一轮投票就可以决出 leader。整个选主过程非常简单明了。
+
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/cc62c8e44051bf4d348cc9784cdc2ba6.png "image.png")
+
+除了选主，整个 Raft 协议的设计都非常简单。leader 和 follower 之间的交互（如果不考虑 snapshot 和改变成员数量）一共只有 2 个 RPC call。其中一个还是选主时才需要的 RequestVote。也就是说所有的数据交互，都只由 AppendEntries 这一个 RPC 完成。  
+理解 Raft 算法，首先要理解 Term 这个概念。每个 leader 都有自己的 Term，而且这个 term 会带到 log 的每个 entry 中去，来代表这个 entry 是哪个 leader term 时期写入的。另外 Term 相当于一个 lease。如果在规定的时间内 leader 没有发送心跳（心跳也是 AppendEntries 这个 RPC call）,Follower 就会认为 leader 已经挂掉，会把自己收到过的最高的 Term 加上 1 做为新的 term 去发起一轮选举。如果参选人的 term 还没自己的高的话，follower 会投反对票，保证选出来的新 leader 的 term 是最高的。如果在 time out 周期内没人获得足够的选票（这是有可能的），则 follower 会在 term 上再加上 1 去做新的投票请求，直到选出 leader 为止。最初的 raft 是用 c 语言实现的，这个 timeout 时间可以设置的非常短，通常在几十 ms，因此在 raft 协议中，leader 挂掉之后基本在几十 ms 就能够被检测发现，故障恢复时间可以做到非常短。而像用 Java 实现的 Raft 库，如 Ratis，考虑到 GC 时间，我估计这个超时时间没法设置这么短。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d2cc2b3e7fe8965dc467e120666f2866.png "image.png")  
+在 Leader 做写入时也是一个两阶段提交的过程。首先 leader 会把在自己的 log 中找到第一个空位 index 写入，并通过 AppendEntries 这个 RPC 把这个 entry 的值发给每个 follower，如果收到半数以上的 follower（包括自己）回复 true，则再下一个 AppendEntries 中，leader 会把 committedIndex 加 1，代表写入的这个 entry 已经被提交。如在下图中，leader 将 x=4 写入 index=8 的这个 entry 中，并把他发送给了所有 follower，在收到第一台（自己），第三台，第五台（图中没有画 index=8 的 entry，但因为这台服务器之前所有的 entry 都和 leader 保持了一致，因此它一定会投同意），那么 leader 就获得了多数票，再下一个 rpc 中，会将 Committed index 往前挪一位，代表 index<=8 的所有 entry 都已经提交。至于第二台和第四台服务器，log 内容已经明显落后，这要么是因为前几次 rpc 没有成功。leader 会无限重试直到这些 follower 和 leader 的日志追平。另外一个可能是这两台服务器重启过，处于恢复状态。那么这两台服务器在收到写入 index=8 的 RPC 时，follower 也会把上一个 entry 的 term 和 index 发给他们。也就是说 prevLogIndex=7，prevLogTerm=3 这个信息会发给第二台服务器，那么对于第二台服务器，index=7 的 entry 是空的，也就是 log 和 leader 不一致，他会返回一个 false 给 leader，leader 会不停地从后往前遍历，直到找到一个 entry 与第二台服务器一致的，从这个点开始重新把 leader 的 log 内容发送给该 follower，即可完成恢复。raft 协议保证了所有成员的 replicated log 中每个 index 位置，如果他们的 term 一致，内容也一定一致。如果不一致，leader 一定会把这个 index 的内容改写成和 leader 一致。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3db0704d4b67a57973a61b609ef0dff2.png "image.png")
+
+其实经过刚才我的一些描述，基本上就已经把 Raft 的选主，写入流程和恢复基本上都讲完了。从这里，我们可以看出 Raft 一些非常有意思的地方。
+
+第一个有意思的地方是 Raft 的 log 的 entry 是可能被修改的，比如一个 follower 接收了一个 leader 的 prepare 请求，把值写入了一个 index，而这个 leader 挂掉，新选出的 leader 可能会重新使用这个 index，那么这个 follower 的相应 index 的内容，会被改写成新的内容。这样就造成了两个问题，首先第一个，raft 的 log 无法在 append-only 的文件或者文件系统上去实现，而像 ZAB，Paxos 协议，log 只会追加，只要求文件系统有 append 的能力即可，不需要随机访问修改能力。  
+第二个有意思的地方是，为了简单，Raft 中只维护了一个 Committed index，也就是任何小于等于这个 committedIndex 的 entry，都是被认为是 commit 过的。这样就会造成在写入过程中，在 leader 获得大多数选票之前挂掉（或者 leader 在写完自己的 log 之后还没来得及通知到任何 follower 就挂掉），重启后如果这个 server 继续被选为 leader，这个值仍然会被 commit 永久生效。因为 leader 的 log 中有这个值，leader 一定会保证所有的 follower 的 log 都和自己保持一致。而后续的写入在增长 committedIndex 后，这个值也默认被 commit 了。
+
+举例来说，现在有 5 台服务器，其中 S1 为 leader，但是当他在为 index=1 的 entry 执行写入时，先写到了自己的 log 中，还没来得及通知其他 server append entry 就宕机了。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d013273b4f34b20c34e911cf9a73f20d.png "image.png")  
+当 S1 重启后，任然有可能被重新当选 leader，当 S1 重新当选 leader 后，仍然会把 index=1 的这个 entry 复制给每台服务器（但是不会往前移动 Committed index）  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/57fb2d1f746579e082d3f1b4b0f65122.png "image.png")  
+此时 S1 又发生一次写入，这次写入完成后，会把 Committed index 移动到 2 的位置，因此 index=1 的 entry 也被认为已经 commit 了。  
+![image.png](http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/529fd591eca61227f7abbf930ad74546.png "image.png")  
+这个行为有点奇怪，因为这样等于 raft 会让一个没有获得大多数人同意的值最终 commit。这个行为取决于 leader，如果上面的例子中 S1 重启后没有被选为 leader，index=1 的 entry 内容会被新 leader 的内容覆盖，从而不会提交未经过表决的内容。
+
+虽然说这个行为是有点奇怪，但是不会造成任何问题，因为 leader 和 follower 还是会保持一致，而且在写入过程中 leader 挂掉，对客户端来说是本来就是一个未决语义，raft 论文中也指出，如果用户想要 exactly once 的语义，可以在写入的时候加入一个类似 uuid 的东西，在写入之前 leader 查下这个 uuid 是否已经写入。那么在一定程度上，可以保证 exactly once 的语义。
+
+Raft 的论文中也比较了 ZAB 的算法，文中说 ZAB 协议的一个缺点是在恢复阶段需要 leader 和 follower 来回交换数据，这里我没太明白，据我理解，ZAB 在重新选主的过程中，会选择 Zxid 最大的那个从成为主，而其他 follower 会从 leader 这里补全数据，并不会出现 leader 从 follower 节点补数据这一说。
+
+## 后话
+
+目前，经过改进的 Paxos 协议已经用在了许多分布式产品中，比如说 Chubby，PaxosStore，阿里云的 X-DB，以及蚂蚁的 OceanBase，都选用了 Paxos 协议，但他们都多多少少做了一些补充和改进。而像 Raft 协议，普遍认为 Raft 协议只能顺序 commit entry，性能没有 Paxos 好，但是 TiKV 中使用了 Raft，其公开的文章宣传对 Raft 做了非常多的优化，使 Raft 的性能变的非常可观。阿里的另外一个数据库 PolarDB，也是使用了改进版的 Parallel-Raft，使 Raft 实现了并行提交的能力。相信未来会有更多的基于 Paxos/Raft 的产品会面世，同时也对 Raft/Paxos 也会有更多的改进。
+
+## 参考文献
+
+1. 《Time, clocks, and the ordering of events in a distributed system》
+2. 《Implementing fault-tolerant services using the state machine approach- A tutorial》
+3. 《Paxos Made Simple》
+4. 《Paxos made live- An engineering perspective》
+5. 《Multi-Paxos》（Standford 大学的一个 ppt）
+6. 《Zab- High-performance broadcast for primary-backup systems》
+7. 《In search of an understandable consensus algorithm》（raft）

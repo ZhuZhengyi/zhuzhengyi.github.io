@@ -1,0 +1,69 @@
+# CubeFS Bcache
+
+## 简介
+
+CubeFS 3.0.0-beta增加了bcache功能，
+
+* 新增blockcache节点，提供本地缓存能力；
+
+* 新增preload模块，用于预加载；
+
+* 增加`sdk/data/blobstore` sdk接口，提供了blobstore接入能力；
+
+* metanode中的`Inode`增加`ObjExtents`字段，用于记录blobstore类型数据；
+
+* fuseclient的
+  
+  * `Super`中增加`volType`, `esbEndpoint`等字段，用于处理ec 和bcache；
+  
+  * `File`中增加`fReader *blobstore.Reader`,`fWriter *blobstore.Writer`两个字段，用于处理ec数据；
+
+* bcache
+
+## blockcache
+
+* blockcache 为本节点的client，提供基于本地磁盘的缓存；
+* blockcache 提供lrucache策略，通过定期(1 min)检测store使用率和文件数，删除过期文件；
+* 主要提供如下接口：
+  * Put：根据key，将data写入到缓存文件中, 每次put都会 写入到一个缓存文件中，文件名为key的值，disk为 key%len(disks)，写入的key将记录在内存中；
+  * Get：根据key，offset，获取data；
+  * Evict：移除失效的kv；
+
+## Preload
+
+* 将blobstore中的volume数据提前加载到datanode中；
+
+* 在read时，如果datanode中存在dp，则从datanode中read；
+
+## blobstore
+
+* client Super中增加`volType, ebsEndpoint, cache`等字段；
+
+* client File中增加`blobstore.Reader，blobstore.Writer`来代表blobstore的读写接口；
+
+* client read/write时，根据`volType`判断来分别调用ec或esObj来分别调用datanode/blobstore来处理请求；
+
+* create vol, 增加`volType,coldArgs`相关字段表示冷vol；
+
+* streamer(hot) read()时，如果`bcacheEnable`, 
+  
+  * 先从bcache load；
+  
+  * 否则，Read data后，再通过`cacheBcache()`将数据放入bcache缓存中；
+
+* cold vol可以有两级cache:
+  
+  * L1: bcache
+  
+  * L2: datanode
+
+* 
+
+
+
+
+
+## 参考
+
+1. https://github.com/cubeFS/cubefs/tree/release-3.0.0-beta
+2. 

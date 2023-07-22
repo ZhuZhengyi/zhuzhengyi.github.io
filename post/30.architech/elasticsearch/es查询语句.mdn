@@ -1,0 +1,249 @@
+# ElasticSearch 查询操作
+
+## 简介
+
+- ## 常用操作
+
+- 清空index数据
+
+```shell
+# create index
+curl -X PUT http://192.168.0.10:20000/test6 --header "Content-Type: application/json" -d index.json
+cat index.json
+
+# delete index
+curl -X DELETE http://192.168.0.10:20000/test6
+```
+
+## API
+
+```shell
+POST /index/_search
+```
+
+1.单字段查询相对简单,批量查询相当于in,范围查询相当于between and  
+2.should,must,must_not等可用于or and操作  
+3.bool里面嵌套should,must,must_not  
+4.bool里面should,must之类不能再嵌套should,must,而是要用bool进行嵌套should,must  
+5.精准搜索控制,是es特有,也是搜索引擎特性
+
+Bool查询包括四种子句，
+
+- must
+- filter
+- should
+- must_not
+
+我这里只介绍下must和filter两种子句，因为是我们今天要讲的重点。其它的可以自行查询官方文档。
+
+1. must， 返回的文档必须满足must子句的条件，并且参与计算分值
+2. filter， 返回的文档必须满足filter子句的条件。但是跟Must不一样的是，不会计算分值， 并且可以使用缓存
+
+在不需要相关性算分的查询场景，尽量使用`filter context`可以让你的查询更加高效。
+
+## query
+
+```json
+//单字段条件查询(term)
+select * from user where name="wxx"
+GET index3/_search
+{
+  "query": {
+    "term": {
+      "name": {
+        "value": "wxx"
+      }
+    }
+  }
+}
+
+// match
+select * from user where address="抚州"
+GET index3/_search
+{
+  "query": {
+    "match": {
+      "address": {
+        "value": "抚州"
+      }
+    }
+  }
+}
+
+// terms
+select * from user where name in ("wxx","zhangxianbo")
+GET index3/_search
+{
+  "query": {
+    "terms": {
+      "name": [
+        "zhangxianbo",
+        "wxx"
+      ]
+    }
+  }
+}
+
+// range
+select * from user where age between 10 and 26
+GET user/_search
+{
+  "query": {
+    "range": {
+      "age": {
+        "gte": 10,
+        "lte": 26
+      }
+    }
+  }
+}
+
+
+// or
+select * from user where name="wxx" or age =26
+GET index3/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "term": {
+            "name": {
+              "value": "wxx"
+            }
+          }
+        },
+        {
+          "term": {
+            "age": {
+              "value": "26"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+//and
+select * from user where name="liujing" and age =18
+GET user/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "name": {
+              "value": "liujing"
+            }
+          }
+        },
+        {
+          "term": {
+            "age": {
+              "value": "18"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+// and-or
+select * from user where (sex=wman) or (name=wangjian and age=26)
+GET index3/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "term": {
+            "sex": {
+              "value": "wman"
+            }
+          }
+        },
+        {
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "name": {
+                    "value": "wangjian"
+                  }
+                }
+              },
+              {
+                "term": {
+                  "age": {
+                    "value": "26"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+select * from user where (sex=man) and (name=wangjian or name=zhangxianbo or age=18)
+
+2.es查询
+
+GET index3/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "sex": {
+              "value": "man"
+            }
+          }
+        },{
+          "bool": {
+            "should": [
+              {
+                "term": {
+                  "name": {
+                    "value": "wangjian"
+                  }
+                }
+              },
+              {
+                "term": {
+                  "name": {
+                    "value": "zhangxianbo"
+                  }
+                }
+              },
+              {
+                "term": {
+                  "age": {
+                    "value": "18"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+## 参考
+
+1. https://juejin.cn/post/6998403625982623780
+2. https://segmentfault.com/a/1190000022611664
+3. [Elasticsearch DSL查询常用语法，es构建复杂查询条件 - 掘金](https://juejin.cn/post/6925707999247876110)
+4. https://www.jianshu.com/p/6333940621ec
+5. 

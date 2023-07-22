@@ -1,0 +1,186 @@
+# Rust指针
+
+## 简介
+
+Rust中的指针是一个包含了内存地址的变量，该内存地址引用或者指向了另外的数据。
+
+## 裸指针
+
+* rust裸指针就像C++中的指针一样;
+
+* 类型 `*mut  T`和 `*const  t`；
+
+* 使用裸指针是不安全的，Rust不会追踪它指向的内存, 只能在`Unsafe`代码段中解引用裸指针;
+
+## 引用
+
+* 指向某块内存的指针。目标可以使堆空间也可以是栈空间；
+
+* &不但用在引用类型的写法上，而且用做引用运算符：
+
+* 引用不会是null，必须有目标值；
+
+* `&`为只读引用，可共享所有权；
+
+* `& mut`为可变引用，只能独占；
+
+* 引用受Rust的安全检查规则的限制;
+
+```rust
+let a: i32 = 90;
+let ref_a: &i32 = &a; //&a就是a的引用
+let ref_a2: &i32 = &a; //可以声明多个引用
+let b = *ref_a; // *是解引用运算符，即获取某个引用的原始值
+```
+
+## 智能指针
+
+Rust的所有权机制保证一个资源在同一个时刻只能有一个所有者，以此保证资源安全，但在很多时候不能满足共享访问需求。Rust提供了很多各种智能指针来实现同一资源访问不同需求。
+
+Rust中的智能指针包括：
+
+- **Box<T>**: 堆上对象指针，用于在堆上分配对象；
+- **Rc<T>**: 引用计数指针，允许多所有权；
+- **Arc<T>**: 原子引用计数指针；
+- **Cow<T>**: 
+- **RefCell<T>**:
+
+### Box<T>
+
+`Box<T>`是最简单的智能指针，表示将对象`T`放在堆上而不是栈上。
+
+* Box<T>类型大小指针的大小，在编译期确定的；
+
+* 可通过Box<T>创建递归类型；
+
+### Rc<T>
+
+* `Rc<T>`使用**引用计数**(refcount)方式来提供共享访问;
+- 由`use std::rc::Rc`引入；
+
+- `Rc<T>` 中T是只读的；
+
+- 最后一个引用者消失，T在堆上的内存空间被自动收回；
+
+- `Rc<T>`只能用于同一线程类，无法在线程之间共享；多线程请使用`Arc<T>`；
+
+- `Rc<T>`只是一个指针，可以自动解引用，不影响T的调用方式；
+
+```rust
+#[stable(feature = "rust1", since = "1.0.0")]
+pub struct Rc<T: ?Sized> {            //?Sized:
+    ptr: NonNull<RcBox<T>>,
+    phantom: PhantomData<RcBox<T>>,    //幽灵数据类型,不消耗存储空间,
+}
+
+#[repr(C)]
+struct RcBox<T: ?Sized> {
+    strong: Cell<usize>,
+    weak: Cell<usize>,
+    value: T,
+}
+```
+
+### Weak
+
+`Weak`是`Rc`的弱引用指针模式，不增加`Rc`的引用计数
+
+- 由`use std::rc::Weak`引入；
+
+- 由`Rc::downgrade()`转换weak，weak.upgrade()得到`Option<Rc>`
+
+- 可访问，但不拥有所有权，可用于解决循环依赖；
+
+### Arc<T>
+
+`Rc`的多线程版本，原子引用计数。
+
+- 由`use std::sync::Arc`引入
+
+- 用于跨线程共享对象指针；
+
+- 对`Arc<T>`的T可变性没有要求；
+
+- 使用引用计数管理堆上T内存；
+
+- 不影响T调用方式；
+
+### Arc Weak
+
+Arc的弱指针，和Rc weak类似，除多线程外，其他和`Rc weak`类似。
+
+```rust
+pub struct Arc<T: ?Sized> {
+    ptr: NonNull<ArcInner<T>>,
+    phantom: PhantomData<ArcInner<T>>,
+}
+
+struct ArcInner<T: ?Sized> {
+    strong: atomic::AtomicUsize,
+
+    // the value usize::MAX acts as a sentinel for temporarily "locking" the
+    // ability to upgrade weak pointers or downgrade strong ones; this is used
+    // to avoid races in `make_mut` and `get_mut`.
+    weak: atomic::AtomicUsize,
+
+    data: T,
+}
+```
+
+### Cow<T>
+
+* 一种`enum`的智能指针;
+
+* 表示的是所有权的“借用”或“拥有”；
+
+* `Cow`减少复制操作，提高性能，一般用于读多写少的场景;
+
+```rust
+
+```
+
+### Cell
+
+* 一个`struct`;
+
+* 提供不可变`struct`内部可变的能力;
+
+* Cell在unsafe block里面得到Cell的可变引用，然后用mem::repleace与新值做替换；
+
+* 适合复制语义类型;
+
+```rust
+pub struct Cell<T: ?Sized> {    //?Sized: T可以在编译期大小确定，也可以不确定
+    value: UnsafeCell<T>,
+}
+pub struct UnsafeCell<T: ?Sized> {
+    value: T,
+}
+impl UnsafeCell<T: ?Sized> {
+    pub const fn get(&self) -> *mut T {
+        self as *const UnsafeCell<T> as *const T as *mut T
+    }
+}
+```
+
+### RefCell<T>
+
+`RefCell<T>`允许在**运行时**执行可变借用检查，可以在即便 `RefCell<T>` 自身是不可变的情况下修改其内部的值。
+
+`RefCell<T>`用来实现内部可变性(internal mutability)，数据可以在自身的方法中改变自身，但对外是不可变的。
+
+* `RefCell` 只能用于线程内部，不能跨线程;
+
+* RefCell与Cell的区别是RefCell遵循的是动态检查的借用规则。
+
+```rust
+pub struct RefCell<T: ?Sized> {
+    borrow: Cell<BorrowFlag>,
+    value: UnsafeCell<T>,
+}
+```
+
+## 参考
+
+1. [剖析智能指针 Rc Weak 与 Arc | 董泽润的技术笔记](https://mytechshares.com/2021/08/17/smart-pointer-rc-weak-arc/)
+2. [Rust源码阅读： Cell/RefCell与内部可变性](https://zhuanlan.zhihu.com/p/384388192)

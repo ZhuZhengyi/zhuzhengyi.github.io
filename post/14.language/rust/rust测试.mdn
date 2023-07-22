@@ -1,0 +1,58 @@
+# Rust测试
+
+## 简介
+
+* Rust测试包括`单元测试`、`集成测试`、`文档测试`和`性能测试`；
+
+* `单元测试`一般和相应的源码位于同一个源文件中；
+
+* `单元测试`mod上一般增加`cfg(test)`注解，以避免将单元测试代码包含到编译结构中；
+
+* `集成测试`一般位于独立的文件中；
+
+* `性能测试`自带的性能测试(Benchmark)框架还没有完全稳定，目前只能够使用Nightly版本进行性能测试;
+
+* `文档测试`
+
+## 示例
+
+```rust
+/*
+source code
+*/
+
+#![cfg_attr(test, feature(test))]
+
+#[cfg(test)]
+extern crate test;
+
+#[cfg(test)]      //只在执行 cargo test 时才编译和运行测试代码，而在运行 cargo build 时不这么做
+mod tests {
+    use super::*; //导入super空间的元素
+
+    #[test]       //单元测试函数
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+
+    #[bench]       //性能测试函数
+    fn benchmark(bencher: &mut Bencher) {
+        bencher.iter(|| add_three(2));
+    }
+}
+```
+
+运行测试：
+
+```shell
+## 运行所有测试用例
+$ cargo test 
+## 运行特定的测试用例
+$ cargo test search::tests::test_binary_search
+```
+
+## 参考
+
+1. [Rust程序的性能测试(Benchmark) | MagicLen](https://magiclen.org/benchmarking/)
+2. [文档测试 - 通过例子学 Rust 中文版](https://rustwiki.org/zh-CN/rust-by-example/testing/doc_testing.html)
+3. 

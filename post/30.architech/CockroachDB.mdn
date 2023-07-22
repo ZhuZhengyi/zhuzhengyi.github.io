@@ -1,0 +1,94 @@
+# CockroachDB
+
+## 简介
+
+`CockroachDB`是一个分布式的K/V数据仓库，是Google Spanner的一个开源实现。
+
+CockroachDB具有支持标准SQL接口，线性扩展，强一致，高可用等重要特性。
+
+支持ACID事务，多版本值存储是其首要特性。
+
+主要的设计目标是最终一致性和可靠性，
+
+CockroachDB对外提供标准SQL接口，集群中任意节点都可以作为接入节点处理用户的SQL请求。
+
+接入节点把SQL请求转换为KV操作，并且在必要时将该操作发送至其它节点进行处理，完成后将结果返回给客户端。
+
+CockroachDB底层将数据组织成有序的Key-Value对形成一个KV map，其中Key和Value均为字节串。
+
+## 架构
+
+CockroachDB采用分层架构，最顶层是SQL层。
+
+CockroachDB在SQL层沿用了传统关系型数据库的概念，如schema, table, column和 index。同时，SQL层构建于分布式KV存储之上，后者负责Range路由寻址，提供统一的key-value存储。
+
+分布式KV存储可以由任意数量的CockroachDB物理节点组成，每个节点包含一个或多个Store（通常一个Store独占一块磁盘）。
+
+每个Store包含多个Range，Range为KV层数据管理的最小单元，每个Range的多个副本之间使用Raft协议进行同步。如下图所示，每个Range有3个副本，同一Range的副本用相同颜色标识，副本之间使用Raft协议同步。
+
+每个物理节点都提供两组基于RPC实现的key-value API：一组用于外部客户端调用（注：目前对外的KV接口已被关闭）；另一组用于集群内部节点间交互。两者都支持批量请求和应答。所有节点均使用相同的二进制包部署，每个节点均提供相同的功能和接口，无角色差异。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/03/10-16-57-55-2021-03-10-16-57-47-image.png)
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/03/10-16-59-40-2021-03-10-16-59-36-image.png)
+
+## 元数据管理
+
+CockroachDB通过两级路由的方式管理元数据，元数据基于Range进行管理。每条路由元数据约为256B，默认情况下,单个元数据Range可存储256K条路由信息（64MB/256B）,那么，CockroachDB集群理论上最大容量为4EB（256K * 256K * 64MB）。
+
+第一级元数据永远不会发生分裂而且第一级元数据的路由信息会通过Gossip协议同步到各个节点。
+
+由于第一级元数据发生变更的几率较小，所以各个节点大部分时间可直接根据本地的元数据信息将请求路由到指定节点处理。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/03/10-15-51-46-2021-03-10-15-51-41-image.png)
+
+## SQL层
+
+CockroachDB兼容PostgreSQL协议，对于报文的封装和解析完全按照PostgreSQL的方式进行，所以用户可以直接使用PostgreSQL的客户端访问CockroachDB。
+
+## 分布式KV层
+
+在CockroachDB中，所有的Table必须包含一个主键(若建表时无显式声明主键，则系统默认创建)。每列数据构成一个Key-Value存储单元。Key就是每个存储单元值的地址，如/<TableID>/<IndexID>/<Primary Key>/<Column>。举个例子，我们创建一张水果价格表：
+
+对于Key-Value存储单元，分布式KV存储层对外提供了操作原语接口，SQL层通过调用KV操作原语接口实现对KV对象的增删改查操作。
+
+## 分布式事务
+
+对于CockroachDB集群，接收请求的节点会充当事务协调节点(Coordinator),
+
+不同于传统的2PC，CockroachDB通过事务表来保证事务的原子性。
+
+CockroachDB在事务开始时，会在事务表中新增一条事务记录，初始状态为Pending，
+
+然后协调节点会将请求发送给参与节点进行处理，
+
+当所有的参与节点执行完毕后，协调节点会将该事务的状态置为Committed；
+
+若事务回滚，则把事务状态标记为Abort。
+
+这样做的优点是既消除了两阶段锁，同时大大降低了事务提交和回滚的开销。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/03/10-16-11-32-2021-03-10-16-11-28-image.png)
+
+## 多副本强一致
+
+多副本数据：Range默认3副本存储，副本数可设置成2N+1；若少于一半的副本丢失，CockroachDB集群会自动在其他可用节点上补齐丢失的副本数据。  
+故障容灾：根据不同的容灾等级，Range数据多副本可配置为跨机器、跨数据中心、跨地域存储。Range数据分布越分散，相应的读写延时也会越大，集群整体性能会有所下降。
+
+## 混合逻辑时钟(Hybrid Logical Clock)
+
+每一个CockroachDB节点维持各自本地的混合逻辑时钟（HLC），参见论文《Hybrid Logical Clock》。HLC由物理部分(wall time)和逻辑部分(用于区分物理部分相同的不同事件)组成。类似于vector clock，HLC使我们能够跟踪关联事件的因果关系，但开销更低。
+
+本质上，它类似于逻辑时钟：当节点发送事件时，节点会获取本地HLC时间作为该事件的时间戳；当节点接收到事件时，节点会根据接收事件的HLC更新本地的HLC。
+
+CockroachDB使用HLC作为事务时间戳。在本文中，时间戳指的就是HLC。每个节点维护自己本地的HLC，所有读写事件都会更新节点的HLC，且保证HLC >= wall time。从其他节点接收到请求时，该请求（read/write）的时间戳不仅用于冲突处理，而且还会更新节点本地的HLC。这可以保证节点上正在发生的所有数据读写操作的时间戳小于该节点的下一个HLC时间。
+
+## 参考
+
+1. [分布式数据存储系统-CockroachDB-FreeOA](http://www.freeoa.net/product/server/cockroachdb_3190.html)
+
+2. [Cockroach的MVCC实现机制 | NoSQL漫谈](http://www.nosqlnotes.com/technotes/cockroach-mvcc/)
+
+3. [CockroachDB架构浅析 &#8211; CockroachDB](http://www.cockroachchina.cn/?p=685)
+
+4. [CockroachDB用户手册](http://doc.cockroachchina.baidu.com/#)

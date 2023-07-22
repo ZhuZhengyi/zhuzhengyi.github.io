@@ -1,0 +1,76 @@
+# k8s基本操作
+
+## 简介
+
+* k8s提供了kubeadm，kubectl, kubelet等二进制命令；
+
+## kubeadm
+
+* kubeadm是k8s的部署工具；
+
+```shell
+## 在k8s master节点执行命令，初始化k8s master节点
+[k8s-master-node]$ kubeadm init \
+  --apiserver-advertise-address=192.168.32.128 \
+  --image-repository registry.aliyuncs.com/google_containers \
+  --kubernetes-version v1.18.0 \
+  --service-cidr=10.92.0.0/12 \
+  --pod-network-cidr=10.220.0.0/16 \
+  --ignore-preflight-errors=all
+
+## 命令执行成功后，按提示，在需要加入k8s集群的node节点执行命令，
+## 将节点加入到k8s cluster中
+[k8s-node]$ kubeadm join 192.168.32.128:6443 --token 733dim.91wwhdfgqn8c461r \
+    --discovery-token-ca-cert-hash sha256:6f4f75170f512fc2fb11f13637023fbb56734b301826bf53485a9e6e75b60f42
+
+# 刚加入node后会看到node状态为NotReady，是因为没有安装CNI，kubelet无法通过网络给apiserver上报node状态，安装CNI后即可恢复
+```
+
+## kubectl
+
+* kubectl是k8s管理控制命令行工具；
+
+* kubectl通过和`apiserver`通信，来对k8s集群进行管理；
+
+* 默认情况下，`kubectl` 读取 `$HOME/.kube/config` 作为配置文件；
+
+* 可以通过两种方式为 `kubectl` 指定配置文件：
+  
+  - 环境变量 `KUBECONFIG`
+  - 命令行参数 `--kubeconfig`
+
+* 可以在一个或多个kubeconfig文件中配置多个集群的访问信息；
+
+```shell
+## kubectl配置
+# 使用kubeadm init初始化k8s集群后，会在/etc/kubernetes/目录生成配置文件admin.conf
+# 将admin.conf配置文件复制到~/.kube/config, 产生kubectl 集群配置文件
+[k8s-master-node] scp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+# 查看kubectl配置
+[k8sctl-node]$ kubectl config view
+# 获取
+[k8sctl-node]$ kubectl config get-contexts
+# 切换context
+kubectl config use-context dev-storage
+## 获取所有node列表
+[k8sctl-node]$ kubectl get nodes -o wide
+## 查看pod信息
+[k8sctl-node]$ kubectl get pods --all-namespaces -o wide
+## 检查pod详细信息
+[k8sctl-node]$ kubectl describe pod <yourPodName> -n kube-system
+## 查看pod日志
+[k8sctl-node]$ kubectl logs <yourPodName> -n kube-system
+
+## 获取admin-token
+kubectl -n kube-system describe secret `kubectl -n kube-system get secret|grep admin-token|cut -d " " -f1`|grep "token:"|tr -s " "|cut -d " " -f2
+```
+
+## kubelet
+
+* kubelet是k8s在每个物理机器上运行的代理进程，用于处理；
+
+## 参考
+
+1. [【Kubernetes】10分钟部署一套K8S集群(kubeadm) - 云+社区 - 腾讯云](https://cloud.tencent.com/developer/article/1674040)
+2. https://kubernetes.io/zh/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+3. 

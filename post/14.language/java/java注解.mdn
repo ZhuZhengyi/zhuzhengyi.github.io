@@ -1,0 +1,261 @@
+# Java Annotation
+
+## 简介
+
+Java注解(Annotation)是java 5.0引入的一个语法特性。Annotation是一种应用于类、方法、参数、变量、构造器及包声明中的特殊修饰符，本质是一个继承了 Annotation 接口的接口，底层是通过动态代理实现。
+
+## 注解的使用
+
+注解通过 @interface 关键字进行定义。形式跟接口很类似，不过前面多了一个 @ 符号。
+
+```java
+//创建了一个名字为 TestAnnotaion 的注解
+public @interface TestAnnotation {
+}
+
+//将 TestAnnotation 这张标签贴到 Test 这个类
+@TestAnnotation
+public class Test {
+}
+```
+
+## 元注解
+
+J2SE5.0版本在 java.lang.annotation提供了以下几种元注解，专门注解其他的注解：
+
+- `@Documented`：注解是否将包含在JavaDoc中;
+
+- `@Retention`：定义注解的运行时间;
+
+- `@Target` ：注解用于什么地方;
+
+- `@Inherited`: 是否允许子类继承该注解;
+
+- `@Repeatable`: 可重复的(java1.8引入)；
+
+### @Documented
+
+将注解中的元素包含到 Javadoc 中去。
+
+### @Retention
+
+当 @Retention 应用到一个注解上的时候，它解释说明了这个注解的的存活时间。
+
+它的取值如下： 
+
+- `RetentionPolicy.SOURCE`: 注解只在源码阶段保留，在编译器进行编译时它将被丢弃忽视。 - 
+
+- `RetentionPolicy.CLASS`: 注解只被保留到编译进行的时候，它并不会被加载到 JVM 中。 - 
+
+- `RetentionPolicy.RUNTIME`: 注解可以保留到程序运行的时候，它会被加载进入到 JVM 中，所以在程序运行时可以获取到它们。
+
+```java
+//指定 TestAnnotation 可以在程序运行周期被获取到，因此它的生命周期非常的长。
+@Retention(RetentionPolicy.RUNTIME)
+public @interface TestAnnotation {
+}
+```
+
+### @Target
+
+指定了注解运用的地方, 限定注解的运用场景。
+
+@Target 有下面的取值：
+
+- `ElementType.ANNOTATION_TYPE`: 可以给一个注解进行注解
+- `ElementType.CONSTRUCTOR`: 可以给构造方法进行注解
+- `ElementType.FIELD`: 可以给属性进行注解
+- `ElementType.LOCAL_VARIABLE`: 可以给局部变量进行注解
+- `ElementType.METHOD`: 可以给方法进行注解
+- `ElementType.PACKAGE`: 可以给一个包进行注解
+- `ElementType.PARAMETER`: 可以给一个方法内的参数进行注解
+- `ElementType.TYPE`: 可以给一个类型进行注解，比如类、接口、枚举
+
+## @Inherited
+
+Inherited 是继承的意思，但是它并不是说注解本身可以继承，而是说如果一个超类被 @Inherited 注解过的注解进行注解的话，那么如果它的子类没有被任何注解应用的话，那么这个子类就继承了超类的注解。 
+
+```java
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@interface Test {}
+
+@Test
+public class A {}
+//注解 Test 被 @Inherited 修饰，之后类 A 被 Test 注解，类 B 继承 A,类 B 也拥有 Test 这个注解。
+public class B extends A {}
+```
+
+## @Repeatable
+
+Repeatable 自然是可重复的意思。@Repeatable 是 Java 1.8 才加进来的，所以算是一个新的特性。
+
+```java
+@interface Persons {
+    Person[]  value();
+}
+
+
+@Repeatable(Persons.class)
+@interface Person{
+    String role default "";
+}
+
+//@Repeatable 注解了 Person。而 @Repeatable 后面括号中的类相当于一个容器注解。
+@Person(role="artist")
+@Person(role="coder")
+@Person(role="PM")
+public class SuperMan{
+
+}
+```
+
+## 注解的属性
+
+注解的属性也叫做成员变量。
+
+* 注解只有成员变量，没有方法。
+
+* 注解的成员变量在注解的定义中以“无形参的方法”形式来声明，其方法名定义了该成员变量的名字，其返回值定义了该成员变量的类型。
+
+* 注解中属性可以有默认值，默认值需要用 default 关键值指定。
+
+* 如果一个注解内仅仅只有一个名字为 value 的属性时，应用这个注解时可以直接接属性值填写到括号内。
+
+* 一个注解没有任何属性, 应用时括号可以省略。
+
+```java
+//
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface TestAnnotation {
+    public int id() default -1;    //
+    String msg();
+}
+
+//
+@TestAnnotation(id=3,msg="hello annotation")
+public class Test {
+}
+
+//Check 这个注解只有 value 这个属性
+public @interface Check {
+    String value();
+}
+
+@Check("hi")
+int a;
+```
+
+## Java 预置的注解
+
+Java 语言本身已经提供了几个现成的注解。
+
+### @Deprecated
+
+这个元素是用来标记过时的元素，想必大家在日常开发中经常碰到。编译器在编译阶段遇到这个注解时会发出提醒警告，告诉开发者正在调用一个过时的元素比如过时的方法、过时的类、过时的成员变量。
+
+```java
+public class Hero {
+    //
+    @Deprecated
+    public void say(){
+        System.out.println("Noting has to say!");
+    }
+    public void speak(){
+        System.out.println("I have a dream!");
+    }
+}
+```
+
+### @Override
+
+子类要复写父类中被 @Override 修饰的方法
+
+### @SuppressWarnings
+
+阻止警告的意思。之前说过调用被 @Deprecated 注解的方法后，编译器会警告提醒，而有时候开发者会忽略这种警告，他们可以在调用的地方通过 @SuppressWarnings 达到目的。
+
+```java
+@SuppressWarnings("deprecation")
+public void test1(){
+    Hero hero = new Hero();
+    hero.say();
+    hero.speak();
+}
+```
+
+### @SafeVarargs
+
+参数安全类型注解。它的目的是提醒开发者不要用参数做一些不安全的操作,它的存在会阻止编译器产生 unchecked 这样的警告。它是在 Java 1.7 的版本中加入的。
+
+```java
+@SafeVarargs // Not actually safe!
+    static void m(List<String>... stringLists) {
+    Object[] array = stringLists;
+    List<Integer> tmpList = Arrays.asList(42);
+    array[0] = tmpList; // Semantically invalid, but compiles without warnings
+    String s = stringLists[0].get(0); // Oh no, ClassCastException at runtime!
+}
+```
+
+上面的代码中，编译阶段不会报错，但是运行时会抛出 ClassCastException 这个异常，所以它虽然告诉开发者要妥善处理，但是开发者自己还是搞砸了。
+
+## @FunctionalInterface
+
+函数式接口注解，这个是 Java 1.8 版本引入的新特性。函数式编程很火，所以 Java 8 也及时添加了这个特性。
+
+函数式接口 (Functional Interface) 就是一个具有一个方法的普通接口。
+
+```java
+@FunctionalInterface
+public interface Runnable {
+    public abstract void run();
+}
+```
+
+我们进行线程开发中常用的 Runnable 就是一个典型的函数式接口，上面源码可以看到它就被 @FunctionalInterface 注解。
+
+## 注解的提取与发射
+
+```java
+//判断它是否应用了某个注解
+public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {}
+//返回指定类型的注解
+public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {}
+//返回注解到这个元素上的所有注解
+public Annotation[] getAnnotations() {}
+
+
+@TestAnnotation()
+public class Test {
+    public static void main(String[] args) {
+        boolean hasAnnotation = Test.class.isAnnotationPresent(TestAnnotation.class);
+        if ( hasAnnotation ) {
+            TestAnnotation testAnnotation = Test.class.getAnnotation(TestAnnotation.class);
+            System.out.println("id:"+testAnnotation.id());
+            System.out.println("msg:"+testAnnotation.msg());
+        }
+    }
+}
+```
+
+## 注解的实现原理
+
+* 通过键值对的形式可以为注解属性赋值，像这样：@Hello（value = "hello"）。
+
+* 注解修饰某个元素，编译器将在编译期扫描每个类或者方法上的注解，会做一个基本的检查，你的这个注解是否允许作用在当前位置，最后会将注解信息写入元素的属性表。
+
+* 当你进行反射的时候，虚拟机将所有生命周期在 RUNTIME 的注解取出来放到一个 map 中，并创建一个 AnnotationInvocationHandler 实例，把这个 map 传递给它。
+
+* 虚拟机将采用 JDK 动态代理机制生成一个目标注解的代理类，并初始化好处理器。
+
+* 一个注解的实例就创建出来了，它本质上就是一个代理类，你应当去理解好 AnnotationInvocationHandler 中 invoke 方法的实现逻辑，这是核心。一句话概括就是，**通过方法名返回注解属性值**。
+
+## 参考
+
+1. [秒懂，Java 注解 （Annotation）你可以这样学](https://link.zhihu.com/?target=http%3A//blog.csdn.net/briblue/article/details/73824058)
+
+2. [JAVA 注解的基本原理 - Single_Yam - 博客园](https://www.cnblogs.com/yangming1996/p/9295168.html)
+
+3. 

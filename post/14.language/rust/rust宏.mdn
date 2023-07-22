@@ -1,0 +1,192 @@
+# Rust宏
+
+## 简介
+
+一般来说，宏是编程语言中，在编译期执行的，用于实现元编程的一种语法扩展技术；
+
+Rust中的宏处理发生在 AST 生成之后，
+
+## 特性
+
+rust中的宏拥有如下特性：
+
+- 卫生宏，编译器或运行时会保证宏里面定义的变量或函数不会与外面的冲突，在宏里面以普通方式定义的变量作用域不会跑到宏外面；
+- 可变参数。rust中的宏参数数量是可变的；
+
+## 分类
+
+rust中的宏分为声明宏和过程宏两大类：
+
+- **声明**（*Declarative*）宏：使用 `macro_rules!` 定义；
+
+- **过程**（*Procedural*）宏：过程宏接收 Rust 代码作为输入，在这些代码上进行操作，然后产生另一些代码作为输出，而非像声明式宏那样匹配对应模式然后以另一部分代码替换当前代码。过程宏包含以下三种：
+  
+  - `#[derive]` 过程宏：在结构体和枚举上指定通过 `derive` 属性添加的代码；
+  
+  - 类属性（Attribute-like）宏：定义可用于任意项的自定义属性
+  
+  - 类函数宏：看起来像函数不过作用于作为参数传递的 token
+
+## 宏语法
+
+宏的语法分为**定义**和**调用**两个方面：
+
+```rust
+// 定义
+macro_rules! <macro_name> { 
+    macro_body 
+}
+
+// 调用
+<macro_name>!<(macro_args)> 
+```
+
+注意：
+
+* 宏的定义必须出现在宏调用之前;
+
+* 宏的调用参数可以使用`()`、`[]`、`{}`中的任意进行包括；
+
+* 
+
+## 声明宏macro_rules
+
+* 声明宏是用来声明一个宏调用的；
+
+```rust
+#[macro_export]           //将宏进行了导出，其它的包就可以将该宏引入到当前作用域中使用
+macro_rules! vec {        //macro_rules！定义宏
+    ( $( $x:expr ),* ) => {    //宏模式匹配
+        {
+            let mut temp_vec = Vec::new();
+            $(
+                temp_vec.push($x);
+            )*
+            temp_vec
+        }
+    };
+}
+
+vec![1, 2, 3]; //这个宏在编译时被转换为如下代码段
+{
+    let mut temp_vec = Vec::new();
+    temp_vec.push(1);
+    temp_vec.push(2);
+    temp_vec.push(3);
+    temp_vec
+}
+```
+
+### 指示符(designator)
+
+宏里面的变量都是以 `$` 开头的，其余的都是按字面去匹配，以 `$` 开头的变量都是用来表示语法(syntactic)元素，为了限定匹配什么类型的语法元素，需要用指示符(designator)加以限定，就跟普通的变量绑定一样用冒号将变量和类型分开，当前宏支持以下几种指示符：
+
+- [`block`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#block)：代码块(block)，如一块语句或者由大括号包围的不限数量的表达式；
+- [`expr`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#expr)：表达式 (expression)，匹配任何形式的表达式 ([expression](https://doc.rust-lang.org/reference/expressions.html))，如`"literal"`、`funcall()`、`future.await`;
+- [`ident`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#ident)：标识符 (identifier)，匹配任何形式的标识符 ([identifier](https://doc.rust-lang.org/reference/identifiers.html)) 或者关键字，如`foo`、`async`、`O___O`；
+- [`item`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#item)：条目(item), 匹配 Rust 的 [item](https://doc.rust-lang.org/reference/items.html) 的 **定义** (definitions), 如`struct Foo;`、`impl Foo {}`、`enum Bar {}`;
+- [`lifetime`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#lifetime)：生命周期注解(lifetime), 比如 `'foo`、`'static`;
+- [`literal`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#literal)：字面值(literal), 比如 `"Hello World!"`、`3.14`、`'🦀'`;
+- [`meta`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#meta)：元信息(meta), 匹配属性 ([attribute](https://doc.rust-lang.org/reference/attributes.html))里面的内容;
+- [`pat`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#pat)：模式 (pattern), 普通模式匹配（非宏本身的模式）中的模式，例如 `Some(t)`, `(3, 'a', _)`;
+- [`path`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#path)：路径()path), 比如 `foo`、`::std::mem::replace`、`transmute::<_, int>`）;
+- [`stmt`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#stmt)：语句 (statment), 如 `let a = 42;`;
+- [`tt`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#tt)： 标记树(token tree), 能匹配几乎所有东西， 在使用宏之后检查 (inspect) 匹配的内容;
+- [`ty`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#ty)：类型(type), 匹配任何形式的类型表达式，如 `i32`, `char`等;
+- [`vis`](https://zjp-cn.github.io/tlborm/decl-macros/minutiae/fragment-specifiers.html#vis)：可视标识符，可能为空, 比如 `pub`、`pub(in crate)`;
+
+### 重复(repetition)
+
+宏相比函数一个很大的不同是宏可以接受任意多个参数，例如 `println!` 和 `vec!`，使用 `+` 和 `*`表示重复；
+
+* `+` 表示一次或多次（至少一次）；
+
+* `*` 表示0次或多次；
+
+* `?`最多一次重复；
+
+重复的模式需要用括号括起来，外面再加上 `$`，例如 `$(...)*`, `$(...)+`。
+
+括号三种括号中的任意一种，因为括号在这里仅仅是用来标记一个模式的开始和结束，大部分情况重复的模式是用逗号或分号分隔的，所以你会经常看到 `$(...),*`, `$(...);*`, `$(...),+`, `$(...);+` 这样的用来表示重复。
+
+## 过程宏proc_macro
+
+* 过程宏是使用源代码作为输入参数，基于代码进行一系列操作后，再输出一段全新的代码;
+
+* 与声明宏不同,过程宏中的 derive 宏输出的代码并不会替换之前的代码;
+
+* 过程宏必须先被编译后才能使用，所以其定义必须要放入一个独立的包中；
+
+### derive过程宏
+
+```rust
+//定义derive proc macro
+use proc_macro;
+
+#[proc_macro_derive(HelloMacro)]
+pub fn some_name(input: TokenStream) -> TokenStream {
+}
+
+
+//使用derive proc macro
+use hello_macro::HelloMacro;
+use hello_macro_derive::HelloMacro;
+
+#[derive(HelloMacro)]
+struct Sunfei;
+
+#[derive(HelloMacro)]
+struct Sunface;
+```
+
+### 属性过程宏
+
+属性过程宏的定义函数有两个参数：
+
+- 第一个参数时用于说明属性包含的内容：`Get, "/"` 部分
+- 第二个是属性所标注的类型项，在这里是 `fn index() {...}`，注意，函数体也被包含其中
+
+类属性宏的工作方式：
+
+- 创建一个包，类型是 `proc-macro`；
+
+- 接着实现一个函数用于生成想要的代码。
+
+```rust
+//属性宏定义
+#[proc_macro_attribute]
+pub fn route(attr: TokenStream, item: TokenStream) -> TokenStream {
+    ...
+}
+
+//使用属性过程宏
+#[route(GET, "/")]
+fn index() {
+   ...
+}
+```
+
+### 函数过程宏(Function-like macros)
+
+- 函数过程宏和声明宏 `macro_rules` 有些类似, 都可以想函数那样直接调用；
+
+- 函数过程宏和声明宏不同之处在于函数过程宏定义不必使用match，而是更灵活，也能实现更复杂的功能；
+
+```rust
+//定义函数过程宏
+#[proc_macro]
+pub fn sql(input: TokenStream) -> TokenStream {}
+
+//使用函数过程宏
+let sql = sql!(SELECT * FROM posts WHERE id=1);
+```
+
+## 参考
+
+1. [宏系统 · Rust Primer - 给初学者的Rust中文教程](https://hardocs.com/d/rustprimer/macro/macro.html)
+
+2. [宏 - Rust 程序设计语言 简体中文版](https://kaisery.github.io/trpl-zh-cn/ch19-06-macros.html)
+
+3. [Rust Macro 手册](https://zhuanlan.zhihu.com/p/106016118)
+
+4. 

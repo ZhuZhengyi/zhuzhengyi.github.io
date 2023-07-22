@@ -1,0 +1,155 @@
+# Rustß迭代器
+
+## 简介
+
+* 迭代器是一个trait；
+
+* **迭代器**（*iterator*）负责遍历序列中的每一项和决定序列何时结束的逻辑；
+
+* 迭代器是 **惰性的**（*lazy*），在调用方法使用迭代器之前它都不会有效果;
+
+* Rust 的 `for` 实质是迭代器的语法糖；
+
+* Rust 迭代器的范围可以是无限的;
+
+```rust
+let numbers = 0..;  // 创建一个无限的迭代器
+numbers.take(5).for_each(|x| println!("{}", x)); //
+
+//直接对无限的迭代器进行输出，会一直往后输出，直到程序崩溃。
+//for x in numbers {
+//    println!("{}", x);
+//}
+```
+
+迭代器由三个部分组成：
+
+- 迭代器：实现`Iterator` 可以提供`next()`的对象；
+- 迭代适配器(Iterator Adapter)：由一个迭代器生成一个新的迭代器,；
+- 迭代消费器(Iterator Comsumer)：在迭代器上进行消费操作，得到最终的结果。消费器通过`next()`来驱动迭代器的运行；
+
+## 迭代器(iter)
+
+* 迭代器核心是 `Iterator` trait；
+
+* `Iterator`  定义了`next()`方法来描述迭代器的具体实现 ;
+
+```rust
+// Rust迭代器核心是 `Iterator` trait;
+// `next()` 是 `Iterator` 被要求定义的唯一方法;
+pub trait Iterator {
+    type Item;
+    fn next(&mut self) -> Option<Self::Item>; // 此处省略了方法的默认实现
+}
+```
+
+Rust 的提供了以下方法来处理迭代器：
+
+* `iter()`:   产生集合元素`&T` 的迭代器；
+
+* `iter_mut()`: 产生集合元素`&mut T` 的迭代其；
+
+* `into_iter()`: 生成集合元素`T` 的迭代器；
+
+* `from_iter()`: 由迭代器生成指定类型；
+
+```rust
+let names = vec!["Bob", "Frank", "Ferris"];
+
+for name in names.iter() {  // 在每次迭代中借用集合中的一个元素。这样集合本身不会被改变，循环之后仍可以使用
+}
+// into_iter() - 会消耗集合。在每次迭代中，集合中的数据本身会被提供。一旦集合被消耗了，之后就无法再使用了
+for name in names.into_iter() {
+}
+```
+
+## 迭代适配器(Adapter)
+
+* 由一个迭代器生成一个新的迭代器；
+
+* 适配器不会调用`next()`，只是对迭代对象进行转换，不会消耗迭代对象；
+
+* 适配器因为产生的为一个新的迭代器，所以可以链式调用，且因为是惰性的，所以不会增加调用成本；
+
+```rust
+let v = vec![1, 2, 3, 4, 5];
+v.iter().map(|x| println!("{}", x));  //不会产生输出
+
+// 常用迭代适配器
+range(1i, 100i).map(|x| x + 1i);               //map() 
+range(1i, 100i).filter(|&x| x % 2 == 0);       //filter()，
+a.iter().filter_map(|x| x.parse::<i32>().ok()).collect::<Vec<i32>>(); //filter_map()
+(0..).into_iter().zip('a'..='z');              //zip()
+(1..).take(5).collect()；                       //take(), 取5个
+```
+
+## 迭代消费器(Consumer)
+
+* 在迭代器上进行消费操作，得到最终的结果；
+
+* 消费器通过`next()`来驱动迭代器的运行；
+
+* 消费器位于迭代器调用链的末尾，终结迭代；
+
+* for是一个消费器；
+
+```rust
+range(1i, 100i).sum();                       //sum()
+v1.iter().map(|x| x + 1).collect();          //collect()
+v.iter().for_each(|x| println!("{}", x));    //for_each()
+let sum = (1..4).fold(0, |sum, x| sum + x);  //fold()#
+```
+
+## 自定义迭代器
+
+为struct实现Iterator trait即可自定义迭代器，示例如下：
+
+```rust
+struct Fibonacci {
+     x: i32,
+     y: i32,
+ }
+ ​
+ impl Fibonacci {
+     fn new() -> Fibonacci {
+         Fibonacci {
+             x: 0,
+             y: 0,
+         }
+     }
+ }
+ ​
+ impl Iterator for Fibonacci {
+     type Item = i32;
+ ​
+     fn next(&mut self) -> Option<Self::Item> {
+         if self.x == 0 {
+             self.x = 1;
+             Some(self.x)
+         } else if self.y == 0 {
+             self.y = 1;
+             Some(self.y)
+         } else {
+             let s = self.x + self.y;
+             self.x = self.y;
+             self.y = s;
+             Some(s)
+         }
+     }
+ }
+ ​
+ ​
+ fn main() {
+     let mut f = Fibonacci::new();
+     println!("{:?}", f.next());
+     println!("{:?}", f.next());
+     println!("{:?}", f.next());
+     println!("{:?}", f.next());
+     println!("{:?}", f.next());
+ }
+```
+
+## 参考
+
+1. https://www.codemore.top/p/00d541b5-a372-3ac0-a122-994110faf023k
+2. [std::iter - Rust](http://web.mit.edu/rust-lang_v1.26.0/arch/amd64_ubuntu1404/share/doc/rust/html/std/iter/index.html)

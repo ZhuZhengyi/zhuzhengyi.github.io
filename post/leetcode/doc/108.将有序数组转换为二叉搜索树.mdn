@@ -1,0 +1,82 @@
+# [将有序数组转换为二叉搜索树](https://leetcode-cn.com/problems/convert-sorted-array-to-binary-search-tree/description/ "https://leetcode-cn.com/problems/convert-sorted-array-to-binary-search-tree/description/")
+
+| Category   | Difficulty    | Likes | Dislikes |
+| ---------- | ------------- | ----- | -------- |
+| algorithms | Easy (76.25%) | 917   | -        |
+
+**Tags**
+
+[`tree`](https://leetcode.com/tag/tree "https://leetcode.com/tag/tree") | [`depth-first-search`](https://leetcode.com/tag/depth-first-search "https://leetcode.com/tag/depth-first-search")
+
+**Companies**
+
+`airbnb`
+
+给你一个整数数组 `nums` ，其中元素已经按 **升序** 排列，请你将其转换为一棵 **高度平衡** 二叉搜索树。
+
+**高度平衡** 二叉树是一棵满足「每个节点的左右两个子树的高度差的绝对值不超过 1 」的二叉树。
+
+**示例 1：**
+
+![](https://assets.leetcode.com/uploads/2021/02/18/btree1.jpg)
+
+```
+输入：nums = [-10,-3,0,5,9]
+输出：[0,-3,9,-10,null,5]
+解释：[0,-10,5,null,-3,null,9] 也将被视为正确答案：
+```
+
+**示例 2：**
+
+![](https://assets.leetcode.com/uploads/2021/02/18/btree.jpg)
+
+```
+输入：nums = [1,3]
+输出：[3,1]
+解释：[1,3] 和 [3,1] 都是高度平衡二叉搜索树。
+```
+
+**提示：**
+
+- `1 <= nums.length <= 104`
+- `-104 <= nums[i] <= 104`
+- `nums` 按 **严格递增** 顺序排列
+
+---
+
+[Discussion](https://leetcode-cn.com/problems/convert-sorted-array-to-binary-search-tree/comments/ "https://leetcode-cn.com/problems/convert-sorted-array-to-binary-search-tree/comments/") | [Solution](https://leetcode-cn.com/problems/convert-sorted-array-to-binary-search-tree/solution/ "https://leetcode-cn.com/problems/convert-sorted-array-to-binary-search-tree/solution/")
+
+## 解法
+
+```cpp
+class Solution {
+public:
+    /*
+    * ## 解题思路
+    * * 递归法
+    *   1. 平衡二叉搜索树的左右子树高度差不超过1；
+    *   2. 可以推出，平衡二叉搜索树的根节点为有序数组的中间值；
+    *   3. 使用有序数组中间数值生成树根节点；
+    *   4. 左，右子树为该值左、右两侧数组生成的子平衡二叉搜索树；
+    */
+    TreeNode* sortedArrayToBST(vector<int>& nums) {
+        return converVecToBSTRec(nums, 0, nums.size());
+    }
+
+    // 递归将有序数组nums中[start, end)的元素转换成平衡二叉搜索树
+    TreeNode* converVecToBSTRec(vector<int>& nums, int start, int end) {
+        if (start >= end) {  //递归终止条件
+            return NULL;
+        }
+        //数组中间节点为根节点
+        int mid = start + (end-start) / 2;
+        TreeNode* root = new TreeNode();
+        root->val = nums[mid];
+        //递归处理左右子树
+        root->left = converVecToBSTRec(nums, start, mid);
+        root->right = converVecToBSTRec(nums, mid+1, end);
+
+        return root;
+    }
+};
+```

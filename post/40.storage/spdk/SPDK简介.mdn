@@ -1,0 +1,120 @@
+---
+theme: gaia
+class:
+- invert
+---
+
+# SPDK简介
+
+## 简介
+
+**SPDK**（Storage Performance Development Kit）是Intel发布的一套高性能存储开发工具包，用于加速NVMe SSD作为后端存储使用的应用软件加速库。
+
+---
+
+## 背景
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/10-16-09-12-2020-11-10-16-09-05-image.png)
+
+---
+
+## 关键技术
+
+- **全用户态**: 所有必要的驱动全部移到了用户态，避免了系统调用的开销，真正实现内存零拷贝；
+- **轮循模式**: 针对高速物理存储设备，采用轮循而非中断方式判断请求完成，大大降低时延并减少性能波动；
+- **无锁机制**: 在IO路径上避免采用任何锁机制进行同步，降低时延并提升吞吐量；
+
+---
+
+## 架构
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/19-10-49-19-2020-11-19-10-49-04-image.png)
+
+---
+
+SPDK整体分为三层：
+
+- **驱动层(Drivers)**: 实现了存储服务层定义的抽象接口，以对接不同的存储类型，细分成两层：
+  
+  * **硬件驱动**: 
+    
+    * NVMe Driver：高度优化且无锁的驱动。 高扩展性，高效性和高性能
+    
+    * IOAT：英特尔I/O加速技术，基于Xeon处理器平台上的copy offload引擎。通过提供用户空间访问，减少了DMA数据移动的阈值，允许对小尺寸I/O或NTB的更好利用。
+  - **后端块设备**: 
+    
+    - NVMe over Fabrics（NVMe-oF）initiator：从程序员的角度来看，本地SPDK NVMe驱动和NVMe-oF启动器共享一套共同的API命令。这意味着，比如本地/远程复制非常容易实现。
+    
+    - Ceph RADOS Block Device（RBD）：使Ceph成为SPDK的后端设备，比如这可能允许Ceph用作另一个存储层。
+    
+    - Blobstore Block Device：由SPDK Blobstore分配的块设备，是虚拟机或数据库可以与之交互的虚拟设备。这些设备得到SPDK基础架构的优势，意味着零拷贝和令人难以置信的可扩展性。
+    
+    - Linux Asynchrounous I/O（AIO）：允许SPDK与内核设备（比如机械硬盘）交互。
+
+- **存储服务层(Storage Services)**: 实现对块和文件的抽象。
+  
+  - Block device abstration layer（bdev）：连接到各种不同设备驱动和块设备的存储协议的粘合剂。提供灵活的API用于额外的用户功能（磁盘阵列，压缩，去冗等等）。
+  
+  - BlobStore：一个高精简的文件式语义（非POSIX）。为数据库，容器，虚拟机或其他不依赖于大部分POSIX文件系统功能集（比如用户访问控制）的工作负载提供高性能基础。
+
+- **存储协议层**(Storage Protocols): 支持存储应用类型。
+  
+  - iSCSI Target：对外提供标准的iSCSI存储设备, 建立了通过以太网的块流量规范，大约是内核LIO效率的两倍。
+  
+  - NVMe-oF target：实现了[新NVMe-oF规范](http://www.nvmexpress.org/specifications), 为每个CPU核提供高达40Gbps的流量。
+  
+  - vhost-scsi target：KVM/QEMU的功能利用了SPDK NVMe驱动，使得访客虚拟机访问存储设备时延迟更低，使得I/O密集型工作负载的整体CPU负载减低。
+
+---
+
+## 使用场景
+
+- 提供块设备接口的后端存储应用。如iSCSI Target、NVMe-oF Target；
+
+- 对虚拟机中I/O的加速。主要是指在Linux系统下QEMU/KVM作为Hypervisor管理虚拟机的场景，使用vhost交互协议，实现基于共享内存通道的高效vhost用户态Target。如vhost SCSI/blk/NVMe Target，从而加速虚拟机中virtio SCSI/blk及Kernel Native NVMe协议的I/O驱动。其主要原理是减少了VM中断等事件的数目（如interrupt、VM_EXIT），并且缩短了host OS中的I/O栈。
+
+- SPDK加速数据库存储引擎。通过实现RocksDB中的抽象文件类，SPDK的blobfs/blobstore目前可以和RocksDB集成，用于加速在NVMe SSD上使用RocksDB引擎，其实质是bypass kernel文件系统，完全使用基于SPDK的用户态I/O栈。此外，参照SPDK对RocksDB的支持，亦可以用SPDK的blobfs/blobstore整合其他的数据库存储引擎。
+
+---
+
+## 应用框架
+
+SPDK的应用框架可以分为：
+
+* CPU core和线程的管理: 通过CPU核绑定函数的亲和性，在每个核上运行一个thread(Reactor);
+
+* 线程间的高效通信：提供了事件调用（Event）的机制。本质是每个Reactor对应的数据结构维护了一个Event事件的环，这个环是多生产者和单消费者（Multiple Producer Single Consumer，MPSC）的模型，通过消息传递来进行线程间的同步；
+
+* I/O的处理模型和无锁化机制：一个CPU core只拥有一个thread，这个thread可以执行很多Poller（包括定时器和非定时器）。运行直到完成的原则是让一个线程最好执行完所有的任务。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/19-11-42-53-2020-11-19-11-42-48-image.png)
+
+---
+
+```shell
+$ LD_PRELOAD=build/fio/spdk_bdev fio examples/bdev/fio_plugin/example_config.fio
+
+$ cd <src>/spdk
+$ scripts/setup.sh status
+$ scripts/setup.sh reset
+```
+
+## 线程模型
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-12-31-31-2020-12-25-12-31-27-image.png)
+
+## 参考
+
+1. [GitHub - spdk/spdk: Storage Performance Development Kit](https://github.com/spdk/spdk)
+
+2. [SPDK: Storage Performance Development Kit](https://spdk.io/doc/index.html)
+
+3. [spdk探秘-----基本框架及bdev范例分析_cyq6239075的博客-CSDN博客](https://blog.csdn.net/cyq6239075/article/details/106732499)
+
+4. [【SPDK】三、IO流程代码解析](https://rootw.github.io/2018/05/SPDK-ioanalyze/)
+
+5. [【SPDK】二、IO栈对比与线程模型](https://rootw.github.io/2018/05/SPDK-iostack/)
+
+6. [spdk源码解读1_weixin_30399055的博客-CSDN博客_spdk代码解读](https://blog.csdn.net/weixin_30399055/article/details/99248093?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-2.control&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromMachineLearnPai2-2.control)
+
+7. [DPDK 全面分析 - 云+社区 - 腾讯云](https://cloud.tencent.com/developer/article/1065782)

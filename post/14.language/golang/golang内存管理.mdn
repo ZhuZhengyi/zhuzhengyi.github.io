@@ -1,0 +1,139 @@
+# Golang内存管理
+
+## 简介
+
+Golang内存管理采用类似`tcmalloc`的分级分配算法，主要由`MHeap`、`MCentral`、`MCache` 3 级组成。
+
+按分配对象的大小不同，选择相应的区域进行分配。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/12/28-10-17-33-2021-12-28-10-17-27-image.png)
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/01/24-16-34-34-2022-01-24-16-34-31-image.png)
+
+## 内存布局
+
+golang程序启动时，会根据OS类型向OS申请一大块连续虚拟内存空间如下：
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-34-2020-05-04-09-32-44-image.png)
+
+* `arena`：
+  
+  * 由连续的page(8KB)组成，用于具体的对象分配；
+
+* `spans`：
+  
+  * 存放了`mspan`的指针(8Byte)，表示arena区中的某一页(page)属于哪个`mspan`，用于管理arena；
+
+* `bitmap`：
+  
+  * 用于标记`arena`(即heap)中的对象, 每个对象使用两个bit进行标记，分别表示gc状态和是否分配；
+  
+  * 高地址部分指向arena区域的低地址部分，地址是由高地址向低地址增长的；
+  
+  * 
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-42-2020-05-04-09-36-04-image.png)
+
+## 基本数据结构
+
+* **MHeap**: 
+  
+  * 代表了golang的整个堆内存;
+  
+  * 全局唯一的;
+  
+  * 大对象(>32KB)直接在MHeap中分配；
+  
+  * mheap 包含free，large两个域：
+    
+    * free: free包含一个256单元的数组
+    
+    * large: 
+  
+  * 给MCentral和MCache等下层提供空间；
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-48-2020-05-04-09-39-31-image.png)
+
+* **MCentral**
+  
+  * 集中管理不同类型（67种）的MSpan，对应TCMalloc中的CentralCache；
+  - 每个mcentral包含两个mspan列表: 
+    - noempty: 表示已被mcache的mspan list；
+    - empty: 表示未被使用(empty)的mspan 链表。
+  - 当某个goroutine中的mcache内存不够时，就会从mcentral的empty链表中分配对应的mspan。
+  - 如果mcentral内存不够，就会从MHeap中分配；
+  - mcentral中有锁，以为多个goroutine分配提供互斥；
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-08-2020-05-04-09-38-29-image.png)
+
+* **MCache**
+  
+  * 是各个goroutine自有的局部内存;
+  
+  * 向`mcentral`申请得到的;
+  
+  * 小对象(<=32KB)的分配直接在goroutine内部进行，不用加锁，提高分配速度。
+  
+  * mcache 内存不够时，会向mcentral重新申请；
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-13-2020-05-04-09-38-54-image.png)
+
+* **MSpan**：
+  
+  - 内存管理基本单元，由一片连续的8KB页组成的双向链表，进行内存对象的数据分配;
+  
+  - 为满足不同大小对象分配的需要，减少内存碎片，同时兼顾内存利用率，golang将span分层不同的大小类型（总共67种）。
+  
+  - 对象分配内存时，根据对象大小，选择最合适的mspan进行分配。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-19-2020-05-04-09-37-59-image.png)
+
+## 内存分配
+
+Go的内存分配器在分配对象时，根据对象的大小，分成三类：
+
+* Tiny对象： (0, 16B]，使用mcache的tiny分配器分配，多个tiny对象可组合在一个mspan中
+* Small对象：(16B, 32KB ]，在mcache中选择相应规格大小的mspan进行分配；
+* 大对象：>32KB, 直接从MHeap中分配；
+
+golang变量是在栈上分配还是在堆上分配，是由逃逸分析的结果决定的。
+
+通常情况下，编译器是倾向于将变量分配到栈上的，因为它的开销小。
+
+分配顺序：
+
+- 首先通过计算使用的大小规格
+- 然后`mcache`中对应大小规格的块分配。
+- 如果`mcache` free 链表不够分配
+- 如果`mcentral`中没有可用的块，则向`mheap`申请，并根据算法找到最合适的`mspan`。
+- 如果申请到的`mspan` 超出申请大小，将会根据需求进行切分，以返回用户所需的页数。剩余的页构成一个新的 mspan 放回 mheap 的空闲列表。
+- 如果 mheap 中没有可用 span，则向操作系统申请一系列新的页（最小 1MB）。
+
+## GC流程
+
+### GC时机
+
+golang gc的触发是由gcpercent变量控制的，当新分配的内存占已在使用中的内存的比例超过gcprecent时就会触发。
+
+比如，gcpercent=100，当前使用了4M的内存，那么当内存分配到达8M时就会再次gc。
+
+如果回收完毕后，内存的使用量为5M，那么下次回收的时机则是内存分配达到10M的时候。
+
+也就是说，并不是内存分配越多，垃圾回收频率越高，这个算法使得垃圾回收的频率比较稳定，适合应用的场景。
+
+gcpercent的值是通过环境变量GOGC获取的，如果不设置这个环境变量，默认值是100。
+
+如果将它设置成off，则是关闭垃圾回收。
+
+## 参考
+
+1. https://zhuanlan.zhihu.com/p/27807169
+2. [图解Golang的内存分配](https://www.jianshu.com/p/2904efc7f1a8)
+3. https://zhuanlan.zhihu.com/p/29216091
+4. https://zhuanlan.zhihu.com/p/76802887
+5. [**简单易懂的 Go 内存分配原理解读**](https://yq.aliyun.com/articles/652551)
+6. https://juejin.im/post/5c888a79e51d456ed11955a8
+7. [白话Go语言内存管理三部曲（一）内存分配原理](https://zhuanlan.zhihu.com/p/225190602)
+8. [go怎样做stw](https://segmentfault.com/a/1190000022499402)
+9. https://mp.weixin.qq.com/s/3gGbJaeuvx4klqcv34hmmw
+10. 

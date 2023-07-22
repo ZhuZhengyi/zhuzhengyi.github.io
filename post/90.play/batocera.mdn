@@ -1,0 +1,73 @@
+# Batocera
+
+## 简介
+
+batocera是一个模拟器游戏linux发行版。
+
+## u盘安装
+
+1. 准备一个容量16GB或以上的u盘；
+
+2. 在u盘子安装ventoy。安装时，预留10GB左右的空间，并将预留空间格式化为一个exfat分区；
+
+3. 在下载batocera系统镜像，解压后得到.img系统镜像(大概为8G左右)，将镜像复制到u盘预留的分区中；
+
+4. 使用ventoy vlnk工具为预留分区中的镜像建立vlnk链接文件，并将vlnk链接文件复制到ventoy镜像查找目录中；
+
+5. 使用u盘重新启动系统，选择batocera.vlnk.img启动；
+
+## 使用NAS存储
+
+编辑/boot/batocera-boot.conf文件加入以下示例代码：
+
+```bash
+### nas上的整个用户数据目录就会自动生成 。(不建议使用这种，会导致bato关机卡屏)
+sharedevice=NETWORK
+sharenetwork_nfs1=SHARE@192.168.1.6:/volume1/batocera
+
+### 只读取 rom，就填写下面示例代码
+sharedevice=NETWORK
+sharenetwork_nfs1=ROMS@192.168.1.6:/volume1/batocera/roms
+
+### 只读取NAS上的ROM，SAVE和BIOS，就填写下面示例代码
+sharedevice=NETWORK
+sharenetwork_nfs1=ROMS@192.168.1.6:/volume1/batocera/roms
+sharenetwork_nfs2=SAVES@192.168.1.6:/volume1/batocera/saves
+sharenetwork_nfs3=BIOS@192.168.1.6:/volume1/batocera/bios
+
+### 特定的NFS版本 参考下面示例：
+sharenetwork_nfs1=ROMS@192.168.1.6:/volume1/batocera/roms,nfsvers=1
+
+### nas上的rom带有CIFS身份验证，参考下面示例：
+sharedevice=NETWORK
+sharenetwork_smb1=ROMS@192.168.1.6:batocera/roms:username=(用户名),password=(密码)
+```
+
+### SMB版本
+
+```shell
+### nas上的整个用户数据目录就会自动生成
+sharedevice=NETWORK
+sharenetwork_smb1=SHARE@192.168.1.6:batocera
+
+### 只读取 rom，就填写下面示例代码
+sharedevice=NETWORK
+sharenetwork_smb1=ROMS@192.168.1.6:batocera/roms
+
+### 要读取ROM，SAVE和BIOS，就填写下面示例代码
+sharedevice=NETWORK
+sharenetwork_smb1=ROMS@192.168.1.6:batocera/roms:guest
+sharenetwork_smb2=SAVES@192.168.1.6:batocera/saves:username=john,password=wayne
+sharenetwork_smb3=BIOS@192.168.1.6:batocera/bios
+
+### 如果NAS需要特定的SMB版本 参考下面示例：
+sharenetwork_smb1=ROMS@192.168.1.6:Batocera/roms,vers = 1.0
+```
+
+## 参考
+
+1. https://wiki.batocera.org/start
+
+2. https://wiki.batocera.org/store_games_on_a_second_usb_sata_drive
+
+3. https://www.sysadm.cc/index.php/xitongyunwei/941-never-boast-i-made-the-dual-systems-of-windows-and-retro-games-batocera-without-usb-flash-disk

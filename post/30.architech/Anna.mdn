@@ -1,0 +1,31 @@
+# Anna
+
+## 简介
+
+Anna是伯克利 RISE 实验室推出了KV存储数据库，提供了惊人的存取速度、超强的伸缩性和史无前例的一致性保证。anna基于无协调 actor 模型，每个 actor 对应一个线程，对任何一个共享状态都有自己的一份私有拷贝，并通过异步广播将更新通知给其他 actor。在多核服务器上，这种模型比传统的共享内存模型的性能要高出一个数量级。
+
+## 特点
+
+[Anna](http://db.cs.berkeley.edu/jmh/papers/anna_ieee18.pdf) 的key和节点的分布也是一致性哈希。采用 [gossip](http://publicatio.bibl.u-szeged.hu/1529/1/gossip11.pdf) 算法来处理actor的容灾和扩缩容。按文中的意思似乎数据分片的同步也采用的是 [gossip](http://publicatio.bibl.u-szeged.hu/1529/1/gossip11.pdf) 。不过在这一点上 [gossip](http://publicatio.bibl.u-szeged.hu/1529/1/gossip11.pdf) 对分布式系统的局部分片扩容天生是比 [Paxos](https://en.wikipedia.org/wiki/Paxos_(computer_science)) 和 [Raft](https://raft.github.io/) 要好很多。
+
+## 架构
+
+![image-20190528100256465](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/13-09-47-31-image-20190528100256465.png)
+
+Anna 服务器由一系列独立的线程组成，每个线程运行无协调的 actor。每个线程对应一个 CPU 核心，线程数量不超过 CPU 的总核数。客户端代理负责将远程请求分发给 actor，每个 actor 都有一个私有的哈希表，这些哈希表存放在共享内存中。线程间的变更通过内存广播进行交换，而服务器间的变更则通过 protobuf 进行交换。
+
+这种线程和 CPU 核心一对一的模型避免了上下文切换开销。actor 之间不共享键值状态，通过一致性哈希对键空间进行分区，并使用多主复制机制在 actor 之间复制数据分区，而且复制系数是可配置的。actor 基于时间戳将键的更新通知给其他 actor 副本，每个 actor 有自己的私有状态，这个状态保存在一个叫作“格子”的数据结构中，确保在消息发生延迟、重排或重复时仍然能够保证一致性。
+
+## 性能测评
+
+* Anna 与 TBB、Masstree 和 Ideal
+* Anna 与Redis
+* Anna 与 Cassandra
+
+## 参考
+
+1. https://mp.weixin.qq.com/s/3WmGpZkEuSz-ox_2CPCsqg
+2. https://github.com/ucbrise/anna
+3. https://juejin.im/entry/5aaa708b51882555627d04b4
+4. http://db.cs.berkeley.edu/jmh/papers/anna_ieee18.pdf
+5. 

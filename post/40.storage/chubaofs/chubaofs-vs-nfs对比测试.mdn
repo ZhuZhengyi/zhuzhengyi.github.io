@@ -1,0 +1,79 @@
+# ChubaoFS vs NFS 性能对比测试
+
+## 目的
+
+使用fio，对chubaofs 和  nfs 进行读写测试，对比两者性能；
+
+### 测试说明
+
+* 所有机器都在一个机房内；
+
+* nfs： nfs为两套nfs1,nfs2，`nfs1`为nvme磁盘，`nfs2`为hdd磁盘；
+
+* chubaofs： chubaofs 磁盘为hdd磁盘，8个datanode节点；
+
+* 测试服务器：4台测试服务器，每台建立三个挂载目录，每个目录分别挂载`nfs1`, `nfs2`, `chubaofs`待测试卷；
+
+* 读写类型：顺序读(read), 顺序写(write),混合读写(rw), 随机读(randread), 随机写(randwrite), 随机混合读写(randrw)
+
+* 数据块大小：4M，1M，256K, 64K, 16K, 4K
+
+## 测试脚本
+
+```shell
+    fio \
+        -name=${test_name} \
+        -directory=$1 \
+        -direct=0 \
+        -fallocate=0 \
+        -iodepth 1 \
+        -thread \
+        -rw=${RW_TYPE} \
+        -ioengine=psync \
+        -bs=${FIO_BS} \
+        -size=4G \
+        -numjobs=20 \
+        -runtime=180 \
+        -group_reporting 
+```
+
+## 测试过程
+
+1. 分别准备nfs1，nfs2，chubaofs待测试卷；
+
+2. 在4台测试服务器上分别挂载测试卷到相应目录；
+
+3. 在4台测试服务器中同时发起fio测试脚本，依次测试nfs1，nfs2, chubaofs的性能数据；
+
+4. 将各个服务器中的性能数据相加，得到总的数据;
+
+## 测试结果
+
+|                | **cfshdd** | **nfsnvme** | **nfshdd** |
+| -------------- | ---------- | ----------- | ---------- |
+| **write-4M**   | 3618       | 2095        | 762        |
+| **read-4M**    | 9654       | 4091        | 215.8      |
+| **rw-4M**      | 711        | 1880        | 200.3      |
+| **write-1M**   | 4251       | 1955        | 772        |
+| **read-1M**    | 7770       | 3995        | 221.9      |
+| **rw-1M**      | 683        | 2549        | 177        |
+| **write-256k** | 5683       | 1932        | 784        |
+| **read-256k**  | 8570       | 3908        | 219.3      |
+| **rw-256k**    | 732        | 1714        | 184.5      |
+| **write-64k**  | 3465       | 1988        | 781        |
+| **read-64k**   | 9239       | 3901        | 216.6      |
+| **rw-64k**     | 702        | 1718        | 172.7      |
+| **write-16k**  | 3478       | 2034        | 784        |
+| **read-16k**   | 4952       | 3992        | 226.7      |
+| **rw-16k**     | 670        | 1773        | 187.1      |
+| **write-4k**   | 2631       | 1924        | 787        |
+| **read-4k**    | 4250       | 3840        | 240.9      |
+| **rw-4k**      | 409.9      | 1726        | 183.4      |
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/08/30-09-44-15-2021-08-30-09-44-10-image.png)
+
+## 结论
+
+1. chubaofs-hdd在各种情形下，性能均优于nfs-hdd，顺序写性能为5-8倍，顺序读性能为30~40倍；
+
+2. 混合读写时，nfs-nvme高于chubaofs，约为chubaofs的3-5倍；其他情形下chubaofs性能高于nfs-nvme；为2~3倍；

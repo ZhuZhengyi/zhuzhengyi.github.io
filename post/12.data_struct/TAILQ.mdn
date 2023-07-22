@@ -1,0 +1,109 @@
+# TAILQ-双向有尾队列
+
+## 简介
+
+**TAILQ**(双向有尾队列)是 FreeBSD/linux 内核对双向队列操作的一种抽象，在/usr/include/sys/queue.h 文件中实现各种定义。
+
+尾队列能实现操作队列需要的各种操作：插入元素，删除元素，遍历队列等。优点是插入元素很快。
+
+在一些著名的开源库中(如**DPDK**,**libevent**)有广泛的应用
+
+## 定义
+
+双向有尾队列有一个表头和表尾，表头指向节点 1 和尾节点
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/06/03-10-55-36-2021-06-03-10-55-30-image.png)
+
+**TAILQ**队列有**HEAD**和**ENTRY**两种基本的数据结构：
+
+```c
+// 队列元素
+#define TAILQ_ENTRY(type)         \
+struct {                          \
+    struct type *tqe_next;        \
+    struct type **tqe_prev;       \
+}
+
+//
+struct tailq_entry {
+　　int val;
+　　TAILQ_ENTRY(int_node);
+};
+
+// 队列头
+#define  TAILQ_HEAD(name, type)        \
+struct name {                          \
+    struct type *tqh_first;     /*队列第一个元素的地址*/       \
+    struct type **tqh_last;     /**/       \
+}
+STAILQ_HEAD(my_tailq,  tailq_entry) queue_head;
+```
+
+注意：数据结构中的**filed**都是**type**类型的指针(或者是二级指针)，这里的**type**是用户的队列元素类型，
+
+将**ENTRY**结构内嵌到用户的**QUEUE_ITEM**结构中：
+
+```cpp
+struct QUEUE_ITEM{
+    int value;
+```
+
+## 和 linux list 区别
+
+和**Linux**中**list**的组织方式不一样，后者是单纯地将**struct list_head**作为链表的一个挂接点，并没有用户的信息，具体差别可以看下图：
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/18-12-06-33-2020-11-18-12-04-56-image.png)
+
+## TAILQ 队列的操作
+
+**TAILQ**提供了多种操作队列的**API**,比如：
+
+```c
+TAILQ_HEAD(name, type)
+TAILQ_ENTRY(type)
+TAILQ_EMPTY(head)
+TAILQ_FIRST(head)
+TAILQ_FOREACH(var, head, field)
+TAILQ_INIT(head)
+TAILQ_INSERT_AFTER(head, listelm, elm, field)
+TAILQ_INSERT_BEFORE(listelm, elm, field)
+TAILQ_INSERT_TAIL(head, elm, field)
+.....
+```
+
+### \***\*TAILQ**队列中为什么**tqh_prev**和**tqh_last**要使用二级指针\*\*
+
+要搞清楚这个问题，我们可以考虑如果不使用二级指针会怎么样？ 就像定义成下面这样。
+
+```c
+#define    FAKE_TAILQ_HEAD(name, type)                        \
+struct name {                                \
+    struct type *tqh_first;    /* first element */            \
+    struct type *tqh_last;    /* last element */        \
+}
+
+#define FAKE_TAILQ_ENTRY(type)                                            \
+struct {                                                             \
+    struct type *tqe_next;  /* next element */                       \
+    struct type *tqe_prev;  /*   previous element*/        \
+}
+```
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/18-12-08-55-2020-11-18-12-08-37-image.png)
+
+如果我们想要删除队列的任意一个元素，对**FAKE_TAILQ**，我们需要特殊处理该元素是第一个元素的情况(第一个元素的**tqe_prev**指针为空)，而**TAILQ**就没有这个烦恼！
+
+\***\*TAILQ**队列的遍历性能\*\*
+
+**Linux**中的**list**只将**struct list_head**作为用户元素的挂接点，因此在正向遍历链表时，需要使用**container_of**这类接口才能获取用户的数据，而**TAILQ**由于**tqe_next**指针直接指向用户元素的类型，所以理论上，正向遍历**TAILQ**比**list**更快.但逆向遍历时,由于**TAILQ**的取用**prev**元素的操作比**next**麻烦的多，因此逆向遍历是比正向慢的：
+
+```c
+#define    TAILQ_PREV(elm, headname, field)                \
+    (*(((struct headname *)((elm)->field.tqe_prev))->tqh_last))
+```
+
+## 参考
+
+1. https://www.sunxidong.com/260.html
+
+2. [TAILQ 队列实现原理 - fuzidage - 博客园](https://www.cnblogs.com/fuzidage/p/14482501.html)

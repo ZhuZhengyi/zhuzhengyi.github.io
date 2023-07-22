@@ -1,0 +1,159 @@
+# [最佳买卖股票时机含冷冻期](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/description/ "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/description/")
+
+| Category   | Difficulty      | Likes | Dislikes |
+| ---------- | --------------- | ----- | -------- |
+| algorithms | Medium (64.14%) | 1539  | -        |
+
+<details open=""><summary><strong>Tags</strong></summary>
+
+[`dynamic-programming`](https://leetcode.com/tag/dynamic-programming "https://leetcode.com/tag/dynamic-programming")
+
+<details open=""><summary><strong>Companies</strong></summary>
+
+`google`
+
+给定一个整数数组 `prices`，其中第 `prices[i]` 表示第 `<em>i</em>` 天的股票价格 。
+
+设计一个算法计算出最大利润。在满足以下约束条件下，你可以尽可能地完成更多的交易（多次买卖一支股票）:
+
+- 卖出股票后，你无法在第二天买入股票 (即冷冻期为 1 天)。
+
+  **注意：** 你不能同时参与多笔交易（你必须在再次购买前出售掉之前的股票）。
+
+**示例 1:**
+
+```
+输入: prices = [1,2,3,0,2]
+输出: 3
+解释: 对应的交易状态为: [买入, 卖出, 冷冻期, 买入, 卖出]
+```
+
+**示例 2:**
+
+```
+输入: prices = [1]
+输出: 0
+```
+
+**提示：**
+
+- `1 <= prices.length <= 5000`
+- `0 <= prices[i] <= 1000`
+
+[Discussion](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/comments/ "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/comments/") | [Solution](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/solution/ "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown/solution/")
+
+## 解法
+
+```rust
+// @lc code=start
+impl Solution {
+    /// ## 解题思路
+    /// - 动态规划
+    /// 1. 投资者在整个过程中的每天存在3种状态:
+    ///    a. 未投资(uninvested): 此时投资者手中没有股票, 且不在冷静期中, 那么当天(day)投资者有两种策略:
+    ///       a1. 不买入. 此时投资收益不变, 第二天状态保持为未投资(invested)状态;
+    ///       a2. 买入当天股票, 此时收益 -prices[day]. 第二天状态变为已投资状态(invested);
+    ///    b. 已投资(invested): 此时投资者手中已经有了一支股票, 那么此时投资者也有两种策略:
+    ///       b1. 不卖出. 此时投资收益不变, 收益profile维持不变, 第二天状态继续维持已投资状态(invested);
+    ///       b2. 卖出手中股票. 此时投资收益 +prices[day]. 第二天状态将变为冷静期(cooldown);
+    ///    c. 冷静期(cooldown): 此时投资者处于冷静期,此时只有一个策略:
+    ///       c1. 无法买卖. 此时投资收益维持不变. 第二天状态变为未投资(uninvested)状态;
+    pub fn max_profit0(prices: Vec<i32>) -> i32 {
+        use std::collections::HashMap;
+
+        #[derive(PartialEq, Eq, Hash, Copy, Clone)]
+        enum Invested {
+            Yes,
+            No,
+            Cooldown,
+        }
+        fn dp(
+            prices: &[i32],
+            day: usize,
+            invested: Invested,
+            memo: &mut HashMap<(usize, Invested), i32>,
+        ) -> i32 {
+            if day == prices.len() {
+                0
+            } else if let Some(profit) = memo.get(&(day, invested)) {
+                *profit
+            } else {
+                let rez = match invested {
+                    Invested::Yes => dp(prices, day + 1, invested, memo)
+                        .max(prices[day] + dp(prices, day + 1, Invested::Cooldown, memo)),
+                    Invested::No => dp(prices, day + 1, invested, memo)
+                        .max(-prices[day] + dp(prices, day + 1, Invested::Yes, memo)),
+                    Invested::Cooldown => dp(prices, day + 1, Invested::No, memo),
+                };
+                memo.insert((day, invested), rez);
+                rez
+            }
+        }
+
+        dp(&prices, 0, Invested::No, &mut HashMap::new())
+    }
+
+    /// 优化2:
+    pub fn max_profit1(prices: Vec<i32>) -> i32 {
+        #[derive(Default, Clone)]
+        struct Profit {
+            invested: i32,
+            uninvested: i32,
+            cooldown: i32,
+        }
+        let n = prices.len();
+        let mut profits = vec![Profit::default(); n + 1];
+        for day in (0..n).rev() {
+            profits[day] = Profit {
+                invested: profits[day + 1]
+                    .invested
+                    .max(prices[day] + profits[day + 1].cooldown),
+                uninvested: profits[day + 1]
+                    .uninvested
+                    .max(-prices[day] + profits[day + 1].invested),
+                cooldown: profits[day + 1].uninvested,
+            }
+        }
+
+        profits[0].uninvested
+    }
+
+    /// 优化3: 实用一个变量代替数组
+    pub fn max_profit2(prices: Vec<i32>) -> i32 {
+        #[derive(Default, Clone)]
+        struct Profit {
+            invested: i32,
+            uninvested: i32,
+            cooldown: i32,
+        }
+        prices
+            .into_iter()
+            .rev()
+            .fold(Profit::default(), |profit, price| Profit {
+                invested: profit.invested.max(price + profit.cooldown),
+                uninvested: profit.uninvested.max(-price + profit.invested),
+                cooldown: profit.uninvested,
+            })
+            .uninvested
+    }
+
+    /// 优化4: 实用元组代替结构体定义
+    pub fn max_profit(prices: Vec<i32>) -> i32 {
+        prices
+            .into_iter()
+            .rev()
+            .fold((0, 0, 0), |profit, price| {
+                (
+                    profit.0.max(price + profit.2),
+                    profit.1.max(-price + profit.0),
+                    profit.1,
+                )
+            })
+            .1
+    }
+}
+// @lc code=end
+
+struct Solution;
+
+```

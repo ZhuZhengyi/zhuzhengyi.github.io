@@ -1,0 +1,205 @@
+# Lucene基础知识
+
+## 简介
+
+Lucene 是一个基于 Java 的全文信息检索工具包，它不是一个完整的搜索应用程序，而是为你的应用程序提供索引和搜索功能。Lucene 目前是 Apache Jakarta 家族中的一个开源项目。也是目前最为流行的基于 Java 开源全文检索工具包。
+
+Lucene 能够为文本类型的数据建立索引，只要能把要索引的数据格式转化的文本的，Lucene 就能对你的文档进行索引和搜索。比如你要对一些 HTML 文档，PDF 文档进行索引的话你就首先需要把 HTML 文档和 PDF 文档转化成文本格式的，然后将转化后的内容交给 Lucene 进行索引，然后把创建好的索引文件保存到磁盘或者内存中，最后根据用户输入的查询条件在索引文件上进行查询。不指定要索引的文档的格式也使 Lucene 能够几乎适用于所有的搜索应用程序。
+
+## 架构
+
+![图 1. 搜索应用程序和 Lucene 之间的关系](https://www.ibm.com/developerworks/cn/java/j-lo-lucene1/fig001.jpg)
+
+## 索引和搜索
+
+全文检索的流程分为两大部分：索引、搜索：
+
+- 索引：采集数据-->构建`Document`对象-->分析文档（分词）-->创建索引。
+
+- 搜索：即用户通过搜索界面-->创建查询-->执行搜索，搜索器从索引库搜索-->渲染搜索结果。
+* **索引**（index）：是把源数据处理成非常方便查询的索引文件的过程。Lucene 采用的是一种称为**反向索引**（inverted index）的机制。反向索引就是说我们维护了一个词 / 短语表，对于这个表中的每个词 / 短语，都有一个链表描述了有哪些文档包含了这个词 / 短语。这样在用户输入查询条件的时候，就能非常快的得到搜索结果。
+
+* **搜索**（search）：对文档建立好索引后，就可以在这些索引上面进行搜索了。搜索引擎首先会对搜索的关键词进行解析，然后再在建立好的索引上面进行查找，最终返回和用户输入的关键词相关联的文档。
+
+## 基本概念
+
+在深入解读Lucene之前，先了解下Lucene的几个基本概念，以及这几个概念背后隐藏的一些东西。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/25-09-30-08-2020-03-14-17-54-55-image.png)
+
+* **Index（索引）**： 类似数据库的表的概念，为一个文档收纳箱，你可以往内部塞入新的文档，或者从里面拿出文档，但如果你要修改里面的某个文档，则必须先拿出来修改后再塞回去。这个收纳箱可以塞入各种类型的文档，文档里的内容可以任意定义，Lucene都能对其进行索引。
+
+* **Term和Term Dictionary**：Lucene中索引和搜索的最小单位，一个Field会由一个或多个Term组成，Term是由Field经过Analyzer（分词）产生。Term Dictionary即Term词典，是根据条件查找Term的基本索引。
+
+* **Segment**
+  
+  一个Index会由一个或多个sub-index构成，sub-index被称为Segment。Lucene的Segment设计思想，与LSM类似但又有些不同，继承了LSM中数据写入的优点，但是在查询上只能提供近实时而非实时查询。
+
+Lucene中的数据写入会先写内存的一个Buffer（类似LSM的MemTable，但是不可读），当Buffer内数据到一定量后会被flush成一个Segment，每个Segment有自己独立的索引，可独立被查询，但数据永远不能被更改。这种模式避免了随机写，数据写入都是Batch和Append，能达到很高的吞吐量。Segment中写入的文档不可被修改，但可被删除，删除的方式也不是在文件内部原地更改，而是会由另外一个文件保存需要被删除的文档的DocID，保证数据文件不可被修改。Index的查询需要对多个Segment进行查询并对结果进行合并，还需要处理被删除的文档，为了对查询进行优化，Lucene会有策略对多个Segment进行合并，这点与LSM对SSTable的Merge类似。
+
+## 软件包
+
+Lucene 软件包的发布形式是一个 JAR 文件，下面我们分析一下这个 JAR 文件里面的主要的 JAVA 包，使读者对之有个初步的了解。
+
+* `org.apache.lucene.document`: 提供了一些为封装要索引的文档所需要的类，比如 Document, Field。这样，每一个文档最终被封装成了一个 Document 对象。
+
+* `org.apache.lucene.analysis`: 对文档进行分词，因为文档在建立索引之前必须要进行分词，所以这个包的作用可以看成是为建立索引做准备工作。
+
+* `org.apache.lucene.index`: 提供了一些类来协助创建索引以及对创建好的索引进行更新。这里面有两个基础的类：IndexWriter 和 IndexReader，其中 IndexWriter 是用来创建索引并添加文档到索引中的，IndexReader 是用来删除索引中的文档的。
+
+* `org.apache.lucene.search`: 提供对在建立好的索引上进行搜索所需要的类。比如 IndexSearcher 和 Hits, IndexSearcher 定义了在指定的索引上进行搜索的方法，Hits 用来保存搜索得到的结果。
+
+## 索引
+
+为了对文档进行索引，Lucene 提供了五个基础的类，分别如下：
+
+* **Document**：用来描述文档的，一个 Document 对象由多个 Field 对象组成的。可以把一个 Document 对象想象成数据库中的一个记录，而每个 Field 对象就是记录的一个字段。
+
+* **Field**：用来描述一个文档的某个属性的，比如一封电子邮件的标题和内容可以用两个 Field 对象分别描述。
+
+* **Analyzer**：在一个文档被索引之前，首先需要对文档内容进行分词处理，这部分工作就是由 Analyzer 来做的。Analyzer 类是一个抽象类，它有多个实现。针对不同的语言和应用需要选择适合的 Analyzer。Analyzer 把分词后的内容交给 IndexWriter 来建立索引。
+
+* **IndexWriter**：用来创建索引的一个核心的类，作用是把一个个的 Document 对象加到索引中来。
+
+* **Directory**：代表索引的存储的位置。是一个抽象类，目前有两个实现：
+  
+  * **FSDirectory**： 表示一个存储在文件系统中的索引的位置；
+  
+  * **RAMDirectory**：表示一个存储在内存当中的索引的位置。
+
+熟悉了建立索引所需要的这些类后，我们就开始对某个目录下面的文本文件建立索引了。
+
+```java
+// TxtFileIndexer.java
+package TestLucene; 
+import java.io.File; 
+import java.io.FileReader; 
+import java.io.Reader; 
+import java.util.Date; 
+import org.apache.lucene.analysis.Analyzer; 
+import org.apache.lucene.analysis.standard.StandardAnalyzer; 
+import org.apache.lucene.document.Document; 
+import org.apache.lucene.document.Field; 
+import org.apache.lucene.index.IndexWriter; 
+/** 
+* This class demonstrate the process of creating index with Lucene 
+* for text files 
+*/ 
+public class TxtFileIndexer { 
+     public static void main(String[] args) throws Exception{ 
+     //indexDir is the directory that hosts Lucene's index files 
+     File   indexDir = new File("D:\\luceneIndex"); 
+     //dataDir is the directory that hosts the text files that to be indexed 
+     File   dataDir  = new File("D:\\luceneData"); 
+     Analyzer luceneAnalyzer = new StandardAnalyzer(); 
+     File[] dataFiles  = dataDir.listFiles(); 
+     IndexWriter indexWriter = new IndexWriter(indexDir, luceneAnalyzer, true); 
+     long startTime = new Date().getTime(); 
+     //遍历数据文件目录
+     for(int i = 0; i < dataFiles.length; i++){ 
+          //依次处理
+          if(dataFiles[i].isFile() && dataFiles[i].getName().endsWith(".txt")){
+               System.out.println("Indexing file " + dataFiles[i].getCanonicalPath()); 
+               Document document = new Document(); 
+               Reader txtReader = new FileReader(dataFiles[i]); 
+               document.add(Field.Text("path",dataFiles[i].getCanonicalPath())); 
+               document.add(Field.Text("contents",txtReader)); 
+               indexWriter.addDocument(document); 
+          } 
+     } 
+     indexWriter.optimize(); 
+     indexWriter.close(); 
+     long endTime = new Date().getTime(); 
+
+     System.out.println("It takes " + (endTime - startTime) 
+         + " milliseconds to create index for the files in directory "
+         + dataDir.getPath());        
+     } 
+}
+```
+
+IndexWriter 的构造函数需要三个参数:
+
+* 第一个参数：指定所创建的索引要存放的位置，他可以是一个 File 对象，也可以是一个 FSDirectory 对象或者 RAMDirectory 对象。
+
+* 第二个参数：指定 Analyzer 类的一个实现，也就是指定这个索引是用哪个分词器对文挡内容进行分词。
+
+* 第三个参数：是一个布尔型的变量，如果为 true 的话就代表创建一个新的索引，为 false 的话就代表在原来索引的基础上进行操作。
+
+### 索引类型
+
+Lucene中支持丰富的字段类型，每种字段类型确定了支持的数据类型以及索引方式，目前支持的字段类型包括LongPoint、TextField、StringField、NumericDocValuesField等。
+
+![loading-ag-13820](/Users/zhuzhengyi/tmp/gitnote-img/2020-03-14-18-01-33-image.png)
+
+## 搜索文档
+
+利用 Lucene 进行搜索就像建立索引一样也是非常方便的。Lucene 提供了几个基础的类来完成这个过程：
+
+* **Query**: 一个抽象类，有多个实现，比如 TermQuery, BooleanQuery, PrefixQuery. 这个类的目的是把用户输入的查询字符串封装成 Lucene 能够识别的 Query。
+
+* **Term**: Term 是搜索的基本单位，一个 Term 对象有两个 String 类型的域组成。生成一个 Term 对象可以有如下一条语句来完成：Term term = new Term(“fieldName”,”queryWord”); 其中第一个参数代表了要在文档的哪一个 Field 上进行查找，第二个参数代表了要查询的关键词。
+
+* **TermQuery**: TermQuery 是抽象类 Query 的一个子类，它同时也是 Lucene 支持的最为基本的一个查询类。生成一个 TermQuery 对象由如下语句完成： TermQuery termQuery = new TermQuery(new Term(“fieldName”,”queryWord”)); 它的构造函数只接受一个参数，那就是一个 Term 对象。
+
+* **IndexSearcher**: IndexSearcher 是用来在建立好的索引上进行搜索的。它只能以只读的方式打开一个索引，所以可以有多个 IndexSearcher 的实例在一个索引上进行操作。
+
+* **Hits**: Hits 是用来保存搜索的结果的。
+
+介绍完这些搜索所必须的类之后，我们就开始在之前所建立的索引上进行搜索了，清单 2 给出了完成搜索功能所需要的代码。
+
+```java
+package TestLucene; 
+import java.io.File; 
+import org.apache.lucene.document.Document; 
+import org.apache.lucene.index.Term; 
+import org.apache.lucene.search.Hits; 
+import org.apache.lucene.search.IndexSearcher; 
+import org.apache.lucene.search.TermQuery; 
+import org.apache.lucene.store.FSDirectory; 
+/** 
+* This class is used to demonstrate the 
+* process of searching on an existing 
+* Lucene index 
+*/ 
+public class TxtFileSearcher { 
+    public static void main(String[] args) throws Exception{ 
+       String queryStr = "lucene"; 
+       //This is the directory that hosts the Lucene index 
+       File indexDir = new File("D:\\luceneIndex"); 
+       FSDirectory directory = FSDirectory.getDirectory(indexDir,false); 
+       IndexSearcher searcher = new IndexSearcher(directory); 
+       if(!indexDir.exists()){ 
+            System.out.println("The Lucene index is not exist"); 
+            return; 
+       } 
+       Term term = new Term("contents",queryStr.toLowerCase()); 
+       TermQuery luceneQuery = new TermQuery(term); 
+       Hits hits = searcher.search(luceneQuery); 
+       for(int i = 0; i < hits.length(); i++){ 
+            Document document = hits.doc(i); 
+            System.out.println("File: " + document.get("path")); 
+       } 
+    } 
+}
+```
+
+在清单 2 中，类 IndexSearcher 的构造函数接受一个类型为 Directory 的对象，Directory 是一个抽象类，它目前有两个子类：FSDirctory 和 RAMDirectory. 我们的程序中传入了一个 FSDirctory 对象作为其参数，代表了一个存储在磁盘上的索引的位置。构造函数执行完成后，代表了这个 IndexSearcher 以只读的方式打开了一个索引。然后我们程序构造了一个 Term 对象，通过这个 Term 对象，我们指定了要在文档的内容中搜索包含关键词”lucene”的文档。接着利用这个 Term 对象构造出 TermQuery 对象并把这个 TermQuery 对象传入到 IndexSearcher 的 search 方法中进行查询，返回的结果保存在 Hits 对象中。最后我们用了一个循环语句把搜索到的文档的路径都打印了出来。 好了，我们的搜索应用程序已经开发完毕，怎么样，利用 Lucene 开发搜索应用程序是不是很简单。
+
+全文检索和数据库应用最大的不同在于：让最相关的头100条结果满足98%以上用户的需求  
+
+Lucene的创新之处：
+
+大部分的搜索（数据库）引擎都是用B树结构来维护索引，索引的更新会导致大量的IO操作，Lucene在实现中，对此稍微有所改进：不是维护一个索引文件，而是在扩展索引的时候不断创建新的索引文件，然后定期的把这些新的小索引文件合并到原先的大索引中（针对不同的更新策略，批次的大小可以调整），这样在不影响检索的效率的前提下，提高了索引的效率。
+
+## 总结
+
+本文首先介绍了 Lucene 的一些基本概念，然后开发了一个应用程序演示了利用 Lucene 建立索引并在该索引上进行搜索的过程。希望本文能够为学习 Lucene 的读者提供帮助。j
+
+## 参考
+
+1. https://zhuanlan.zhihu.com/p/35469104
+
+2. [Lucene 查询原理及解析-InfoQ](https://www.infoq.cn/article/ejEG02VRoeGVaLw4j_LL)
+
+3. 

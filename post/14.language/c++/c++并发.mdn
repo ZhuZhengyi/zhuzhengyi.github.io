@@ -1,0 +1,44 @@
+# C++并发
+
+## 多线程
+
+## 同步
+
+### 互斥量(mutex)
+
+- **mutex**:
+- **lock_guard**: 严格基于作用域的互斥体所有权包装器, 通过 RAII 机制实现 mutex 的封装，创建 `lock_guard` 对象时，它试图接收给定互斥的所有权。控制离开创建 `lock_guard` 对象的作用域时，销毁 `lock_guard` 并释放互斥。自能基于作用域释放，无法自主控制 unlock；
+- **scoped_lock**（c++17）:
+- **unique_lock**：通用互斥包装器，允许延迟锁定、锁定的有时限尝试、递归锁定、所有权转移和与条件变量一同使用。可移动，但不可复制。
+- **shared_lock**：
+
+### 条件变量(condition_varaiable)
+
+```cpp
+void th1() {
+    int count = 10;
+    while (count > 0) {
+        std::unique_lock<std::mutex> locker(mu);
+        q.push_front(count);
+        locker.unlock();
+        cond.notify_one();  // Notify one waiting thread, if there is one.
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        count--;
+    }
+}
+
+void th2() {
+    int data = 0;
+    while ( data != 1) {
+        std::unique_lock<std::mutex> locker(mu);
+        while(q.empty())
+            cond.wait(locker); // Unlock mu and wait to be notified
+        data = q.back();
+        q.pop_back();
+        locker.unlock();
+        std::cout << "t2 got a value from t1: " << data << std::endl;
+    }
+}
+```
+
+### 原子量(atomic)

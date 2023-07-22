@@ -1,0 +1,81 @@
+# Thanos
+
+## 简介
+
+![image-20190815091020788](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/12-20-35-13-image-20190815091020788.png)
+
+## 特点
+
+## 架构
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-16-59-2020-11-17-11-16-53-image.png)
+
+## 组件
+
+这张图中包含了 Thanos 的几个核心组件：  
+
+- Thanos Query：实现了 Prometheus API，将来自下游组件提供的数据进行聚合最终返回给查询数据的 client（如 Grafana），类似数据库中间件。
+- Thanos Sidecar：连接 Prometheus，将其数据提供给 Thanos Query 查询，并且/或者将其上传到对象存储，以供长期存储。
+- Thanos Store Gateway：将对象存储的数据暴露给 Thanos Query 去查询。
+- Thanos Ruler：对监控数据进行评估和告警，还可以计算出新的监控数据，将这些新数据提供给 Thanos Query 查询并且/或者上传到对象存储，以供长期存储。
+- Thanos Compact：将对象存储中的数据进行压缩和降低采样率，加速大时间区间监控数据查询的速度。
+
+## 配置
+
+![image-20190815090549142](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/12-20-35-18-image-20190815090549142.png)
+
+### prometheus
+
+Sidecar 启动时，需要prometheus 每个实例设置唯一的external_labels
+
+```yaml
+global:
+  external_labels:
+    hostip: '192.168.0.31'
+```
+
+### sidecar
+
+Sidecar与prometheus部署在同一个节点上，采集prometheus指标
+
+```shell
+nohup ${BinPath}/thanos sidecar \
+    --tsdb.path             ${PROMETHEUS_DB_PATH:-"/export/Data/prometheus"} \
+    --prometheus.url        ${PROMETHEUS_URL:-"http://127.0.0.1:9090"} \
+    --http-address          ${THANOS_HTTP_ADDR:-"0.0.0.0:10902"}  \
+    --grpc-address          ${THANOS_GRPC_ADDR:-"0.0.0.0:10901"}  \
+    > ${LogFile:-/export/Logs/thanos.log} \
+    2>&1 &
+```
+
+### query
+
+Query 组件用来聚合sidecar，提供统一的查询
+
+```shell
+nohup ${BinPath}/thanos query \
+    --http-address   ${THANOS_HTTP_ADDR:-"0.0.0.0:10902"}  \
+    --store "<sidecar1_grpc_addr>" \
+    --store "<sidecar2_grpc_addr>" \
+    --store "<sidecar3_grpc_addr>" \
+    > ${LogFile:-/export/Logs/thanos.log} \
+    2>&1 &
+```
+
+### Ruler
+
+通过查询 Thanos Query 获取全局数据，然后根据 rules 配置计算新指标并存储，同时也通过 Store API 将数据暴露给 Thanos Query，同样还可以将数据上传到对象存储以供长期保存（这里上传到对象存储中的数据一样也是通过 Thanos Store Gateway 暴露给 Thanos Query）
+
+Thanos Ruler 为 Thanos Query 提供计算出的新指标数据，而 Thanos Query 为 Thanos Ruler 提供计算新指标所需要的全局原始指标数据。
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/17-11-15-01-2020-11-17-11-14-56-image.png)
+
+### grafana
+
+grafana datasource 选择prometheus url： <thanos_query_http_addr>
+
+## 参考
+
+1. [打造云原生大型分布式监控系统（二）：Thanos 架构详解 - DockOne.io](http://dockone.io/article/9988)
+
+2. 

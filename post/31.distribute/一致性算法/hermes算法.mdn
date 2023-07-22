@@ -1,0 +1,33 @@
+# Hermes算法
+
+## 简介
+
+## 基本思想
+
+## 特性
+
+-  **Strong Consistency**: linearizable reads and writes
+-  **Fault Tolerance**: live nodes unblock via *write replays* after faults
+-  **High Performance Reads**: reads are served *locally from all replicas*
+-  **High Performance Writes**: *decentralized*, *fully concurrent* and *fast* 1 RTT commit
+-  **RMW Support**: read-modify-write atomics almost as efficient as writes
+-  **Formally Verified**: Hermes is model checked through TLA+
+
+## 写流程
+
+Hermes 的 replica 有 Coordinator 和 Follower 两种，Coordinator 接受 client 的写入请求
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/10/02-13-45-52-2021-10-02-13-45-42-image.png)
+
+- Coordinator 接受 client 的 write 请求，将 Key 分配一个新的 LT，给其他 followers 也广播一个 Invalidation(INV) 消息。并且将 Key 变成 Write 状态。
+- 其他 followers 收到 INV 之后，会比较 LT，如果收到消息的 LT 比本地的大，就会将 Key 变成 Invalid 状态（如果这个 Key 之前是 Write 或者 Replay，则会变成 Trans 状态），并且回复 ACK 消息。无论之前比较的结果怎样，ACK 里面的 LT 都是收到的 INV 的 LT。
+- 如果所有的 ACK 都收到了，write 就认为完成，这个 Key 就变成 Valid 状态（如果之前处于 Trans 状态，则会变成 Invalid 状态）
+- Coordinator 再次广播 Validation(VAL) 消息
+- 当 Follower 收到 VAL 消息，只有 VAL 的 LT 等于之前本地的 local timestamp，才会将 Key 转成 Valid 状态，否则一律丢弃这个 VAL 消息
+
+## 参考
+
+1. https://hermes-protocol.com/
+2. [Hermes: 一个快速、容错、线性一致的复制协议](https://zhuanlan.zhihu.com/p/141616802)
+3. [区块链论文集 / Hermes BFT共识算法 - 汇智网](http://cw.hubwiz.com/card/c/block-papers/1/26/4/)
+4. 

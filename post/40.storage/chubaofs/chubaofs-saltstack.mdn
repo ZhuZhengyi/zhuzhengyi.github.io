@@ -1,0 +1,58 @@
+# ChubaoFS SaltStack
+
+## 简介
+
+## 配置
+
+### Salt Minion端
+
+```shell
+# salt-minio-prepeare_one.sh
+
+ps -ef | grep salt | grep -v grep | awk '{print $2}' | xargs  kill
+rm -f /etc/salt/pki/minion/minion_master.pub
+sed -i 's/master: .*/master: 10.26.21.163/g' /etc/salt/minion
+cat > /etc/salt/minion.d/chubaofs.conf <<EOF 
+grains:
+  app: chubaofs
+  env: prod
+  cluster: yz-01
+  role:
+    - master
+    - metanode
+    - datanode
+    - objectnode
+EOF
+
+salt-minion start -d
+```
+
+```shell
+# cat /etc/salt/master.d/chubaofs.conf
+nodegroups:
+  cfs-m7-01: 'G@app:chubaofs and G@env:test and G@cluster:m7-01'
+  cfs-tz-01: 'G@app:chubaofs and G@env:prod and G@cluster:tz-01'
+  cfs-yz-01: 'G@app:chubaofs and G@env:prod and G@cluster:yz-01'
+
+# /srv/salt/chubaofs
+$ 
+
+
+$ salt -N "${CLUSTER_NAME}" cp.get_file salt://chubaofs/pkg/${CFS_VERSION}/${CFS_SERVER} ${CFS_BIN_PATH}
+
+$ salt -C "G@app:${CLUSTER_APP} and G@cluster:${CLUSTER_NAME} and G@role:${CLUSTER_ROLE}" \
+    cp.get_file salt://chubaofs/cluster/${CLUSTER_NAME}/conf/${CLUSTER_ROLE}.json \
+    /opt/${CLUSTER_APP}/conf/${CLUSTER_ROLE}.json makedirs=True
+
+cd /srv/salt/chubaofs/cluster/
+for hostin in `ls master*.json | grep -E -o "[0-9.]+[0-9]+"` ; do
+$ salt -C "G@app:${CLUSTER_APP} and G@cluster:${APP_CLUSTER_NAME} and G@role:${CLUSTER_ROLE} and G@ip:${hostip}" \
+    cp.get_file salt://chubaofs/cluster/${CLUSTER_NAME}/conf/${role}-${hostip}.json \
+    /opt/${CLUSTER_APP}/conf/${role}.json makedirs=True
+done
+
+
+salt -N 'cfs-yz-ai-02' cmd.run 'ls -l /opt/chubaofs/script'
+```
+
+## 参考

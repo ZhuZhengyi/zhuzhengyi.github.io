@@ -1,0 +1,77 @@
+# Golang数据结构之map
+
+## 简介
+
+## 用法
+
+```go
+//字面量初始化
+hash1 := map[string]int{
+    "1": 2,
+    "3": 4,
+    "5": 6,
+}
+//make初始化
+hash2 := make(map[string]int, 3)
+hash2["1"] = 2
+hash2["3"] = 4
+hash2["5"] = 6
+
+//取值
+_ = hash1[key]
+
+//for 遍历
+for k, v := range hash2 {
+    // k, v
+}
+
+// delete
+hash1[key] = value
+hash1[key] = newValue
+delete(hash, key)
+```
+
+## 底层实现
+
+golang的map核心结构是`hmap`
+
+```go
+type hmap struct {
+    count     int
+    flags     uint8
+    B         uint8
+    noverflow uint16
+    hash0     uint32
+
+    buckets    unsafe.Pointer
+    oldbuckets unsafe.Pointer
+    nevacuate  uintptr
+
+    extra *mapextra
+}
+
+type mapextra struct {
+    overflow    *[]*bmap
+    oldoverflow *[]*bmap
+    nextOverflow *bmap
+}
+type bmap struct {
+    topbits  [8]uint8
+    keys     [8]keytype
+    values   [8]valuetype
+    pad      uintptr
+    overflow uintptr
+}
+```
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2022/02/25-18-17-28-2022-02-25-18-17-22-image.png)
+
+## 参考
+
+1. https://segmentfault.com/a/1190000023879178
+
+2. [基本数据结构 - map的实现 - 《深入解析Go》 - 书栈网 · BookStack](https://www.bookstack.cn/read/go-internals/zh-02.3.md)
+
+3. [理解 Golang 哈希表 Map 的原理 | Go 语言设计与实现](https://draveness.me/golang/docs/part2-foundation/ch03-datastructure/golang-hashmap/)
+
+4. 

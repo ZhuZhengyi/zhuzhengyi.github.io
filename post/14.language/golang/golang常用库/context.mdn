@@ -1,0 +1,132 @@
+# Golang context
+
+## 简介
+
+* context 是 go 1.7 引入，用于在 goroutine之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。
+
+* `context.Context`类型的值可以协调多个 groutine 中的代码执行 “取消” 操作，并且可以存储键值对。
+
+* 它是并发安全的。
+
+* 与它协作的 API 都可以由外部控制执行 “取消” 操作，例如：取消一个 HTTP 请求的执行。
+
+## 定义
+
+context包中的主要对象是`Context`接口，该接口定义了4个方法：
+
+```go
+type Context interface {
+    Done() <-chan struct{}        // 当 context 被取消或者到了 deadline，返回一个被关闭的 channel
+    Err() error                   // 在 channel Done 关闭后，返回 context 取消原因
+    Deadline() (deadline time.Time, ok bool)  // 返回 context 是否会被取消以及自动取消时间（即 deadline）
+    Value(key interface{}) interface{}        // 获取 key 对应的 value
+}
+type CancelFunc
+type Context
+```
+
+共用方法：
+
+```go
+func Background() Context  // 返回一个空context，一般用于root context
+func TODO() Context        // 和Background一样，当不清楚用什么的时候或者是还没准备好的时候可以用它
+```
+
+* Background(): 
+
+除了根Context外(实质为空context)，通过4个`WithXXX`函数可生成3种不同类型的子Context:
+
+```go
+func WithCancel(parent Context) (ctx Context, cancel CancelFunc)  // 创建一个带有新的 Done channel 的 context个取消的方法
+func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) // 创建一个具有截止时间的 context
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) // 其实就是调用的 WithDeadline
+func WithValue(parent Context, key, val interface{}) Context  //
+```
+
+* canceler接口
+
+```go
+type canceler interface {
+    cancel(removeFromParent bool, err error)
+    Done() <-chan struct{}
+}
+```
+
+* cancelCtx
+
+```go
+type cancelCtx struct {
+    Context      // 保存parent Context
+    done chan struct{}
+    mu       sync.Mutex
+    children map[canceler]struct{}
+    err      error
+}
+```
+
+* timerCtx: 
+
+```go
+type timerCtx struct {
+    cancelCtx     //cancelCtx.Done()关闭的时机：1）用户调用cancel 2）deadline到了 3）父Context的done关闭了
+    timer    *time.Timer
+    deadline time.Time
+}
+```
+
+## 用法
+
+* context.Done()
+
+```go
+//context Done() 结束
+func Stream(ctx context.Context, out chan<- Value) error {
+    for {
+        v, err := DoSomething(ctx)
+        if err != nil {
+            return err
+        }
+        select {
+        case <-ctx.Done():
+            return ctx.Err()
+        case out <- v:
+        }
+    }
+}
+```
+
+* context.WithValue()
+
+```go
+//context.WithValue()
+func main() {
+    ctx, cancel := context.WithCancel(context.Background())
+
+    valueCtx := context.WithValue(ctx, key, "add value")
+
+    go watch(valueCtx)
+    time.Sleep(10 * time.Second)
+    cancel()
+
+    time.Sleep(5 * time.Second)
+}
+```
+
+* context.WithTimeout()
+
+* context.WithDeadline()
+
+## Context使用准则
+
+* 不要将 Context 塞到结构体里。直接将 Context 类型作为函数的第一参数，而且一般都命名为 ctx;
+
+* 不要向函数传入一个 nil 的 context，如果你实在不知道传什么，使用`context.TODO()`;
+
+* 不要把本应该作为函数参数的类型塞到 context 中，context 存储的应该是一些共同的数据。例如：登陆的 session、cookie 等。
+
+* 同一个 context 可能会被传递到多个 goroutine，别担心，context 是并发安全的。
+
+## 参考
+
+1. https://learnku.com/articles/29877
+2. https://zhuanlan.zhihu.com/p/34417106

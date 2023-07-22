@@ -1,0 +1,157 @@
+# ssh
+
+## 简介
+
+## 常用配置
+
+### 1. 关闭ssh 首次连接确认提示(yes/no)
+
+两种方式：
+
+a. 修改ssh客户端配置文件`/etc/ssh/ssh_config`：
+
+```ini
+Host *
+StrictHostKeyChecking no
+```
+
+b. ssh命令增加参数选项：
+
+```shell
+ssh -o "StrictHostKeyChecking no" user@host
+```
+
+### 2. 切换用户执行命令
+
+```shell
+ssh $hostname "su - $username -c 'cmd'"
+```
+
+### 3. ssh通过代理登录
+
+```shell
+# 跳板机
+Host jumper
+    HostName xxxxxx
+    Port 20020
+
+# 目标机a, 通过跳板机ssh跳转
+Host target-a
+    HostName xxxxxxx
+    #User root
+    #IdentityFile ~/.ssh/hbase_test_id_rsa
+    ProxyCommand ssh jumper -W %h:%p
+
+# 目标机b, 通过跳板机80端口跳转
+Host target-b
+    User root
+    ProxyCommand socat - PROXY:172.20.103.50:%h:%p,proxyport=80,proxyauth=PROXY_USER:PROXY_PASSWD
+```
+
+### 4. ssh 做socks5代理
+
+ 本地机器在内网，可ssh登录代理机，代理机可访问外网，可在本地机器上开启ssh socks5 代理服务：
+
+```shell
+$ ssh -fC2qTnN -D 6080 user@ssh-host
+# sshpass
+$ sshpass -e ssh -fC2qTnN -D 6080 user@ssh-host
+```
+
+chrome不支持socket5代理，firefox中使用switchyomega插件(chrome不支持socks5，无法使用)，配置socks5代理模式
+
+### 5. sshpass + pssh
+
+```shell
+sshpass -f /path/passfile pssh -I -A -h /path/hostfile "sudo -S apt-get dist-upgrade" < /path/passfile
+```
+
+### 6. ssh保持连接不断掉
+
+3种方式：
+
+a. 服务器主动保持连接
+
+```shell
+# sshd服务端配置`/etc/ssh/sshd_config
+# 增加参数
+ClientAliveInterval 120   # 每隔120s会向客户端发送一个空数据包
+ClientAliveCountMax 720   # 最多发送720次
+```
+
+b. client主动保持连接
+
+```shell
+# 客户端配置文件 ~/.ssh/config
+# 增加选项： ServerAliveInterval 120
+Host server
+    ServerAliveInterval 120
+```
+
+c. client 使用连接选项
+
+```shell
+$ ssh -o ServerAliveInterval=30 host
+```
+
+7. ssh反向代理
+
+存在3台机器：
+
+* A --[ssh]--> B [IP:  BB.BB.BB.BB ]
+
+* C --[ssh]--> B
+
+* C -- xxxx ->  A
+
+如果需要C访问A上的某个端口8500, 可进行如下操作：
+
+```shell
+# HostA上建立反向代理tunnel，将HostB上的127.0.0.0:9090端口 和 HostA上的127.0.0.1:8500端口做绑定;
+[HOST-A]$ ssh -NfR 9090:127.0.0.1:8500 root@BB.BB.BB.BB
+
+# HostB上建立正向代理tunnel，将BB.BB.BB.BB:9090 -> 127.0.0.1:9090
+[HOST-B]$ ssh -NfL BB.BB.BB.BB:9090:127.0.0.1:9090 root@BB.BB.BB.BB
+
+# 之后，C 直接访问 BB.BB.BB.BB:9090, 请求将被转发两次，到A的8500端口上；
+# 其中，8500是HOST-A上127.0.1上可被访问的应用端口；
+# 9090是HOST-B上可被 HOST-C 通过BB.BB.BB.BB:9090 访问的端口；
+
+## 也可以在将第二条指令放到HOST-A上通过ssh执行，这样就不用特意登录到HOST-B上执行第二条指令了
+[HOST-A]$ ssh root@BB.BB.BB.BB 'ssh -NL BB.BB.BB.BB:9090:127.0.0.1:9090 root@BB.BB.BB.BB'
+```
+
+script:
+
+```bash
+#!/bin/bash
+
+local_service_port=${1:-8500}
+local_service_ip="127.0.0.1"
+local_service_endpoint="${local_service_ip}:${local_service_port}"
+tunnel_port=${TUNNEL_PORT:-9090}
+tunnel_local_ip="127.0.0.1"
+tunnel_export_ip=${TUNNEL_IP:-192.26.29.246}
+tunnel_local_endpoint=${tunnel_local_ip}:${tunnel_port}
+tunnel_export_endpoint=${tunnel_export_ip}:${tunnel_port}
+tunnel_user=${TUNNEL_USER:-root}
+tunnel_ssh_uri=${tunnel_user}@${tunnel_export_ip}
+
+start_tunnel() {
+        ssh -NfR ${tunnel_port}:${local_service_endpoint} ${tunnel_ssh_uri}
+        ssh ${tunnel_ssh_uri} "ssh -NL ${tunnel_export_endpoint}:${tunnel_local_endpoint} ${tunnel_ssh_uri}"
+}
+
+stop_tunnel() {
+        echo "stop"
+        ps -ef| grep "ssh -NfR" | grep -v grep | awk '{print $2}' | xargs kill
+        ssh ${tunell_ssh_uri} "ps -ef| grep 'ssh -NL' | grep -v grep | awk '{print \$2}' | xargs kill 2>/dev/null"
+}
+
+stop_tunnel
+start_tunnel $@
+```
+
+## 参考
+
+1. 

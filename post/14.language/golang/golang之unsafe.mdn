@@ -1,0 +1,76 @@
+# Golang之unsafe
+
+## 简介
+
+`unsafe`包
+
+unsafe 包中的几个函数都是在编译期间执行的。
+
+```go
+type ArbitraryType int
+type Pointer *ArbitraryType
+
+func Sizeof(x ArbitraryType) uintptr
+func Offsetof(x ArbitraryType) uintptr
+func Alignof(x ArbitraryType) uintptr
+```
+
+## Pointer
+
+`unsafe.Pointer`的有如下功能：
+
+1. `unsafe.Pointer `和任何类型的指针可以相互转换；
+2. `uintptr` 类型和` unsafe.Pointer `可以相互转换。
+
+规则1可以用于`*T1`和`*T2`之间的转换，规则2可以进行偏移计算；
+
+`Pointer` 不能直接进行数学运算，但可以把它转换成`uintptr`，对 `uintptr `类型进行数学运算，再转换成 pointer 类型。
+
+```go
+type uintptr uintptr
+```
+
+```go
+func Float64bits(f float64) uint64 {
+    return *(*uint64)(unsafe.Pointer(&f))
+}
+```
+
+```go
+//获取切片内部结构
+var s = []int{1,2,3,4,5,6,7,8,9,10}
+var address = (**[10]int)(unsafe.Pointer(&s))  //
+var len = (*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&s)) + uintptr(8)))
+var cap = (*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&s)) + uintptr(16)))
+fmt.Println(address, *len, *cap)
+```
+
+![](https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/01/20-16-31-06-2021-01-20-16-30-59-image.png)
+
+### 字符串与字节slice的高效转换
+
+```go
+//字符串转slice
+func str2bytes(s string) []byte {
+    var strhead = *(*[2]int)(unsafe.Pointer(&s))
+    var slicehead [3]int
+    slicehead[0] = strhead[0]
+    slicehead[1] = strhead[1]
+    slicehead[2] = strhead[1]
+    return *(*[]byte)(unsafe.Pointer(&slicehead))
+}
+//
+func bytes2str(bs []byte) string {
+    return *(*string)(unsafe.Pointer(&bs))
+}
+```
+
+## 参考
+
+1. [《快学 Go 语言》第 14 课 —— 魔术变性指针](https://juejin.cn/post/6844903743180242951)
+
+2. [unsafe - The Go Programming Language](https://golang.org/pkg/unsafe/)
+
+3. [深度解密Go语言之unsafe - Stefno - 博客园](https://www.cnblogs.com/qcrao-2018/p/10964692.html)
+
+4. 

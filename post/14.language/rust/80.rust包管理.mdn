@@ -1,0 +1,248 @@
+# Rust模块及包管理
+
+## 简介
+
+Rust程序代码组织分为三个层级：
+
+* **项目(package)**：一个项目工程，一个项目通常由一个`cargo.toml`定义，可包含多个crate；
+
+* **包(crate)**：是一个独立的可编译单元成二进制的单元，可分为bin和lib两种类型；
+
+* **模块(mod)**：是包内代码组织单元，用于实现命名空间；
+
+## 项目(Package)
+
+* 项目是由cargo.toml定义的一个rust源码编译目录结构；
+
+* 一个项目由一个或多个crate组成；
+
+* 项目可由cargo命令进行管理；
+
+```toml
+[package]
+name = "crate-name"
+version = "0.1.0"
+authors = ["xxx"]
+edition = "2018"
+[dependencies]
+#xxx
+[features]
+#default = ["test"]
+```
+
+## 包(Crate)
+
+包(`crate`)是rust可独立编译的单元，包要点如下：
+
+* 包`crate` 由一个或一批文件组成，可独立编译为二进制文件；
+
+* 包分为两种类型：
+  
+  - 库(lib):
+  
+  - 可执行二进制文件(bin):
+
+* 同一个crate的文件一般放在同一个目录下；
+
+* 每个crate有一个入口文件：
+  
+  - 二进制包入口为`main.rs`；
+  
+  - 库的入口文件是`lib.rs`;
+
+* 引入外部crate：`extern crate xxx;`;
+
+* 引用未发布的本地crate, 在`Cargo.toml` `dependencies`中声明；
+
+```toml
+#...
+[dependencies]
+#xxx
+[features]
+#default = ["test"]
+```
+
+## 模块(Module)
+
+模块(`mod`)是包内部代码组织单元，模块要点如下：
+
+* 模块由关键字`mod`定义：`mod XXX { ... } `;
+
+* 模块的命名风格是 `lower_snake_case`，跟其它的 Rust 的标识符一样；
+
+* 模块可以嵌套；
+
+* 模块中可以写任何合法的 Rust 代码；
+
+* 每个包默认实现了一个隐式的 `根模块（root module）`；
+
+* 一个文件就是一个mod, mod名就是文件名，main.rs, lib.rs, mod.rs文件除外；
+
+* `mod.rs`的模块名是其所在目录的名字；
+
+* `main.rs`, `lib.rs` 的模块名是其目录结构，如：`exp/src/main.rs`或 `lip/src/lib.rs` 的mod名分别是exp和lip；
+
+* `mod foo;` 告诉编译器找寻./foo.rs或者./foo/mod.rs，并且将找寻到的文件内容作为module foo的内容;
+
+* 文件和文件夹内的mod及其内部定义的函数默认都是private的，除非pub声明公开；
+
+* private元素只有本模块内的元素以及它的子模块可以访问；
+
+* public元素上一层的模块就有权访问它；
+
+* 如果存在与文件`foo.rs`同名的目录`foo/`， 则在该目录`foo/*.rs`下定义的模块都是该文件的子模块；
+
+* 子模块必须在父模块在**声明(**mod child)，不然它们就不会存在。
+
+```rust
+// mod.rs
+mod foo;    //声明mod, 编译器可能查找./foo.rs或./foo/mod.rs,将其内容作为mod foo的内容
+
+//
+use foo;    //是将一个模块加进当前的scope。
+```
+
+Rust 的多层模块遵循如下两条规则：
+
+1. 优先查找`xxx.rs` 文件
+   1. `main.rs`、`lib.rs`、`mod.rs`中的`mod xxx;` 默认优先查找同级目录下的 `xxx.rs` 文件；
+   2. 其他文件`yyy.rs`中的`mod xxx;`默认优先查找同级目录的`yyy`目录下的 `xxx.rs` 文件；
+2. 如果 `xxx.rs` 不存在，则查找 `xxx/mod.rs` 文件，即 `xxx` 目录下的 `mod.rs` 文件。
+
+上述两种情况，加载成模块后，效果是相同的。Rust 就凭这两条规则，通过迭代使用，结合 `pub` 关键字，实现了对深层目录下模块的加载；
+
+```
+src
+├── a
+│   ├── b
+│   │   ├── c
+│   │   │   ├── d.rs
+│   │   │   └── mod.rs
+│   │   └── mod.rs
+│   └── mod.rs
+└── main.rs
+```
+
+```rust
+// a/b/c/d.rs
+pub fn print_ddd() {
+    println!("i am ddd.");
+}
+
+// a/b/c/mod.rs
+pub mod d;    //声明mode
+
+// a/b/mod.rs
+pub mod c;
+
+// a/mod.rs
+pub mod b;
+
+// main.rs
+mod a;
+use a::b::c::d;
+fn main() {
+    d::print_ddd();
+}
+```
+
+### 模块路径
+
+想要调用一个函数，就需要知道它的路径，在 Rust 中，这种路径有两种形式：
+
+- **绝对路径**，从包根开始，路径名以包名或者 `crate` 作为开头
+- **相对路径**，从当前模块开始，以 `self`，`super` 或当前模块的标识符作为开头
+
+```rust
+// src/lib.rs
+mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+    }
+}
+
+pub fn eat_at_restaurant() {
+    // 绝对路径
+    crate::front_of_house::hosting::add_to_waitlist();
+
+    // 相对路径
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+### 模块系统
+
+1. 单文件rust 中称为`mod`，模块的名称就是文件的名称。
+   
+   模块内部的函数，只能在模块内部使用，如果要在模块外调用，需要用`pub`关键词，显式声明函数可在外部使用。
+   
+   使用时，使用mod声明引入，mod name::
+   
+   ```rust
+   //file: rustmod/src/functions.rs
+   pub fn hello(name: String) -> String {
+     format!("Hello, {}!", name)
+   }
+   // 嵌套子模块
+   pub mod util {
+     pub fn hello2(name: String) -> String {
+         format!("Hello, {}!", name)
+     }
+   }
+   //file: rust/src/main.rs
+   mod functions;//声明模块
+   fn main() {
+     let s = functions::hello("World".to_string());
+     println!("{}", s)
+     let s2 = functions::util::hello2("World".to_string());
+     println!("{}", s2)
+   }
+   ```
+
+2. 使用mod.rs, mod 会去对应目录下mod.rs中导入该目录下声明的mod
+   
+   ```rust
+   //file: rustmod/src/util/functions.rs
+   pub fn hello(name: String) -> String {
+     format!("Hello, {}!", name)
+   }
+   
+   //file: rustmod/src/util/mod.rs
+   pub mod functions;
+   
+   //file: rustmod/src/main.rs
+   mod util;
+   fn main() {
+     let s = util::functions::util::hello("World".to_string());
+     println!("{}", s)
+   }
+   ```
+
+3. 在同一层级不能同时存在文件夹和文件类型的模块，否则会名字冲突。
+
+## 典型rust项目结构
+
+```shell
+.
+├── Cargo.toml                ## cargo配置文件
+├── Cargo.lock
+├── src
+│   ├── main.rs               ## 默认二进制包入口
+│   ├── lib.rs                ## 默认lib包入口
+│   └── bin
+│       └── main1.rs          ## 二进制可执行文件main1
+│       └── main2.rs          ## 二进制可执行文件main2
+├── tests                            ## 集成测试
+│   └── some_integration_tests.rs    
+├── benches                          ## 性能测试
+│   └── simple_bench.rs              
+└── examples                         ## example
+    └── simple_example.rs            
+```
+
+## 工作区(workspace)
+
+## 参考
+
+1. [Rust语言圣经(Rust Course)-包和模块](https://course.rs/basic/crate-module/intro.html#%E5%8C%85%E5%92%8C%E6%A8%A1%E5%9D%97)
+2. [Cargo Reference笔记: 工作区 | Rust学习笔记](https://skyao.io/learning-rust/docs/build/cargo/cargo-book/reference-workspaces.html)

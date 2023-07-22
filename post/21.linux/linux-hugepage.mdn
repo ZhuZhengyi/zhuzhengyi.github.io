@@ -1,0 +1,100 @@
+# Linux HugePage
+
+## 简介
+
+linux kernel虚拟内存通过多级页表机制来完成虚拟内存到物理内存的映射管理。默认的页大小是4KB，如果需要管理内存很大，将造成页表项占用空间过多，TLB缓存命中率下降，查找耗时过长的问题。
+
+HugePage是在
+
+在Linux系统中，有两种方式可以用来使用hugepages。
+
+* 2.6内核就已经引入的Hugetlbfs虚拟文件系统，hugetlbfs主要用于数据库，需要专门的进行配置以及应用程序的代码支持
+
+* 从2.6.38版本开始（RHEL 6）引入的THP（Transparent Hugepages）.THP一切都交给操作系统来完成，也不需要额外的配置，对于应用程序是透明的，可用于更广泛的应用程序。
+
+## 设置
+
+大页内存设置允许可在启动参数中预先指定，也可以在启动后，通过手动设置。
+
+### 永久设置
+
+开启linux大页内存支持：面配置需要连续的内存空间，因此在开机时就分配是最可靠的方式。
+
+```shell
+# 在/etc/default/grub的GRUB_CMDLINE_LINUX中增加大页相关参数
+GRUB_CMDLINE_LINUX="default_hugepagesz=1G hugepagesz=1G hugepages=128 ..."
+#更新grub.cfg：
+$ grub2-mkconfig -o /boot/grub2/grub.cfg
+$ reboot  # 重启
+#确认内核大页内存是否开启
+$ cat /proc/cmdline 
+BOOT_IMAGE=... hugepagesz=1048576K hugepages=128 default_hugepagesz=1G hugepagesz=1G hugepages=128 ... 
+```
+
+配置大页面后，系统在开机启动时会首选尝试在内存中找到并预留连续的大小为 `hugepages * hugepagesz` 的内存空间。如果内存空间不满足，则启动会报错 `Kernel Panic, Out of Memory` 等错误。
+
+### 临时设置
+
+```shell
+# 手动分配1个1GB大内存页
+$ echo 1 > /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages
+# 强制分配给指定的NUMA节点
+$ echo 1024 >/sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+
+
+# 挂载
+$ mkdir /mnt/huge_1GB
+$ mount -t hugetlbfs nodev /mnt/huge_1GB -o "pagesize=1GB"
+# /etc/fstab 自动挂载
+nodev /mnt/huge_1GB hugetlbfs pagesize=1GB 0 0
+```
+
+```shell
+# 查看巨页信息
+$ sysctl -a | grep -i huge
+$ cat /proc/meminfo | grep -i huge
+# 预留192个大页
+$ sysctl vm.nr_hugepages=192
+```
+
+## 使用
+
+ 如果一个程序要使用hugetlbfs，那么用户只能使用mmap 标准的SYSV函数shmget/ shmat来调用/访问它。如果使用mmap调用，则在mmap函数的第四个参数带入的标志位为MAP_HUGETLB
+
+如果使用shmget接口来调用，则需要则shmget的第三个参数的位置带入SHM_HUGETLB参数
+
+```c
+#include <sys/mman.h>
+#include <stdio.h>
+#include <memory.h>
+
+int main(int argc, char *argv[]) {
+  char *m;
+  size_t s = (8UL * 1024 * 1024);
+
+  m = mmap(NULL, s, PROT_READ | PROT_WRITE,
+                    MAP_PRIVATE | MAP_ANONYMOUS | 0x40000 /*MAP_HUGETLB*/, -1, 0);
+  if (m == MAP_FAILED) {
+    perror("map mem");
+    m = NULL;
+    return 1;
+  }
+
+  memset(m, 0, s);
+  printf("map_hugetlb ok, press ENTER to quit!\n");
+  getchar();
+
+  munmap(m, s);
+  return 0;
+}
+```
+
+## 参考
+
+1. https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
+
+2. https://docs.azure.cn/zh-cn/articles/azure-operations-guide/virtual-machines/linux/aog-virtual-machines-Linux-hugepage-configure
+
+3. [Linux四级页表及其原理 - 简书](https://www.jianshu.com/p/242ba363e4ed)
+
+4. 
