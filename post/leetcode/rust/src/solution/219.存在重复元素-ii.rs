@@ -54,12 +54,13 @@
 impl Solution {
     /// ## 解题思路
     /// - hashset + 滑动窗口
-    /// 1. 设置set滑窗;
+    /// 1. 设置set作为滑窗, 滑窗(set)初始大小为空;
     /// 2. 从左至右遍历nums[i];
-    /// 3. 如果i > k, 则缩小set 窗口最左边的元素;
-    /// 4. 如果nums[i]在滑窗中, 则返回true;
+    /// 3. 如果i > k, 则删除set中最左边的元素nums[i-k-1];
+    /// 4. 检查滑窗中是否存在和当前元素nums[i]相等的元素,
+    ///    如果存在,则返回说明nums中存在距离k以内的重复元素, 返回true;
     /// 5. 否则将nums[i]加入到滑窗中;
-    /// 6. 遍历玩后, 没有触发4, 则返回false;
+    /// 6. 如果遍历nums中所有元素后, 一直不存在距离小于k的重复元素, 则返回false;
     pub fn contains_nearby_duplicate(nums: Vec<i32>, k: i32) -> bool {
         if nums.len() == 0 || k == 0 {
             return false;
