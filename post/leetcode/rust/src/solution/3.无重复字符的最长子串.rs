@@ -42,24 +42,28 @@
 struct Solution;
 
 // @lc code=start
-use std::collections::HashMap;
-
 impl Solution {
     /// ## 解题思路
-    /// * 滑动窗口法
-    ///   - 使用一个滑动窗口来记录每个无重复字符子串；
-    ///   - 窗口的右边界`r`为遍历时当前字符数组下标；
-    ///   - 窗口的左边界`l`在出现重复字符`c`时，向右滑动一格；
-    ///   - 最长子串长度为所有滑动窗口长度`m`的最大值；
-    ///   - 使用map来记录每个已经遍历过的字符c的最后一次出现的下标；
+    /// - hashmap+滑动窗口
+    /// 1. 设置 hashmap, 用于记录已经遍历的各个字符最后一次出现的下标;
+    /// 2. 设置变量start用于记录滑窗左边起始边界;
+    /// 3. 从左至右,依次遍历字符串各个字符;
+    /// 4. 遍历时, 先根据字符从hashmap中检查是否重复出现,
+    ///    如果出现, 且在滑窗起始边界之后, 则更新滑窗起始边界到重复字符最近下标的下一个位置;
+    ///    否则, 起始边界start不变;
+    /// 5. 同时计算更新最大滑窗长度;
     pub fn length_of_longest_substring(s: String) -> i32 {
-        let mut map = HashMap::new(); //
-        let mut last_i = 0;
-        let mut max_len = 0;
-        for (i, c) in s.chars().enumerate() {
-            last_i = last_i.max(*map.get(&c).unwrap_or(&0));
-            max_len = max_len.max(i + 1 - last_i);
-            map.insert(c, i + 1);
+        use std::collections::HashMap;
+        let mut char_last_index = HashMap::new(); //统计已经出现过的字符最后下标
+        let mut start = 0; //滑窗起始边界
+        let mut max_len = 0; //滑窗最大长度
+        for (i, c) in s.bytes().enumerate() {
+            // 如果当前字符重复出现过,且最近下标在滑窗起始边界之后, 则更新滑窗起始边界到最近下标+1的位置;
+            // 否则字符第一次出现, 保持滑窗起始边界不变
+            start = start.max(*char_last_index.get(&c).unwrap_or(&0));
+            max_len = max_len.max(i + 1 - start); //更新最大长度
+            char_last_index.insert(c, i + 1); //value使用i+1是因为在计算窗口长度时,
+                                              //需要以重复字符的右边一个字符作为起始来计算
         }
         max_len as i32
     }
