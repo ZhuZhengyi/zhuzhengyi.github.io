@@ -50,8 +50,9 @@
 
 // @lc code=start
 impl Solution {
+    /// ## 解题思路
+    /// - 深度优先搜索
     pub fn total_n_queens(n: i32) -> i32 {
-        /// - 深度优先搜索回溯
         fn dfs(n: usize, board: &mut Vec<usize>, states: (i32, i32, i32), res: &mut i32) {
             let (col_mask, diagonal_45, diagonal_135) = states;
             // 所有行(n行)都已放置了'Q'

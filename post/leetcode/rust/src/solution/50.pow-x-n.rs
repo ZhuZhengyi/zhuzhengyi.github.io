@@ -57,18 +57,14 @@ pub struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - 二分+递归
     pub fn my_pow(x: f64, n: i32) -> f64 {
         match (x, n) {
             (1_f64, _) => 1_f64,
-            (-1_f64, n) => {
-                if n % 2 == 0 {
-                    1_f64
-                } else {
-                    -1_f64
-                }
-            }
             (_, 0) => 1_f64,
             (_, 1) => x,
+            (-1_f64, n) if n % 2 == 0 => 1_f64,
+            (-1_f64, n) if n % 2 != 0 => -1_f64,
             (_, -2147483648) => 0_f64,
             (_, n) if n < 0 => 1_f64 / Solution::my_pow(x, -n),
             (_, n) if n % 2 == 0 => Solution::my_pow(x, n / 2) * Solution::my_pow(x, n / 2),

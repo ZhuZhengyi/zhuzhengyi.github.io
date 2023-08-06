@@ -46,7 +46,7 @@
  * T     S     G
  *
  */
-use super::*;
+struct Solution;
 
 // @lc code=start
 impl Solution {
@@ -71,6 +71,9 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(Solution::convert("LEETCODEISHIRING".into(), 4), "LDREOEIIECIHNTSG" );
+        assert_eq!(
+            Solution::convert("LEETCODEISHIRING".into(), 4),
+            "LDREOEIIECIHNTSG"
+        );
     }
 }

@@ -84,10 +84,10 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// * 递归法
-    /// * 先求出n-1时的字符串；
-    /// * 再统计n-1个字符串中每个字符出现的次数；
-    /// * 统计时，可以使用fold iter；
+    /// - 递归法
+    /// 1. 先求出n-1时的字符串；
+    /// 2. 再统计n-1个字符串中每个字符出现的次数；
+    /// 3. 统计时，可以使用fold iter；
     pub fn count_and_say(n: i32) -> String {
         if n == 1 {
             return "1".to_string();

@@ -48,6 +48,7 @@
 // @lc code=start
 impl Solution {
     /// ## 解题思路
+    /// - 回溯法
     pub fn permute_unique(nums: Vec<i32>) -> Vec<Vec<i32>> {
         let mut nums = nums.clone();
         let mut res: Vec<Vec<i32>> = vec![];

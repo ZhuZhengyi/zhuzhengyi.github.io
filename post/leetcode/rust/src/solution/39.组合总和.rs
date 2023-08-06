@@ -65,7 +65,6 @@ impl Solution {
     /// - 迭代法
     /// 1. 将数组排序；
     /// 2. 依次从candidates中取出一个数，如果该数小于当前target，则加入临时数组中；
-    /// 3.
     pub fn combination_sum(candidates: Vec<i32>, target: i32) -> Vec<Vec<i32>> {
         ///
         fn combine_sum(candidates: &[i32], left: i32, sub: &[i32], res: &mut Vec<Vec<i32>>) {

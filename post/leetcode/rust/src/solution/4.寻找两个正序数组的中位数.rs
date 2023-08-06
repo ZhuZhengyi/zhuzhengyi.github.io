@@ -76,10 +76,10 @@ struct Solution;
 // @lc code=start
 impl Solution {
     /// ## 解题思路
-    /// * 划分法 + 二分查找法
-    /// 1. 对于nums1, nums2, 其排序后的中位数按合并后数组(设为nums)总长度(m+n)可以分为两种：
-    ///     a. 总长度为偶数, 中位数为中间两个数和/2;
-    ///     b. 总长度为奇数，中位数为中间数(nums[(m+n)/2])；
+    /// - 二分查找法
+    /// 1. 对于nums1, nums2, 排序后的中位数按合并后数组(设为nums)总长度(l1+l2)可以分为两种：
+    ///     a. 总长度为偶数, 中位数为(nums[(l1+l2)/2]+nums2[]/2);
+    ///     b. 总长度为奇数，中位数为中间数(nums[(l1+l2)/2])；
     /// 2. 由于nums1，nums2都为有序数组，合并后nums1,nums2各元素的先后次序不变；
     /// 3. 合并后数组中位数处将nums1,nums2分别切为前后两个部分，设切开元素的索引分别为i，j：
     ///     nums1[0], nums1[1], ..., nums1[i-1], | nums1[i], ..., nums1[m]
@@ -106,7 +106,7 @@ impl Solution {
     ///       i + j = (nums1.len() + nums2.len() + 1) / 2
     ///    =>  
     ///       j =  (nums1.len() + nums2.len() + 1) / 2 - i
-    /// 5. 因此，只需要找到满足条件的最大i, 使nums1[i-1] <= nums2[j]即可；
+    /// 5. 因此，只需要找到满足条件的最大i, 使nums1[i-1] <= nums2[j] (j = (n1+n2+1)/2 -i) 即可；
     /// 6. 由于nums1，nums2都是有序的，可以使用二分查找来确定i;
     /// 7. 处理边界情况
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
@@ -117,42 +117,40 @@ impl Solution {
             (nums2, nums1)
         };
 
-        // 在l1中，使用二分法查找nums1[i], 使得nums1[i] > nums2[j] (j=(l1+l2+1)/2-i)
+        // 二分法查找nums1[i], 使得nums1[i] > nums2[j] && nums1[i-1]<=nums2[j]) (j=(l1+l2+1)/2-i)
         let (l1, l2) = (nums1.len(), nums2.len());
         let (mut l, mut r) = (0, l1);
         while l <= r {
             let i = (l + r) / 2;
             let j = (l1 + l2 + 1) / 2 - i;
 
-            let num1_i_1 = match i {
-                0 => std::i32::MIN,
-                _ => nums1[i - 1],
-            };
-            let num2_j = match j {
-                12 => std::i32::MAX,
-                _ => nums2[j],
-            };
-
+            let num1_i_1 = *nums1.get(i - 1).unwrap_or(&i32::MIN);
+            let num2_j = *nums2.get(j).unwrap_or(&i32::MAX);
             if num1_i_1 <= num2_j {
                 l = i + 1;
             } else {
                 r = i - 1;
             }
         }
+        // 找到i
 
-        // 找到i, 根据总长度奇偶性，计算中位数
+        // 根据i, 中间中位数
         let i = (l + r) / 2;
         let j = (l1 + l2 + 1) / 2 - i;
 
-        let num1_i_1 = if i == 0 { std::i32::MIN } else { nums1[i - 1] };
-        let num2_j_1 = if j == 0 { std::i32::MIN } else { nums2[j - 1] };
-        let num1_i = if i == l1 { std::i32::MAX } else { nums1[i] };
-        let num2_j = if j == l2 { std::i32::MAX } else { nums2[j] };
+        let num1_i_1 = *nums1.get(i - 1).unwrap_or(&i32::MIN);
+        let num2_j_1 = *nums2.get(j - 1).unwrap_or(&i32::MIN);
+        let num1_i = *nums1.get(i).unwrap_or(&i32::MAX);
+        let num2_j = *nums2.get(j).unwrap_or(&i32::MAX);
 
-        if (l1 + l2) % 2 == 0 {
-            (std::cmp::max(num1_i_1, num2_j_1) + std::cmp::min(num1_i, num2_j)) as f64 / 2.0_f64
-        } else {
-            (std::cmp::max(num1_i_1, num2_j_1)) as f64
+        //根据总长度奇偶性，计算中位数
+        match (l1 + l2) % 2 {
+            0 => {
+                // 总长度为偶数, 中位数为
+                (std::cmp::max(num1_i_1, num2_j_1) + std::cmp::min(num1_i, num2_j)) as f64 / 2.0_f64
+            }
+            // 总长度为奇数, 中位数为nums1[i-1], nums2[j-1]中大的那个
+            _ => (std::cmp::max(num1_i_1, num2_j_1)) as f64,
         }
     }
 }
