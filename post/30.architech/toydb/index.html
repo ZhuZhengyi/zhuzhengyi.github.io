@@ -18,20 +18,20 @@
 <meta name=description content="ToyDB 简介 toydb是Erik Grinaker为学习rust语言而开发的分布式sql数据库，支持分布式事务模型; 架构 toydb主要由3部分组成：">
 <meta name=keywords content="tech,it,blog">
 <meta name=generator content="Hugo 0.88.1">
-<link rel=canonical href=https://justice.bj.cn/post/14.language/rust/rust%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE%E4%B9%8Btoydb/>
+<link rel=canonical href=https://justice.bj.cn/post/30.architech/toydb/>
 <link rel=icon href=/favicon.ico>
 <link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
 <meta property="og:title" content="ToyDB">
 <meta property="og:description" content="ToyDB 简介 toydb是Erik Grinaker为学习rust语言而开发的分布式sql数据库，支持分布式事务模型; 架构 toydb主要由3部分组成：">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://justice.bj.cn/post/14.language/rust/rust%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE%E4%B9%8Btoydb/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-06-06T20:41:30+08:00">
-<meta property="article:modified_time" content="2022-06-06T20:41:30+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="og:url" content="https://justice.bj.cn/post/30.architech/toydb/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2023-11-24T22:01:00+08:00">
+<meta property="article:modified_time" content="2023-11-24T22:01:00+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="ToyDB">
-<meta itemprop=description content="ToyDB 简介 toydb是Erik Grinaker为学习rust语言而开发的分布式sql数据库，支持分布式事务模型; 架构 toydb主要由3部分组成："><meta itemprop=datePublished content="2022-06-06T20:41:30+08:00">
-<meta itemprop=dateModified content="2022-06-06T20:41:30+08:00">
-<meta itemprop=wordCount content="3146">
-<meta itemprop=keywords content="language,rust,"><meta name=twitter:card content="summary">
+<meta itemprop=description content="ToyDB 简介 toydb是Erik Grinaker为学习rust语言而开发的分布式sql数据库，支持分布式事务模型; 架构 toydb主要由3部分组成："><meta itemprop=datePublished content="2023-11-24T22:01:00+08:00">
+<meta itemprop=dateModified content="2023-11-24T22:01:00+08:00">
+<meta itemprop=wordCount content="3165">
+<meta itemprop=keywords content="architech,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="ToyDB">
 <meta name=twitter:description content="ToyDB 简介 toydb是Erik Grinaker为学习rust语言而开发的分布式sql数据库，支持分布式事务模型; 架构 toydb主要由3部分组成："><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
 <script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
@@ -166,12 +166,11 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>ToyDB</h1>
 <div class=post-meta>
-<time datetime=2022-06-06 class=post-time>
-2022-06-06 20:41:30
+<time datetime=2023-11-24 class=post-time>
+2023-11-24 22:01:00
 </time>
 <div class=post-category>
-<a href=https://justice.bj.cn/categories/language/> language </a>
-<a href=https://justice.bj.cn/categories/rust/> rust </a>
+<a href=https://justice.bj.cn/categories/architech/> architech </a>
 </div>
 <span id=busuanzi_container_page_pv>
 | 阅读 <span id=busuanzi_value_page_pv></span>
@@ -205,14 +204,11 @@ Justice's Blog
 </ul>
 </li>
 <li><a href=#mvcc>MVCC</a></li>
-<li><a href=#raft-engine>Raft Engine</a></li>
-<li><a href=#evenloop>EvenLoop</a>
+<li><a href=#raft-engine>Raft Engine</a>
 <ul>
+<li><a href=#evenloop>EvenLoop</a></li>
 <li><a href=#指令状态机>指令状态机</a></li>
-</ul>
-</li>
-<li><a href=#源码>源码</a>
-<ul>
+<li><a href=#源码>源码</a></li>
 <li><a href=#raft角色>Raft角色</a></li>
 </ul>
 </li>
@@ -307,13 +303,13 @@ Justice's Blog
 <p>Raft内部有2个状态机：</p>
 <ul>
 <li>
-<p>复制状态机(): 主要用于日志复制，保证各个副本日志的落盘及一致；</p>
+<p><strong>复制状态机</strong>(): raft各节点间的日志复制，保证各个副本日志的顺序及一致；</p>
 </li>
 <li>
-<p>指令状态机(<code>State</code>): 主要作用是根据日志执行指令；</p>
+<p><strong>指令状态机</strong>(<code>State</code>): 依次执行日志中的指令，驱动内部业务系统状态的改变；</p>
 </li>
 </ul>
-<p>由于复制状态机的Raft协议可以保证日志序列的唯一性，所以由日志驱动的不同副本的指令状态机将拥有相同的输入指令序列，在初始状态相同的情况下，指令状态机将会得到相同的输出，以此就保证了各个副本外部最终状态的一致性；</p>
+<p>由于复制状态机的Raft协议可以保证日志序列的顺序且一致性，所以由日志驱动的不同副本的指令状态机将拥有相同的输入指令序列，在初始状态相同的情况下，指令状态机将会得到相同的输出，以此就保证了各个副本外部最终状态的一致性；</p>
 <ul>
 <li>
 <p>复制状态机是raft协议的核心；</p>
@@ -322,7 +318,7 @@ Justice's Blog
 <p>指令状态机由raft日志驱动来改变外界状态，是raft协议和外界交互的接口；</p>
 </li>
 </ul>
-<h2 id=evenloop>EvenLoop</h2>
+<h3 id=evenloop>EvenLoop</h3>
 <p><code>Raft</code> 的主驱动是<code>EvenLoop</code>。节点启动时，会开启一个<code>evenloop</code>后台异步任务，持续监听<code>tick</code>, <code>tcp_in_tx</code>, <code>client_rx</code>, <code>node_rx</code>这4个事件源上的消息<code>Msg</code>，以此来驱动整个状态机的运行：</p>
 <ul>
 <li>
@@ -354,7 +350,7 @@ Justice's Blog
 </ul>
 </li>
 </ul>
-<p><code>Evenloop</code>接收到消息后，通过<code>tick()</code>, <code>step()</code>来驱动复制状态机执行日志复制操作。</p>
+<p><code>Evenloop</code>接收到消息后，通过<code>tick()</code>, <code>step()</code>来驱动<strong>复制状态机</strong>执行日志复制操作。</p>
 <p>各节点收到<code>ClientRequest</code>后处理流程<code>Step()</code>：</p>
 <ul>
 <li>
@@ -421,7 +417,7 @@ Justice's Blog
 </li>
 </ul>
 <h3 id=指令状态机>指令状态机</h3>
-<p>指令状态机由<code>Driver::drive()</code>驱动。每个Raft Node新建时，会开启一个driver后台任务，该任务从<code>state_rx</code>接收指令，交由<code>execute</code>处理，各指令处理流程如下：</p>
+<p><strong>指令状态机</strong>由<code>Driver::drive()</code>驱动。每个Raft Node新建时，会开启一个driver后台任务，该任务从<code>state_rx</code>接收指令，交由<code>execute</code>处理，各指令处理流程如下：</p>
 <ul>
 <li>
 <p><code>Instruction::Abort</code>:</p>
@@ -450,7 +446,7 @@ Justice's Blog
 <p><code>Instruction::Vote</code>:</p>
 </li>
 </ul>
-<h2 id=源码>源码</h2>
+<h3 id=源码>源码</h3>
 <ul>
 <li><strong>Log</strong></li>
 </ul>
@@ -618,7 +614,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2022-06-06 20:41:30
+2023-11-24 22:01:00
 </span>
 </p>
 <p class=copyright-item>
@@ -646,18 +642,17 @@ Justice's Blog
 </div>
 <footer class=post-footer>
 <div class=post-tags>
-<a href=https://justice.bj.cn/tags/language/>language</a>
-<a href=https://justice.bj.cn/tags/rust/>rust</a>
+<a href=https://justice.bj.cn/tags/architech/>architech</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/21.linux/linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E4%B9%8Bfutex/>
+<a class=prev href=/post/31.distribute/%E4%B8%80%E8%87%B4%E6%80%A7%E7%AE%97%E6%B3%95/raft%E7%AE%97%E6%B3%95/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">Linux系统调用之Futex</span>
+<span class="prev-text nav-default">Raft算法</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/21.linux/af_xdp/>
-<span class="next-text nav-default">AF_XDP</span>
+<a class=next href=/post/14.language/web/css/>
+<span class="next-text nav-default">CSS</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

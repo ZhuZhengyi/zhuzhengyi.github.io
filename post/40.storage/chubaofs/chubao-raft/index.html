@@ -25,12 +25,12 @@
 <meta property="og:description" content="Chubao-Raft 简介 Chubao Raft 是 chubaofs 项目使用的multigroup-raft 库，是在 etcd raft 库上进行了重构和优化。 特性 chubao-raft 有以下特性： multi-raft：支持多组 ra">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/40.storage/chubaofs/chubao-raft/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2023-11-17T20:12:27+08:00">
-<meta property="article:modified_time" content="2023-11-17T20:12:27+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2023-11-24T22:01:00+08:00">
+<meta property="article:modified_time" content="2023-11-24T22:01:00+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="Chubao-Raft">
-<meta itemprop=description content="Chubao-Raft 简介 Chubao Raft 是 chubaofs 项目使用的multigroup-raft 库，是在 etcd raft 库上进行了重构和优化。 特性 chubao-raft 有以下特性： multi-raft：支持多组 ra"><meta itemprop=datePublished content="2023-11-17T20:12:27+08:00">
-<meta itemprop=dateModified content="2023-11-17T20:12:27+08:00">
-<meta itemprop=wordCount content="4431">
+<meta itemprop=description content="Chubao-Raft 简介 Chubao Raft 是 chubaofs 项目使用的multigroup-raft 库，是在 etcd raft 库上进行了重构和优化。 特性 chubao-raft 有以下特性： multi-raft：支持多组 ra"><meta itemprop=datePublished content="2023-11-24T22:01:00+08:00">
+<meta itemprop=dateModified content="2023-11-24T22:01:00+08:00">
+<meta itemprop=wordCount content="5418">
 <meta itemprop=keywords content="storage,chubaofs,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="Chubao-Raft">
 <meta name=twitter:description content="Chubao-Raft 简介 Chubao Raft 是 chubaofs 项目使用的multigroup-raft 库，是在 etcd raft 库上进行了重构和优化。 特性 chubao-raft 有以下特性： multi-raft：支持多组 ra"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>Chubao-Raft</h1>
 <div class=post-meta>
-<time datetime=2023-11-17 class=post-time>
-2023-11-17 20:12:27
+<time datetime=2023-11-24 class=post-time>
+2023-11-24 22:01:00
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/storage/> storage </a>
@@ -191,6 +191,7 @@ Justice's Blog
 <ul>
 <li><a href=#proposal提案>Proposal(提案)</a></li>
 <li><a href=#future>Future</a></li>
+<li><a href=#角色数据>角色数据</a></li>
 </ul>
 </li>
 <li><a href=#关键流程>关键流程</a>
@@ -284,6 +285,33 @@ Justice's Blog
 </div>
 </div><hr>
 <h2 id=重要数据结构>重要数据结构</h2>
+<ul>
+<li>Entry</li>
+<li>Message</li>
+<li>Peer</li>
+<li>Snapshot：</li>
+<li>HardState：持久化状态；</li>
+<li>SoftState: 内存状态；</li>
+<li>需要持久化的状态：
+<ul>
+<li>currentTerm: 当前任期；</li>
+<li>votedFor：投给票的节点 ID；</li>
+<li>log：日志序列</li>
+</ul>
+</li>
+<li>内存中的状态：
+<ul>
+<li>commitIndex：</li>
+<li>lastApplied：</li>
+</ul>
+</li>
+<li>leader 内存状态：
+<ul>
+<li>nextIndex[]：</li>
+<li>matchIndex[]：</li>
+</ul>
+</li>
+</ul>
 <h3 id=proposal提案>Proposal(提案)</h3>
 <ul>
 <li>
@@ -398,7 +426,98 @@ Justice's Blog
 </span><span class=c1></span><span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
-</div><hr>
+</div><h3 id=角色数据>角色数据</h3>
+<ul>
+<li>
+<p>共有持久存储的数据：</p>
+<ul>
+<li>
+<p>id: raft 节点id;</p>
+</li>
+<li>
+<p>term：当前任期;</p>
+</li>
+<li>
+<p>log: raft日志序列，只能append和truncate, 无法insert()，update()；</p>
+</li>
+</ul>
+</li>
+<li>
+<p>共有内存数据：</p>
+<ul>
+<li>
+<p>peers: 其他节点；</p>
+</li>
+<li>
+<p>queued_reqs: 以缓存的req，用来缓存选举过程中收到的req；</p>
+</li>
+<li>
+<p>proxied_reqs: 已转发的req，用来记录follower转发到leader的req, 在一个新的选举期内被清空；</p>
+</li>
+<li>
+<p>node_tx: raft外部消息入口，通过该管道接收外界输入的消息；</p>
+</li>
+<li>
+<p>state_tx: 指令状态机指令入口，通过该管道向指令状态机发送指令；</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id=candidator>Candidator</h4>
+<ul>
+<li>
+<p>私有数据：</p>
+<ul>
+<li>
+<p>votes: 已经收到的投票总数(包括自己投自己的一票)，如果votes>半数，则当选为leader；</p>
+</li>
+<li>
+<p>election_ticks: 当前轮选举已过的ticks数, 每个tick来到时+1；</p>
+</li>
+<li>
+<p>election_timeout: 当前轮选举超时数， election_ticks>election_timeout时，发起新一轮选举(term++)；</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id=follower>Follower</h4>
+<ul>
+<li>
+<p>follower内存状态：</p>
+<ul>
+<li>
+<p>leader: 当前term的leader；</p>
+</li>
+<li>
+<p>voted_for: 当前term所投的leader；</p>
+</li>
+<li>
+<p>leader_seen_ticks: leader心跳计数tick, 每个tick +1, 收到leader hb msg， 重置为0；</p>
+</li>
+<li>
+<p>leader_seen_timeout: leader心跳timeount, <code>leader_seen_ticks</code> > <code>leader_seen_timeout</code>时, follower将转入candidate;</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id=leader>Leader</h4>
+<ul>
+<li>
+<p>leader内存状态：</p>
+<ul>
+<li>
+<p><code>heartbeat_ticks</code>: 心跳tick计数;</p>
+</li>
+<li>
+<p><code>peers_next_index</code>: 将要发送到peers的下一个index.每个peer的<code>peer_next_index</code>最开始置为leader启动时的最后一个log index+1。在复制过程中leader将发送以为起始的(term,peer_next_index-1)所有后续log给follower，follower检查该(term,peer_next_index-1)数据是否在log中存在，如果不存在, 则会发送拒绝复制的响应。leader接收到拒绝复制响应后，依次减小改值<code>peer_next_index</code>，直到被接受；</p>
+</li>
+<li>
+<p><code>peers_last_index</code>: 已经发送到peers的最后一个index，<code>peers_last_index[peerId] &lt; peers_next_index[peerId]</code>；</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
 <h2 id=关键流程>关键流程</h2>
 <h3 id=新建raftserver>新建RaftServer</h3>
 <ul>
@@ -890,7 +1009,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2023-11-17 20:12:27
+2023-11-24 22:01:00
 </span>
 </p>
 <p class=copyright-item>
@@ -922,8 +1041,8 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/chubaofs/>chubaofs</a>
 </div>
 <nav class=post-nav>
-<a class=next href=/post/14.language/web/css/>
-<span class="next-text nav-default">CSS</span>
+<a class=next href=/post/70.tool/macos/>
+<span class="next-text nav-default">macos日常</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
