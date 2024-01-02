@@ -1,0 +1,643 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>一个新进程的诞生（七）透过 fork 来看进程的内存规划 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="一个新进程的诞生（七）透过 fork 来看进程的内存规划 书接上回，上回书咱们说到，fork 函数为新的进程（进程 1）申请了槽位，并把全部 task_struct 结构的值都从进">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/%E4%BD%A0%E7%AE%A1%E8%BF%99%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%8F%AB%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81/%E7%AC%AC3%E9%83%A8%E5%88%86/27.fork%E4%B8%AD%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E8%A7%84%E5%88%92%E7%9A%84%E9%97%AE%E9%A2%98/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="一个新进程的诞生（七）透过 fork 来看进程的内存规划">
+<meta property="og:description" content="一个新进程的诞生（七）透过 fork 来看进程的内存规划 书接上回，上回书咱们说到，fork 函数为新的进程（进程 1）申请了槽位，并把全部 task_struct 结构的值都从进">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/%E4%BD%A0%E7%AE%A1%E8%BF%99%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%8F%AB%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81/%E7%AC%AC3%E9%83%A8%E5%88%86/27.fork%E4%B8%AD%E8%BF%9B%E7%A8%8B%E5%86%85%E5%AD%98%E8%A7%84%E5%88%92%E7%9A%84%E9%97%AE%E9%A2%98/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-02T18:45:57+08:00">
+<meta property="article:modified_time" content="2024-01-02T18:45:57+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="一个新进程的诞生（七）透过 fork 来看进程的内存规划">
+<meta itemprop=description content="一个新进程的诞生（七）透过 fork 来看进程的内存规划 书接上回，上回书咱们说到，fork 函数为新的进程（进程 1）申请了槽位，并把全部 task_struct 结构的值都从进"><meta itemprop=datePublished content="2024-01-02T18:45:57+08:00">
+<meta itemprop=dateModified content="2024-01-02T18:45:57+08:00">
+<meta itemprop=wordCount content="2758">
+<meta itemprop=keywords content="pub,你管这破玩意叫操作系统源码,第3部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="一个新进程的诞生（七）透过 fork 来看进程的内存规划">
+<meta name=twitter:description content="一个新进程的诞生（七）透过 fork 来看进程的内存规划 书接上回，上回书咱们说到，fork 函数为新的进程（进程 1）申请了槽位，并把全部 task_struct 结构的值都从进"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>一个新进程的诞生（七）透过 fork 来看进程的内存规划</h1>
+<div class=post-meta>
+<time datetime=2024-01-02 class=post-time>
+2024-01-02 18:45:57
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/%E4%BD%A0%E7%AE%A1%E8%BF%99%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%8F%AB%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81/> 你管这破玩意叫操作系统源码 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC3%E9%83%A8%E5%88%86/> 第3部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=一个新进程的诞生七透过-fork-来看进程的内存规划>一个新进程的诞生（七）透过 fork 来看进程的内存规划</h1>
+<p>书接上回，上回书咱们说到，<strong>fork</strong> 函数为新的进程（进程 1）申请了槽位，并把全部 <strong>task_struct</strong> 结构的值都从进程零复制了过来。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-44-7970d5e1e0f763b9e0e69afd9dbebfa3.png alt=图片></p>
+<p>之后，覆盖了新进程自己的基本信息，包括元信息和 tss 里的寄存器信息。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>copy_process</span><span class=p>(</span><span class=kt>int</span> <span class=n>nr</span><span class=p>,</span> <span class=p>...)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>state</span> <span class=o>=</span> <span class=n>TASK_UNINTERRUPTIBLE</span><span class=p>;</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>pid</span> <span class=o>=</span> <span class=n>last_pid</span><span class=p>;</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>counter</span> <span class=o>=</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>priority</span><span class=p>;</span>    
+    <span class=p>..</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>tss</span><span class=p>.</span><span class=n>edx</span> <span class=o>=</span> <span class=n>edx</span><span class=p>;</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>tss</span><span class=p>.</span><span class=n>ebx</span> <span class=o>=</span> <span class=n>ebx</span><span class=p>;</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>tss</span><span class=p>.</span><span class=n>esp</span> <span class=o>=</span> <span class=n>esp</span><span class=p>;</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这可以说将 fork 函数的一半都讲完了，那我们今天展开讲讲另一半，也就是 <strong>copy_mem</strong> 函数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>copy_process</span><span class=p>(</span><span class=kt>int</span> <span class=n>nr</span><span class=p>,</span> <span class=p>...)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>copy_mem</span><span class=p>(</span><span class=n>nr</span><span class=p>,</span><span class=n>p</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这将会决定进程之间的内存规划问题，十分精彩，我们开始吧。</p>
+<hr>
+<p>整个函数不长，我们还是试着先直译一下。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>copy_mem</span><span class=p>(</span><span class=kt>int</span> <span class=n>nr</span><span class=p>,</span><span class=k>struct</span> <span class=n>task_struct</span> <span class=o>*</span> <span class=n>p</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=c1>// 局部描述符表 LDT 赋值    
+</span><span class=c1></span>    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>old_data_base</span><span class=p>,</span><span class=n>new_data_base</span><span class=p>,</span><span class=n>data_limit</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>old_code_base</span><span class=p>,</span><span class=n>new_code_base</span><span class=p>,</span><span class=n>code_limit</span><span class=p>;</span>    
+    <span class=n>code_limit</span> <span class=o>=</span> <span class=n>get_limit</span><span class=p>(</span><span class=mh>0x0f</span><span class=p>);</span>    
+    <span class=n>data_limit</span> <span class=o>=</span> <span class=n>get_limit</span><span class=p>(</span><span class=mh>0x17</span><span class=p>);</span>    
+    <span class=n>new_code_base</span> <span class=o>=</span> <span class=n>nr</span> <span class=o>*</span> <span class=mh>0x4000000</span><span class=p>;</span>    
+    <span class=n>new_data_base</span> <span class=o>=</span> <span class=n>nr</span> <span class=o>*</span> <span class=mh>0x4000000</span><span class=p>;</span>    
+    <span class=n>set_base</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>ldt</span><span class=p>[</span><span class=mi>1</span><span class=p>],</span><span class=n>new_code_base</span><span class=p>);</span>    
+    <span class=n>set_base</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>ldt</span><span class=p>[</span><span class=mi>2</span><span class=p>],</span><span class=n>new_data_base</span><span class=p>);</span>    
+    <span class=c1>// 拷贝页表    
+</span><span class=c1></span>    <span class=n>old_code_base</span> <span class=o>=</span> <span class=n>get_base</span><span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>ldt</span><span class=p>[</span><span class=mi>1</span><span class=p>]);</span>    
+    <span class=n>old_data_base</span> <span class=o>=</span> <span class=n>get_base</span><span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>ldt</span><span class=p>[</span><span class=mi>2</span><span class=p>]);</span>    
+    <span class=n>copy_page_tables</span><span class=p>(</span><span class=n>old_data_base</span><span class=p>,</span><span class=n>new_data_base</span><span class=p>,</span><span class=n>data_limit</span><span class=p>);</span>    
+    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>看，其实就是<strong>新进程 LDT 表项的赋值，以及页表的拷贝</strong>。</p>
+<p><strong>LDT 的赋值</strong></p>
+<p>那我们先看 LDT 表项的赋值，要说明白这个赋值的意义，得先回忆一下我们在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499821&idx=1&sn=df90a7c57607bf501b5ef535f8440d98&chksm=c2c5ba80f5b233969bf591f919107e28e7be51f066821cba1ea39bf19cc0332b95b94d29467d&scene=21#wechat_redirect">第九回 | Intel 内存管理两板斧：分段与分页</a> 刚设置完页表时说过的问题。</p>
+<p>程序员给出的逻辑地址最终转化为物理地址要经过这几步骤。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-38-87c01d12d6cdfe079ed2674d79751a78.png alt=图片></p>
+<p>而我们已经开启了分页，那么分页机制的具体转化是这样的。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-33-49c4c8a3621c3dd867e0c3c89e366ac0.png alt=图片></p>
+<p>因为有了页表的存在，所以多了<strong>线性地址空间</strong>的概念，即经过分段机制转化后，分页机制转化前的地址。</p>
+<p>不考虑段限长的话，32 位的 CPU 线性地址空间应为 4G。现在只有四个页目录表，也就是将前 16M 的线性地址空间，与 16M 的物理地址空间一一对应起来了。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-28-f1f35edd25b98b1ce4c089865d91da64.png alt=图片></p>
+<p>把这个图和全局描述符表 GDT 联系起来，这个线性地址空间，就是经过分段机制（段可能是 GDT 也可能是 LDT）后的地址，是这样对应的。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-22-17ac5f973da5f1a9aaac30b117e9f9e3.png alt=图片></p>
+<p>我们给进程 0 准备的 LDT 的代码段和数据段，段基址都是 0，段限长是 640K。给进程 1，也就是我们现在正在 fork 的这个进程，其代码段和数据段还没有设置。</p>
+<p>所以第一步，<strong>局部描述符表 LDT 的赋值</strong>，就是给上图中那两个还未设置的代码段和数据段赋值。</p>
+<p>其中<strong>段限长</strong>，就是取自进程 0 设置好的段限长，也就是 640K。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>copy_mem</span><span class=p>(</span><span class=kt>int</span> <span class=n>nr</span><span class=p>,</span><span class=k>struct</span> <span class=n>task_struct</span> <span class=o>*</span> <span class=n>p</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>code_limit</span> <span class=o>=</span> <span class=n>get_limit</span><span class=p>(</span><span class=mh>0x0f</span><span class=p>);</span>    
+    <span class=n>data_limit</span> <span class=o>=</span> <span class=n>get_limit</span><span class=p>(</span><span class=mh>0x17</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>而<strong>段基址</strong>有点意思，是取决于当前是几号进程，也就是 nr 的值。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int copy_mem(int nr,struct task_struct * p) {    
+    ...    
+    new_code_base = nr * 0x4000000;    
+    new_data_base = nr * 0x4000000;    
+    ...
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>这里的 0x4000000 等于 64M。</p>
+<p>也就是说，今后每个进程通过段基址的手段，分别在线性地址空间中占用 64M 的空间（暂不考虑段限长），且紧挨着。</p>
+<p>接着就把 LDT 设置进了 LDT 表里。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int copy_mem(int nr,struct task_struct * p) {    ...    set_base(p-&gt;ldt[1],new_code_base);    set_base(p-&gt;ldt[2],new_data_base);    ...}
+</code></pre></td></tr></table>
+</div>
+</div><p>最终效果如图。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-16-aa192a75588df6873a9c46c74c7c174a.png alt=图片></p>
+<p>经过以上的步骤，就通过分段的方式，将进程映射到了相互隔离的线性地址空间里，这就是<strong>段式</strong>管理。</p>
+<p>当然，Linux 0.11 不但是分段管理，也开启了分页管理，最终形成<strong>段页式</strong>的管理方式。这就涉及到下面要说的，页表的复制。</p>
+<p><strong>页表的复制</strong></p>
+<p>OK，上面刚刚讲完段表的赋值，接下来就是页表的复制了，这也是 copy_mem 函数里的最后一行代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int copy_mem(int nr,struct task_struct * p) {    
+    ...    
+    // old=0, new=64M, limit=640K    
+    copy_page_tables(old_data_base,new_data_base,data_limit)
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>原来进程 0 有<strong>一个页目录表</strong>和<strong>四个页表</strong>，将线性地址空间的 0-16M 原封不动映射到了物理地址空间的 0-16M。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-11-f1f35edd25b98b1ce4c089865d91da64.png alt=图片></p>
+<p>那么新诞生的这个进程 2，也需要一套映射关系的页表，那我们看看这些页表是怎么建立的。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>/* 
+*  Well, here is one of the most complicated functions in mm. It 
+* copies a range of linerar addresses by copying only the pages. 
+* Let&#39;s hope this is bug-free, &#39;cause this one I don&#39;t want to debug :-) 
+*/
+int copy_page_tables(unsigned long from,unsigned long to,long size){    
+    unsigned long * from_page_table;    
+    unsigned long * to_page_table;    
+    unsigned long this_page;    
+    unsigned long * from_dir, * to_dir;    
+    unsigned long nr;    
+    from_dir = (unsigned long *) ((from&gt;&gt;20) &amp; 0xffc);    
+    to_dir = (unsigned long *) ((to&gt;&gt;20) &amp; 0xffc);    
+    size = ((unsigned) (size+0x3fffff)) &gt;&gt; 22;    
+    for( ; size--&gt;0 ; from_dir++,to_dir++) {        
+        if (!(1 &amp; *from_dir))            
+            continue;        
+        from_page_table = (unsigned long *) (0xfffff000 &amp; *from_dir);        
+        to_page_table = (unsigned long *) get_free_page()        
+        *to_dir = ((unsigned long) to_page_table) | 7;        
+        nr = (from==0)?0xA0:1024;        
+        for ( ; nr-- &gt; 0 ; from_page_table++,to_page_table++) {            
+            this_page = *from_page_table;            
+            if (!(1 &amp; this_page))                
+                continue;            
+            this_page &amp;= ~2;            
+            *to_page_table = this_page;            
+            if (this_page &gt; LOW_MEM) {                
+                *from_page_table = this_page;                
+                this_page -= LOW_MEM;                
+                this_page &gt;&gt;= 12;                
+                mem_map[this_page]++;            
+            }        
+        }    
+    }    
+    invalidate();    
+    return 0;
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>先不讲这个函数，我们先看看注释。</p>
+<p>注释是 Linus 自己写的，他说：</p>
+<p>&ldquo;这部分是内存管理中最复杂的代码，希望这段代码没有错误（bug-free），因为我实在不想调试它！&rdquo;</p>
+<p>可见这是一套让 Linus 都觉得烧脑的逻辑。</p>
+<p>虽说代码实现很复杂，但要完成的事情确实非常简单！我想我们要是产品经理，一定会和 Linus 说这么简单的功能有啥难实现的？哈哈。</p>
+<p>回归正题，这个函数要完成什么事情呢？</p>
+<p>你想，现在进程 0 的线性地址空间是 0 - 64M，进程 1 的线性地址空间是 64M - 128M。<strong>我们现在要造一个进程 1 的页表，使得进程 1 和进程 0 最终被映射到的物理空间都是 0 - 64M</strong>，这样进程 1 才能顺利运行起来，不然就乱套了。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-23-04-7c8fdea0cad3c9569d717bd4f15bf4df.png alt=图片></p>
+<p>总之，最终的效果就是：</p>
+<p>假设现在正在运行进程 0，代码中给出一个虚拟地址 0x03，由于进程 0 的 LDT 中代码段基址是 0，所以线性地址也是 0x03，最终由进程 0 页表映射到物理地址 0x03 处。</p>
+<p>假设现在正在运行进程 1，代码中给出一个虚拟地址 0x03，由于进程 1 的 LDT 中代码段基址是 64M，所以线性地址是 64M + 3，最终由进程 1 页表映射到物理地址也同样是 0x03 处。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-22-58-0fe064755cc493e1955fe810417a0ca1.png alt=图片></p>
+<p><strong>即，进程 0 和进程 1 目前共同映射物理内存的前 640K 的空间。</strong></p>
+<p>至于如何将不同地址通过不同页表映射到相同物理地址空间，很简单，举个刚刚的例子。</p>
+<p>刚刚的进程 1 的线性地址 64M + 0x03 用二进制表示是：</p>
+<p>0000010000_0000000000_000000000011</p>
+<p>刚刚的进程 0 的线性地址 0x03 用二进制表示是：</p>
+<p>0000000000_0000000000_000000000011</p>
+<p>根据分页机制的转化规则，<strong>前 10 位表示页目录项，中间 10 位表示页表项，后 12 位表页内偏移。</strong></p>
+<p>进程 1 要找的是页目录项 16 中的第 0 号页表</p>
+<p>进程 0 要找的是页目录项 0 中的第 0 号页表</p>
+<p>那只要让这俩最终找到的两个页表里的数据一模一样即可。</p>
+<p><a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500507&idx=1&sn=a7863ac6144a1fce942a91a9d573ef1a&chksm=c2c5b876f5b23160502f3d1e7a7d00ad43231aa49eea9809e063f010d65846c512ec87e752a0&scene=21#wechat_redirect">我居然会认为权威书籍写错了&mldr;</a></p>
+<p>由于理解起来非常简单，但代码中的计算就非常绕，所以我们就不细致分析代码了，只要理解其最终的作用就好。</p>
+<hr>
+<p>OK，本章的内容就讲完了，再稍稍展开一个未来要说的东西。还记得页表的结构吧？</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-38-22-89e1ac732ea56be5a529c434daa35db2.png alt=图片></p>
+<p>其中 RW 位表示读写状态，0 表示只读（或可执行），1表示可读写（或可执行）。当然，在内核态也就是 0 特权级时，这个标志位是没用的。</p>
+<p>那我们看下面的代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>copy_page_tables</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>from</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>to</span><span class=p>,</span><span class=kt>long</span> <span class=n>size</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>for</span><span class=p>(</span> <span class=p>;</span> <span class=n>size</span><span class=o>--&gt;</span><span class=mi>0</span> <span class=p>;</span> <span class=n>from_dir</span><span class=o>++</span><span class=p>,</span><span class=n>to_dir</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>        
+        <span class=p>...</span>        
+        <span class=k>for</span> <span class=p>(</span> <span class=p>;</span> <span class=n>nr</span><span class=o>--</span> <span class=o>&gt;</span> <span class=mi>0</span> <span class=p>;</span> <span class=n>from_page_table</span><span class=o>++</span><span class=p>,</span><span class=n>to_page_table</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>            
+            <span class=p>...</span>            
+            <span class=n>this_page</span> <span class=o>&amp;=</span> <span class=o>~</span><span class=mi>2</span><span class=p>;</span>            
+            <span class=p>...</span>            
+            <span class=k>if</span> <span class=p>(</span><span class=n>this_page</span> <span class=o>&gt;</span> <span class=n>LOW_MEM</span><span class=p>)</span> <span class=p>{</span>                
+                <span class=o>*</span><span class=n>from_page_table</span> <span class=o>=</span> <span class=n>this_page</span><span class=p>;</span>                
+                <span class=p>...</span>            
+            <span class=p>}</span>        
+        <span class=p>}</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>~2 表示取反，2 用二进制表示是 10，取反就是 01，其目的是把 this_page 也就是当前的页表的 RW 位置零，也就是是<strong>把该页变成只读</strong>。</p>
+<p>而 *from_page_table = this_page 表示<strong>又把源页表也变成只读</strong>。</p>
+<p>也就是说，经过 fork 创建出的新进程，其页表项都是只读的，而且导致源进程的页表项也变成了只读。</p>
+<p>这个就是<strong>写时复制</strong>的基础，新老进程一开始共享同一个物理内存空间，如果只有读，那就相安无事，但如果任何一方有写操作，由于页面是只读的，将触发缺页中断，然后就会分配一块新的物理内存给产生写操作的那个进程，此时这一块内存就不再共享了。</p>
+<p>这是后话了，这里先埋个伏笔。</p>
+<hr>
+<p>好了，至此 fork 中的 <strong>copy_process</strong> 函数就全部被我们读完了，总共做了三件事，把整个进程的数据结构个性化地从进程 0 复制给了进程 1。</p>
+<p><strong>第一，原封不动复制了一下 task_struct。</strong></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-38-28-7970d5e1e0f763b9e0e69afd9dbebfa3.png alt=图片></p>
+<p><strong>第二，LDT 的复制和改造，使得进程 0 和进程 1 分别映射到了不同的线性地址空间。</strong></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-39-00-aa192a75588df6873a9c46c74c7c174a.png alt=图片></p>
+<p><strong>第三，页表的复制，使得进程 0 和进程 1 又从不同的线性地址空间，被映射到了相同的物理地址空间。</strong></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-39-07-78a2e21ba9b35003349fc7b8b289a3df.png alt=图片></p>
+<p><strong>最后，将新老进程的页表都变成只读状态，为后面写时复制的缺页中断做准备。</strong></p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-02 18:45:57
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/%E4%BD%A0%E7%AE%A1%E8%BF%99%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%8F%AB%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81/>你管这破玩意叫操作系统源码</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC3%E9%83%A8%E5%88%86/>第3部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/%E4%BD%A0%E7%AE%A1%E8%BF%99%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%8F%AB%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">Intel 内存管理两板斧：分段与分页</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/%E4%BD%A0%E7%AE%A1%E8%BF%99%E7%A0%B4%E7%8E%A9%E6%84%8F%E5%8F%AB%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BA%90%E7%A0%81/%E7%AC%AC3%E9%83%A8%E5%88%86/23.%E5%A6%82%E6%9E%9C%E8%AE%A9%E4%BD%A0%E6%9D%A5%E8%AE%BE%E8%AE%A1%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6/>
+<span class="next-text nav-default">一个新进程的诞生（三）如果让你来设计进程调度</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>
