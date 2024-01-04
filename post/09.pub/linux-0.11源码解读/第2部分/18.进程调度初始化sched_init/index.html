@@ -1,0 +1,665 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>18.进程调度初始化sched_init - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="18.进程调度初始化sched_init 书接上回，上回书咱们说到，time_init 方法通过与 CMOS 端口进行读写交互，获取到了年月日时分秒等数据">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/18.%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E5%88%9D%E5%A7%8B%E5%8C%96sched_init/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="18.进程调度初始化sched_init">
+<meta property="og:description" content="18.进程调度初始化sched_init 书接上回，上回书咱们说到，time_init 方法通过与 CMOS 端口进行读写交互，获取到了年月日时分秒等数据">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/18.%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E5%88%9D%E5%A7%8B%E5%8C%96sched_init/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
+<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="18.进程调度初始化sched_init">
+<meta itemprop=description content="18.进程调度初始化sched_init 书接上回，上回书咱们说到，time_init 方法通过与 CMOS 端口进行读写交互，获取到了年月日时分秒等数据"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
+<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
+<meta itemprop=wordCount content="2931">
+<meta itemprop=keywords content="pub,linux-0.11源码解读,第2部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="18.进程调度初始化sched_init">
+<meta name=twitter:description content="18.进程调度初始化sched_init 书接上回，上回书咱们说到，time_init 方法通过与 CMOS 端口进行读写交互，获取到了年月日时分秒等数据"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>18.进程调度初始化sched_init</h1>
+<div class=post-meta>
+<time datetime=2024-01-03 class=post-time>
+2024-01-03 21:41:02
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC2%E9%83%A8%E5%88%86/> 第2部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=18进程调度初始化sched_init>18.进程调度初始化sched_init</h1>
+<p>书接上回，上回书咱们说到，<strong>time_init</strong> 方法通过与 CMOS 端口进行读写交互，获取到了年月日时分秒等数据，并通过这些计算出了开机时间 <strong>startup_time</strong> 变量，是从 1970 年 1 月 1 日 0 时起到开机当时经过的秒数。</p>
+<p>我们继续往下看，大名鼎鼎的进程调度初始化，<strong>shed_init</strong>。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>mem_init</span><span class=p>(</span><span class=n>main_memory_start</span><span class=p>,</span><span class=n>memory_end</span><span class=p>);</span>    
+    <span class=n>trap_init</span><span class=p>();</span>    
+    <span class=n>blk_dev_init</span><span class=p>();</span>    
+    <span class=n>chr_dev_init</span><span class=p>();</span>    
+    <span class=n>tty_init</span><span class=p>();</span>    
+    <span class=n>time_init</span><span class=p>();</span>    
+    <span class=n>sched_init</span><span class=p>();</span>    
+    <span class=n>buffer_init</span><span class=p>(</span><span class=n>buffer_memory_end</span><span class=p>);</span>    
+    <span class=n>hd_init</span><span class=p>();</span>    
+    <span class=n>floppy_init</span><span class=p>();</span>        
+    <span class=n>sti</span><span class=p>();</span>    
+    <span class=n>move_to_user_mode</span><span class=p>();</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>fork</span><span class=p>())</span> <span class=p>{</span>
+        <span class=n>init</span><span class=p>();</span>
+    <span class=p>}</span>    
+    <span class=k>for</span><span class=p>(;;)</span> 
+        <span class=n>pause</span><span class=p>();</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这方法可了不起，因为它就是多进程的基石！</p>
+<p>终于来到了兴奋的时刻，是不是很激动？不过先别激动，这里只是进程调度的初始化，也就是为进程调度所需要用到的数据结构做个准备，真正的进程调度还需要调度算法、时钟中断等机制的配合。</p>
+<p>当然，对于理解操作系统，流程和数据结构最为重要了，而这一段作为整个流程的起点，以及建立数据结构的地方，就显得格外重要了。</p>
+<p>我们进入这个方法，一点点往后看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>sched_init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=n>set_tss_desc</span><span class=p>(</span><span class=n>gdt</span><span class=o>+</span><span class=mi>4</span><span class=p>,</span> <span class=o>&amp;</span><span class=p>(</span><span class=n>init_task</span><span class=p>.</span><span class=n>task</span><span class=p>.</span><span class=n>tss</span><span class=p>));</span>    
+    <span class=n>set_ldt_desc</span><span class=p>(</span><span class=n>gdt</span><span class=o>+</span><span class=mi>5</span><span class=p>,</span> <span class=o>&amp;</span><span class=p>(</span><span class=n>init_task</span><span class=p>.</span><span class=n>task</span><span class=p>.</span><span class=n>ldt</span><span class=p>));</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>两行代码初始化了下 <strong>TSS</strong> 和 <strong>LDT</strong>。</p>
+<p>先别急问这俩结构是啥。还记得之前讲的全局描述符表 gdt 么？它在内存的这个位置，并且被设置成了这个样子。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-55-34-1c6c1cc4c595f30e6d829a29a5566f77.png alt=图片></p>
+<p>忘了的看一下<a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499734&idx=1&sn=89045b51e41d2e74754f5475d25d7b54&chksm=c2c5857bf5b20c6d1698df2abd0e1eea601e83612ee6af58dc8eb79f93c751f73d7c62e565ce&scene=21#wechat_redirect">第八回 | 烦死了又要重新设置一遍 idt 和 gdt</a>，这就说明之前看似没用的细节有多重要了，大家一定要有耐心。</p>
+<p>说回这两行代码，其实就是往后又加了两项，分别是 TSS 和 LDT。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-55-43-2dbbf33d359ded0ab55a1015b2484828.png alt=图片></p>
+<p>好，那再说说这俩结构是干嘛的，不过本篇先简单理解，后面会详细讲到。</p>
+<p>TSS 叫<strong>任务状态段</strong>，就是<strong>保存和恢复进程的上下文的</strong>，所谓上下文，其实就是各个寄存器的信息而已，这样进程切换的时候，才能做到保存和恢复上下文，继续执行。</p>
+<p>由它的数据结构你应该可以看出点意思。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>tss_struct</span><span class=p>{</span>    
+    <span class=kt>long</span> <span class=n>back_link</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>esp0</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ss0</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>esp1</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ss1</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>esp2</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ss2</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>cr3</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>eip</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>eflags</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>eax</span><span class=p>,</span> <span class=n>ecx</span><span class=p>,</span> <span class=n>edx</span><span class=p>,</span> <span class=n>ebx</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>esp</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ebp</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>esi</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>edi</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>es</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>cs</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ss</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ds</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>fs</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>gs</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>ldt</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>trace_bitmap</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>i387_struct</span> <span class=n>i387</span><span class=p>;</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>而 LDT 叫<strong>局部描述符表</strong>，是与 GDT 全局描述符表相对应的，内核态的代码用 GDT 里的数据段和代码段，而用户进程的代码用每个用户进程自己的 LDT 里得数据段和代码段。</p>
+<p>先不管它，我这里放一张超纲的图，你先找找感觉。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-55-52-bee8d5b96e4be9fab2067ea7021a2e78.png alt=图片></p>
+<p>我们接着往下看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>desc_struct</span> <span class=p>{</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>a</span><span class=p>,</span><span class=n>b</span><span class=p>;</span>
+<span class=p>}</span>
+<span class=k>struct</span> <span class=n>task_struct</span> <span class=o>*</span> <span class=n>task</span><span class=p>[</span><span class=mi>64</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span><span class=o>&amp;</span><span class=p>(</span><span class=n>init_task</span><span class=p>.</span><span class=n>task</span><span class=p>),</span> <span class=p>};</span>
+<span class=kt>void</span> <span class=nf>sched_init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=kt>int</span> <span class=n>i</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>desc_struct</span> <span class=o>*</span> <span class=n>p</span><span class=p>;</span>        
+    <span class=n>p</span> <span class=o>=</span> <span class=n>gdt</span><span class=o>+</span><span class=mi>6</span><span class=p>;</span>    
+    <span class=k>for</span><span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>1</span><span class=p>;</span><span class=n>i</span><span class=o>&lt;</span><span class=mi>64</span><span class=p>;</span><span class=n>i</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>        
+        <span class=n>task</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>a</span><span class=o>=</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>b</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>++</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>a</span><span class=o>=</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>b</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>++</span><span class=p>;</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这段代码有个循环，干了两件事。</p>
+<p>一个是给一个长度为 64，结构为 <strong>task_struct</strong> 的数组 task 附上初始值。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-56-02-88f6a76498fec7be9e0ab49f5c5ab55e.png alt=图片></p>
+<p>这个 task_struct 结构就是代表<strong>每一个进程的信息</strong>，这可是个相当相当重要的结构了，把它放在心里。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>task_struct</span> <span class=p>{</span>
+    <span class=cm>/* these are hardcoded - don&#39;t touch */</span>    
+    <span class=kt>long</span> <span class=n>state</span><span class=p>;</span> <span class=cm>/* -1 unrunnable, 0 runnable, &gt;0 stopped */</span>    
+    <span class=kt>long</span> <span class=n>counter</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>priority</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>signal</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>sigaction</span> <span class=n>sigaction</span><span class=p>[</span><span class=mi>32</span><span class=p>];</span>    
+    <span class=kt>long</span> <span class=n>blocked</span><span class=p>;</span> <span class=cm>/* bitmap of masked signals */</span>  
+    <span class=cm>/* various fields */</span>    
+    <span class=kt>int</span> <span class=n>exit_code</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>start_code</span><span class=p>,</span><span class=n>end_code</span><span class=p>,</span><span class=n>end_data</span><span class=p>,</span><span class=n>brk</span><span class=p>,</span><span class=n>start_stack</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>pid</span><span class=p>,</span><span class=n>father</span><span class=p>,</span><span class=n>pgrp</span><span class=p>,</span><span class=n>session</span><span class=p>,</span><span class=n>leader</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>uid</span><span class=p>,</span><span class=n>euid</span><span class=p>,</span><span class=n>suid</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>gid</span><span class=p>,</span><span class=n>egid</span><span class=p>,</span><span class=n>sgid</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>alarm</span><span class=p>;</span>    
+    <span class=kt>long</span> <span class=n>utime</span><span class=p>,</span><span class=n>stime</span><span class=p>,</span><span class=n>cutime</span><span class=p>,</span><span class=n>cstime</span><span class=p>,</span><span class=n>start_time</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>used_math</span><span class=p>;</span>  <span class=cm>/* file system info */</span>    
+    <span class=kt>int</span> <span class=n>tty</span><span class=p>;</span>  <span class=cm>/* -1 if no tty, so it must be signed */</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>umask</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>pwd</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>root</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>executable</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>close_on_exec</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>file</span> <span class=o>*</span> <span class=n>filp</span><span class=p>[</span><span class=n>NR_OPEN</span><span class=p>];</span>  
+    <span class=cm>/* ldt for this task 0 - zero 1 - cs 2 - ds&amp;ss */</span>    
+    <span class=k>struct</span> <span class=n>desc_struct</span> <span class=n>ldt</span><span class=p>[</span><span class=mi>3</span><span class=p>];</span>  
+    <span class=cm>/* tss for this task */</span>    
+    <span class=k>struct</span> <span class=n>tss_struct</span> <span class=n>tss</span><span class=p>;</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这个循环做的另一件事，是给 gdt 剩下的位置填充上 0，也就是把剩下留给 TSS 和 LDT 的描述符都先附上空值。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-56-11-2ab1fe119fe755d84dfd8b0f593bc96f.png alt=图片></p>
+<p>往后展望一下的话，就是以后每创建一个新进程，就会在后面添加一组 TSS 和 LDT 表示这个进程的任务状态段以及局部描述符表信息。</p>
+<p>还记得刚刚的超纲图吧，未来整个内存的规划就是这样的，不过你先不用理解得很细。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-56-20-bee8d5b96e4be9fab2067ea7021a2e78.png alt=图片></p>
+<p>那为什么一开始就先有了一组 TSS 和 LDT 呢？现在也没创建进程呀。错了，现在虽然我们还没有建立起进程调度的机制，但我们正在运行的代码就是会作为<strong>未来的一个进程的指令流</strong>。</p>
+<p>也就是当未来进程调度机制一建立起来，正在执行的代码就会化身成为<strong>进程 0</strong> 的代码。所以我们需要提前把这些未来会作为进程 0 的信息写好。</p>
+<p>如果你觉得很疑惑，别急，等后面整个进程调度机制建立起来，并且让你亲眼看到进程 0 以及进程 1 的创建，以及它们后面因为进程调度机制而切换，你就明白这一切的意义了。</p>
+<p>好，收回来，初始化了一组 TSS 和 LDT 后，再往下看两行。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>#define ltr(n) __asm__(&#34;ltr %%ax&#34;::&#34;a&#34; (_TSS(n)))
+#define lldt(n) __asm__(&#34;lldt %%ax&#34;::&#34;a&#34; (_LDT(n)))
+void sched_init(void) {    
+    ...    
+    ltr(0);    
+    lldt(0);    
+    ...
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>这又涉及到之前的知识咯。</p>
+<p>还记得 <strong>lidt</strong> 和 <strong>lgdt</strong> 指令么？一个是给 idtr 寄存器赋值，以告诉 CPU 中断描述符表 idt 在内存的位置；一个是给 gdtr 寄存器赋值，以告诉 CPU 全局描述符表 gdt 在内存的位置。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-56-30-9844a54bbcc17806fe52080010401a6e.png alt=图片></p>
+<p>那这两行和刚刚的类似，<strong>ltr</strong> 是给 <strong>tr</strong> 寄存器赋值，以告诉 CPU 任务状态段 TSS 在内存的位置；<strong>lldt</strong> 一个是给 <strong>ldt</strong> 寄存器赋值，以告诉 CPU 局部描述符 LDT 在内存的位置。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-18-31-278dc1074ae864ad5277e06964629880.png alt></p>
+<p>这样，CPU 之后就能通过 tr 寄存器找到当前进程的任务状态段信息，也就是上下文信息，以及通过 ldt 寄存器找到当前进程在用的局部描述符表信息。</p>
+<p>我们继续看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>sched_init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=mh>0x36</span><span class=p>,</span><span class=mh>0x43</span><span class=p>);</span>      <span class=cm>/* binary, mode 3, LSB/MSB, ch 0 */</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>LATCH</span> <span class=o>&amp;</span> <span class=mh>0xff</span> <span class=p>,</span> <span class=mh>0x40</span><span class=p>);</span>    <span class=cm>/* LSB */</span>    
+    <span class=n>outb</span><span class=p>(</span><span class=n>LATCH</span> <span class=o>&gt;&gt;</span> <span class=mi>8</span> <span class=p>,</span> <span class=mh>0x40</span><span class=p>);</span>    <span class=cm>/* MSB */</span>    
+    <span class=n>set_intr_gate</span><span class=p>(</span><span class=mh>0x20</span><span class=p>,</span><span class=o>&amp;</span><span class=n>timer_interrupt</span><span class=p>);</span>    
+    <span class=n>outb</span><span class=p>(</span><span class=n>inb_p</span><span class=p>(</span><span class=mh>0x21</span><span class=p>)</span><span class=o>&amp;~</span><span class=mh>0x01</span><span class=p>,</span><span class=mh>0x21</span><span class=p>);</span>    
+    <span class=n>set_system_gate</span><span class=p>(</span><span class=mh>0x80</span><span class=p>,</span><span class=o>&amp;</span><span class=n>system_call</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>四行端口读写代码，两行设置中断代码。</p>
+<p>端口读写我们已经很熟悉了，就是 CPU 与外设交互的一种方式，之前讲硬盘读写以及 CMOS 读写时，已经接触过了。</p>
+<p>而这次交互的外设是一个<strong>可编程定时器</strong>的芯片，这四行代码就开启了这个定时器，之后这个定时器变会<strong>持续的、以一定频率的向 CPU 发出中断信号</strong>。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-17-12-55-4e506f09f2995a7e0145a1da9680baf6.gif alt=图片></p>
+<p>而这段代码中设置的两个中断，第一个就是<strong>时钟中断</strong>，中断号为 <strong>0x20</strong>，中断处理程序为 <strong>timer_interrupt</strong>。那么每次定时器向 CPU 发出中断后，便会执行这个函数。</p>
+<p>这个定时器的触发，以及时钟中断函数的设置，是操作系统主导进程调度的一个关键！没有他们这样的外部信号不断触发中断，操作系统就没有办法作为进程管理的主人，通过强制的手段收回进程的 CPU 执行权限。</p>
+<p>第二个设置的中断叫系统调用 <strong>system_call</strong>，中断号是 <strong>0x80</strong>，这个中断又是个非常非常非常非常非常非常非常重要的中断，所有用户态程序想要调用内核提供的方法，都需要基于这个系统调用来进行。</p>
+<p>比如 Java 程序员写一个 read，底层会执行汇编指令 <strong>int 0x80</strong>，这就会触发系统调用这个中断，最终调用到 Linux 里的 sys_read 方法。</p>
+<p>这个过程之后会重点讲述，现在只需要知道，在这个地方，偷偷把这个极为重要的中断，设置好了。</p>
+<p>所以你看这一章的内容，偷偷设置了影响进程和影响用户程序调用系统方法的两个重量级中断处理函数，不简单呀~</p>
+<p>到目前为止，中断已经设置了不少了，我们现在看看所设置好的中断有哪些。</p>
+<table>
+<thead>
+<tr>
+<th>中断号</th>
+<th>中断处理函数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 ~ 0x10</td>
+<td>trap_init 里设置的一堆</td>
+</tr>
+<tr>
+<td>0x20</td>
+<td>timer_interrupt</td>
+</tr>
+<tr>
+<td>0x21</td>
+<td>keyboard_interrupt</td>
+</tr>
+<tr>
+<td>0x80</td>
+<td>system_call</td>
+</tr>
+</tbody>
+</table>
+<p>其中 <strong>0-0x10</strong> 这 17 个中断是 trap_init 里初始化设置的，是一些基本的中断，比如除零异常等。这个在 <a href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500119&idx=1&sn=f46331f70677aba168243040a96be1c0&scene=21#wechat_redirect">第14回 中断初始化 trap_init</a> 有讲到。</p>
+<p>之后，在控制台初始化 con_init 里，我们又设置了 <strong>0x21</strong> 键盘中断，这样按下键盘就有反应了。这个在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500190&idx=1&sn=b0bebe846b55f7e29fc009e1b6587214&chksm=c2c5bb33f5b23225845ab699d1b8fcee39a04ca98a48ebf0e2c22584b638fa0b0839d1212485&scene=21#wechat_redirect">第16回 控制台初始化 tty_init</a> 有讲到。</p>
+<p>现在，我们又设置了 <strong>0x20</strong> 时钟中断，并且开启定时器。最后又偷偷设置了一个极为重要的 <strong>0x80</strong> 系统调用中断。</p>
+<p>找到些感觉没，有没有越来越发现，操作系统有点靠中断驱动的意思，各个模块不断初始化各种中断处理函数，并且开启指定的外设开关，让操作系统自己慢慢“活”了起来，逐渐通过中断忙碌于各种事情中，无法自拔。</p>
+<p>恭喜你，我们已经逐渐在接近操作系统的本质了。</p>
+<p>回顾一下我们今天干了什么，就三件事。</p>
+<p><strong>第一</strong>，我们往全局描述符表写了两个结构，TSS 和 LDT，作为未来进程 0 的任务状态段和局部描述符表信息。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-56-47-2dbbf33d359ded0ab55a1015b2484828.png alt=图片></p>
+<p><strong>第二</strong>，我们初始化了一个结构为 task_struct  的数组，未来这里会存放所有进程的信息，并且我们给数组的第一个位置附上了 init_task.init 这个具体值，也是作为未来进程 0 的信息。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-56-54-88f6a76498fec7be9e0ab49f5c5ab55e.png alt=图片></p>
+<p><strong>第三</strong>，设置了时钟中断 0x20 和系统调用 0x80，一个作为进程调度的起点，一个作为用户程序调用操作系统功能的桥梁，非常之重要。</p>
+<p>后面，我们将会逐渐看到，这些重要的事情，是如何紧密且精妙地结合在一起，发挥出奇妙的作用。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-03 21:41:02
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC2%E9%83%A8%E5%88%86/>第2部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/17.%E6%97%B6%E9%97%B4%E5%88%9D%E5%A7%8B%E5%8C%96time_init/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">17.时间初始化time_init</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/19.%E7%BC%93%E5%86%B2%E5%8C%BA%E5%88%9D%E5%A7%8B%E5%8C%96buffer_init/>
+<span class="next-text nav-default">19.缓冲区初始化buffer_init</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>09.Intel 内存管理两板斧：分段与分页 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="09.Intel 内存管理两板斧：分段与分页">
+<meta property="og:description" content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
+<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="09.Intel 内存管理两板斧：分段与分页">
+<meta itemprop=description content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
+<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
+<meta itemprop=wordCount content="3233">
+<meta itemprop=keywords content="pub,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="09.Intel 内存管理两板斧：分段与分页">
+<meta name=twitter:description content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>09.Intel 内存管理两板斧：分段与分页</h1>
+<div class=post-meta>
+<time datetime=2024-01-03 class=post-time>
+2024-01-03 21:41:02
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC1%E9%83%A8%E5%88%86/> 第1部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=09intel-内存管理两板斧分段与分页>09.Intel 内存管理两板斧：分段与分页</h1>
+<p>head.s 代码在重新设置了 gdt 与 idt 后。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-03-43-e5a3467caa9f51f269e0f1c3fbadbe21.png alt=图片></p>
+<p>来到了这样一段代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>jmp</span> <span class=nv>after_page_tables</span>
+<span class=nf>...</span>
+<span class=nl>after_page_tables:</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=nv>L6</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=nv>_main</span>    
+<span class=err>    </span><span class=nf>jmp</span> <span class=nv>setup_paging</span>
+<span class=nl>L6:</span>    
+<span class=err>    </span><span class=nf>jmp</span> <span class=nv>L6</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>那就是开启分页机制，并且跳转到 main 函数。</p>
+<p>如何跳转到之后用 c 语言写的 main.c 里的 main 函数，是个有趣的事，也包含在这段代码里。不过我们先瞧瞧这<strong>分页机制</strong>是如何开启的，也就是 <strong>setup_paging</strong> 这个标签处的代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nl>setup_paging:</span>    
+    <span class=nf>mov</span> <span class=nb>ecx</span><span class=p>,</span><span class=mi>1024</span><span class=o>*</span><span class=mi>5</span>    
+    <span class=nf>xor</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>eax</span>    
+    <span class=nf>xor</span> <span class=nb>edi</span><span class=p>,</span><span class=nb>edi</span>    
+    <span class=nf>pushf</span>    
+    <span class=nf>cld</span>    
+    <span class=nf>rep</span> <span class=nv>stosd</span>    
+    <span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=nv>_pg_dir</span>   
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=p>],</span><span class=nv>pg0</span><span class=o>+</span><span class=mi>7</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=o>+</span><span class=mi>4</span><span class=p>],</span><span class=nv>pg1</span><span class=o>+</span><span class=mi>7</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=o>+</span><span class=mi>8</span><span class=p>],</span><span class=nv>pg2</span><span class=o>+</span><span class=mi>7</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=o>+</span><span class=mi>12</span><span class=p>],</span><span class=nv>pg3</span><span class=o>+</span><span class=mi>7</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=nb>edi</span><span class=p>,</span><span class=nv>pg3</span><span class=o>+</span><span class=mi>4092</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=mh>00fff007h</span>    
+<span class=err>    </span><span class=nf>std</span>
+<span class=nl>L3:</span> 
+<span class=err>    </span><span class=nf>stosd</span>    
+<span class=err>    </span><span class=nf>sub</span> <span class=nb>eax</span><span class=p>,</span><span class=mh>00001000h</span>    
+<span class=err>    </span><span class=nf>jge</span> <span class=nv>L3</span>    
+<span class=err>    </span><span class=nf>popf</span>    
+<span class=err>    </span><span class=nf>xor</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>eax</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=nb>cr3</span><span class=p>,</span><span class=nb>eax</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>cr0</span>    
+<span class=err>    </span><span class=nf>or</span>  <span class=nb>eax</span><span class=p>,</span><span class=mh>80000000h</span>    
+<span class=err>    </span><span class=nf>mov</span> <span class=nb>cr0</span><span class=p>,</span><span class=nb>eax</span>    
+<span class=err>    </span><span class=nf>ret</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>别怕，我们一点点来分析。</p>
+<p>首先要了解的就是，啥是分页机制？</p>
+<p>还记不记得之前我们在代码中给出一个内存地址，在保护模式下要先经过分段机制的转换，才能最终变成物理地址，就是这样。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-03-50-e39b50ee2c579ffaf8b34f18f4237a42.png alt=图片></p>
+<p>这是在没有开启分页机制的时候，只需要经过这一步转换即可得到最终的物理地址了，但是在开启了分页机制后，又会<strong>多一步转换</strong>。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-03-55-5e94c299d3d3667016e9b63e44abc0d2.png alt=图片></p>
+<p>也就是说，在没有开启分页机制时，由程序员给出的<strong>逻辑地址</strong>，需要先通过分段机制转换成物理地址。但在开启分页机制后，逻辑地址仍然要先通过分段机制进行转换，只不过转换后不再是最终的物理地址，而是<strong>线性地址</strong>，然后再通过一次分页机制转换，得到最终的物理地址。</p>
+<p>分段机制我们已经清楚如何对地址进行变换了，那分页机制又是如何变换的呢？我们直接以一个例子来学习过程。</p>
+<p>比如我们的线性地址（已经经过了分段机制的转换）是</p>
+<p>15M</p>
+<p>二进制表示就是</p>
+<p>0000000011_0100000000_000000000000</p>
+<p>我们看一下它的转换过程</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-00-1dedd0086f3c1636e423c07d1489c107.png alt=图片></p>
+<p>也就是说，CPU 在看到我们给出的内存地址后，首先把线性地址被拆分成</p>
+<p>高 10 位：中间 10 位：后 12 位</p>
+<p>高 10 位负责在<strong>页目录表</strong>中找到一个<strong>页目录项</strong>，这个页目录项的值加上中间 10 位拼接后的地址去<strong>页表</strong>中去寻找一个<strong>页表项</strong>，这个页表项的值，再加上后 12 位偏移地址，就是最终的物理地址。</p>
+<p>而这一切的操作，都由计算机的一个硬件叫 <strong>MMU</strong>，中文名字叫<strong>内存管理单元</strong>，有时也叫 PMMU，分页内存管理单元。由这个部件来负责将虚拟地址转换为物理地址。</p>
+<p>所以整个过程我们不用操心，作为操作系统这个软件层，只需要提供好页目录表和页表即可，这种页表方案叫做<strong>二级页表</strong>，第一级叫<strong>页目录表 PDE</strong>，第二级叫<strong>页表 PTE</strong>。他们的结构如下。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-05-9d10c38f804b5f9a1bb86bb9ab143699.png alt=图片></p>
+<p>之后再开启分页机制的开关。其实就是更改 <strong>cr0</strong> 寄存器中的一位即可（31 位），还记得我们开启保护模式么，也是改这个寄存器中的一位的值。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-11-11728d8426c69ca78cb1920b3f86f533.png alt=图片></p>
+<p>然后，MMU 就可以帮我们进行分页的转换了。此后指令中的内存地址（就是程序员提供的逻辑地址），就统统要先经过分段机制的转换，再通过分页机制的转换，才能最终变成物理地址。</p>
+<p>所以这段代码，就是帮我们把页表和页目录表在内存中写好，之后开启 cr0 寄存器的分页开关，仅此而已，我们再把代码贴上来。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>setup_paging:    mov ecx,1024*5    xor eax,eax    xor edi,edi    pushf    cld    rep stosd    mov eax,_pg_dir    mov [eax],pg0+7    mov [eax+4],pg1+7    mov [eax+8],pg2+7    mov [eax+12],pg3+7    mov edi,pg3+4092    mov eax,00fff007h    stdL3: stosd    sub eax,00001000h    jge L3    popf    xor eax,eax    mov cr3,eax    mov eax,cr0    or  eax,80000000h    mov cr0,eax    ret
+</code></pre></td></tr></table>
+</div>
+</div><p>我们先说这段代码最终产生的效果吧。</p>
+<p>当时 linux-0.11 认为，总共可以使用的内存不会超过 <strong>16M</strong>，也即最大地址空间为 <strong>0xFFFFFF</strong>。</p>
+<p>而按照当前的页目录表和页表这种机制，1 个页目录表最多包含 1024 个页目录项（也就是 1024 个页表），1 个页表最多包含 1024 个页表项（也就是 1024 个页），1 页为 4KB（因为有 12 位偏移地址），因此，16M 的地址空间可以用 1 个页目录表 + 4 个页表搞定。</p>
+<p>4（页表数）* 1024（页表项数） * 4KB（一页大小）= 16MB</p>
+<p>所以，上面这段代码就是，<strong>将页目录表放在内存地址的最开头</strong>，还记得上一讲开头让你留意的 _pg_dir 这个标签吧？</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>_pg_dir:
+_startup_32:    
+    mov eax,0x10    
+    mov ds,ax    
+    ...
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>之后紧挨着这个页目录表，放置 4 个页表</strong>，代码里也有这四个页表的标签项。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>.org 0x1000 pg0:
+.org 0x2000 pg1:
+.org 0x3000 pg2:
+.org 0x4000 pg3:
+.org 0x5000
+</code></pre></td></tr></table>
+</div>
+</div><p>最终将页目录表和页表填写好数值，来覆盖整个 16MB 的内存。随后，开启分页机制。此时内存中的页表相关的布局如下。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-17-d8c5ccab8f627ac9f184d268dd6e42bf.png alt=图片></p>
+<p>这些页目录表和页表放到了整个内存布局中最开头的位置，就是覆盖了开头的 system 代码了，不过被覆盖的 system 代码已经执行过了，所以无所谓。</p>
+<p>同时，如 idt 和 gdt 一样，我们也需要通过一个寄存器告诉 CPU 我们把这些页表放在了哪里，就是这段代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>xor</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>eax</span>
+<span class=nf>mov</span> <span class=nb>cr3</span><span class=p>,</span><span class=nb>eax</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>你看，我们相当于告诉 cr3 寄存器，<strong>0 地址处就是页目录表，再通过页目录表可以找到所有的页表</strong>，也就相当于 CPU 知道了分页机制的全貌了。</p>
+<p>至此后，整个内存布局如下。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-22-38240f8404e640c9770f44bdd3cd6507.png alt=图片></p>
+<p>那么具体页表设置好后，映射的内存是怎样的情况呢？那就要看页表的具体数据了，就是这一坨代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>setup_paging:    
+    ...    
+    mov eax,_pg_dir    
+    mov [eax],pg0+7    
+    mov [eax+4],pg1+7    
+    mov [eax+8],pg2+7    
+    mov [eax+12],pg3+7    
+    mov edi,pg3+4092    
+    mov eax,00fff007h    
+    stdL3: stosd    
+    sub eax, 1000h    
+    jpe L3    
+    ...
+</code></pre></td></tr></table>
+</div>
+</div><p>很简单，对照刚刚的页目录表与页表结构看。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-27-9d10c38f804b5f9a1bb86bb9ab143699.png alt=图片></p>
+<p>前五行表示，页目录表的前 4 个页目录项，分别指向 4 个页表。比如页目录项中的第一项 <strong>[eax]</strong> 被赋值为 <strong>pg0+7</strong>，也就是 <strong>0x00001007</strong>，根据页目录项的格式，表示页表地址为 <strong>0x1000</strong>，页属性为 <strong>0x07</strong> 表示改页存在、用户可读写。</p>
+<p>后面几行表示，填充 4 个页表的每一项，一共 <strong>4*1024=4096</strong> 项，依次映射到内存的前 16MB 空间。</p>
+<p>画出图就是这个样子，其实刚刚的图就是。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-34-1dedd0086f3c1636e423c07d1489c107.png alt=图片></p>
+<p>看，最终的效果就是，经过这套分页机制，<strong>线性地址将恰好和最终转换的物理地址一样</strong>。</p>
+<p>现在只有四个页目录项，也就是将前 16M 的线性地址空间，与 16M 的物理地址空间一一对应起来了。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-39-dd889ce71a3449d8d38c336e5a2bbdc3.png alt=图片></p>
+<p>好了，我知道你目前可能有点晕头转向，关于地址，我们已经出现了好多词了，包括<strong>逻辑地址</strong>、<strong>线性地址</strong>、<strong>物理地址</strong>，以及本文中没出现的，你可能在很多地方看到过的<strong>虚拟地址</strong>。</p>
+<p>而这些地址后面加上空间两个字，似乎又成为了一个新词，比如<strong>线性地址空间</strong>、<strong>物理地址空间</strong>、<strong>虚拟地址空间</strong>等。</p>
+<p>那就是时候展开一波讨论，将这块的内容梳理一番了，且听我说。</p>
+<p>Intel 体系结构的<strong>内存管理</strong>可以分成两大部分，也就是标题中的两板斧，<strong>分段</strong>和<strong>分页</strong>。</p>
+<p><strong>分段机制</strong>在之前几回已经讨论过多次了，其目的是为了为每个程序或任务提供单独的代码段（cs）、数据段（ds）、栈段（ss），使其不会相互干扰。</p>
+<p><strong>分页机制</strong>是本回讲的内容，开机后分页机制默认是关闭状态，需要我们手动开启，并且设置好页目录表（PDE）和页表（PTE）。其目的在于可以按需使用物理内存，同时也可以在多任务时起到隔离的作用，这个在后面将多任务时将会有所体会。</p>
+<p>在 Intel 的保护模式下，分段机制是没有开启和关闭一说的，它必须存在，而分页机制是可以选择开启或关闭的。所以如果有人和你说，它实现了一个没有分段机制的操作系统，那一定是个外行。</p>
+<p>再说说那些地址：</p>
+<p><strong>逻辑地址</strong>：我们程序员写代码时给出的地址叫逻辑地址，其中包含段选择子和偏移地址两部分。</p>
+<p><strong>线性地址</strong>：通过分段机制，将逻辑地址转换后的地址，叫做线性地址。而这个线性地址是有个范围的，这个范围就叫做线性地址空间，32 位模式下，线性地址空间就是 4G。</p>
+<p><strong>物理地址</strong>：就是真正在内存中的地址，它也是有范围的，叫做物理地址空间。那这个范围的大小，就取决于你的内存有多大了。</p>
+<p><strong>虚拟地址</strong>：如果没有开启分页机制，那么线性地址就和物理地址是一一对应的，可以理解为相等。如果开启了分页机制，那么线性地址将被视为虚拟地址，这个虚拟地址将会通过分页机制的转换，最终转换成物理地址。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-44-5e94c299d3d3667016e9b63e44abc0d2.png alt=图片></p>
+<p>但实际上，我本人是不喜欢虚拟地址这个叫法的，因为它在 Intel 标准手册上出现的次数很少，我觉得知道逻辑地址、线性地址、物理地址这三个概念就够了，逻辑地址是程序员给出的，经过分段机制转换后变成线性地址，然后再经过分页机制转换后变成物理地址，就这么简单。</p>
+<p>好了，我们终于把这些杂七杂八的，idt、gdt、页表都设置好了，并且也开启了保护模式，之后我们就要做好进入 main.c 的准备了，那里是个新世界！</p>
+<p>不过进入 main.c 之前还差最后一哆嗦，就是 head.s 最后的代码，也就是本文开头的那段代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=err>    </span><span class=nf>jmp</span> <span class=nv>after_page_tables</span>
+<span class=err>    </span><span class=nf>...</span>
+<span class=nl>after_page_tables:</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=nv>L6</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=nv>_main</span>    
+<span class=err>    </span><span class=nf>jmp</span> <span class=nv>setup_paging</span>
+<span class=nl>L6:</span>    
+<span class=err>    </span><span class=nf>jmp</span> <span class=nv>L6</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>看到没，这里有个 push _main，把 main 函数的地址压栈了，那最终跳转到这个 main.c 里的 main 函数，一定和这个压栈有关。</p>
+<p>压栈为什么和跳转到这里还能联系上呢？留作本文思考题，下一篇将揭秘这个过程，你会发现仍然简单得要死。</p>
+<p>欲知后事如何，且听下回分解。</p>
+<p><strong>&mdash;&mdash;- 本回扩展资料 &mdash;&mdash;-</strong></p>
+<p>关于逻辑地址-线性地址-物理地址的转换，可以参考 Intel 手册：</p>
+<p>Intel 3A Chapter 3 Protected-Mode Memory Management</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-50-6173d7b155edf1163656a92accadfd50.png alt=图片></p>
+<p>而有关这些地址的定义和说明，在本小节中也做了详细的说明，看这里的介绍是最权威也是最透彻的。相信我，它很简单。</p>
+<p>页目录表和页表的具体结构，可以看</p>
+<p>Intel 3A Chapter 4.3 32-bit paging</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-04-55-7ce1ce0354904b2535f1293057c855e7.png alt=图片></p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-05-00-dc74426a214fda8f1885299cfb8d4dbc.png alt=图片></p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-03 21:41:02
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC1%E9%83%A8%E5%88%86/>第1部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/08.%E7%83%A6%E6%AD%BB%E4%BA%86%E5%8F%88%E8%A6%81%E9%87%8D%E6%96%B0%E8%AE%BE%E7%BD%AE%E4%B8%80%E9%81%8Didt%E5%92%8Cgdt/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">08.烦死了又要重新设置一遍 idt 和 gdt</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/10.1.%E5%B0%8F%E7%BB%93/>
+<span class="next-text nav-default">10.1.小结</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>
