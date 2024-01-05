@@ -25,12 +25,12 @@
 <meta property="og:description" content="11.整个操作系统就 20 几行代码 在第一部分，用了总共十回的篇章，把进入 main 方法前的苦力工作都完成了，我们的程序终于跳到第一个由 c 语言写的，也是操">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/11.%E6%95%B4%E4%B8%AA%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%B0%B120%E5%87%A0%E8%A1%8C%E4%BB%A3%E7%A0%81/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-05T22:16:21+08:00">
+<meta property="article:modified_time" content="2024-01-05T22:16:21+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="11.整个操作系统就 20 几行代码">
-<meta itemprop=description content="11.整个操作系统就 20 几行代码 在第一部分，用了总共十回的篇章，把进入 main 方法前的苦力工作都完成了，我们的程序终于跳到第一个由 c 语言写的，也是操"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="1342">
+<meta itemprop=description content="11.整个操作系统就 20 几行代码 在第一部分，用了总共十回的篇章，把进入 main 方法前的苦力工作都完成了，我们的程序终于跳到第一个由 c 语言写的，也是操"><meta itemprop=datePublished content="2024-01-05T22:16:21+08:00">
+<meta itemprop=dateModified content="2024-01-05T22:16:21+08:00">
+<meta itemprop=wordCount content="1365">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第2部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="11.整个操作系统就 20 几行代码">
 <meta name=twitter:description content="11.整个操作系统就 20 几行代码 在第一部分，用了总共十回的篇章，把进入 main 方法前的苦力工作都完成了，我们的程序终于跳到第一个由 c 语言写的，也是操"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>11.整个操作系统就 20 几行代码</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-05 class=post-time>
+2024-01-05 22:16:21
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -251,7 +251,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x90002</td>
-<td>2<br></td>
+<td>2</td>
 <td>扩展内存数</td>
 </tr>
 <tr>
@@ -261,7 +261,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x90006</td>
-<td>1<br></td>
+<td>1</td>
 <td>显示模式</td>
 </tr>
 <tr>
@@ -276,12 +276,12 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x9000A</td>
-<td>1<br></td>
+<td>1</td>
 <td>显示内存</td>
 </tr>
 <tr>
 <td>0x9000B</td>
-<td>1<br></td>
+<td>1</td>
 <td>显示状态</td>
 </tr>
 <tr>
@@ -291,7 +291,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x9000E</td>
-<td>1<br></td>
+<td>1</td>
 <td>屏幕行数</td>
 </tr>
 <tr>
@@ -301,7 +301,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x90080</td>
-<td>16<br></td>
+<td>16</td>
 <td>硬盘1参数表</td>
 </tr>
 <tr>
@@ -311,7 +311,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x901FC</td>
-<td>2<br></td>
+<td>2</td>
 <td>根设备号</td>
 </tr>
 </tbody>
@@ -319,20 +319,63 @@ Justice's Blog
 <p>第二部分是各种初始化 <strong>init</strong> 操作。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void main(void) {    ...    mem_init(main_memory_start,memory_end);    trap_init();    blk_dev_init();    chr_dev_init();    tty_init();    time_init();    sched_init();    buffer_init(buffer_memory_end);    hd_init();    floppy_init();    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=n>mem_init</span><span class=p>(</span><span class=n>main_memory_start</span><span class=p>,</span><span class=n>memory_end</span><span class=p>);</span>
+    <span class=n>trap_init</span><span class=p>();</span>
+    <span class=n>blk_dev_init</span><span class=p>();</span>
+    <span class=n>chr_dev_init</span><span class=p>();</span>
+    <span class=n>tty_init</span><span class=p>();</span>
+    <span class=n>time_init</span><span class=p>();</span>
+    <span class=n>sched_init</span><span class=p>();</span>
+    <span class=n>buffer_init</span><span class=p>(</span><span class=n>buffer_memory_end</span><span class=p>);</span>
+    <span class=n>hd_init</span><span class=p>();</span>
+    <span class=n>floppy_init</span><span class=p>();</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>包括<strong>内存初始化 mem_init</strong>，<strong>中断初始化 trap_init</strong>、<strong>进程调度初始化 sched_init</strong> 等等。我们知道学操作系统知识的时候，其实就分成这么几块来学的，看来在操作系统源码上看，也确实是这么划分的，那我们之后照着源码慢慢品，就好了。</p>
+</div><p>包括<strong>内存初始化 mem_init</strong>，<strong>中断初始化 trap_init</strong>、<strong>进程调度初始化 sched_init</strong> 等等。</p>
+<p>我们知道学操作系统知识的时候，其实就分成这么几块来学的，看来在操作系统源码上看，也确实是这么划分的，那我们之后照着源码慢慢品，就好了。</p>
 <p>第三部分是<strong>切换到用户态模式</strong>，并在一个新的进程中做一个最终的初始化 init。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void main(void) {    ...    sti();    move_to_user_mode();    if (!fork()) {        init();    }    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=n>sti</span><span class=p>();</span>
+    <span class=n>move_to_user_mode</span><span class=p>();</span>
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>fork</span><span class=p>())</span> <span class=p>{</span>
+        <span class=n>init</span><span class=p>();</span>
+    <span class=p>}</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>这个 init 函数里会创建出一个进程，设置终端的标准 IO，并且再创建出一个执行 shell 程序的进程用来接受用户的命令，到这里其实就出现了我们熟悉的画面（下面是 bochs 启动 Linux 0.11 后的画面）。</p>
@@ -374,7 +417,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-05 22:16:21
 </span>
 </p>
 <p class=copyright-item>
@@ -407,10 +450,10 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/%E7%AC%AC2%E9%83%A8%E5%88%86/>第2部分</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/10.%E8%BF%9B%E5%85%A5main%E5%87%BD%E6%95%B0%E5%89%8D%E7%9A%84%E6%9C%80%E5%90%8E%E4%B8%80%E8%B7%83/>
+<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">10.进入 main 函数前的最后一跃</span>
+<span class="prev-text nav-default">09.Intel 内存管理两板斧：分段与分页</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
 <a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/12.%E7%AE%A1%E7%90%86%E5%86%85%E5%AD%98%E5%89%8D%E5%85%88%E5%88%92%E5%88%86%E5%87%BA%E4%B8%89%E4%B8%AA%E8%BE%B9%E7%95%8C%E5%80%BC/>

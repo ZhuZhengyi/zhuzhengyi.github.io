@@ -25,12 +25,12 @@
 <meta property="og:description" content="06.先解决段寄存器的历史包袱问题 上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/06.%E5%85%88%E8%A7%A3%E5%86%B3%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8%E7%9A%84%E5%8E%86%E5%8F%B2%E5%8C%85%E8%A2%B1%E9%97%AE%E9%A2%98/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-05T22:16:21+08:00">
+<meta property="article:modified_time" content="2024-01-05T22:16:21+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="06.先解决段寄存器的历史包袱问题">
-<meta itemprop=description content="06.先解决段寄存器的历史包袱问题 上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="2130">
+<meta itemprop=description content="06.先解决段寄存器的历史包袱问题 上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这"><meta itemprop=datePublished content="2024-01-05T22:16:21+08:00">
+<meta itemprop=dateModified content="2024-01-05T22:16:21+08:00">
+<meta itemprop=wordCount content="2126">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="06.先解决段寄存器的历史包袱问题">
 <meta name=twitter:description content="06.先解决段寄存器的历史包袱问题 上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>06.先解决段寄存器的历史包袱问题</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-05 class=post-time>
+2024-01-05 22:16:21
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -307,7 +307,7 @@ Justice's Blog
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-00-64c6b4e89cb80433bd848c1a9ec1c6ee.png alt=图片></p>
 <p>你就说烦不烦吧？同样一段代码，实模式下和保护模式下的结果还不同，但没办法，x86 的历史包袱我们不得不考虑，谁让我们没其他 CPU 可选呢。</p>
 <p>总结一下就是，<strong>段寄存器（比如 ds、ss、cs）里存储的是段选择子，段选择子去全局描述符表中寻找段描述符，从中取出段基址</strong>。</p>
-<p>好了，那问题自然就出来了，**全局描述符表（gdt）**长什么样？它在哪？怎么让 CPU 知道它在哪？</p>
+<p>好了，那问题自然就出来了，<strong>全局描述符表</strong>(gdt)长什么样？它在哪？怎么让 CPU 知道它在哪？</p>
 <p>长什么样先别管，一定又是一个令人头疼的数据结构，先说说它在哪？在内存中呗，那么怎么告诉 CPU 全局描述符表（gdt）在内存中的什么位置呢？答案是由操作系统把这个位置信息存储在一个叫 <strong>gdtr</strong> 的寄存器中。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-08-cfdec78ae8ffc687a2de0e2f379ad06a.png alt=图片></p>
 <p>怎么存呢？就是刚刚那条指令。</p>
@@ -319,7 +319,7 @@ Justice's Blog
 <pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>lgdt</span>    <span class=nv>gdt_48</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>其中 <strong>lgdt</strong> 就表示把**后面的值（gdt_48）**放在 <strong>gdtr</strong> 寄存器中，gdt_48 标签，我们看看它长什么样。</p>
+</div><p>其中 <strong>lgdt</strong> 就表示把后面的值(gdt_48)放在 gdtr寄存器中，gdt_48 标签，我们看看它长什么样。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
@@ -332,7 +332,7 @@ Justice's Blog
 <span class=err>    </span><span class=nf>.word</span>   <span class=mi>512</span><span class=o>+</span><span class=nv>gdt</span><span class=p>,</span><span class=mh>0x9</span> <span class=c1>; gdt base = 0X9xxxx</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>可以看到这个标签位置处表示一个 48 位的数据，其中高 32 位存储着的正是全局描述符表 gdt 的内存地址</p>
+</div><p>可以看到这个标签位置处表示一个48位的数据，其中高 32 位存储着的正是全局描述符表 gdt 的内存地址</p>
 <p><strong>0x90200 + gdt</strong></p>
 <p><strong>gdt</strong> 是个标签，表示在本文件内的偏移量，而本文件是 <strong>setup.s</strong>，编译后是放在 <strong>0x90200</strong> 这个内存地址的，还记得吧？所以要加上 0x90200 这个值。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-17-52475622dc23017ba52cc7535b534c88.png alt=图片></p>
@@ -393,7 +393,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-05 22:16:21
 </span>
 </p>
 <p class=copyright-item>
@@ -426,12 +426,6 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/%E7%AC%AC1%E9%83%A8%E5%88%86/>第1部分</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/05.%E8%BF%9B%E5%85%A5%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%E5%89%8D%E7%9A%84%E6%9C%80%E5%90%8E%E4%B8%80%E6%AC%A1%E6%8A%98%E8%85%BE%E5%86%85%E5%AD%98/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">05.进入保护模式前的最后一次折腾内存</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
 <a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/07.%E5%85%AD%E8%A1%8C%E4%BB%A3%E7%A0%81%E5%B0%B1%E8%BF%9B%E5%85%A5%E4%BA%86%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/>
 <span class="next-text nav-default">07.六行代码就进入了保护模式</span>
 <span class="prev-text nav-mobile">下一篇</span>

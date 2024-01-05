@@ -25,12 +25,12 @@
 <meta property="og:description" content="13.主内存初始化mem_init 今天我们不聊具体内存管理的算法，我们就来看看，操作系统用什么样的一张表，达到了管理内存的效果。 我们以 Linux 0.11 源">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/13.%E4%B8%BB%E5%86%85%E5%AD%98%E5%88%9D%E5%A7%8B%E5%8C%96mem_init/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-05T22:16:21+08:00">
+<meta property="article:modified_time" content="2024-01-05T22:16:21+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="13.主内存初始化mem_init">
-<meta itemprop=description content="13.主内存初始化mem_init 今天我们不聊具体内存管理的算法，我们就来看看，操作系统用什么样的一张表，达到了管理内存的效果。 我们以 Linux 0.11 源"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="1593">
+<meta itemprop=description content="13.主内存初始化mem_init 今天我们不聊具体内存管理的算法，我们就来看看，操作系统用什么样的一张表，达到了管理内存的效果。 我们以 Linux 0.11 源"><meta itemprop=datePublished content="2024-01-05T22:16:21+08:00">
+<meta itemprop=dateModified content="2024-01-05T22:16:21+08:00">
+<meta itemprop=wordCount content="1608">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第2部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="13.主内存初始化mem_init">
 <meta name=twitter:description content="13.主内存初始化mem_init 今天我们不聊具体内存管理的算法，我们就来看看，操作系统用什么样的一张表，达到了管理内存的效果。 我们以 Linux 0.11 源"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>13.主内存初始化mem_init</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-05 class=post-time>
+2024-01-05 22:16:21
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -209,32 +209,29 @@ Justice's Blog
 </span><span class=lnt>16
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void main(void) {    
-    ...    
-    memory_end = (1&lt;&lt;20) + (EXT_MEM_K&lt;&lt;10);    
-    memory_end &amp;= 0xfffff000;    
-    if (memory_end &gt; 16*1024*1024)        
-        memory_end = 16*1024*1024;    
-    if (memory_end &gt; 12*1024*1024)         
-        buffer_memory_end = 4*1024*1024;    
-    else if (memory_end &gt; 6*1024*1024)        
-        buffer_memory_end = 2*1024*1024;    
-    else        
-        buffer_memory_end = 1*1024*1024;    
-    main_memory_start = buffer_memory_end;    
-    mem_init(main_memory_start,memory_end);    
-    ...
-}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>memory_end</span> <span class=o>=</span> <span class=p>(</span><span class=mi>1</span><span class=o>&lt;&lt;</span><span class=mi>20</span><span class=p>)</span> <span class=o>+</span> <span class=p>(</span><span class=n>EXT_MEM_K</span><span class=o>&lt;&lt;</span><span class=mi>10</span><span class=p>);</span>    
+    <span class=n>memory_end</span> <span class=o>&amp;=</span> <span class=mh>0xfffff000</span><span class=p>;</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=n>memory_end</span> <span class=o>&gt;</span> <span class=mi>16</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>)</span>        
+        <span class=n>memory_end</span> <span class=o>=</span> <span class=mi>16</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>;</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=n>memory_end</span> <span class=o>&gt;</span> <span class=mi>12</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>)</span>         
+        <span class=n>buffer_memory_end</span> <span class=o>=</span> <span class=mi>4</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>;</span>    
+    <span class=k>else</span> <span class=k>if</span> <span class=p>(</span><span class=n>memory_end</span> <span class=o>&gt;</span> <span class=mi>6</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>)</span>        
+        <span class=n>buffer_memory_end</span> <span class=o>=</span> <span class=mi>2</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>;</span>    
+    <span class=k>else</span>        
+        <span class=n>buffer_memory_end</span> <span class=o>=</span> <span class=mi>1</span><span class=o>*</span><span class=mi>1024</span><span class=o>*</span><span class=mi>1024</span><span class=p>;</span>    
+    <span class=n>main_memory_start</span> <span class=o>=</span> <span class=n>buffer_memory_end</span><span class=p>;</span>    
+    <span class=n>mem_init</span><span class=p>(</span><span class=n>main_memory_start</span><span class=p>,</span><span class=n>memory_end</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>除了最后一行外，前面的那一大坨的作用很简单。</p>
 <p><strong>其实就只是针对不同的内存大小，设置不同的边界值罢了</strong>，为了理解它，我们完全没必要考虑这么周全，就假设总内存一共就 <strong>8M</strong> 大小吧。</p>
-<p>那么如果内存为 8M 大小，<strong>memory_end</strong> 就是</p>
-<p>8 * 1024 * 1024</p>
-<p>也就只会走倒数第二个分支，那么 <strong>buffer_memory_end</strong> 就为</p>
-<p>2 * 1024 * 1024</p>
-<p>那么 <strong>main_memory_start</strong> 也为</p>
-<p>2 * 1024 * 1024</p>
+<p>那么如果内存为 8M 大小，<strong>memory_end</strong> 就是: 8 * 1024 * 1024</p>
+<p>也就只会走倒数第二个分支，那么 <strong>buffer_memory_end</strong> 就为: 2 * 1024 * 1024</p>
+<p>那么 <strong>main_memory_start</strong> 也为: 2 * 1024 * 1024</p>
 <p>你仔细看看代码逻辑，看是不是这样？</p>
 <p>当然，你不愿意细想也没关系，上述代码执行后，就是如下效果而已。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-52-38-e0cc100badd0bbd46572c76e476884aa.png alt=图片></p>
@@ -242,18 +239,34 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void main(void) {    ...    mem_init(main_memory_start, memory_end);    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=n>mem_init</span><span class=p>(</span><span class=n>main_memory_start</span><span class=p>,</span> <span class=n>memory_end</span><span class=p>);</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>而缓冲区是如何管理和分配的，就要看再后面的 buffer_init 里干了什么。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void main(void) {    ...    buffer_init(buffer_memory_end);    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=n>buffer_init</span><span class=p>(</span><span class=n>buffer_memory_end</span><span class=p>);</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>不过我们今天只看，主内存是如何管理的，很简单，放轻松。</p>
@@ -294,15 +307,15 @@ Justice's Blog
 <span class=c1>// start_mem = 2 * 1024 * 1024
 </span><span class=c1>// end_mem = 8 * 1024 * 1024
 </span><span class=c1></span><span class=kt>void</span> <span class=nf>mem_init</span><span class=p>(</span><span class=kt>long</span> <span class=n>start_mem</span><span class=p>,</span> <span class=kt>long</span> <span class=n>end_mem</span><span class=p>){</span>    
-    <span class=kt>int</span> <span class=n>i</span><span class=p>;</span>    
-    <span class=n>HIGH_MEMORY</span> <span class=o>=</span> <span class=n>end_mem</span><span class=p>;</span>    
-    <span class=k>for</span> <span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>i</span><span class=o>&lt;</span><span class=n>PAGING_PAGES</span> <span class=p>;</span> <span class=n>i</span><span class=o>++</span><span class=p>)</span>        
-        <span class=n>mem_map</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>=</span> <span class=n>USED</span><span class=p>;</span>    
-    <span class=n>i</span> <span class=o>=</span> <span class=n>MAP_NR</span><span class=p>(</span><span class=n>start_mem</span><span class=p>);</span>    
-    <span class=n>end_mem</span> <span class=o>-=</span> <span class=n>start_mem</span><span class=p>;</span>    
-    <span class=n>end_mem</span> <span class=o>&gt;&gt;=</span> <span class=mi>12</span><span class=p>;</span>    
-    <span class=k>while</span> <span class=p>(</span><span class=n>end_mem</span><span class=o>--&gt;</span><span class=mi>0</span><span class=p>)</span>        
-        <span class=n>mem_map</span><span class=p>[</span><span class=n>i</span><span class=o>++</span><span class=p>]</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>
+    <span class=kt>int</span> <span class=n>i</span><span class=p>;</span>    
+    <span class=n>HIGH_MEMORY</span> <span class=o>=</span> <span class=n>end_mem</span><span class=p>;</span>    
+    <span class=k>for</span> <span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>i</span><span class=o>&lt;</span><span class=n>PAGING_PAGES</span> <span class=p>;</span> <span class=n>i</span><span class=o>++</span><span class=p>)</span>        
+        <span class=n>mem_map</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>=</span> <span class=n>USED</span><span class=p>;</span>    
+    <span class=n>i</span> <span class=o>=</span> <span class=n>MAP_NR</span><span class=p>(</span><span class=n>start_mem</span><span class=p>);</span>    
+    <span class=n>end_mem</span> <span class=o>-=</span> <span class=n>start_mem</span><span class=p>;</span>    
+    <span class=n>end_mem</span> <span class=o>&gt;&gt;=</span> <span class=mi>12</span><span class=p>;</span>    
+    <span class=k>while</span> <span class=p>(</span><span class=n>end_mem</span><span class=o>--</span> <span class=o>&gt;</span> <span class=mi>0</span><span class=p>)</span>        
+        <span class=n>mem_map</span><span class=p>[</span><span class=n>i</span><span class=o>++</span><span class=p>]</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>
 <span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
@@ -397,7 +410,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-05 22:16:21
 </span>
 </p>
 <p class=copyright-item>

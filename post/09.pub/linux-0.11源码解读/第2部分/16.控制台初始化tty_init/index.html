@@ -25,11 +25,11 @@
 <meta property="og:description" content="16.控制台初始化tty_init 继内存管理结构 mem_map 和中断描述符表 idt 建立好之后，我们又在内存中倒腾出一个新的数据结构 request。 并且把它们">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/16.%E6%8E%A7%E5%88%B6%E5%8F%B0%E5%88%9D%E5%A7%8B%E5%8C%96tty_init/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-05T22:16:21+08:00">
+<meta property="article:modified_time" content="2024-01-05T22:16:21+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="16.控制台初始化tty_init">
-<meta itemprop=description content="16.控制台初始化tty_init 继内存管理结构 mem_map 和中断描述符表 idt 建立好之后，我们又在内存中倒腾出一个新的数据结构 request。 并且把它们"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
+<meta itemprop=description content="16.控制台初始化tty_init 继内存管理结构 mem_map 和中断描述符表 idt 建立好之后，我们又在内存中倒腾出一个新的数据结构 request。 并且把它们"><meta itemprop=datePublished content="2024-01-05T22:16:21+08:00">
+<meta itemprop=dateModified content="2024-01-05T22:16:21+08:00">
 <meta itemprop=wordCount content="2943">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第2部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="16.控制台初始化tty_init">
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>16.控制台初始化tty_init</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-05 class=post-time>
+2024-01-05 22:16:21
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -524,7 +524,6 @@ Justice's Blog
 </tr>
 </tbody>
 </table>
-<p> </p>
 <p>所以，<strong>第一部分</strong>获取 0x90006 地址处的数据，就是获取显示模式等相关信息。</p>
 <p><strong>第二部分</strong>就是显存映射的内存地址范围，我们现在假设是 CGA 类型的文本模式，所以映射的内存是从 0xB8000 到 0xBA000。</p>
 <p><strong>第三部分</strong>是设置一些滚动屏幕时需要的参数，定义顶行和底行是哪里，这里顶行就是第一行，底行就是最后一行，很合理。</p>
@@ -609,29 +608,29 @@ Justice's Blog
 </span><span class=lnt>23
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>_keyboard_interrupt:    
-    ...    
-    call _do_tty_interrupt    
-    ...    
-    void do_tty_interrupt(int tty) {   
-        copy_to_cooked(tty_table+tty);
-    }
-    void copy_to_cooked(struct tty_struct * tty) {    
-        ...    
-        tty-&gt;write(tty);    
-        ...
-    }
-    // 控制台时 tty 的 write 为 con_write 函数
-    void con_write(struct tty_struct * tty) {    
-        ...    
-        __asm__(&#34;movb _attr,%%ah\n\t&#34;      
-                &#34;movw %%ax,%1\n\t&#34;      
-                ::&#34;a&#34; (c),&#34;m&#34; (*(short *)pos)      
-                :&#34;ax&#34;);     
-        pos += 2;     
-        x++;    
-        ...
-    }
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=nl>_keyboard_interrupt</span><span class=p>:</span>    
+    <span class=p>...</span>    
+    <span class=n>call</span> <span class=n>_do_tty_interrupt</span>    
+    <span class=p>...</span>    
+    <span class=kt>void</span> <span class=n>do_tty_interrupt</span><span class=p>(</span><span class=kt>int</span> <span class=n>tty</span><span class=p>)</span> <span class=p>{</span>   
+        <span class=n>copy_to_cooked</span><span class=p>(</span><span class=n>tty_table</span><span class=o>+</span><span class=n>tty</span><span class=p>);</span>
+    <span class=p>}</span>
+    <span class=kt>void</span> <span class=n>copy_to_cooked</span><span class=p>(</span><span class=k>struct</span> <span class=n>tty_struct</span> <span class=o>*</span> <span class=n>tty</span><span class=p>)</span> <span class=p>{</span>    
+        <span class=p>...</span>    
+        <span class=n>tty</span><span class=o>-&gt;</span><span class=n>write</span><span class=p>(</span><span class=n>tty</span><span class=p>);</span>    
+        <span class=p>...</span>
+    <span class=p>}</span>
+    <span class=c1>// 控制台时 tty 的 write 为 con_write 函数
+</span><span class=c1></span>    <span class=kt>void</span> <span class=n>con_write</span><span class=p>(</span><span class=k>struct</span> <span class=n>tty_struct</span> <span class=o>*</span> <span class=n>tty</span><span class=p>)</span> <span class=p>{</span>    
+        <span class=p>...</span>    
+        <span class=n>__asm__</span><span class=p>(</span><span class=s>&#34;movb _attr,%%ah</span><span class=se>\n\t</span><span class=s>&#34;</span>      
+                <span class=s>&#34;movw %%ax,%1</span><span class=se>\n\t</span><span class=s>&#34;</span>      
+                <span class=o>::</span><span class=s>&#34;a&#34;</span> <span class=p>(</span><span class=n>c</span><span class=p>),</span><span class=s>&#34;m&#34;</span> <span class=p>(</span><span class=o>*</span><span class=p>(</span><span class=kt>short</span> <span class=o>*</span><span class=p>)</span><span class=n>pos</span><span class=p>)</span>      
+                <span class=o>:</span><span class=s>&#34;ax&#34;</span><span class=p>);</span>     
+        <span class=n>pos</span> <span class=o>+=</span> <span class=mi>2</span><span class=p>;</span>     
+        <span class=n>x</span><span class=o>++</span><span class=p>;</span>    
+        <span class=p>...</span>
+    <span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>前面的过程不用管，我们看最后一个函数 con_write 中的关键代码。</p>
@@ -728,7 +727,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-05 22:16:21
 </span>
 </p>
 <p class=copyright-item>

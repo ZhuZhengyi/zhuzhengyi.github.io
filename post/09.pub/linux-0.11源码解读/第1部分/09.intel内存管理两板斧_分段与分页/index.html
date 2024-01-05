@@ -25,12 +25,12 @@
 <meta property="og:description" content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-05T22:16:21+08:00">
+<meta property="article:modified_time" content="2024-01-05T22:16:21+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="09.Intel 内存管理两板斧：分段与分页">
-<meta itemprop=description content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="3233">
+<meta itemprop=description content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就"><meta itemprop=datePublished content="2024-01-05T22:16:21+08:00">
+<meta itemprop=dateModified content="2024-01-05T22:16:21+08:00">
+<meta itemprop=wordCount content="3258">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="09.Intel 内存管理两板斧：分段与分页">
 <meta name=twitter:description content="09.Intel 内存管理两板斧：分段与分页 head.s 代码在重新设置了 gdt 与 idt 后。 来到了这样一段代码。 1 2 3 4 5 6 7 8 9 10 11 jmp after_page_tables ... after_page_tables: push 0 push 0 push 0 push L6 push _main jmp setup_paging L6: jmp L6 那就"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>09.Intel 内存管理两板斧：分段与分页</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-05 class=post-time>
+2024-01-05 22:16:21
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -304,10 +304,58 @@ Justice's Blog
 <p>所以这段代码，就是帮我们把页表和页目录表在内存中写好，之后开启 cr0 寄存器的分页开关，仅此而已，我们再把代码贴上来。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>setup_paging:    mov ecx,1024*5    xor eax,eax    xor edi,edi    pushf    cld    rep stosd    mov eax,_pg_dir    mov [eax],pg0+7    mov [eax+4],pg1+7    mov [eax+8],pg2+7    mov [eax+12],pg3+7    mov edi,pg3+4092    mov eax,00fff007h    stdL3: stosd    sub eax,00001000h    jge L3    popf    xor eax,eax    mov cr3,eax    mov eax,cr0    or  eax,80000000h    mov cr0,eax    ret
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nl>setup_paging:</span>
+    <span class=nf>mov</span> <span class=nb>ecx</span><span class=p>,</span><span class=mi>1024</span><span class=o>*</span><span class=mi>5</span>
+    <span class=nf>xor</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>eax</span>
+    <span class=nf>xor</span> <span class=nb>edi</span><span class=p>,</span><span class=nb>edi</span>
+    <span class=nf>pushf</span>
+    <span class=nf>cld</span>
+    <span class=nf>rep</span> <span class=nv>stosd</span>
+    <span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=nv>_pg_dir</span>
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=p>],</span><span class=nv>pg0</span><span class=o>+</span><span class=mi>7</span>
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=o>+</span><span class=mi>4</span><span class=p>],</span><span class=nv>pg1</span><span class=o>+</span><span class=mi>7</span>
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=o>+</span><span class=mi>8</span><span class=p>],</span><span class=nv>pg2</span><span class=o>+</span><span class=mi>7</span>
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>eax</span><span class=o>+</span><span class=mi>12</span><span class=p>],</span><span class=nv>pg3</span><span class=o>+</span><span class=mi>7</span>
+    <span class=nf>mov</span> <span class=nb>edi</span><span class=p>,</span><span class=nv>pg3</span><span class=o>+</span><span class=mi>4092</span>
+    <span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=mh>00fff007h</span>
+    <span class=nf>std</span>
+<span class=nl>L3:</span> <span class=nf>stosd</span>
+    <span class=nf>sub</span> <span class=nb>eax</span><span class=p>,</span><span class=mh>00001000h</span>
+    <span class=nf>jge</span> <span class=nv>L3</span>
+    <span class=nf>popf</span>
+    <span class=nf>xor</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>eax</span>
+    <span class=nf>mov</span> <span class=nb>cr3</span><span class=p>,</span><span class=nb>eax</span>
+    <span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=nb>cr0</span>
+    <span class=nf>or</span>  <span class=nb>eax</span><span class=p>,</span><span class=mh>80000000h</span>
+    <span class=nf>mov</span> <span class=nb>cr0</span><span class=p>,</span><span class=nb>eax</span>
+    <span class=nf>ret</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>我们先说这段代码最终产生的效果吧。</p>
@@ -472,7 +520,7 @@ _startup_32:
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-05 22:16:21
 </span>
 </p>
 <p class=copyright-item>
@@ -505,14 +553,14 @@ _startup_32:
 <a href=https://justice.bj.cn/tags/%E7%AC%AC1%E9%83%A8%E5%88%86/>第1部分</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/08.%E7%83%A6%E6%AD%BB%E4%BA%86%E5%8F%88%E8%A6%81%E9%87%8D%E6%96%B0%E8%AE%BE%E7%BD%AE%E4%B8%80%E9%81%8Didt%E5%92%8Cgdt/>
+<a class=prev href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/07.%E5%85%AD%E8%A1%8C%E4%BB%A3%E7%A0%81%E5%B0%B1%E8%BF%9B%E5%85%A5%E4%BA%86%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">08.烦死了又要重新设置一遍 idt 和 gdt</span>
+<span class="prev-text nav-default">07.六行代码就进入了保护模式</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/10.1.%E5%B0%8F%E7%BB%93/>
-<span class="next-text nav-default">10.1.小结</span>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/11.%E6%95%B4%E4%B8%AA%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%B0%B120%E5%87%A0%E8%A1%8C%E4%BB%A3%E7%A0%81/>
+<span class="next-text nav-default">11.整个操作系统就 20 几行代码</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
