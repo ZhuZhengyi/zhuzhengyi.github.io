@@ -25,12 +25,12 @@
 <meta property="og:description" content="23.进程调度 书接上回，上回书咱们说到，操作系统通过 move_to_user_mode 方法，通过伪造一个中断和中断返回，巧妙地从内核态切换到了用户态。 1 2 3 4 5 6 7 8 void main(void) {">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/23.%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-06T09:05:06+08:00">
+<meta property="article:modified_time" content="2024-01-06T09:05:06+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="23.进程调度">
-<meta itemprop=description content="23.进程调度 书接上回，上回书咱们说到，操作系统通过 move_to_user_mode 方法，通过伪造一个中断和中断返回，巧妙地从内核态切换到了用户态。 1 2 3 4 5 6 7 8 void main(void) {"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="3110">
+<meta itemprop=description content="23.进程调度 书接上回，上回书咱们说到，操作系统通过 move_to_user_mode 方法，通过伪造一个中断和中断返回，巧妙地从内核态切换到了用户态。 1 2 3 4 5 6 7 8 void main(void) {"><meta itemprop=datePublished content="2024-01-06T09:05:06+08:00">
+<meta itemprop=dateModified content="2024-01-06T09:05:06+08:00">
+<meta itemprop=wordCount content="3113">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第3部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="23.进程调度">
 <meta name=twitter:description content="23.进程调度 书接上回，上回书咱们说到，操作系统通过 move_to_user_mode 方法，通过伪造一个中断和中断返回，巧妙地从内核态切换到了用户态。 1 2 3 4 5 6 7 8 void main(void) {"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>23.进程调度</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-06 class=post-time>
+2024-01-06 09:05:06
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -182,7 +182,14 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#整体流程设计><strong>整体流程设计</strong></a></li>
+</ul>
+<ul>
+<li><a href=#进程状态>进程状态</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
@@ -218,8 +225,7 @@ Justice's Blog
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-22-13-11bf0b397b2327b5733894c1d846e755.png alt=图片></p>
 <p>进程调度就是让 CPU 一会去程序 1 的位置处运行一段时间，一会去程序 2 的位置处运行一段时间。</p>
 <p>嗯，就这么简单，别反驳我，接着往下看。</p>
-<h1 id=heading></h1>
-<p><strong>整体流程设计</strong></p>
+<h2 id=整体流程设计><strong>整体流程设计</strong></h2>
 <p>如何做到刚刚说的，一会去这运行，一会去那运行？</p>
 <p><strong>第一种办法</strong>就是，程序 1 的代码里，每隔几行就写一段代码，主动放弃自己的执行权，跳转到程序 2 的地方运行。然后程序 2 也是如此。</p>
 <p>但这种依靠程序自己的办法肯定不靠谱。</p>
@@ -232,14 +238,18 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>task_struct</span> <span class=p>{</span>    <span class=o>?</span><span class=p>}</span> 
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>task_struct</span> <span class=p>{</span>
+    <span class=o>?</span>
+<span class=p>}</span> 
 </code></pre></td></tr></table>
 </div>
 </div><p>换句话说，你总得有一个结构来记录各个进程的信息，比如它上一次执行到哪里了，要不 CPU 就算决定好了要跳转到你这个进程上运行，具体跳到哪一行运行，总得有个地方存吧？</p>
 <p>我们一个个问题抛开来看。</p>
-<h1 id=heading-1></h1>
+<h1 id=heading></h1>
 <p><strong>上下文环境</strong></p>
 <p>每个程序最终的本质就是执行指令。这个过程会涉及<strong>寄存器</strong>，<strong>内存</strong>和<strong>外设端口</strong>。</p>
 <p>内存还有可能设计成相互错开的，互不干扰，比如进程 1 你就用 0~1K 的内存空间，进程 2 就用 1K~2K 的内存空间，咱谁也别影响谁。</p>
@@ -323,7 +333,7 @@ Justice's Blog
 <p>但是有了这个 cr3 字段，就完全可以无需由各个进程自己保证不和其他进程使用的内存冲突，因为只要建立不同的映射关系即可，由操作系统来建立不同的页目录表并替换 cr3 寄存器即可。</p>
 <p>这也可以理解为，保存了<strong>内存映射的上下文信息</strong>。</p>
 <p>当然 Linux 0.11 并不是通过替换 cr3 寄存器来实现内存互不干扰的，它的实现更为简单，这是后话了。</p>
-<h1 id=heading-2></h1>
+<h1 id=heading-1></h1>
 <p><strong>运行时间信息</strong></p>
 <p>如何判断一个进程该让出 CPU 了，切换到下一个进程呢？</p>
 <p>总不能是每次时钟中断时都切换一次吧？一来这样不灵活，二来这完全依赖时钟中断的频率，有点危险。</p>
@@ -373,7 +383,7 @@ Justice's Blog
 </div><p>如果还没到 0，就直接返回，相当于这次时钟中断什么也没做，仅仅是给当前进程的时间片属性做了 -1 操作。</p>
 <p>如果已经到 0 了，就触发<strong>进程调度</strong>，选择下一个进程并使 CPU 跳转到那里运行。</p>
 <p>进程调度的逻辑就是在 <strong>schedule</strong> 函数里，怎么调，我们先不管。</p>
-<h1 id=heading-3></h1>
+<h1 id=heading-2></h1>
 <p><strong>优先级</strong></p>
 <p>上面那个 counter 一开始的时候该是多少呢？而且随着 counter 不断递减，减到 0 时，下一轮回中这个 counter 应该赋予什么值呢？</p>
 <p>其实这俩问题都是一个问题，就是 <strong>counter 的初始化</strong>问题，也需要有一个属性来记录这个值。</p>
@@ -401,8 +411,7 @@ Justice's Blog
 </div>
 </div><p>每次一个进程初始化时，都把 counter 赋值为这个 priority，而且当 counter 减为 0 时，下一次分配时间片，也赋值为这个。</p>
 <p>其实叫啥都行，反正就是这么用的，就叫优先级吧。</p>
-<h1 id=heading-4></h1>
-<p><strong>进程状态</strong></p>
+<h2 id=进程状态>进程状态</h2>
 <p>其实我们有了上面那三个信息，就已经可以完成进程的调度了。</p>
 <p>甚至如果你的操作系统让所有进程都得到同样的运行时间，连 counter 和 priority 都不用记录，就操作系统自己定一个固定值一直递减，减到 0 了就随机切一个新进程。</p>
 <p>这样就仅仅维护好寄存器的上下文信息 tss 就好了。</p>
@@ -525,7 +534,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-06 09:05:06
 </span>
 </p>
 <p class=copyright-item>

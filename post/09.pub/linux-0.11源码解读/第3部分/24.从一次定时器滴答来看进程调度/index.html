@@ -25,12 +25,12 @@
 <meta property="og:description" content="24.定时器 书接上回，上回书咱们说到，我们完全由自己从零到有设计出了进程调度的大体流程，以及它需要的数据结构。 1 2 3 4 5 6 7 struct task_struct { long state; long counter; long">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/24.%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%AE%9A%E6%97%B6%E5%99%A8%E6%BB%B4%E7%AD%94%E6%9D%A5%E7%9C%8B%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-06T09:05:06+08:00">
+<meta property="article:modified_time" content="2024-01-06T09:05:06+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="24.定时器">
-<meta itemprop=description content="24.定时器 书接上回，上回书咱们说到，我们完全由自己从零到有设计出了进程调度的大体流程，以及它需要的数据结构。 1 2 3 4 5 6 7 struct task_struct { long state; long counter; long"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="1658">
+<meta itemprop=description content="24.定时器 书接上回，上回书咱们说到，我们完全由自己从零到有设计出了进程调度的大体流程，以及它需要的数据结构。 1 2 3 4 5 6 7 struct task_struct { long state; long counter; long"><meta itemprop=datePublished content="2024-01-06T09:05:06+08:00">
+<meta itemprop=dateModified content="2024-01-06T09:05:06+08:00">
+<meta itemprop=wordCount content="1664">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第3部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="24.定时器">
 <meta name=twitter:description content="24.定时器 书接上回，上回书咱们说到，我们完全由自己从零到有设计出了进程调度的大体流程，以及它需要的数据结构。 1 2 3 4 5 6 7 struct task_struct { long state; long counter; long"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>24.定时器</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-06 class=post-time>
+2024-01-06 09:05:06
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -216,19 +216,23 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>schedule.c#define HZ 100
-</code></pre></td></tr></table>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// schedule.c
+</span><span class=c1></span><span class=cp>#define HZ 100
+</span></code></pre></td></tr></table>
 </div>
 </div><p>发起的中断叫<strong>时钟中断</strong>，其中断向量号被设置为了 <strong>0x20</strong>。</p>
 <p>还记得我们在 <strong>sched_init</strong> 里设置的时钟中断和对应的中断处理函数吧？</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>schedule.cset_intr_gate(0x20, &amp;timer_interrupt);
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// schedule.c
+</span><span class=c1></span><span class=n>set_intr_gate</span><span class=p>(</span><span class=mh>0x20</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>timer_interrupt</span><span class=p>);</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>这样，当时钟中断，也就是 0x20 号中断来临时，CPU 会查找中断向量表中 0x20 处的函数地址，即中断处理函数，并跳转过去执行。</p>
@@ -465,7 +469,7 @@ void do_timer(long cpl) {
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-06 09:05:06
 </span>
 </p>
 <p class=copyright-item>
@@ -504,8 +508,8 @@ void do_timer(long cpl) {
 <span class="prev-text nav-default">23.进程调度</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/25.%E9%80%9A%E8%BF%87fork%E7%9C%8B%E4%B8%80%E6%AC%A1%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E6%B5%81%E7%A8%8B/>
-<span class="next-text nav-default">25.fork调用</span>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/26.fork%E4%B8%AD%E8%BF%9B%E7%A8%8B%E5%9F%BA%E6%9C%AC%E4%BF%A1%E6%81%AF%E7%9A%84%E5%A4%8D%E5%88%B6/>
+<span class="next-text nav-default">26.fork中进程基本信息的复制</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

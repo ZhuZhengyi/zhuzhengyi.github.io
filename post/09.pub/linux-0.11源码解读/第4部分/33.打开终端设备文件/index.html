@@ -25,12 +25,12 @@
 <meta property="og:description" content="33.打开终端设备文件 书接上回，上回书咱们说到， setup 函数的一番折腾，加载了根文件系统，顺着根 inode 可以找到所有文件，为后续工作奠定了基础。 而有了这">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/33.%E6%89%93%E5%BC%80%E7%BB%88%E7%AB%AF%E8%AE%BE%E5%A4%87%E6%96%87%E4%BB%B6/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-06T09:05:06+08:00">
+<meta property="article:modified_time" content="2024-01-06T09:05:06+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="33.打开终端设备文件">
-<meta itemprop=description content="33.打开终端设备文件 书接上回，上回书咱们说到， setup 函数的一番折腾，加载了根文件系统，顺着根 inode 可以找到所有文件，为后续工作奠定了基础。 而有了这"><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="2589">
+<meta itemprop=description content="33.打开终端设备文件 书接上回，上回书咱们说到， setup 函数的一番折腾，加载了根文件系统，顺着根 inode 可以找到所有文件，为后续工作奠定了基础。 而有了这"><meta itemprop=datePublished content="2024-01-06T09:05:06+08:00">
+<meta itemprop=dateModified content="2024-01-06T09:05:06+08:00">
+<meta itemprop=wordCount content="2703">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第4部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="33.打开终端设备文件">
 <meta name=twitter:description content="33.打开终端设备文件 书接上回，上回书咱们说到， setup 函数的一番折腾，加载了根文件系统，顺着根 inode 可以找到所有文件，为后续工作奠定了基础。 而有了这"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>33.打开终端设备文件</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-06 class=post-time>
+2024-01-06 09:05:06
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -193,40 +193,170 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void init(void) {    setup((void *) &amp;drive_info);    (void) open(&#34;/dev/tty0&#34;,O_RDWR,0);    (void) dup(0);    (void) dup(0);}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=n>setup</span><span class=p>((</span><span class=kt>void</span> <span class=o>*</span><span class=p>)</span> <span class=o>&amp;</span><span class=n>drive_info</span><span class=p>);</span>
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/dev/tty0&#34;</span><span class=p>,</span><span class=n>O_RDWR</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>那我们接下来的焦点就在这个 open 函数，以及它要打开的文件 /dev/tty0，还有后面的两个 dup。</p>
 <p>open 函数会触发 0x80 中断，最终调用到 sys_open 这个系统调用函数，相信你已经很熟悉了。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>open.cstruct file file_table[64] = {0};int sys_open(const char * filename,int flag,int mode) {    struct m_inode * inode;    struct file * f;    int i,fd;    mode &amp;= 0777 &amp; ~current-&gt;umask;    for(fd=0 ; fd&lt;20; fd++)        if (!current-&gt;filp[fd])            break;    if (fd&gt;=20)        return -EINVAL;    current-&gt;close_on_exec &amp;= ~(1&lt;&lt;fd);    f=0+file_table;    for (i=0 ; i&lt;64 ; i++,f++)        if (!f-&gt;f_count) break;    if (i&gt;=64)        return -EINVAL;    (current-&gt;filp[fd]=f)-&gt;f_count++;    i = open_namei(filename,flag,mode,&amp;inode);    if (S_ISCHR(inode-&gt;i_mode))        if (MAJOR(inode-&gt;i_zone[0])==4) {            if (current-&gt;leader &amp;&amp; current-&gt;tty&lt;0) {                current-&gt;tty = MINOR(inode-&gt;i_zone[0]);                tty_table[current-&gt;tty].pgrp = current-&gt;pgrp;            }        } else if (MAJOR(inode-&gt;i_zone[0])==5)            if (current-&gt;tty&lt;0) {                iput(inode);                current-&gt;filp[fd]=NULL;                f-&gt;f_count=0;                return -EPERM;            }    if (S_ISBLK(inode-&gt;i_mode))        check_disk_change(inode-&gt;i_zone[0]);    f-&gt;f_mode = inode-&gt;i_mode;    f-&gt;f_flags = flag;    f-&gt;f_count = 1;    f-&gt;f_inode = inode;    f-&gt;f_pos = 0;    return (fd);}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// open.c
+</span><span class=c1></span><span class=k>struct</span> <span class=n>file</span> <span class=n>file_table</span><span class=p>[</span><span class=mi>64</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span><span class=mi>0</span><span class=p>};</span>
+<span class=kt>int</span> <span class=nf>sys_open</span><span class=p>(</span><span class=k>const</span> <span class=kt>char</span> <span class=o>*</span> <span class=n>filename</span><span class=p>,</span><span class=kt>int</span> <span class=n>flag</span><span class=p>,</span><span class=kt>int</span> <span class=n>mode</span><span class=p>)</span> <span class=p>{</span>
+    <span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>inode</span><span class=p>;</span>
+    <span class=k>struct</span> <span class=n>file</span> <span class=o>*</span> <span class=n>f</span><span class=p>;</span>
+    <span class=kt>int</span> <span class=n>i</span><span class=p>,</span><span class=n>fd</span><span class=p>;</span>
+    <span class=n>mode</span> <span class=o>&amp;=</span> <span class=mo>0777</span> <span class=o>&amp;</span> <span class=o>~</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>umask</span><span class=p>;</span>
+    <span class=k>for</span><span class=p>(</span><span class=n>fd</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>fd</span><span class=o>&lt;</span><span class=mi>20</span><span class=p>;</span> <span class=n>fd</span><span class=o>++</span><span class=p>)</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>fd</span><span class=p>])</span>
+            <span class=k>break</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>fd</span><span class=o>&gt;=</span><span class=mi>20</span><span class=p>)</span>
+        <span class=k>return</span> <span class=o>-</span><span class=n>EINVAL</span><span class=p>;</span>
+    <span class=n>current</span><span class=o>-&gt;</span><span class=n>close_on_exec</span> <span class=o>&amp;=</span> <span class=o>~</span><span class=p>(</span><span class=mi>1</span><span class=o>&lt;&lt;</span><span class=n>fd</span><span class=p>);</span>
+    <span class=n>f</span><span class=o>=</span><span class=mi>0</span><span class=o>+</span><span class=n>file_table</span><span class=p>;</span>
+    <span class=k>for</span> <span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>i</span><span class=o>&lt;</span><span class=mi>64</span> <span class=p>;</span> <span class=n>i</span><span class=o>++</span><span class=p>,</span><span class=n>f</span><span class=o>++</span><span class=p>)</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>f</span><span class=o>-&gt;</span><span class=n>f_count</span><span class=p>)</span> <span class=k>break</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>i</span><span class=o>&gt;=</span><span class=mi>64</span><span class=p>)</span>
+        <span class=k>return</span> <span class=o>-</span><span class=n>EINVAL</span><span class=p>;</span>
+    <span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>fd</span><span class=p>]</span><span class=o>=</span><span class=n>f</span><span class=p>)</span><span class=o>-&gt;</span><span class=n>f_count</span><span class=o>++</span><span class=p>;</span>
+    <span class=n>i</span> <span class=o>=</span> <span class=n>open_namei</span><span class=p>(</span><span class=n>filename</span><span class=p>,</span><span class=n>flag</span><span class=p>,</span><span class=n>mode</span><span class=p>,</span><span class=o>&amp;</span><span class=n>inode</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>S_ISCHR</span><span class=p>(</span><span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_mode</span><span class=p>))</span>
+        <span class=k>if</span> <span class=p>(</span><span class=n>MAJOR</span><span class=p>(</span><span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_zone</span><span class=p>[</span><span class=mi>0</span><span class=p>])</span><span class=o>==</span><span class=mi>4</span><span class=p>)</span> <span class=p>{</span>
+            <span class=k>if</span> <span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>leader</span> <span class=o>&amp;&amp;</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>tty</span><span class=o>&lt;</span><span class=mi>0</span><span class=p>)</span> <span class=p>{</span>
+                <span class=n>current</span><span class=o>-&gt;</span><span class=n>tty</span> <span class=o>=</span> <span class=n>MINOR</span><span class=p>(</span><span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_zone</span><span class=p>[</span><span class=mi>0</span><span class=p>]);</span>
+                <span class=n>tty_table</span><span class=p>[</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>tty</span><span class=p>].</span><span class=n>pgrp</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>pgrp</span><span class=p>;</span>
+            <span class=p>}</span>
+        <span class=p>}</span> <span class=k>else</span> <span class=k>if</span> <span class=p>(</span><span class=n>MAJOR</span><span class=p>(</span><span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_zone</span><span class=p>[</span><span class=mi>0</span><span class=p>])</span><span class=o>==</span><span class=mi>5</span><span class=p>)</span>
+            <span class=k>if</span> <span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>tty</span><span class=o>&lt;</span><span class=mi>0</span><span class=p>)</span> <span class=p>{</span>
+                <span class=n>iput</span><span class=p>(</span><span class=n>inode</span><span class=p>);</span>
+                <span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>fd</span><span class=p>]</span><span class=o>=</span><span class=nb>NULL</span><span class=p>;</span>
+                <span class=n>f</span><span class=o>-&gt;</span><span class=n>f_count</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>
+                <span class=k>return</span> <span class=o>-</span><span class=n>EPERM</span><span class=p>;</span>
+            <span class=p>}</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>S_ISBLK</span><span class=p>(</span><span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_mode</span><span class=p>))</span>
+        <span class=n>check_disk_change</span><span class=p>(</span><span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_zone</span><span class=p>[</span><span class=mi>0</span><span class=p>]);</span>
+    <span class=n>f</span><span class=o>-&gt;</span><span class=n>f_mode</span> <span class=o>=</span> <span class=n>inode</span><span class=o>-&gt;</span><span class=n>i_mode</span><span class=p>;</span>
+    <span class=n>f</span><span class=o>-&gt;</span><span class=n>f_flags</span> <span class=o>=</span> <span class=n>flag</span><span class=p>;</span>
+    <span class=n>f</span><span class=o>-&gt;</span><span class=n>f_count</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span>
+    <span class=n>f</span><span class=o>-&gt;</span><span class=n>f_inode</span> <span class=o>=</span> <span class=n>inode</span><span class=p>;</span>
+    <span class=n>f</span><span class=o>-&gt;</span><span class=n>f_pos</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=k>return</span> <span class=p>(</span><span class=n>fd</span><span class=p>);</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>这么大一坨别怕，我们慢慢来分析，我先用一张图来描述这一大坨代码的作用。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-45-51-4e1e11ee5c327696e756e8faea876958.png alt=图片></p>
-<p>**第一步，在进程文件描述符数组 filp 中找到一个空闲项。**还记得进程的 task_struct 结构吧，其中有一个 filp 数组的字段，就是我们常说的文件描述符数组，这里先找到一个空闲项，将空闲地方的索引值即为 fd。</p>
+<ul>
+<li>第一步，在进程文件描述符数组 filp 中找到一个空闲项。**还记得进程的 task_struct 结构吧，其中有一个 filp 数组的字段，就是我们常说的文件描述符数组，这里先找到一个空闲项，将空闲地方的索引值即为 fd。</li>
+</ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {    ...    for(int fd=0 ; fd&lt;20; fd++)        if (!current-&gt;filp[fd])            break;    if (fd&gt;=20)        return -EINVAL;    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_open</span><span class=p>(</span><span class=k>const</span> <span class=kt>char</span> <span class=o>*</span> <span class=n>filename</span><span class=p>,</span><span class=kt>int</span> <span class=n>flag</span><span class=p>,</span><span class=kt>int</span> <span class=n>mode</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=k>for</span><span class=p>(</span><span class=kt>int</span> <span class=n>fd</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>fd</span><span class=o>&lt;</span><span class=mi>20</span><span class=p>;</span> <span class=n>fd</span><span class=o>++</span><span class=p>)</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>fd</span><span class=p>])</span>
+            <span class=k>break</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>fd</span><span class=o>&gt;=</span><span class=mi>20</span><span class=p>)</span>
+        <span class=k>return</span> <span class=o>-</span><span class=n>EINVAL</span><span class=p>;</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>由于此时当前进程，也就是进程 1，还没有打开过任何文件，所以 0 号索引处就是空闲的，fd 自然就等于 0。</p>
-<p>**第二步，在系统文件表 file_table 中找到一个空闲项。**一样的玩法。</p>
+<ul>
+<li>第二步，在系统文件表 file_table 中找到一个空闲项。**一样的玩法。</li>
+</ul>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {    int i;    ...    struct file * f=0+file_table;    for (i=0 ; i&lt;64; i++,f++)        if (!f-&gt;f_count) break;    if (i&gt;=64)        return -EINVAL;    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_open</span><span class=p>(</span><span class=k>const</span> <span class=kt>char</span> <span class=o>*</span> <span class=n>filename</span><span class=p>,</span><span class=kt>int</span> <span class=n>flag</span><span class=p>,</span><span class=kt>int</span> <span class=n>mode</span><span class=p>)</span> <span class=p>{</span>
+    <span class=kt>int</span> <span class=n>i</span><span class=p>;</span>
+    <span class=p>...</span>
+    <span class=k>struct</span> <span class=n>file</span> <span class=o>*</span> <span class=n>f</span><span class=o>=</span><span class=mi>0</span><span class=o>+</span><span class=n>file_table</span><span class=p>;</span>
+    <span class=k>for</span> <span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>i</span><span class=o>&lt;</span><span class=mi>64</span><span class=p>;</span> <span class=n>i</span><span class=o>++</span><span class=p>,</span><span class=n>f</span><span class=o>++</span><span class=p>)</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>f</span><span class=o>-&gt;</span><span class=n>f_count</span><span class=p>)</span> <span class=k>break</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>i</span><span class=o>&gt;=</span><span class=mi>64</span><span class=p>)</span>
+        <span class=k>return</span> <span class=o>-</span><span class=n>EINVAL</span><span class=p>;</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>注意到，进程的 filp 数组大小是 20，系统的 file_table 大小是 64，可以得出，每个进程最多打开 20 个文件，整个系统最多打开 64 个文件。</p>
@@ -234,18 +364,42 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {    ...    current-&gt;filp[fd] = f;    ...}
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {
+    ...
+    current-&gt;filp[fd] = f;
+    ...
+}
 </code></pre></td></tr></table>
 </div>
 </div><p>**第四步，根据文件名从文件系统中找到这个文件。**其实相当于找到了这个 tty0 文件对应的 <strong>inode</strong> 信息。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {    ...    // filename = &#34;/dev/tty0&#34;    // flag = O_RDWR 读写    // 不是创建新文件，所以 mode 没用    // inode 是返回参数    open_namei(filename,flag,mode,&amp;inode);    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_open</span><span class=p>(</span><span class=k>const</span> <span class=kt>char</span> <span class=o>*</span> <span class=n>filename</span><span class=p>,</span><span class=kt>int</span> <span class=n>flag</span><span class=p>,</span><span class=kt>int</span> <span class=n>mode</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=c1>// filename = &#34;/dev/tty0&#34;
+</span><span class=c1></span>    <span class=c1>// flag = O_RDWR 读写
+</span><span class=c1></span>    <span class=c1>// 不是创建新文件，所以 mode 没用
+</span><span class=c1></span>    <span class=c1>// inode 是返回参数
+</span><span class=c1></span>    <span class=n>open_namei</span><span class=p>(</span><span class=n>filename</span><span class=p>,</span><span class=n>flag</span><span class=p>,</span><span class=n>mode</span><span class=p>,</span><span class=o>&amp;</span><span class=n>inode</span><span class=p>);</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>接下来判断 tty0 这个 inode 是否是字符设备，如果是字符设备文件，那么如果设备号是 4 的话，则设置当前进程的 tty 号为该 inode 的子设备号。并设置当前进程tty 对应的tty 表项的父进程组号等于进程的父进程组号。</p>
@@ -253,10 +407,28 @@ Justice's Blog
 <p>**最后第五步，填充 file 数据。**其实就是初始化这个 f，包括刚刚找到的 inode 值。最后返回给上层文件描述符 fd 的值，也就是零。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {    ...    f-&gt;f_mode = inode-&gt;i_mode;    f-&gt;f_flags = flag;    f-&gt;f_count = 1;    f-&gt;f_inode = inode;    f-&gt;f_pos = 0;    return (fd);    ...}
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_open(const char * filename,int flag,int mode) {
+    ...
+    f-&gt;f_mode = inode-&gt;i_mode;
+    f-&gt;f_flags = flag;
+    f-&gt;f_count = 1;
+    f-&gt;f_inode = inode;
+    f-&gt;f_pos = 0;
+    return (fd);
+    ...
+}
 </code></pre></td></tr></table>
 </div>
 </div><p>最后再回过头看这张图，是不是就有感觉了？</p>
@@ -268,18 +440,26 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_read (unsigned int fd, char *buf, int count) {    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_read</span> <span class=p>(</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>fd</span><span class=p>,</span> <span class=kt>char</span> <span class=o>*</span><span class=n>buf</span><span class=p>,</span> <span class=kt>int</span> <span class=n>count</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p><strong>写函数</strong>的系统调用入口。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_write (unsigned int fd, char *buf, int count) {    ...}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_write</span> <span class=p>(</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>fd</span><span class=p>,</span> <span class=kt>char</span> <span class=o>*</span><span class=n>buf</span><span class=p>,</span> <span class=kt>int</span> <span class=n>count</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>入参都有个 int 型的文件描述符 fd，就是刚刚 open 时返回的，就这么简单。</p>
@@ -287,9 +467,19 @@ Justice's Blog
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void init(void) {    setup((void *) &amp;drive_info);    (void) open(&#34;/dev/tty0&#34;,O_RDWR,0);    (void) dup(0);    (void) dup(0);}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=n>setup</span><span class=p>((</span><span class=kt>void</span> <span class=o>*</span><span class=p>)</span> <span class=o>&amp;</span><span class=n>drive_info</span><span class=p>);</span>
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/dev/tty0&#34;</span><span class=p>,</span><span class=n>O_RDWR</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>上一讲中我们讲了 setup 加载根文件系统的事情。</p>
@@ -303,10 +493,40 @@ Justice's Blog
 <p>那这个 dup 又是什么原理呢？非常简单，首先仍然是通过系统调用方式，调用到 sys_dup 函数。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>int sys_dup(unsigned int fildes) {    return dupfd(fildes,0);}// fd 是要复制的文件描述符// arg 是指定新文件描述符的最小数值static int dupfd(unsigned int fd, unsigned int arg) {    ...    while (arg &lt; 20)        if (current-&gt;filp[arg])            arg++;        else            break;    ...    (current-&gt;filp[arg] = current-&gt;filp[fd])-&gt;f_count++;    return arg;}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_dup</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>fildes</span><span class=p>)</span> <span class=p>{</span>
+    <span class=k>return</span> <span class=n>dupfd</span><span class=p>(</span><span class=n>fildes</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>
+<span class=p>}</span>
+<span class=c1>// fd 是要复制的文件描述符
+</span><span class=c1>// arg 是指定新文件描述符的最小数值
+</span><span class=c1></span><span class=k>static</span> <span class=kt>int</span> <span class=nf>dupfd</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>fd</span><span class=p>,</span> <span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>arg</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=k>while</span> <span class=p>(</span><span class=n>arg</span> <span class=o>&lt;</span> <span class=mi>20</span><span class=p>)</span>
+        <span class=k>if</span> <span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>arg</span><span class=p>])</span>
+            <span class=n>arg</span><span class=o>++</span><span class=p>;</span>
+        <span class=k>else</span>
+            <span class=k>break</span><span class=p>;</span>
+    <span class=p>...</span>
+    <span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>arg</span><span class=p>]</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>fd</span><span class=p>])</span><span class=o>-&gt;</span><span class=n>f_count</span><span class=o>++</span><span class=p>;</span>
+    <span class=k>return</span> <span class=n>arg</span><span class=p>;</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>我仍然是把一些错误校验的旁路逻辑去掉了。</p>
@@ -384,7 +604,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-06 09:05:06
 </span>
 </p>
 <p class=copyright-item>
@@ -423,8 +643,8 @@ Justice's Blog
 <span class="prev-text nav-default">32.加载根文件系统</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/34.%E8%BF%9B%E7%A8%8B2%E7%9A%84%E5%88%9B%E5%BB%BA/>
-<span class="next-text nav-default">34.进程2的创建</span>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/35.execve%E5%8A%A0%E8%BD%BD%E5%B9%B6%E6%89%A7%E8%A1%8Cshell%E7%A8%8B%E5%BA%8F/>
+<span class="next-text nav-default">35.扒开execve的皮</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

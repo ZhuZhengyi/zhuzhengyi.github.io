@@ -25,12 +25,12 @@
 <meta property="og:description" content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ...">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/36.%E7%BC%BA%E9%A1%B5%E4%B8%AD%E6%96%AD/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-03T21:41:02+08:00">
-<meta property="article:modified_time" content="2024-01-03T21:41:02+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-06T09:05:06+08:00">
+<meta property="article:modified_time" content="2024-01-06T09:05:06+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="36.缺页中断">
-<meta itemprop=description content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ..."><meta itemprop=datePublished content="2024-01-03T21:41:02+08:00">
-<meta itemprop=dateModified content="2024-01-03T21:41:02+08:00">
-<meta itemprop=wordCount content="3580">
+<meta itemprop=description content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ..."><meta itemprop=datePublished content="2024-01-06T09:05:06+08:00">
+<meta itemprop=dateModified content="2024-01-06T09:05:06+08:00">
+<meta itemprop=wordCount content="3576">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第4部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="36.缺页中断">
 <meta name=twitter:description content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ..."><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>36.缺页中断</h1>
 <div class=post-meta>
-<time datetime=2024-01-03 class=post-time>
-2024-01-03 21:41:02
+<time datetime=2024-01-06 class=post-time>
+2024-01-06 09:05:06
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -182,7 +182,13 @@ Justice's Blog
 <div class=post-toc id=post-toc>
 <h2 class=post-toc-title>文章目录</h2>
 <div class=post-toc-content>
-<nav id=TableOfContents></nav>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#跳转到一个不存在的地址会发生什么>跳转到一个不存在的地址会发生什么</a></li>
+<li><a href=#缺页中断-do_no_page>缺页中断 do_no_page</a></li>
+<li><a href=#缺页中断返回>缺页中断返回</a></li>
+</ul>
+</nav>
 </div>
 </div>
 <div class=post-content>
@@ -223,8 +229,7 @@ Justice's Blog
 <p>但有个问题是，我们仅仅将 /bin/sh 文件的头部加载到了内存，其他部分并没有进行加载，那我们是怎么执行到的 /bin/sh 的程序指令呢？</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-18-44-22-2ddc77fe8686ba8e985c099d1efe6d7d.png alt=图片></p>
 <p>我们就带着这个问题，开始今天的探索。</p>
-<h1 id=heading></h1>
-<p><strong>跳转到一个不存在的地址会发生什么</strong></p>
+<h2 id=跳转到一个不存在的地址会发生什么>跳转到一个不存在的地址会发生什么</h2>
 <p>/bin/sh 这个文件并不是 Linux 0.11 源码里的内容，Linux 0.11 只管按照 a.out 这种格式去解读它，跳转到 a.out 格式头部数据结构 <strong>exec.a_entry</strong> 所指向的内存地址去执行指令。</p>
 <p>所以这个 a_entry 的值是多少，就完全取决于硬盘中 /bin/sh 这个文件是怎么构造的了，我们简单点，就假设它为 <strong>0</strong>，这表示随后的 CPU 将跳转到 0 地址处进行执行。</p>
 <p>当然，这个 0 仅仅表示<strong>逻辑地址</strong>，既没有进行分段，也没有进行分页。</p>
@@ -268,8 +273,7 @@ Justice's Blog
 <p>之前在讲 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247502033&idx=1&sn=1acfd8b7f4c805906ecd51c33d0010eb&chksm=c2c5b27cf5b23b6a41051c7f93407afc97094a4b0a36ea050616778f4d072f074602f98983b2&scene=21#wechat_redirect">第30回 | 番外篇 - 写时复制就这么几行代码</a> 的时候，讲了 <strong>do_wp_page</strong>，这是在 P=1 时的逻辑，文章的结尾我说过，后面会把页表项的存在位 P 为 0 时触发的 do_no_page 逻辑讲给大家，这不就来了么。</p>
 <p>do_wp_page 叫<strong>页写保护中断</strong>，do_no_page 叫<strong>缺页中断</strong>。</p>
 <p>好了，我们用了很大篇幅，说明白了跳转到一个 P=0 的地址会发生什么，接下来就是具体看 do_no_page 函数的逻辑咯。</p>
-<h1 id=heading-1></h1>
-<p><strong>缺页中断 do_no_page</strong></p>
+<h2 id=缺页中断-do_no_page>缺页中断 do_no_page</h2>
 <p>我们先一睹为快它的代码。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -499,8 +503,10 @@ void do_no_page(unsigned long address) {    
 }
 </code></pre></td></tr></table>
 </div>
-</div><p><strong>从硬盘的哪个位置开始读呢？<strong>首先 0 内存地址，应该就对应着这个文件 0 号数据块，当然由于 /bin/sh 这个 a.out 格式的文件使用了 1 个数据块作为头部 exec 结构，所以我们</strong>跳过头部</strong>，从文件 1 号数据块开始读。</p>
-<p>**读多少块呢？**因为硬盘中的 1 个数据块为 1024 字节，而一页内存为 4096 字节，所以要读 4 块，这就是 nr[4] 的缘故。</p>
+</div><p>从硬盘的哪个位置开始读呢？</p>
+<p>首先 0 内存地址，应该就对应着这个文件 0 号数据块，当然由于 /bin/sh 这个 a.out 格式的文件使用了 1 个数据块作为头部 exec 结构，所以我们<strong>跳过头部</strong>，从文件 1 号数据块开始读。</p>
+<p>读多少块呢？</p>
+<p>因为硬盘中的 1 个数据块为 1024 字节，而一页内存为 4096 字节，所以要读 4 块，这就是 nr[4] 的缘故。</p>
 <p>之后读取数据主要是两个函数，<strong>bmap</strong> 负责将相对于文件的数据块转换为相对于整个硬盘的数据块，比如这个文件的第 1 块数据，可能对应在整个硬盘的第 24 块的位置。</p>
 <p><strong>bread_page</strong> 就是连续读取 4 个数据块到 1 页内存的函数，这个函数原理就复杂了，之后第五部分会讲这块的内容，但站在用户层的效果很好理解，就是把硬盘数据复制到内存罢了。</p>
 <p>OK，现在硬盘上所需要的内容已经被读入物理内存了。</p>
@@ -562,8 +568,7 @@ unsigned long put_page(unsigned long page,unsigned long address) {   �
 </div>
 </div><p>大家可以结合页目录表和页表的数据结构看一下，很简单，就是个计算过程。</p>
 <p>关于页目录表和页表这些<strong>分页</strong>相关的知识，可以回顾之前的 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499821&idx=1&sn=df90a7c57607bf501b5ef535f8440d98&chksm=c2c5ba80f5b233969bf591f919107e28e7be51f066821cba1ea39bf19cc0332b95b94d29467d&scene=21#wechat_redirect">第9回 | Intel 内存管理两板斧：分段与分页</a>，这里就不再赘述。</p>
-<h1 id=heading-2></h1>
-<p><strong>缺页中断返回</strong></p>
+<h2 id=缺页中断返回>缺页中断返回</h2>
 <p>好了，这就是整个缺页中断处理的过程，本质上就是加载硬盘对应位置的数据，然后建立页表的过程。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
@@ -653,7 +658,7 @@ unsigned long put_page(unsigned long page,unsigned long address) {   �
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-03 21:41:02
+2024-01-06 09:05:06
 </span>
 </p>
 <p class=copyright-item>
@@ -692,8 +697,8 @@ unsigned long put_page(unsigned long page,unsigned long address) {   �
 <span class="prev-text nav-default">35.扒开execve的皮</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/37.shell%E7%A8%8B%E5%BA%8F%E8%B7%91%E8%B5%B7%E6%9D%A5%E4%BA%86/>
-<span class="next-text nav-default">37.shell程序跑起来了</span>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/39.%E7%95%AA%E5%A4%96%E7%AF%87-linux_0.11%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/>
+<span class="next-text nav-default">39.调试Linux最早期的代码</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
