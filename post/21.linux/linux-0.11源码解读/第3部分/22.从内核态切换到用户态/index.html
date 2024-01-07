@@ -1,0 +1,556 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>22.从内核态到用户态 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="22.从内核态到用户态 书接上回，上回书咱们从整体上鸟瞰了一下第三部分要讲的内容，代码上就是还差四句话就走到了 main 函数的尽头。 1 2 3 4 5 6 7 8 9">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/22.%E4%BB%8E%E5%86%85%E6%A0%B8%E6%80%81%E5%88%87%E6%8D%A2%E5%88%B0%E7%94%A8%E6%88%B7%E6%80%81/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="22.从内核态到用户态">
+<meta property="og:description" content="22.从内核态到用户态 书接上回，上回书咱们从整体上鸟瞰了一下第三部分要讲的内容，代码上就是还差四句话就走到了 main 函数的尽头。 1 2 3 4 5 6 7 8 9">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/22.%E4%BB%8E%E5%86%85%E6%A0%B8%E6%80%81%E5%88%87%E6%8D%A2%E5%88%B0%E7%94%A8%E6%88%B7%E6%80%81/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-08T06:47:33+08:00">
+<meta property="article:modified_time" content="2024-01-08T06:47:33+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="22.从内核态到用户态">
+<meta itemprop=description content="22.从内核态到用户态 书接上回，上回书咱们从整体上鸟瞰了一下第三部分要讲的内容，代码上就是还差四句话就走到了 main 函数的尽头。 1 2 3 4 5 6 7 8 9"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
+<meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
+<meta itemprop=wordCount content="3793">
+<meta itemprop=keywords content="linux,linux-0.11源码解读,第3部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="22.从内核态到用户态">
+<meta name=twitter:description content="22.从内核态到用户态 书接上回，上回书咱们从整体上鸟瞰了一下第三部分要讲的内容，代码上就是还差四句话就走到了 main 函数的尽头。 1 2 3 4 5 6 7 8 9"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>22.从内核态到用户态</h1>
+<div class=post-meta>
+<time datetime=2024-01-08 class=post-time>
+2024-01-08 06:47:33
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC3%E9%83%A8%E5%88%86/> 第3部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=22从内核态到用户态>22.从内核态到用户态</h1>
+<p>书接上回，上回书咱们从整体上鸟瞰了一下第三部分要讲的内容，代码上就是还差四句话就走到了 main 函数的尽头。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void main(void) {
+    ...
+    move_to_user_mode();
+    if (!fork()) {
+        init();
+    }
+    for(;;) 
+        pause();
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>今天我们就重点讲这第一句代码，<strong>move_to_user_mode</strong>。</p>
+<p><strong>让进程无法逃出用户态</strong></p>
+<p>这行代码的意思直接说非常简单，就是<strong>从内核态转变为了用户态</strong>，但要解释清楚这个意思，还需要听我慢慢道来。</p>
+<p>我相信你肯定听说过操作系统的内核态与用户态，用户进程都在用户态这个特权级下运行，而有时程序想要做一些内核态才允许做的事情，比如读取硬盘的数据，就需要通过系统调用，来请求操作系统在内核态特权级下执行一些指令。</p>
+<p>我们现在的代码，还是在内核态下运行，之后操作系统达到怠速状态时，是以用户态的 shell 进程运行，随时等待着来自用户输入的命令。</p>
+<p>所以，就在这一步，也就是 move_to_user_mode 这行代码，作用就是将当前代码的特权级，从内核态变为用户态。</p>
+<p>一旦转变为了用户态，那么之后的代码将一直处于用户态的模式，除非发生了中断，比如用户发出了系统调用的中断指令，那么此时将会从用户态陷入内核态，不过当中断处理程序执行完之后，又会通过中断返回指令从内核态回到用户态。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-03-49-61e0836c15abc0f8a029edd825bd355c.png alt=图片></p>
+<p>整个过程被操作系统的机制拿捏的死死的，始终让用户进程处于用户态运行，必要的时候陷入一下内核态，但很快就会被返回而再次回到用户态，是不是非常无奈？这样操作系统就掌控了控制权，而用户进程再怎么折腾也无法逃出这个模式。</p>
+<p><strong>内核态与用户态的本质-特权级</strong></p>
+<p>首先从一个最大的视角来看，这一切都源于 CPU 的保护机制。CPU 为了配合操作系统完成保护机制这一特性，分别设计了<strong>分段保护机制</strong>与<strong>分页保护机制</strong>。</p>
+<p>当我们在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499699&idx=1&sn=000d83798b0158dbdf48d76e49d3ff96&chksm=c2c5851ef5b20c08bc641d4b118db78a3af5a4f90a057d1ce9f9b68f04b529124f466c743bc5&scene=21#wechat_redirect">第七回 | 六行代码就进入了保护模式</a> 将 cr0 寄存器的 PE 位开启时，就开启了保护模式，也即开启了<strong>分段保护机制</strong>。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-03-57-869fff8adaf406ba63172339e1bfd2eb.png alt=图片></p>
+<p>当我们在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499821&idx=1&sn=df90a7c57607bf501b5ef535f8440d98&chksm=c2c5ba80f5b233969bf591f919107e28e7be51f066821cba1ea39bf19cc0332b95b94d29467d&scene=21#wechat_redirect">第九回 | Intel 内存管理两板斧：分段与分页</a> 将 cr0 寄存器的 PG 位开启时，就开启了分页模式，也即开启了<strong>分页保护机制</strong>。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-05-49129ad6f65dc0681469887da90ed391.png alt=图片></p>
+<p>有关特权级的保护，实际上属于分段保护机制的一种。具体怎么保护的呢？由于这里的细节比较繁琐，所以我举个例子简单理解下即可，实际上的特权级检查规则要比我说的多好多内容。</p>
+<p>我们目前正在执行的代码地址，是通过 CPU 中的两个寄存器 cs : eip 指向的对吧？cs 寄存器是代码段寄存器，里面存着的是段选择子，还记得它的结构么？</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-13-d9801ca377ad82e2d263899402161335.png alt=图片></p>
+<p>这里面的低端两位，此时表示 <strong>CPL</strong>，也就是<strong>当前所处的特权级</strong>，假如我们现在这个时刻，CS 寄存器的后两位为 3，二进制就是 11，就表示是当前处理器处于用户态这个特权级。</p>
+<p>假如我们此时要跳转到另一处内存地址执行，在最终的汇编指令层面无非就是 jmp、call 和中断。我们拿 jmp 跳转来举例。</p>
+<p>如果是短跳转，也就是直接 jmp xxx，那不涉及到段的变换，也就没有特权级检查这回事。</p>
+<p>如果是长跳转，也就是 jmp yyy : xxx，这里的 yyy 就是另一个要跳转到的段的段选择子结构。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-19-d9801ca377ad82e2d263899402161335.png alt=图片></p>
+<p>这个结构仍然是一样的段选择子结构，只不过这里的低端两位，表示 <strong>RPL</strong>，也就是<strong>请求特权级</strong>，表示我想请求的特权级是什么。同时，CPU 会拿这个段选择子去全局描述符表中寻找段描述符，从中找到段基址。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-25-f933895a80f5fcf19722c55b9478c495.png alt=图片></p>
+<p>那还记得段描述符的样子么？</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-31-cfbf6ade355ec9cf8b84cba0f1fa5078.png alt=图片></p>
+<p>你看，这里面又有个 <strong>DPL</strong>，这表示<strong>目标代码段特权级</strong>，也就是即将要跳转过去的那个段的特权级。</p>
+<p>好了，我们总结一下简图，就是这三个玩意的比较。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-38-fec7e638b06a864c765a15c470a4d41f.png alt=图片></p>
+<p>这里的检查规则比较多，简单说，绝大多数情况下，<strong>要求 CPL 必须等于 DPL</strong>，才会跳转成功，否则就会报错。</p>
+<p>也就是说，当前代码所处段的特权级，必须要等于要跳转过去的代码所处的段的特权级，那就只能<strong>用户态往用户态跳</strong>，<strong>内核态往内核态跳</strong>，这样就防止了处于用户态的程序，跳转到内核态的代码段中做坏事。</p>
+<p>这只是代码段跳转时所做的特权级检查，还有访问内存数据时也会有数据段的特权级检查，这里就不展开了。最终的效果是，<strong>处于内核态的代码可以访问任何特权级的数据段，处于用户态的代码则只可以访问用户态的数据段</strong>，这也就实现了内存数据读写的保护。</p>
+<p>说了这么多，其实就是，<strong>代码跳转只能同特权级，数据访问只能高特权级访问低特权级</strong>。</p>
+<p><strong>特权级转换的方式</strong></p>
+<p>诶不对呀，那我们今天要讲的是，从内核态转变为用户态，那如果代码跳转只能同特权级跳，我们现在处于内核态，要怎么样才能跳转到用户态呢？</p>
+<p>Intel 设计了好多种特权级转换的方式，<strong>中断</strong>和<strong>中断返回</strong>就是其中的一种。</p>
+<p><strong>处于用户态的程序，通过触发中断，可以进入内核态，之后再通过中断返回，又可以恢复为用户态</strong>。</p>
+<p>就是刚刚的图所表示的。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-47-61e0836c15abc0f8a029edd825bd355c.png alt=图片></p>
+<p>而<strong>系统调用</strong>就是这么玩的，用户通过 <strong>int 0x80</strong> 中断指令触发了中断，CPU 切换至内核态，执行中断处理程序，之后中断程序返回，又从内核态切换回用户态。</p>
+<p>但有个问题是，我们当前的代码，此时就是处于内核态，并不是由一个用户态程序通过中断而切换到的内核态，那怎么回到原来的用户态呢？答案还是，通过中断返回。</p>
+<p>没有中断也能中断返回？可以的，Intel 设计的 CPU 就是这样不符合人们的直觉，中断和中断返回的确是应该配套使用的，但也可以单独使用，我们看代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=n>move_to_user_mode</span><span class=p>();</span>
+    <span class=p>...</span>
+<span class=p>}</span>
+<span class=cp>#define move_to_user_mode()
+</span><span class=cp></span> <span class=err>\</span><span class=n>_asm</span> <span class=p>{</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>mov</span> <span class=n>eax</span><span class=p>,</span><span class=n>esp</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>push</span> <span class=mo>00000017</span><span class=n>h</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>push</span> <span class=n>eax</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>pushfd</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>push</span> <span class=mf>0000000f</span><span class=n>h</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>push</span> <span class=n>offset</span> <span class=n>l1</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>iretd</span> <span class=cm>/* 执行中断返回指令*/</span>
+ <span class=err>\</span><span class=n>_asm</span> <span class=nl>l1</span><span class=p>:</span> <span class=n>mov</span> <span class=n>eax</span><span class=p>,</span><span class=mi>17</span><span class=n>h</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>mov</span> <span class=n>ds</span><span class=p>,</span><span class=n>ax</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>mov</span> <span class=n>es</span><span class=p>,</span><span class=n>ax</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>mov</span> <span class=n>fs</span><span class=p>,</span><span class=n>ax</span>
+ <span class=err>\</span>    <span class=n>_asm</span> <span class=n>mov</span> <span class=n>gs</span><span class=p>,</span><span class=n>ax</span>
+ <span class=err>\</span><span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>你看，这个方法里直接就执行了中断返回指令 iretd。</p>
+<p>那么为什么之前进行了一共<strong>五次的压栈操作呢</strong>？因为中断返回理论上就是应该和中断配合使用的，而此时并不是真的发生了中断到这里，所以我们得<strong>假装发生了中断</strong>才行。</p>
+<p>怎么假装呢？其实就把栈做做工作就好了，中断发生时，CPU 会自动帮我们做如下的压栈操作。而中断返回时，CPU 又会帮我们把压栈的这些值返序赋值给响应的寄存器。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-54-7f62b07d76419bae408224583fe649ca.png alt=图片></p>
+<p>去掉错误码，刚好是五个参数，所以我们在代码中模仿 CPU 进行了五次压栈操作，这样在执行 iretd 指令时，硬件会按顺序将刚刚压入栈中的数据，分别赋值给 SS、ESP、EFLAGS、CS、EIP 这几个寄存器，这就感觉像是正确返回了一样，让其<strong>误以为这是通过中断进来的</strong>。</p>
+<p>压入栈的 CS 和 EIP 就表示中断发生前代码所处的位置，这样中断返回后好继续去那里执行。</p>
+<p>压入栈的 SS 和 ESP 表示中断发生前的栈的位置，这样中断返回后才好恢复原来的栈。</p>
+<p>其中，特权级的转换，就体现在 CS 和 SS 寄存器的值里，都是细节！</p>
+<p>CS 和 SS 寄存器是段寄存器的一种，段寄存器里的值是段选择子，其结构上面已经提过两遍了，在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499667&idx=1&sn=a7e2297f16d048794fa31cceaa183fc9&chksm=c2c5853ef5b20c286df24a28013f0fc3b0336790eca4a0d069ab831f6c536c03d1398893534b&scene=21#wechat_redirect">第六回 | 先解决段寄存器的历史包袱问题</a> 中也专门讲了这个结构的作用。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-04-59-d9801ca377ad82e2d263899402161335.png alt=图片></p>
+<p>对着这个结构，我们看代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>#define move_to_user_mode() \
+    _asm { \    
+        _asm mov eax,esp \    
+        _asm push 00000017h \ 
+        ; 给 SS 赋值    
+        _asm push eax \    
+        _asm pushfd \    
+        _asm push 0000000fh \ 
+        ; 给 CS 赋值    
+        _asm push offset l1 \    
+        _asm iretd /* 执行中断返回指令*/ \
+        _asm l1: mov eax,17h \    
+        _asm mov ds,ax \    
+        _asm mov es,ax \    
+        _asm mov fs,ax \    
+        _asm mov gs,ax \
+    }
+</code></pre></td></tr></table>
+</div>
+</div><p>拿 CS 举例，给它赋的值是，<strong>0000000fh</strong>，用二进制表示为：</p>
+<p><strong>0000000000001111</strong></p>
+<p>最后两位 11 表示特权级为 3，即用户态。而我们刚刚说了，CS 寄存器里的特权级，表示 CPL，即当前处理器特权级。</p>
+<p><strong>所以经过 iretd 返回之后，CS 的值就变成了它，而当前处理器特权级，也就变成了用户态特权级。</strong></p>
+<p><strong>除了改变特权级之外</strong></p>
+<p>除了改变了特权级之外，还做了什么事情呢？</p>
+<p>刚刚我们关注段寄存器，只关注了特权级的部分，我们再详细看看。</p>
+<p>刚刚说了 CS 寄存器为 <strong>0000000000001111</strong>，最后两位表示用户态的含义。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-05-10-d9801ca377ad82e2d263899402161335.png alt=图片></p>
+<p>那继续解读，倒数第三位 TI 表示，前面的描述符索引，是从 GDT 还是 LDT 中取，1 表示 LDT，也就是从局部描述符表中取。</p>
+<p>前面的描述符索引为 1，表示从局部描述符表中取到代码段描述符，如果你熟悉前面我讲过的内容，你将会直接得出上述结论。不过我还是帮你回忆一下。</p>
+<p>在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500496&idx=1&sn=3bddde6c68c2b03d9721ba74e949cfa8&chksm=c2c5b87df5b2316b083015a4fdba2df29211f38fcfd1cdb040e02ab410432608e26383a43ef5&scene=21#wechat_redirect">第18回 | 大名鼎鼎的进程调度就是从这里开始的</a> 中，将 0 号 LDT 作为当前的 LDT 索引，记录在了 CPU 的 lldt 寄存器中。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=cp>#define lldt(n) __asm__(&#34;lldt %%ax&#34;::&#34;a&#34; (_LDT(n)))
+</span><span class=cp></span><span class=kt>void</span> <span class=nf>sched_init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>lldt</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>而整个 GDT 与 LDT 表的设计，经过整个 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499882&idx=1&sn=68fd16c5aeae15084be58afb1e5bd9e8&chksm=c2c5bac7f5b233d1c486fa57e9e3a2bc907a92ab69ff0344babab4d50bdaf76e7766b4b42914&scene=21#wechat_redirect">第一部分 进入内核前的苦力活</a> 和 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500983&idx=1&sn=ad4c430823c975df97f13de3fbe8c66e&chksm=c2c5be1af5b2370cad4ce3218c5294feee4ae2e4d28804398c1dc8ac252c8dfafbe419ccf58c&scene=21#wechat_redirect">第二部分 大战前期的初始化工作</a> 的设计后，成了这个样子。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-05-16-59768c7248a2cdd6393a240d134c0175.png alt=图片></p>
+<p>所以，一目了然。</p>
+<p>再看这行代码，把 EIP 寄存器赋值为了那行标号的地址。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>        
+    <span class=n>move_to_user_mode</span><span class=p>();</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+<span class=cp>#define move_to_user_mode() \
+</span><span class=cp>    _asm { \    
+</span><span class=cp></span>        <span class=n>_asm</span> <span class=n>mov</span> <span class=n>eax</span><span class=p>,</span><span class=n>esp</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>push</span> <span class=mo>00000017</span><span class=n>h</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>push</span> <span class=n>eax</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>pushfd</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>push</span> <span class=mf>0000000f</span><span class=n>h</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>push</span> <span class=n>offset</span> <span class=n>l1</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>iretd</span> <span class=cm>/* 执行中断返回指令*/</span> \
+        <span class=n>_asm</span> <span class=nl>l1</span><span class=p>:</span> <span class=n>mov</span> <span class=n>eax</span><span class=p>,</span><span class=mi>17</span><span class=n>h</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>mov</span> <span class=n>ds</span><span class=p>,</span><span class=n>ax</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>mov</span> <span class=n>es</span><span class=p>,</span><span class=n>ax</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>mov</span> <span class=n>fs</span><span class=p>,</span><span class=n>ax</span> <span class=err>\</span>    
+        <span class=n>_asm</span> <span class=n>mov</span> <span class=n>gs</span><span class=p>,</span><span class=n>ax</span> \
+    <span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这里刚好设置的是下面标号 l1 的位置，所以 iretd 之后 CPU 就乖乖去那里执行了。所以其实从效果上看，就是顺序往下执行，只不过利用了 iretd 做了些特权级转换等工作。</p>
+<p>同理，这里的栈段 ss 和数据段 ds，都被赋值为了 17h，大家可以展开二进制算一下，他们又是什么特权级，对应的描述符又是谁。</p>
+<p><strong>总结</strong></p>
+<p>所以其实，最终效果上看就是按顺序执行了我们所写的指令，仿佛没有经过什么中断和中断返回的过程，但却通过中断返回实现了特权级的翻转，也就是从内核态变为了用户态，顺便设置了栈段、代码段和数据段的基地址。</p>
+<p>好了，我们兜兜转转终于把这个 mov_to_user_mode 讲完了，特权级这块的检查细节非常繁琐，为了理解操作系统，我们只需要暂且记住如下一句话就好了：</p>
+<p><strong>数据访问只能高特权级访问低特权级，代码跳转只能同特权级跳转，要想实现特权级转换，可以通过中断和中断返回来实现。</strong></p>
+<p>OK，我们现在已经进入了用户态，也即表明了需要内核态来完成的工作已经全部安排妥当了，其实就是整个 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499882&idx=1&sn=68fd16c5aeae15084be58afb1e5bd9e8&chksm=c2c5bac7f5b233d1c486fa57e9e3a2bc907a92ab69ff0344babab4d50bdaf76e7766b4b42914&scene=21#wechat_redirect">第一部分 进入内核前的苦力活</a> 和 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500983&idx=1&sn=ad4c430823c975df97f13de3fbe8c66e&chksm=c2c5be1af5b2370cad4ce3218c5294feee4ae2e4d28804398c1dc8ac252c8dfafbe419ccf58c&scene=21#wechat_redirect">第二部分 大战前期的初始化工作</a> 的内容，对全局描述符表、中断描述符表、页表等关键内存结构进行设置，以及对 CPU 特殊寄存器如 cr0 和 cr3 的设置，还有对外设如硬盘、键盘、定时器的设置等。</p>
+<p>看来我们又完成了一大堆苦力活呀，内核态做的工作也真是枯燥乏味呢。接下来只需要在用户态进行工作即可了！</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-08 06:47:33
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC3%E9%83%A8%E5%88%86/>第3部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/21.%E6%96%B0%E8%BF%9B%E7%A8%8B%E8%AF%9E%E7%94%9F%E5%85%A8%E5%B1%80%E6%A6%82%E8%BF%B0/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">21.一个新进程的诞生</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/23.%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6/>
+<span class="next-text nav-default">23.进程调度</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

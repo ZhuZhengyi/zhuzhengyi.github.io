@@ -1,0 +1,611 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>20.硬盘初始化hd_init - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="20.硬盘初始化hd_init 上回书咱们说到，buffer_init 完成了缓冲区初始化工作，内存中的缓冲区部分变成了这个样子。 而所有的缓冲头">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/20.%E7%A1%AC%E7%9B%98%E5%88%9D%E5%A7%8B%E5%8C%96hd_init/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="20.硬盘初始化hd_init">
+<meta property="og:description" content="20.硬盘初始化hd_init 上回书咱们说到，buffer_init 完成了缓冲区初始化工作，内存中的缓冲区部分变成了这个样子。 而所有的缓冲头">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/20.%E7%A1%AC%E7%9B%98%E5%88%9D%E5%A7%8B%E5%8C%96hd_init/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-08T06:47:33+08:00">
+<meta property="article:modified_time" content="2024-01-08T06:47:33+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="20.硬盘初始化hd_init">
+<meta itemprop=description content="20.硬盘初始化hd_init 上回书咱们说到，buffer_init 完成了缓冲区初始化工作，内存中的缓冲区部分变成了这个样子。 而所有的缓冲头"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
+<meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
+<meta itemprop=wordCount content="2353">
+<meta itemprop=keywords content="linux,linux-0.11源码解读,第2部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="20.硬盘初始化hd_init">
+<meta name=twitter:description content="20.硬盘初始化hd_init 上回书咱们说到，buffer_init 完成了缓冲区初始化工作，内存中的缓冲区部分变成了这个样子。 而所有的缓冲头"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>20.硬盘初始化hd_init</h1>
+<div class=post-meta>
+<time datetime=2024-01-08 class=post-time>
+2024-01-08 06:47:33
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC2%E9%83%A8%E5%88%86/> 第2部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=20硬盘初始化hd_init>20.硬盘初始化hd_init</h1>
+<p>上回书咱们说到，<strong>buffer_init</strong> 完成了缓冲区初始化工作，内存中的缓冲区部分变成了这个样子。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-57-24-872f1be0208f4d92745a36f739db068f.png alt=图片></p>
+<p>而所有的缓冲头又被一个 <strong>hash_table</strong> 管理起来，以便查找。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-57-34-399133ab010b6678651ab3a3bb320e61.png alt=图片></p>
+<p>至于缓冲区的这种管理怎么用，那等到后面文件系统中，如何读取一个块设备的数据，再展开讲解。</p>
+<hr>
+<p>今天，我们看 main 函数中最后两个初始化函数！</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>    <span class=n>mem_init</span><span class=p>(</span><span class=n>main_memory_start</span><span class=p>,</span><span class=n>memory_end</span><span class=p>);</span>    <span class=n>trap_init</span><span class=p>();</span>    <span class=n>blk_dev_init</span><span class=p>();</span>    <span class=n>chr_dev_init</span><span class=p>();</span>    <span class=n>tty_init</span><span class=p>();</span>    <span class=n>time_init</span><span class=p>();</span>    <span class=n>sched_init</span><span class=p>();</span>    <span class=n>buffer_init</span><span class=p>(</span><span class=n>buffer_memory_end</span><span class=p>);</span>    <span class=n>hd_init</span><span class=p>();</span> <span class=c1>//本文重点    floppy_init();        sti();    move_to_user_mode();    if (!fork()) {init();}    for(;;) pause();}
+</span></code></pre></td></tr></table>
+</div>
+</div><p>最后两个了！兴不兴奋！</p>
+<p>不过一口气看两个会不会消化不了？</p>
+<p>不要担心，<strong>hd_init</strong> 是<strong>硬盘初始化</strong>，我们不得不看。</p>
+<p>但 <strong>floppy_init</strong> 是<strong>软盘初始化</strong>，现在软盘几乎都被淘汰了，计算机中也没有软盘驱动器了，所以这个我们完全可以不看。</p>
+<p>还记得小时候我特别喜欢收集软盘，里面分门别类存上我做的 Flash 动画，然后在软盘上的那个纸标签上写上文字，表示软盘存了什么，想想看还是回忆呢。</p>
+<p>收，我们直接看 <code>hd_init</code> 这个硬盘初始化干了什么？</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>//struct blk_dev_struct {
+//    void (*request_fn)(void);
+//    struct request * current_request;
+//};
+extern struct blk_dev_struct blk_dev[NR_BLK_DEV];void hd_init(void) {
+    blk_dev[3].request_fn = do_hd_request;
+    set_intr_gate(0x2E,&amp;hd_interrupt);
+    outb_p(inb_p(0x21)&amp;0xfb,0x21);
+    outb(inb_p(0xA1)&amp;0xbf,0xA1);
+ }
+</code></pre></td></tr></table>
+</div>
+</div><p>就这？一共就四行代码。</p>
+<p>没错，初始化嘛，往往都比较简单，尤其是对硬件设备的初始化，大体都是：</p>
+<hr>
+<p><strong>1</strong>. 往某些 IO 端口上读写一些数据，表示开启它；</p>
+<p><strong>2</strong>. 然后再向中断向量表中添加一个中断，使得 CPU 能够响应这个硬件设备的动作；</p>
+<p><strong>3</strong>. 最后再初始化一些数据结构来管理。不过像是内存管理可能结构复杂些，外设的管理，相对就简单很多了。</p>
+<hr>
+<p>看第一行代码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>hd_init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>
+    <span class=n>blk_dev</span><span class=p>[</span><span class=mi>3</span><span class=p>].</span><span class=n>request_fn</span> <span class=o>=</span> <span class=n>do_hd_request</span><span class=p>;</span>
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>我们把 <strong>blk_dev</strong> 数组索引 3 位置处的块设备管理结构 <strong>blk_dev_struct</strong> 的 <strong>request_fn</strong> 赋值为了 <strong>do_hd_request</strong>，这是啥意思呢？</p>
+<p>因为有很多块设备，所以 Linux 0.11 内核用了一个 <strong>blk_dev[]</strong> 来进行管理，每一个索引表示一个块设备。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>blk_dev_struct</span> <span class=n>blk_dev</span><span class=p>[</span><span class=n>NR_BLK_DEV</span><span class=p>]</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>},</span>     <span class=cm>/* no_dev */</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>},</span>     <span class=cm>/* dev mem */</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>},</span>     <span class=cm>/* dev fd */</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>},</span>     <span class=cm>/* dev hd */</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>},</span>     <span class=cm>/* dev ttyx */</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>},</span>     <span class=cm>/* dev tty */</span>
+    <span class=p>{</span> <span class=nb>NULL</span><span class=p>,</span> <span class=nb>NULL</span> <span class=p>}</span>      <span class=cm>/* dev lp */</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>你看，索引为 3 这个位置，就表示给硬盘 <strong>hd</strong> 这个块设备留的位置。</p>
+<p>那么每个块设备执行读写请求都有自己的函数实现，在上层看来都是一个统一函数 <strong>request_fn</strong> 即可，具体实现各有不同，对于硬盘来说，这个实现就是 <strong>do_hd_request</strong> 函数。</p>
+<p>是不是有点像接口？这其实就是<strong>多态</strong>思想在 C 语言的体现嘛~ 用 Java 程序员熟悉的话就是，父类引用 <code>request_fn</code> 指向子类对象 <code>do_hd_request</code> 的感觉咯。</p>
+<hr>
+<p>我们再看第二行。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void hd_init(void) {
+    ...
+    set_intr_gate(0x2E,&amp;hd_interrupt);
+    ...
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>对于中断我们已经很熟悉了，这里就是又设置了一个新的中断，中断号是 <strong>0x2E</strong>，中断处理函数是 <strong>hd_interrupt</strong>，也就是说硬盘发生读写时，硬盘会发出中断信号给 CPU，之后 CPU 便会陷入中断处理程序，也就是执行 <code>hd_interrupt</code> 函数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nl>_hd_interrupt:</span>
+    <span class=nf>...</span>
+    <span class=nf>xchgl</span> <span class=nv>_do_hd</span><span class=p>,</span><span class=o>%</span><span class=nb>edx</span>
+    <span class=nf>...</span>
+    <span class=err>//</span> <span class=err>如果是读盘操作，这个</span> <span class=nf>do_hd</span> <span class=err>是</span> <span class=nv>read_intrstatic</span>
+<span class=nf>void</span> <span class=nv>read_intr</span><span class=p>(</span><span class=nv>void</span><span class=p>)</span> <span class=err>{</span>
+    <span class=nf>...</span>
+    <span class=nf>do_hd_request</span><span class=p>()</span><span class=c1>;</span>
+    <span class=nf>...</span>
+<span class=err>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>好了，又多了一个中断，那我们再次梳理下目前开启的中断都有哪些。</p>
+<table>
+<thead>
+<tr>
+<th>中断号</th>
+<th>中断处理函数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0 ~ 0x10</code></td>
+<td><code>trap_init</code> 里设置的一堆</td>
+</tr>
+<tr>
+<td><code>0x20</code></td>
+<td><code>timer_interrupt</code></td>
+</tr>
+<tr>
+<td><code>0x21</code></td>
+<td><code>keyboard_interrupt</code></td>
+</tr>
+<tr>
+<td><code>0x2E</code></td>
+<td><code>hd_interrupt</code></td>
+</tr>
+<tr>
+<td><code>0x80</code></td>
+<td><code>system_call</code></td>
+</tr>
+</tbody>
+</table>
+<p>其中 <strong>0-0x10</strong> 这 17 个中断是 <code>trap_init</code> 里初始化设置的，是一些基本的中断，比如除零异常等。这个在 <a href="https://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500119&idx=1&sn=f46331f70677aba168243040a96be1c0&scene=21#wechat_redirect">第14回 中断初始化 trap_init</a> 有讲到。</p>
+<p>之后，在控制台初始化 <code>con_init</code> 里，我们又设置了 <strong>0x21</strong> 键盘中断，这样按下键盘就有反应了。这个在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500190&idx=1&sn=b0bebe846b55f7e29fc009e1b6587214&chksm=c2c5bb33f5b23225845ab699d1b8fcee39a04ca98a48ebf0e2c22584b638fa0b0839d1212485&scene=21#wechat_redirect">第16回 控制台初始化 tty_init</a> 有讲到。</p>
+<p>再之后，我们在进程调度初始化 <code>sched_init</code> 里又设置了 <strong>0x20</strong> 时钟中断，并且开启定时器。最后又偷偷设置了一个极为重要的 <strong>0x80</strong> 系统调用中断。这个在 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247500496&idx=1&sn=3bddde6c68c2b03d9721ba74e949cfa8&chksm=c2c5b87df5b2316b083015a4fdba2df29211f38fcfd1cdb040e02ab410432608e26383a43ef5&scene=21#wechat_redirect">第18回 进程调度初始化 sched_init</a> 有讲到。</p>
+<p>现在，我们在硬盘初始化 <code>hd_init</code> 里，又设置了硬盘中断，这样硬盘读写完成后将通过中断来通知 CPU。</p>
+<p>上回书我提醒大家，有没有感觉到操作系统的中断驱动的特征，那本回再给大家展望一下。</p>
+<blockquote>
+<p>❝</p>
+<p>看到最后，你会发现<strong>操作系统就是一个靠中断驱动的死循环而已</strong>，如果不发生任何中断，操作系统会一直在一个死循环里等待。换句话说，让操作系统工作的唯一方式，就是触发中断。</p>
+</blockquote>
+<hr>
+<p>好了，再往下看后两行。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>void hd_init(void) {
+    ...
+    outb_p(inb_p(0x21)&amp;0xfb,0x21);
+    outb(inb_p(0xA1)&amp;0xbf,0xA1);
+ }
+</code></pre></td></tr></table>
+</div>
+</div><p>就是往几个 IO 端口上读写，其作用是<strong>允许硬盘控制器发送中断请求信号</strong>，仅此而已。我们向来是不深入硬件细节，知道往这个端口里写上这些数据，导致硬盘开启了中断，即可。</p>
+<hr>
+<p>OK，本章就结束了，仅仅看初始化的工作，太简单了，连图都不用画就结束了。</p>
+<p>当然 <code>hd.c</code> 里还有很多读写硬盘的方法，这个在之后文件系统用到他们时，自然会讲起，这里就抛个引子，看看读硬盘最最底层的操作流程，是怎样的。</p>
+<p>我们看硬盘的端口表。</p>
+<table>
+<thead>
+<tr>
+<th>端口</th>
+<th>读</th>
+<th>写</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x1F0</td>
+<td>数据寄存器</td>
+<td>数据寄存器</td>
+</tr>
+<tr>
+<td>0x1F1</td>
+<td>错误寄存器</td>
+<td>特征寄存器</td>
+</tr>
+<tr>
+<td>0x1F2</td>
+<td>扇区计数寄存器</td>
+<td>扇区计数寄存器</td>
+</tr>
+<tr>
+<td>0x1F3</td>
+<td>扇区号寄存器或 LBA 块地址 0~7</td>
+<td>扇区号或 LBA 块地址 0~7</td>
+</tr>
+<tr>
+<td>0x1F4</td>
+<td>磁道数低 8 位或 LBA 块地址 8~15</td>
+<td>磁道数低 8 位或 LBA 块地址 8~15</td>
+</tr>
+<tr>
+<td>0x1F5</td>
+<td>磁道数高 8 位或 LBA 块地址 16~23</td>
+<td>磁道数高 8 位或 LBA 块地址 16~23</td>
+</tr>
+<tr>
+<td>0x1F6</td>
+<td>驱动器/磁头或 LBA 块地址 24~27</td>
+<td>驱动器/磁头或 LBA 块地址 24~27</td>
+</tr>
+<tr>
+<td>0x1F7</td>
+<td>命令寄存器或状态寄存器</td>
+<td>命令寄存器</td>
+</tr>
+</tbody>
+</table>
+<p>那读硬盘就是，往除了第一个以外的后面几个端口写数据，告诉要读硬盘的哪个扇区，读多少。然后再从 <code>0x1F0</code> 端口一个字节一个字节的读数据。这就完成了一次硬盘读操作。</p>
+<p>如果觉得不够具体，那来个具体的版本。</p>
+<p><strong>1</strong>. 在 <code>0x1F2</code> 写入要读取的扇区数</p>
+<p><strong>2</strong>. 在 <code>0x1F3 ~ 0x1F6</code> 这四个端口写入计算好的起始 LBA 地址</p>
+<p><strong>3</strong>. 在 <code>0x1F7</code> 处写入读命令的指令号</p>
+<p><strong>4</strong>. 不断检测 <code>0x1F7</code> （此时已成为状态寄存器的含义）的忙位</p>
+<p><strong>5</strong>. 如果第四步骤为不忙，则开始不断从 <code>0x1F0</code> 处读取数据到内存指定位置，直到读完</p>
+<p>而操作系统的代码，也是这样写的，我们一睹为快一下，不用理解细节。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>static</span> <span class=kt>void</span> <span class=nf>hd_out</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>drive</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>nsect</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>sect</span><span class=p>,</span>        
+            <span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>head</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>cyl</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>cmd</span><span class=p>,</span>        
+            <span class=kt>void</span> <span class=p>(</span><span class=o>*</span><span class=n>intr_addr</span><span class=p>)(</span><span class=kt>void</span><span class=p>))</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>do_hd</span> <span class=o>=</span> <span class=n>intr_addr</span><span class=p>;</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>hd_info</span><span class=p>[</span><span class=n>drive</span><span class=p>].</span><span class=n>ctl</span><span class=p>,</span><span class=n>HD_CMD</span><span class=p>);</span>    
+    <span class=n>port</span> <span class=o>=</span> <span class=mh>0x1f0</span><span class=p>;</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>hd_info</span><span class=p>[</span><span class=n>drive</span><span class=p>].</span><span class=n>wpcom</span><span class=o>&gt;&gt;</span><span class=mi>2</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>nsect</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>sect</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>cyl</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=n>cyl</span><span class=o>&gt;&gt;</span><span class=mi>8</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>    
+    <span class=n>outb_p</span><span class=p>(</span><span class=mh>0xA0</span><span class=o>|</span><span class=p>(</span><span class=n>drive</span><span class=o>&lt;&lt;</span><span class=mi>4</span><span class=p>)</span><span class=o>|</span><span class=n>head</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>    
+    <span class=n>outb</span><span class=p>(</span><span class=n>cmd</span><span class=p>,</span><span class=o>++</span><span class=n>port</span><span class=p>);</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>看，那些 <strong>outb_p</strong> 方法，转换成汇编语言，就是 <strong>out</strong> 指令，往指定的硬盘 IO 端口上写数据，达到我们想要的读或者写的目的。</p>
+<p>是不是很 low？</p>
+<p>但我们由用户层写的各种 <strong>read\write</strong> 函数，即便是经过系统调用、文件系统、缓冲区管理等等过程，但只要是读写硬盘，最终都要调用到这个最底层的函数，殊途同归，逃不掉的！</p>
+<p>好了，至此，我们就把所有的初始化工作，都讲完了！坚持读到现在的，都为自己鼓鼓掌！！！</p>
+<p>下一回，我们将用整整一章的篇幅，完整梳理下我们所做的所有初始化工作，<strong>这也标志着第二大部分正式完结</strong>！这些初始化工作，将在后面的流程中，起到至关重要的作用，直到本系列结束。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-08 06:47:33
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC2%E9%83%A8%E5%88%86/>第2部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86%E6%80%BB%E7%BB%93%E4%B8%8E%E5%9B%9E%E9%A1%BE/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">20.1.第2部分小结</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC3%E9%83%A8%E5%88%86/21.%E6%96%B0%E8%BF%9B%E7%A8%8B%E8%AF%9E%E7%94%9F%E5%85%A8%E5%B1%80%E6%A6%82%E8%BF%B0/>
+<span class="next-text nav-default">21.一个新进程的诞生</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

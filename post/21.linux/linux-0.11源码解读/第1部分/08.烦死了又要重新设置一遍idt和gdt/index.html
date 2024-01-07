@@ -1,0 +1,540 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>08.烦死了又要重新设置一遍 idt 和 gdt - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="08.烦死了又要重新设置一遍 idt 和 gdt 上回书咱们说到，CPU 进入了 32 位保护模式，我们快速回顾一下关键的代码。 首先配置了全局描述符表 gdt 和中断描述符">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/08.%E7%83%A6%E6%AD%BB%E4%BA%86%E5%8F%88%E8%A6%81%E9%87%8D%E6%96%B0%E8%AE%BE%E7%BD%AE%E4%B8%80%E9%81%8Didt%E5%92%8Cgdt/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="08.烦死了又要重新设置一遍 idt 和 gdt">
+<meta property="og:description" content="08.烦死了又要重新设置一遍 idt 和 gdt 上回书咱们说到，CPU 进入了 32 位保护模式，我们快速回顾一下关键的代码。 首先配置了全局描述符表 gdt 和中断描述符">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/08.%E7%83%A6%E6%AD%BB%E4%BA%86%E5%8F%88%E8%A6%81%E9%87%8D%E6%96%B0%E8%AE%BE%E7%BD%AE%E4%B8%80%E9%81%8Didt%E5%92%8Cgdt/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-08T06:47:33+08:00">
+<meta property="article:modified_time" content="2024-01-08T06:47:33+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="08.烦死了又要重新设置一遍 idt 和 gdt">
+<meta itemprop=description content="08.烦死了又要重新设置一遍 idt 和 gdt 上回书咱们说到，CPU 进入了 32 位保护模式，我们快速回顾一下关键的代码。 首先配置了全局描述符表 gdt 和中断描述符"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
+<meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
+<meta itemprop=wordCount content="2047">
+<meta itemprop=keywords content="linux,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="08.烦死了又要重新设置一遍 idt 和 gdt">
+<meta name=twitter:description content="08.烦死了又要重新设置一遍 idt 和 gdt 上回书咱们说到，CPU 进入了 32 位保护模式，我们快速回顾一下关键的代码。 首先配置了全局描述符表 gdt 和中断描述符"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>08.烦死了又要重新设置一遍 idt 和 gdt</h1>
+<div class=post-meta>
+<time datetime=2024-01-08 class=post-time>
+2024-01-08 06:47:33
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC1%E9%83%A8%E5%88%86/> 第1部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=08烦死了又要重新设置一遍-idt-和-gdt>08.烦死了又要重新设置一遍 idt 和 gdt</h1>
+<p>上回书咱们说到，CPU 进入了 32 位保护模式，我们快速回顾一下关键的代码。</p>
+<p>首先配置了全局描述符表 gdt 和中断描述符表 idt。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>lidt</span>  <span class=nv>idt_48</span>
+<span class=nf>lgdt</span>  <span class=nv>gdt_48</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后打开了 A20 地址线。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>mov</span> <span class=nb>al</span><span class=p>,</span><span class=err>#</span><span class=mh>0xD1</span>        <span class=c1>; command writeout #0x64,al</span>
+<span class=nf>mov</span> <span class=nb>al</span><span class=p>,</span><span class=err>#</span><span class=mh>0xDF</span>        <span class=c1>; A20 on</span>
+<span class=nf>out</span> <span class=err>#</span><span class=mh>0x60</span><span class=p>,</span><span class=nb>al</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后更改 cr0 寄存器开启保护模式。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>mov</span> <span class=nb>ax</span><span class=p>,</span><span class=err>#</span><span class=mh>0x0001</span>
+<span class=nf>lmsw</span> <span class=nb>ax</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>最后，一个干脆利落的跳转指令，跳到了内存地址 0 处开始执行代码。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>jmpi</span> <span class=mi>0</span><span class=p>,</span><span class=mi>8</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>0 位置处存储着操作系统全部核心代码，是由 head.s 和 main.c 以及后面的无数源代码文件编译并链接在一起而成的 system 模块。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-41-14-c1831c417fc139e87a23c11f415d45b3.png alt=图片></p>
+<p>那接下来，我们就品品，正式进入 c 语言写的 main.c 之前的 <strong>head.s</strong> 究竟写了点啥？</p>
+<p>head.s 文件很短，我们一点点品。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>_pg_dir:
+_startup_32:    
+    mov eax,0x10    
+    mov ds,ax    
+    mov es,ax    
+    mov fs,ax    
+    mov gs,ax    
+    lss esp,_stack_start
+</code></pre></td></tr></table>
+</div>
+</div><p>注意到开头有个标号 <strong>_pg_dir</strong>。先留个心眼，这个表示<strong>页目录</strong>，之后在设置分页机制时，页目录会存放在这里，也会覆盖这里的代码。</p>
+<p>再往下连续五个 <strong>mov</strong> 操作，分别给 ds、es、fs、gs 这几个段寄存器赋值为 <strong>0x10</strong>，根据段描述符结构解析，表示这几个段寄存器的值为指向全局描述符表中的第二个段描述符，也就是数据段描述符。</p>
+<p>最后 <strong>lss</strong> 指令相当于让 <strong>ss:esp</strong> 这个栈顶指针指向了 <strong>_stack_start</strong> 这个标号的位置。还记得图里的那个原来的栈顶指针在哪里吧？往上翻一下，<strong>0x9FF00</strong>，现在要变咯。</p>
+<p>这个 stack_start 标号定义在了很久之后才会讲到的 <strong>sched.c</strong> 里，我们这里拿出来分析一波。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>long</span> <span class=n>user_stack</span><span class=p>[</span><span class=mi>4096</span> <span class=o>&gt;&gt;</span> <span class=mi>2</span><span class=p>];</span>
+<span class=k>struct</span><span class=p>{</span>  
+    <span class=kt>long</span> <span class=o>*</span><span class=n>a</span><span class=p>;</span>  
+    <span class=kt>short</span> <span class=n>b</span><span class=p>;</span>
+<span class=p>}</span><span class=n>stack_start</span> <span class=o>=</span> <span class=p>{</span><span class=o>&amp;</span><span class=n>user_stack</span><span class=p>[</span><span class=mi>4096</span> <span class=o>&gt;&gt;</span> <span class=mi>2</span><span class=p>],</span> <span class=mh>0x10</span><span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这啥意思呢？</p>
+<p>首先，stack_start 结构中的高位 8 字节是 <strong>0x10</strong>，将会赋值给 <strong>ss</strong> 栈段寄存器，低位 16 字节是 <strong>user_stack</strong> 这个数组的最后一个元素的地址值，将其赋值给 <strong>esp</strong> 寄存器。</p>
+<p>赋值给 ss 的 0x10 仍然按照保护模式下的<strong>段选择子</strong>去解读，其指向的是全局描述符表中的第二个段描述符（数据段描述符），段基址是 0。</p>
+<p>赋值给 esp 寄存器的就是 user_stack 数组的最后一个元素的内存地址值，那最终的<strong>栈顶地址</strong>，也指向了这里（user_stack + 0），后面的压栈操作，就是往这个新的栈顶地址处压咯。</p>
+<p>继续往下看</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>call</span> <span class=nv>setup_idt</span> <span class=c1>;设置中断描述符表</span>
+<span class=nf>call</span> <span class=nv>setup_gdt</span> <span class=c1>;设置全局描述符表</span>
+<span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=mh>10h</span>
+<span class=nf>mov</span> <span class=nb>ds</span><span class=p>,</span><span class=nb>ax</span>
+<span class=nf>mov</span> <span class=nb>es</span><span class=p>,</span><span class=nb>ax</span>
+<span class=nf>mov</span> <span class=nb>fs</span><span class=p>,</span><span class=nb>ax</span>
+<span class=nf>mov</span> <span class=nb>gs</span><span class=p>,</span><span class=nb>ax</span>
+<span class=nf>lss</span> <span class=nb>esp</span><span class=p>,</span><span class=nv>_stack_start</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>先设置了 <strong>idt</strong> 和 <strong>gdt</strong>，然后又重新执行了一遍刚刚执行过的代码。</p>
+<p>为什么要重新设置这些段寄存器呢？因为上面修改了 gdt，所以要重新设置一遍以刷新才能生效。那我们接下来就把目光放到设置 idt 和 gdt 上。</p>
+<p>中断描述符表 idt 我们之前没设置过，所以这里设置具体的值，理所应当。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nl>setup_idt:</span>    
+    <span class=nf>lea</span> <span class=nb>edx</span><span class=p>,</span><span class=nv>ignore_int</span>    
+    <span class=nf>mov</span> <span class=nb>eax</span><span class=p>,</span><span class=mh>00080000h</span>    
+    <span class=nf>mov</span> <span class=nb>ax</span><span class=p>,</span><span class=nb>dx</span>    
+    <span class=nf>mov</span> <span class=nb>dx</span><span class=p>,</span><span class=mh>8E00h</span>    
+    <span class=nf>lea</span> <span class=nb>edi</span><span class=p>,</span><span class=nv>_idt</span>    
+    <span class=nf>mov</span> <span class=nb>ecx</span><span class=p>,</span><span class=mi>256</span>
+<span class=nl>rp_sidt:</span>    
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>edi</span><span class=p>],</span><span class=nb>eax</span>    
+    <span class=nf>mov</span> <span class=p>[</span><span class=nb>edi</span><span class=o>+</span><span class=mi>4</span><span class=p>],</span><span class=nb>edx</span>    
+    <span class=nf>add</span> <span class=nb>edi</span><span class=p>,</span><span class=mi>8</span>    
+    <span class=nf>dec</span> <span class=nb>ecx</span>    
+    <span class=nf>jne</span> <span class=nv>rp_sidt</span>    
+    <span class=nf>lidt</span> <span class=nv>fword</span> <span class=nv>ptr</span> <span class=nv>idt_descr</span>    
+    <span class=nf>ret</span>
+<span class=nl>idt_descr:</span>    
+    <span class=kd>dw</span> <span class=mi>256</span><span class=o>*</span><span class=mi>8</span><span class=o>-</span><span class=mi>1</span>    
+    <span class=kd>dd</span> <span class=nv>_idt</span>
+<span class=nl>_idt:</span>    
+    <span class=kd>DQ</span> <span class=mi>256</span> <span class=nv>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>不用细看，我给你说最终效果。</p>
+<p>中断描述符表 idt 里面存储着一个个中断描述符，每一个中断号就对应着一个中断描述符，而中断描述符里面存储着主要是中断程序的地址，这样一个中断号过来后，CPU 就会自动寻找相应的中断程序，然后去执行它。</p>
+<p>那这段程序的作用就是，<strong>设置了 256 个中断描述符</strong>，并且让每一个中断描述符中的中断程序例程都指向一个 <strong>ignore_int</strong> 的函数地址，这个是个<strong>默认的中断处理程序</strong>，之后会逐渐被各个具体的中断程序所覆盖。比如之后键盘模块会将自己的键盘中断处理程序，覆盖过去。</p>
+<p>那现在，产生任何中断都会指向这个默认的函数 ignore_int，也就是说现在这个阶段<strong>你按键盘还不好使</strong>。</p>
+<p>设置中断描述符表 setup_idt 说完了，那接下来 <strong>setup_gdt</strong> 就同理了。我们就直接看设置好后的新的全局描述符表长什么样吧？</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>_gdt:    
+    DQ 0000000000000000h    ;/* NULL descriptor */    
+    DQ 00c09a0000000fffh    ;/* 16Mb */    
+    DQ 00c0920000000fffh    ;/* 16Mb */    
+    DQ 0000000000000000h    ;/* TEMPORARY - don&#39;t use */    
+    DQ 252 dup(0)
+</code></pre></td></tr></table>
+</div>
+</div><p>其实和我们原先设置好的 gdt 一模一样。</p>
+<p>也是有<strong>代码段描述符</strong>和<strong>数据段描述符</strong>，然后第四项系统段描述符并没有用到，不用管。最后还留了 252 项的空间，这些空间后面会用来放置<strong>任务状态段描述符 TSS</strong> 和<strong>局部描述符 LDT</strong>，这个后面再说。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-41-26-2f3e83803ce608e337451dbc72351262.png alt=图片></p>
+<p>为什么原来已经设置过一遍了，这里又要重新设置一遍，你可千万别想有什么复杂的原因，就是因为原来设置的 gdt 是在 setup 程序中，之后这个地方要被缓冲区覆盖掉，所以这里重新设置在 head 程序中，这块内存区域之后就不会被其他程序用到并且覆盖了，就这么个事。</p>
+<p>说的口干舌燥，还是来张图吧。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-41-34-dff9127298e03c540a6069b845adeb37.png alt=图片></p>
+<p>如果你本文的内容完全不能理解，那就记住最后这张图就好了，本文代码就是完成了这个图中所示的一个指向转换而已，并且给所有中断设置了一个默认的中断处理程序 ignore_int，然后全局描述符表仍然只有代码段描述符和数据段描述符。</p>
+<p>好了，本文就是两个描述符表位置的变化以及重新设置，再后面一行代码就是又一个令人兴奋的功能了！</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=err>    </span><span class=nf>jmp</span> <span class=nv>after_page_tables</span>
+<span class=err>    </span><span class=nf>...</span>
+<span class=nl>after_page_tables:</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=mi>0</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=nv>L6</span>    
+<span class=err>    </span><span class=nf>push</span> <span class=nv>_main</span>    
+<span class=err>    </span><span class=nf>jmp</span> <span class=nv>setup_paging</span>
+<span class=nl>L6:</span>    
+<span class=err>    </span><span class=nf>jmp</span> <span class=nv>L6</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>那就是开启分页机制，并且跳转到 main 函数！</p>
+<p>这可太令人兴奋了！开启分页后，配合着之前讲的分段，就构成了内存管理的最最底层的机制。而跳转到 main 函数，标志着我们正式进入 c 语言写的操作系统核心代码！</p>
+<p>欲知后事如何，且听下回分解。</p>
+<p><strong>&mdash;&mdash;- 本回扩展资料 &mdash;&mdash;-</strong></p>
+<p>保护模式下逻辑地址到线性地址（不开启分页时就是物理地址）的转化，看 Intel 手册：</p>
+<p>Volume 3 Chapter 3.4 Logical And Linear Addresses</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-41-43-a9bf11644fe6d8be6569420ee4ab3d90.png alt=图片></p>
+<p>段描述符结构和详细说明，看 Intel 手册：</p>
+<p>Volume 3 Chapter 3.4.5 Segment Descriptors</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-41-51-d5a69a8c76451deb6fc08390f1d1aa88.png alt=图片></p>
+<p>对操作系统如何编译的，比如好奇那个 system 是怎么来的，可以尝试理解一下 Linux 0.11 源码中的 Makefile，这个我就不展开讲了，我们把更多经历，放在操作系统是怎么一步一步构建起来的这个过程。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-08 06:47:33
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC1%E9%83%A8%E5%88%86/>第1部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/07.%E5%85%AD%E8%A1%8C%E4%BB%A3%E7%A0%81%E5%B0%B1%E8%BF%9B%E5%85%A5%E4%BA%86%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">07.六行代码就进入了保护模式</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/>
+<span class="next-text nav-default">09.Intel 内存管理两板斧：分段与分页</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

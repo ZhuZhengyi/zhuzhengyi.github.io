@@ -1,0 +1,553 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>34.进程2的创建 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="34.进程2的创建 书接上回，上回书咱们说到，进程 1 通过 open 函数建立了与外设交互的能力，具体其实就是打开了 tty0 这个设备文件，并绑定了标准输入 0，标">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/34.%E8%BF%9B%E7%A8%8B2%E7%9A%84%E5%88%9B%E5%BB%BA/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="34.进程2的创建">
+<meta property="og:description" content="34.进程2的创建 书接上回，上回书咱们说到，进程 1 通过 open 函数建立了与外设交互的能力，具体其实就是打开了 tty0 这个设备文件，并绑定了标准输入 0，标">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/34.%E8%BF%9B%E7%A8%8B2%E7%9A%84%E5%88%9B%E5%BB%BA/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-08T06:47:33+08:00">
+<meta property="article:modified_time" content="2024-01-08T06:47:33+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="34.进程2的创建">
+<meta itemprop=description content="34.进程2的创建 书接上回，上回书咱们说到，进程 1 通过 open 函数建立了与外设交互的能力，具体其实就是打开了 tty0 这个设备文件，并绑定了标准输入 0，标"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
+<meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
+<meta itemprop=wordCount content="1590">
+<meta itemprop=keywords content="linux,linux-0.11源码解读,第4部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="34.进程2的创建">
+<meta name=twitter:description content="34.进程2的创建 书接上回，上回书咱们说到，进程 1 通过 open 函数建立了与外设交互的能力，具体其实就是打开了 tty0 这个设备文件，并绑定了标准输入 0，标"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>34.进程2的创建</h1>
+<div class=post-meta>
+<time datetime=2024-01-08 class=post-time>
+2024-01-08 06:47:33
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC4%E9%83%A8%E5%88%86/> 第4部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents></nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=34进程2的创建>34.进程2的创建</h1>
+<p>书接上回，上回书咱们说到，进程 1 通过 open 函数建立了与外设交互的能力，具体其实就是打开了 tty0 这个设备文件，并绑定了标准输入 0，标准输出 1 和 标准错误输出 2 这三个文件描述符。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-18-43-36-e0b98961c24da1810a2e39fd02c53317.png alt=图片></p>
+<p>同时我们看到源码中用 printf 函数，调用 write 函数，向 1 号文件描述符输出了字符串的效果。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-18-43-44-0f6c62a12c3d9f28715d590a058daccd.png alt=图片></p>
+<p>到此为止，标志着进程 1 的工作基本结束了，准确说是能力建设的工作结束了，接下来就是<strong>控制流程</strong>和<strong>创建新的进程</strong>了，我们继续往下看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>pid</span><span class=o>=</span><span class=n>fork</span><span class=p>()))</span> <span class=p>{</span>        
+        <span class=n>close</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=n>open</span><span class=p>(</span><span class=s>&#34;/etc/rc&#34;</span><span class=p>,</span><span class=n>O_RDONLY</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=n>execve</span><span class=p>(</span><span class=s>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=n>argv_rc</span><span class=p>,</span><span class=n>envp_rc</span><span class=p>);</span>        
+        <span class=n>_exit</span><span class=p>(</span><span class=mi>2</span><span class=p>);</span>    
+    <span class=p>}</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=n>pid</span><span class=o>&gt;</span><span class=mi>0</span><span class=p>)</span>        
+        <span class=k>while</span> <span class=p>(</span><span class=n>pid</span> <span class=o>!=</span> <span class=n>wait</span><span class=p>(</span><span class=o>&amp;</span><span class=n>i</span><span class=p>))</span>            
+            <span class=cm>/* nothing */</span><span class=p>;</span>    
+            <span class=k>while</span> <span class=p>(</span><span class=mi>1</span><span class=p>)</span> <span class=p>{</span>        
+                <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>pid</span><span class=o>=</span><span class=n>fork</span><span class=p>()))</span> <span class=p>{</span>            
+                    <span class=n>close</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span><span class=n>close</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span><span class=n>close</span><span class=p>(</span><span class=mi>2</span><span class=p>);</span>            
+                    <span class=n>setsid</span><span class=p>();</span>            
+                    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/dev/tty0&#34;</span><span class=p>,</span><span class=n>O_RDWR</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>            
+                    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>            
+                    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>            
+                    <span class=n>_exit</span><span class=p>(</span><span class=n>execve</span><span class=p>(</span><span class=s>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=n>argv</span><span class=p>,</span><span class=n>envp</span><span class=p>));</span>        
+                <span class=p>}</span>        
+                <span class=k>while</span> <span class=p>(</span><span class=mi>1</span><span class=p>)</span>            
+                    <span class=k>if</span> <span class=p>(</span><span class=n>pid</span> <span class=o>==</span> <span class=n>wait</span><span class=p>(</span><span class=o>&amp;</span><span class=n>i</span><span class=p>))</span>                
+                        <span class=k>break</span><span class=p>;</span>        
+                <span class=n>printf</span><span class=p>(</span><span class=s>&#34;</span><span class=se>\n\r</span><span class=s>child %d died with code %04x</span><span class=se>\n\r</span><span class=s>&#34;</span><span class=p>,</span><span class=n>pid</span><span class=p>,</span><span class=n>i</span><span class=p>);</span>        
+                <span class=n>sync</span><span class=p>();</span>    
+            <span class=p>}</span>    
+    <span class=n>_exit</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>   <span class=cm>/* NOTE! _exit, not exit() */</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>别急，我们一点点看，我仍然是去掉了一些错误校验的旁路分支。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>pid</span><span class=o>=</span><span class=n>fork</span><span class=p>()))</span> <span class=p>{</span>        
+        <span class=n>close</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=n>open</span><span class=p>(</span><span class=s>&#34;/etc/rc&#34;</span><span class=p>,</span><span class=n>O_RDONLY</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=n>execve</span><span class=p>(</span><span class=s>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=n>argv_rc</span><span class=p>,</span><span class=n>envp_rc</span><span class=p>);</span>        
+        <span class=n>_exit</span><span class=p>(</span><span class=mi>2</span><span class=p>);</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>先看这个第一段，我们先尝试口述翻译一遍。</p>
+<p><strong>1.</strong> fork 一个新的子进程，此时就是进程 2 了。</p>
+<p><strong>2.</strong> 在进程 2 里<strong>关闭（close）</strong> 0 号文件描述符。</p>
+<p><strong>3.</strong> 只读形式<strong>打开（open）</strong> rc 文件。</p>
+<p><strong>4.</strong> 然后<strong>执行（execve）</strong> sh 程序。</p>
+<p>听起来还蛮合逻辑的，创建进程（fork）、关闭（close）、打开（open）、执行（execve）四步走，接下来我们一点点拆解。</p>
+<p><strong>fork</strong></p>
+<p>fork 前面讲过了，就是将进程的 task_struct 结构进行一下复制，比如进程 0 fork 出进程 1 的时候。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-18-43-52-39d869e0f173982712a007301c3d63d2.png alt=图片></p>
+<p>之后，新进程再重写一些基本信息，包括元信息和 tss 里的寄存器信息。再之后，用 copy_page_tables 复制了一下页表（这里涉及到写时复制的伏笔）。</p>
+<p>比如进程 0 复制出进程 1 的时候，页表是这样复制的。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-18-44-00-405c831a3401a0a1ca067086ca02c0e8.png alt=图片></p>
+<p>而这里的进程 1 fork 出进程 2，也是同样的流程，不同之处在于两点细节：</p>
+<p><strong>第一点</strong>，进程 1 打开了三个文件描述符并指向了 tty0，那这个也被复制到进程 2 了，具体说来就是进程结构 task_struct 里的 flip[] 数组被复制了一份。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>task_struct</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>struct</span> <span class=n>file</span> <span class=o>*</span><span class=n>filp</span><span class=p>[</span><span class=n>NR_OPEN</span><span class=p>];</span>    
+    <span class=p>...</span>
+<span class=p>};</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>而进程 0 fork 出进程 1 时是没有复制这部分信息的，因为进程 0 没有打开任何文件。这也是刚刚说的与外设交互能力的体现，即进程 0 没有与外设交互的能力，进程 1 有，哎，其实就是这个 flip 数组里有没有东西而已嘛~</p>
+<p><strong>第二点</strong>，进程 0 复制进程 1 时页表的复制只有 160 项，也就是映射 640K，而之后进程的复制，统统都是复制 1024 项，也就是映射 4M 空间。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>copy_page_tables</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>from</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>to</span><span class=p>,</span><span class=kt>long</span> <span class=n>size</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>nr</span> <span class=o>=</span> <span class=p>(</span><span class=n>from</span><span class=o>==</span><span class=mi>0</span><span class=p>)</span><span class=o>?</span><span class=mh>0xA0</span><span class=o>:</span><span class=mi>1024</span><span class=p>;</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>整体看就是如图所示。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-18-44-07-64e274fc81313e039e6e2d1364475387.png alt=图片></p>
+<p>除此之外，就没有别的区别了。</p>
+<p><strong>close</strong></p>
+<p>好了，我们继续看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>pid</span><span class=o>=</span><span class=n>fork</span><span class=p>()))</span> <span class=p>{</span>        
+        <span class=n>close</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=n>open</span><span class=p>(</span><span class=s>&#34;/etc/rc&#34;</span><span class=p>,</span><span class=n>O_RDONLY</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=n>execve</span><span class=p>(</span><span class=s>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=n>argv_rc</span><span class=p>,</span><span class=n>envp_rc</span><span class=p>);</span>        
+        <span class=n>_exit</span><span class=p>(</span><span class=mi>2</span><span class=p>);</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>fork 完之后，后面 if 里面的代码都是进程 2 在执行了。</p>
+<p>close(0) 就是<strong>关闭 0 号文件描述符</strong>，也就是进程 1 复制过来的打开了 tty0 并作为标准输入的文件描述符，那么此时 0 号文件描述符就空出来了。</p>
+<p>下面是 close 对应的系统调用函数，很简单。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_close</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>int</span> <span class=n>fd</span><span class=p>)</span> <span class=p>{</span>       
+    <span class=p>...</span>    
+    <span class=n>current</span><span class=o>-&gt;</span><span class=n>filp</span><span class=p>[</span><span class=n>fd</span><span class=p>]</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><strong>open</strong></p>
+<p>接下来 open 函数以只读形式打开了一个叫 /etc/rc 的文件，刚好占据了 0 号文件描述符的位置。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>pid</span><span class=o>=</span><span class=n>fork</span><span class=p>()))</span> <span class=p>{</span>        
+        <span class=p>...</span>        
+        <span class=n>open</span><span class=p>(</span><span class=s>&#34;/etc/rc&#34;</span><span class=p>,</span><span class=n>O_RDONLY</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>        
+        <span class=p>...</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这个 rc 文件表示配置文件，具体什么内容，取决于你的硬盘里这个位置处放了什么内容，与操作系统内核无关，所以我们暂且不用管。</p>
+<p>此时，进程 2 与进程 1 几乎完全一样，只不过进程 2 通过 close 和 open 操作，将原来进程 1 的指向标准输入的 0 号文件描述符，重新指向了 /etc/rc 文件。</p>
+<p>到目前为止，进程 2 与进程 1 的区别，仅仅是将 0 号文件描述符重新指向了 /etc/rc 文件，其他的没啥区别。</p>
+<p>而这个 rc 文件是干嘛的，现在还不用管，肯定是后面 sh 程序要用到的，到时候在说。</p>
+<p><strong>execve</strong></p>
+<p>好，接下来进程 2 就将变得不一样了，会通过一个经典的，也是最难理解的 execve 函数调用，使自己摇身一变，成为 /bin/sh 程序继续运行，这就是下一章的重点！</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>pid</span><span class=o>=</span><span class=n>fork</span><span class=p>()))</span> <span class=p>{</span>        
+        <span class=p>...</span>        
+        <span class=n>execve</span><span class=p>(</span><span class=s>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=n>argv_rc</span><span class=p>,</span><span class=n>envp_rc</span><span class=p>);</span>        
+        <span class=p>...</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这里就包含着操作系统究竟是如何加载并执行一个程序的原理，包括如何从文件系统中找到这个文件，如何解析一个可执行文件（在现代的 Linux 里称作 ELF 可执行文件），如何讲可执行文件中的代码和数据加载到内存并运行。</p>
+<p>加载到内存并运行又包含着虚拟内存等相关的知识。所以这里面的水很深，了解了这个函数，再加上 fork 函数，基本就可以把操作系统全部核心逻辑都串起来了。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-08 06:47:33
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC4%E9%83%A8%E5%88%86/>第4部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/33.%E6%89%93%E5%BC%80%E7%BB%88%E7%AB%AF%E8%AE%BE%E5%A4%87%E6%96%87%E4%BB%B6/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">33.打开终端设备文件</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/35.execve%E5%8A%A0%E8%BD%BD%E5%B9%B6%E6%89%A7%E8%A1%8Cshell%E7%A8%8B%E5%BA%8F/>
+<span class="next-text nav-default">35.扒开execve的皮</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

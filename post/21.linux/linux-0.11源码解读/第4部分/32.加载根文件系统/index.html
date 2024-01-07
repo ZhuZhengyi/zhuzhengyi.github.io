@@ -1,0 +1,667 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>32.加载根文件系统 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="32.加载根文件系统 书接上回，上回书咱们说到，我们已经把硬盘的基本信息存入了 hd_info[]。 把硬盘的分区信息存入了 hd[]。 并且留了个读">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/32.%E5%8A%A0%E8%BD%BD%E6%A0%B9%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="32.加载根文件系统">
+<meta property="og:description" content="32.加载根文件系统 书接上回，上回书咱们说到，我们已经把硬盘的基本信息存入了 hd_info[]。 把硬盘的分区信息存入了 hd[]。 并且留了个读">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/32.%E5%8A%A0%E8%BD%BD%E6%A0%B9%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-01-08T06:47:33+08:00">
+<meta property="article:modified_time" content="2024-01-08T06:47:33+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="32.加载根文件系统">
+<meta itemprop=description content="32.加载根文件系统 书接上回，上回书咱们说到，我们已经把硬盘的基本信息存入了 hd_info[]。 把硬盘的分区信息存入了 hd[]。 并且留了个读"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
+<meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
+<meta itemprop=wordCount content="2383">
+<meta itemprop=keywords content="linux,linux-0.11源码解读,第4部分,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="32.加载根文件系统">
+<meta name=twitter:description content="32.加载根文件系统 书接上回，上回书咱们说到，我们已经把硬盘的基本信息存入了 hd_info[]。 把硬盘的分区信息存入了 hd[]。 并且留了个读"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>32.加载根文件系统</h1>
+<div class=post-meta>
+<time datetime=2024-01-08 class=post-time>
+2024-01-08 06:47:33
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/linux/> linux </a>
+<a href=https://justice.bj.cn/categories/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/> linux-0.11源码解读 </a>
+<a href=https://justice.bj.cn/categories/%E7%AC%AC4%E9%83%A8%E5%88%86/> 第4部分 </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#硬盘中的文件系统格式是怎样的>硬盘中的文件系统格式是怎样的</a></li>
+<li><a href=#内存中用于文件系统的数据结构有哪些>内存中用于文件系统的数据结构有哪些</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=32加载根文件系统>32.加载根文件系统</h1>
+<p>书接上回，上回书咱们说到，我们已经把硬盘的基本信息存入了 hd_info[]。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-44-43-4052e8eeeeb60e0ca6d1be52b74e555d.png alt=图片></p>
+<p>把硬盘的分区信息存入了 hd[]。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-44-50-24869c8c809a0a50594ed3ce9f90b87a.png alt=图片></p>
+<p>并且留了个读取硬盘数据的 <code>bread()</code> 函数没有讲，等主流程讲完再展开这些函数的细节，我知道这是你们关心的内容。</p>
+<p>这些都是 <code>setup()</code> 方法里做的事情，也就是进程 0 fork 出的进程 1 所执行的第一个方法。</p>
+<p>今天我们说 setup 方法中的最后一个函数 <code>mount_root()</code>。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>int</span> <span class=nf>sys_setup</span><span class=p>(</span><span class=kt>void</span> <span class=o>*</span> <span class=n>BIOS</span><span class=p>)</span> <span class=p>{</span>
+    <span class=p>...</span>
+    <span class=n>mount_root</span><span class=p>();</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><code>mount_root</code> 直译过来就是<strong>加载根</strong>。</p>
+<p>再多说几个字是<strong>加载根文件系统</strong>，有了它之后，操作系统才能从一个<strong>根儿</strong>开始找到所有存储在硬盘中的文件，所以它是文件系统的基石，很重要。</p>
+<p>我们翻开看看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=kt>int</span> <span class=n>i</span><span class=p>,</span><span class=n>free</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>super_block</span> <span class=o>*</span> <span class=n>p</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>mi</span><span class=p>;</span>    
+    <span class=k>for</span><span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span><span class=n>i</span><span class=o>&lt;</span><span class=mi>64</span><span class=p>;</span><span class=n>i</span><span class=o>++</span><span class=p>)</span>        
+        <span class=n>file_table</span><span class=p>[</span><span class=n>i</span><span class=p>].</span><span class=n>f_count</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>    
+    <span class=k>for</span><span class=p>(</span><span class=n>p</span> <span class=o>=</span> <span class=o>&amp;</span><span class=n>super_block</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span> <span class=p>;</span> <span class=n>p</span> <span class=o>&lt;</span> <span class=o>&amp;</span><span class=n>super_block</span><span class=p>[</span><span class=mi>8</span><span class=p>]</span> <span class=p>;</span> <span class=n>p</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_dev</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_lock</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_wait</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>    
+    <span class=p>}</span>    
+    <span class=n>p</span><span class=o>=</span><span class=n>read_super</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>    
+    <span class=n>mi</span><span class=o>=</span><span class=n>iget</span><span class=p>(</span><span class=mi>0</span><span class=p>,</span><span class=mi>1</span><span class=p>);</span>    
+    <span class=n>mi</span><span class=o>-&gt;</span><span class=n>i_count</span> <span class=o>+=</span> <span class=mi>3</span> <span class=p>;</span>    
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_isup</span> <span class=o>=</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_imount</span> <span class=o>=</span> <span class=n>mi</span><span class=p>;</span>    
+    <span class=n>current</span><span class=o>-&gt;</span><span class=n>pwd</span> <span class=o>=</span> <span class=n>mi</span><span class=p>;</span>    
+    <span class=n>current</span><span class=o>-&gt;</span><span class=n>root</span> <span class=o>=</span> <span class=n>mi</span><span class=p>;</span>    
+    <span class=n>free</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>    
+    <span class=n>i</span><span class=o>=</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>s_nzones</span><span class=p>;</span>    
+    <span class=k>while</span> <span class=p>(</span><span class=o>--</span> <span class=n>i</span> <span class=o>&gt;=</span> <span class=mi>0</span><span class=p>)</span>        
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>set_bit</span><span class=p>(</span><span class=n>i</span><span class=o>&amp;</span><span class=mi>8191</span><span class=p>,</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>s_zmap</span><span class=p>[</span><span class=n>i</span><span class=o>&gt;&gt;</span><span class=mi>13</span><span class=p>]</span><span class=o>-&gt;</span><span class=n>b_data</span><span class=p>))</span>            
+            <span class=n>free</span><span class=o>++</span><span class=p>;</span>    
+        <span class=n>free</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>    
+    <span class=n>i</span><span class=o>=</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>s_ninodes</span><span class=o>+</span><span class=mi>1</span><span class=p>;</span>    
+    <span class=k>while</span> <span class=p>(</span><span class=o>--</span> <span class=n>i</span> <span class=o>&gt;=</span> <span class=mi>0</span><span class=p>)</span>        
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>set_bit</span><span class=p>(</span><span class=n>i</span><span class=o>&amp;</span><span class=mi>8191</span><span class=p>,</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>s_imap</span><span class=p>[</span><span class=n>i</span><span class=o>&gt;&gt;</span><span class=mi>13</span><span class=p>]</span><span class=o>-&gt;</span><span class=n>b_data</span><span class=p>))</span>            
+            <span class=n>free</span><span class=o>++</span><span class=p>;</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>很简单。</p>
+<p>从整体上说，它就是要把硬盘中的数据，以文件系统的格式进行解读，加载到内存中设计好的数据结构，这样操作系统就可以通过内存中的数据，以文件系统的方式访问硬盘中的一个个文件了。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-44-59-b6a1ff570c88d23ff34e68d3d09ab079.png alt=图片></p>
+<p>那其实搞清楚两个事情即可：</p>
+<p><strong>第一，硬盘中的文件系统格式是怎样的？</strong></p>
+<p><strong>第二，内存中用于文件系统的数据结构有哪些？</strong></p>
+<p>我们一个个来。</p>
+<h2 id=硬盘中的文件系统格式是怎样的>硬盘中的文件系统格式是怎样的</h2>
+<p>首先硬盘中的文件系统，无非就是硬盘中的一堆数据，我们按照一定格式去解析罢了。</p>
+<p>Linux-0.11 中的文件系统是 <strong>MINIX</strong> 文件系统，它就长成这个样子。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-45-05-6c55cea738db22bf57e6208ce3091919.png alt=图片></p>
+<p>每一个块结构的大小是 1024 字节，也就是 1KB，硬盘里的数据就按照这个结构，妥善地安排在硬盘里。</p>
+<p>可是硬盘中凭什么就有了这些信息呢？这就是个鸡生蛋蛋生鸡的问题了。你可以先写一个操作系统，然后给一个硬盘做某种文件系统类型的格式化，这样你就得到一个有文件系统的硬盘了，有了这个硬盘，你的操作系统就可以成功启动了。</p>
+<p>总之，想个办法给这个硬盘写上数据呗。</p>
+<p>好了，现在我们简单看看 MINIX 文件系统的格式。</p>
+<ul>
+<li>
+<p><strong>引导块</strong>就是我们系列最开头说的启动区，当然不一定所有的硬盘都有启动区，但我们还是得预留出这个位置，以保持格式的统一。</p>
+</li>
+<li>
+<p><strong>超级块</strong>用于描述整个文件系统的整体信息，我们看它的字段就知道了，有后面的 inode 数量，块数量，第一个块在哪里等信息。有了它，整个硬盘的布局就清晰了。</p>
+</li>
+<li>
+<p><strong>inode 位图和块位图</strong>，就是位图的基本操作和作用了，表示后面 inode 和块的使用情况，和我们之前讲的内存占用位图 mem_map[] 是类似的。</p>
+</li>
+</ul>
+<p>再往后，<strong>inode</strong> 存放着每个文件或目录的元信息和索引信息，元信息就是文件类型、文件大小、修改时间等，索引信息就是大小为 9 的 i_zone[9] 块数组，表示这个文件或目录的具体数据占用了哪些块。</p>
+<p>其中块数组里，0~6 表示直接索引，7 表示一次间接索引，8 表示二次间接索引。当文件比较小时，比如只占用 2 个块就够了，那就只需要 zone[0] 和 zone[1] 两个直接索引即可。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-45-14-8d12e13b175dce0c8d804f933c9dae18.png alt=图片></p>
+<p>再往后，就都是存放具体文件或目录实际信息的<strong>块</strong>了。如果是一个普通文件类型的 inode 指向的块，那里面就直接是文件的二进制信息。如果是一个目录类型的 inode 指向的块，那里面存放的就是这个目录下的文件和目录的 inode 索引以及文件或目录名称等信息。</p>
+<p>好了，文件系统格式的说明，我们就简单说明完毕了，MINIX 文件系统已经过时，你可以阅读我之前写的 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247494176&idx=1&sn=b4680b50090bb3c7b9c49379241c536c&chksm=c2c5908df5b2199b361885b32b07ab0f597ab25cd1d70bb75ca13fb897c200285685318f145f&scene=21#wechat_redirect">图解 | 你管这破玩意叫文件系统？</a>来全面了解一个 ext2 文件系统的来龙去脉，基本思想都是一样的。</p>
+<h2 id=内存中用于文件系统的数据结构有哪些>内存中用于文件系统的数据结构有哪些</h2>
+<p>赶紧回过头来看我们的代码，是如何加载以这样一种格式存放在硬盘里的数据，以被我们操作系统所管控的。</p>
+<p>从头看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>file</span> <span class=p>{</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>f_mode</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>f_flags</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>short</span> <span class=n>f_count</span><span class=p>;</span>    
+    <span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>f_inode</span><span class=p>;</span>    
+    <span class=n>off_t</span> <span class=n>f_pos</span><span class=p>;</span>
+<span class=p>};</span>
+<span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=k>for</span><span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span><span class=n>i</span><span class=o>&lt;</span><span class=mi>64</span><span class=p>;</span><span class=n>i</span><span class=o>++</span><span class=p>)</span>        
+        <span class=n>file_table</span><span class=p>[</span><span class=n>i</span><span class=p>].</span><span class=n>f_count</span><span class=o>=</span><span class=mi>0</span><span class=p>;</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>把 64 个 <strong>file_table</strong> 里的 f_count 清零。</p>
+<p><strong>这个 file_table 表示进程所使用的文件</strong>，进程每使用一个文件，都需要记录在这里，包括文件类型、文件 inode 索引信息等，而这个 f_count 表示被引用的次数，此时还没有引用，所以设置为零。</p>
+<p>而这个 file_table 的索引（当然准确说是进程的filp索引才是），就是我们通常说的文件描述符。比如有如下命令。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=nb>echo</span> <span class=s2>&#34;hello&#34;</span> &gt; <span class=m>0</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>就表示把 hello 输出到 0 号文件描述符。</p>
+<p>0 号文件描述符是哪个文件呢？就是 file_table[0] 所表示的文件。</p>
+<p>这个文件在哪里呢？注意到 file 结构里有个 f_inode 字段，通过 f_inode 即可找到它的 inode 信息，inode 信息包含了一个文件所需要的全部信息，包括文件的大小、文件的类型、文件所在的硬盘块号，这个所在硬盘块号，就是文件的位置咯。</p>
+<p>接着看。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>super_block</span> <span class=n>super_block</span><span class=p>[</span><span class=mi>8</span><span class=p>];</span>
+<span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=k>struct</span> <span class=n>super_block</span> <span class=o>*</span> <span class=n>p</span><span class=p>;</span>    
+    <span class=k>for</span><span class=p>(</span><span class=n>p</span> <span class=o>=</span> <span class=o>&amp;</span><span class=n>super_block</span><span class=p>[</span><span class=mi>0</span><span class=p>]</span> <span class=p>;</span> <span class=n>p</span> <span class=o>&lt;</span> <span class=o>&amp;</span><span class=n>super_block</span><span class=p>[</span><span class=mi>8</span><span class=p>]</span> <span class=p>;</span> <span class=n>p</span><span class=o>++</span><span class=p>)</span> <span class=p>{</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_dev</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_lock</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>        
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_wait</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>    
+    <span class=p>}</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>又是把一个数组 <strong>super_block</strong> 做清零工作。</p>
+<p>这个 super_block 存在的意义是，操作系统与一个设备以文件形式进行读写访问时，就需要把这个设备的超级块信息放在这里。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-45-22-6c55cea738db22bf57e6208ce3091919.png alt=图片></p>
+<p>这样通过这个超级块，就可以掌控这个设备的文件系统全局了。</p>
+<p>果然，接下来的操作，就是读取硬盘的超级块信息到内存中来。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>p</span><span class=o>=</span><span class=n>read_super</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>read_super 就是读取硬盘中的超级块。</p>
+<p>接下来，读取根 inode 信息。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=k>struct</span> <span class=n>m_inode</span> <span class=o>*</span> <span class=n>mi</span><span class=p>;</span><span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>mi</span><span class=o>=</span><span class=n>iget</span><span class=p>(</span><span class=mi>0</span><span class=p>,</span><span class=mi>1</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后把该 inode 设置为当前进程（也就是进程 1）的当前工作目录和根目录。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>current</span><span class=o>-&gt;</span><span class=n>pwd</span> <span class=o>=</span> <span class=n>mi</span><span class=p>;</span>    
+    <span class=n>current</span><span class=o>-&gt;</span><span class=n>root</span> <span class=o>=</span> <span class=n>mi</span><span class=p>;</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>然后记录块位图信息。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>i</span><span class=o>=</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>s_nzones</span><span class=p>;</span>    
+    <span class=k>while</span> <span class=p>(</span><span class=o>--</span> <span class=n>i</span> <span class=o>&gt;=</span> <span class=mi>0</span><span class=p>)</span>        
+        <span class=n>set_bit</span><span class=p>(</span><span class=n>i</span><span class=o>&amp;</span><span class=mi>8191</span><span class=p>,</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_zmap</span><span class=p>[</span><span class=n>i</span><span class=o>&gt;&gt;</span><span class=mi>13</span><span class=p>]</span><span class=o>-&gt;</span><span class=n>b_data</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>最后记录 inode 位图信息。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>mount_root</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>i</span><span class=o>=</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>s_ninodes</span><span class=o>+</span><span class=mi>1</span><span class=p>;</span>    
+    <span class=k>while</span> <span class=p>(</span><span class=o>--</span> <span class=n>i</span> <span class=o>&gt;=</span> <span class=mi>0</span><span class=p>)</span>        
+        <span class=n>set_bit</span><span class=p>(</span><span class=n>i</span><span class=o>&amp;</span><span class=mi>8191</span><span class=p>,</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>s_imap</span><span class=p>[</span><span class=n>i</span><span class=o>&gt;&gt;</span><span class=mi>13</span><span class=p>]</span><span class=o>-&gt;</span><span class=n>b_data</span><span class=p>);</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>就完事了。</p>
+<p>其实整体上就是把硬盘中文件系统的各个信息，搬到内存中。之前的图可以说非常直观了。</p>
+<p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-16-45-31-b6a1ff570c88d23ff34e68d3d09ab079.png alt=图片></p>
+<p>有了内存中的这些结构，我们就可以顺着根 inode，找到所有的文件了。</p>
+<p>至此，加载根文件系统的 <strong>mount_root</strong> 函数就全部结束了。同时，让我们回到全局视野，发现 <strong>setup</strong> 函数也一并结束了。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>main</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>move_to_user_mode</span><span class=p>();</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>fork</span><span class=p>())</span> <span class=p>{</span>        
+        <span class=n>init</span><span class=p>();</span>    
+    <span class=p>}</span>    
+    <span class=k>for</span><span class=p>(;;)</span> 
+        <span class=n>pause</span><span class=p>();</span>
+<span class=p>}</span>
+<span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=n>setup</span><span class=p>((</span><span class=kt>void</span> <span class=o>*</span><span class=p>)</span> <span class=o>&amp;</span><span class=n>drive_info</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
+<span class=kt>int</span> <span class=nf>sys_setup</span><span class=p>(</span><span class=kt>void</span> <span class=o>*</span> <span class=n>BIOS</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=n>mount_root</span><span class=p>();</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>setup 的主要工作就是我们今天所讲的，<strong>加载根文件系统</strong>。</p>
+<p>我们继续往下看 init 函数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=kt>void</span> <span class=nf>init</span><span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=n>setup</span><span class=p>((</span><span class=kt>void</span> <span class=o>*</span><span class=p>)</span> <span class=o>&amp;</span><span class=n>drive_info</span><span class=p>);</span>    
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>open</span><span class=p>(</span><span class=s>&#34;/dev/tty0&#34;</span><span class=p>,</span><span class=n>O_RDWR</span><span class=p>,</span><span class=mi>0</span><span class=p>);</span>    
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>    
+    <span class=p>(</span><span class=kt>void</span><span class=p>)</span> <span class=n>dup</span><span class=p>(</span><span class=mi>0</span><span class=p>);</span>
+<span class=p>}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>看到这相信你也明白了。</p>
+<p>之前 setup 函数的一番折腾，加载了根文件系统，顺着根 inode 可以找到所有文件，就是为了下一行 open 函数可以通过文件路径，从硬盘中把一个文件的信息方便地拿到。</p>
+<p>在这里，我们 open 了一个 <strong>/dev/tty0</strong> 的文件，那我们接下来的焦点就在这个 /dev/tty0 是个啥？</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-01-08 06:47:33
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/linux/>linux</a>
+<a href=https://justice.bj.cn/tags/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/>linux-0.11源码解读</a>
+<a href=https://justice.bj.cn/tags/%E7%AC%AC4%E9%83%A8%E5%88%86/>第4部分</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/31.%E6%8B%BF%E5%88%B0%E7%A1%AC%E7%9B%98%E4%BF%A1%E6%81%AF/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">31.拿到硬盘信息</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/33.%E6%89%93%E5%BC%80%E7%BB%88%E7%AB%AF%E8%AE%BE%E5%A4%87%E6%96%87%E4%BB%B6/>
+<span class="next-text nav-default">33.打开终端设备文件</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>
