@@ -25,11 +25,11 @@
 <meta property="og:description" content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ...">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/36.%E7%BC%BA%E9%A1%B5%E4%B8%AD%E6%96%AD/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-06T09:05:06+08:00">
-<meta property="article:modified_time" content="2024-01-06T09:05:06+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-07T23:13:18+08:00">
+<meta property="article:modified_time" content="2024-01-07T23:13:18+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="36.缺页中断">
-<meta itemprop=description content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ..."><meta itemprop=datePublished content="2024-01-06T09:05:06+08:00">
-<meta itemprop=dateModified content="2024-01-06T09:05:06+08:00">
+<meta itemprop=description content="36.缺页中断 书接上回，上回书咱们说到，进程 2 通过 execve 函数，将自己摇身一变成为 /bin/sh 程序，也就是 shell 程序开始执行。 1 2 3 4 5 6 7 8 9 10 11 // main.c void init(void) { ..."><meta itemprop=datePublished content="2024-01-07T23:13:18+08:00">
+<meta itemprop=dateModified content="2024-01-07T23:13:18+08:00">
 <meta itemprop=wordCount content="3576">
 <meta itemprop=keywords content="pub,linux-0.11源码解读,第4部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="36.缺页中断">
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>36.缺页中断</h1>
 <div class=post-meta>
-<time datetime=2024-01-06 class=post-time>
-2024-01-06 09:05:06
+<time datetime=2024-01-07 class=post-time>
+2024-01-07 23:13:18
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/pub/> pub </a>
@@ -312,39 +312,39 @@ Justice's Blog
 </span><span class=lnt>33
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// memory.c
-// address 缺页产生的线性地址 0x8000000
-void do_no_page(unsigned long error_code,unsigned long address) {    
-    int nr[4];    
-    unsigned long tmp;    
-    unsigned long page;    
-    int block,i;    
-    address &amp;= 0xfffff000;    
-    tmp = address - current-&gt;start_code;    
-    if (!current-&gt;executable || tmp &gt;= current-&gt;end_data) {        
-        get_empty_page(address);        
-        return;    
-    }    
-    if (share_page(tmp))        
-        return;    
-    if (!(page = get_free_page()))        
-        oom();
-    /* remember that 1 block is used for header */    
-    block = 1 + tmp/BLOCK_SIZE;    
-    for (i=0 ; i&lt;4 ; block++,i++)        
-        nr[i] = bmap(current-&gt;executable,block);    
-    bread_page(page,current-&gt;executable-&gt;i_dev,nr);    
-    i = tmp + 4096 - current-&gt;end_data;    
-    tmp = page + 4096;    
-    while (i-- &gt; 0) {        
-        tmp--;        
-        *(char *)tmp = 0;    
-    }    
-    if (put_page(page,address))        
-        return;    
-    free_page(page);    
-    oom();
-}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// memory.c
+</span><span class=c1>// address 缺页产生的线性地址 0x8000000
+</span><span class=c1></span><span class=kt>void</span> <span class=nf>do_no_page</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>error_code</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>address</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=kt>int</span> <span class=n>nr</span><span class=p>[</span><span class=mi>4</span><span class=p>];</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>tmp</span><span class=p>;</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>page</span><span class=p>;</span>    
+    <span class=kt>int</span> <span class=n>block</span><span class=p>,</span><span class=n>i</span><span class=p>;</span>    
+    <span class=n>address</span> <span class=o>&amp;=</span> <span class=mh>0xfffff000</span><span class=p>;</span>    
+    <span class=n>tmp</span> <span class=o>=</span> <span class=n>address</span> <span class=o>-</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>start_code</span><span class=p>;</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>executable</span> <span class=o>||</span> <span class=n>tmp</span> <span class=o>&gt;=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>end_data</span><span class=p>)</span> <span class=p>{</span>        
+        <span class=n>get_empty_page</span><span class=p>(</span><span class=n>address</span><span class=p>);</span>        
+        <span class=k>return</span><span class=p>;</span>    
+    <span class=p>}</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=n>share_page</span><span class=p>(</span><span class=n>tmp</span><span class=p>))</span>        
+        <span class=k>return</span><span class=p>;</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>page</span> <span class=o>=</span> <span class=n>get_free_page</span><span class=p>()))</span>        
+        <span class=n>oom</span><span class=p>();</span>
+    <span class=cm>/* remember that 1 block is used for header */</span>    
+    <span class=n>block</span> <span class=o>=</span> <span class=mi>1</span> <span class=o>+</span> <span class=n>tmp</span><span class=o>/</span><span class=n>BLOCK_SIZE</span><span class=p>;</span>    
+    <span class=k>for</span> <span class=p>(</span><span class=n>i</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>i</span><span class=o>&lt;</span><span class=mi>4</span> <span class=p>;</span> <span class=n>block</span><span class=o>++</span><span class=p>,</span><span class=n>i</span><span class=o>++</span><span class=p>)</span>        
+        <span class=n>nr</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>=</span> <span class=n>bmap</span><span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>executable</span><span class=p>,</span><span class=n>block</span><span class=p>);</span>    
+    <span class=n>bread_page</span><span class=p>(</span><span class=n>page</span><span class=p>,</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>executable</span><span class=o>-&gt;</span><span class=n>i_dev</span><span class=p>,</span><span class=n>nr</span><span class=p>);</span>    
+    <span class=n>i</span> <span class=o>=</span> <span class=n>tmp</span> <span class=o>+</span> <span class=mi>4096</span> <span class=o>-</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>end_data</span><span class=p>;</span>    
+    <span class=n>tmp</span> <span class=o>=</span> <span class=n>page</span> <span class=o>+</span> <span class=mi>4096</span><span class=p>;</span>    
+    <span class=k>while</span> <span class=p>(</span><span class=n>i</span><span class=o>--</span> <span class=o>&gt;</span> <span class=mi>0</span><span class=p>)</span> <span class=p>{</span>        
+        <span class=n>tmp</span><span class=o>--</span><span class=p>;</span>        
+        <span class=o>*</span><span class=p>(</span><span class=kt>char</span> <span class=o>*</span><span class=p>)</span><span class=n>tmp</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>    
+    <span class=p>}</span>    
+    <span class=k>if</span> <span class=p>(</span><span class=n>put_page</span><span class=p>(</span><span class=n>page</span><span class=p>,</span><span class=n>address</span><span class=p>))</span>        
+        <span class=k>return</span><span class=p>;</span>    
+    <span class=n>free_page</span><span class=p>(</span><span class=n>page</span><span class=p>);</span>    
+    <span class=n>oom</span><span class=p>();</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>我们仍然是去掉一些不重要的分支，假设跳转不会超过数据末端 end_data，也没有共享内存页面，申请空闲内存时也不会内存不足产生 oom 等，将程序简化如下。</p>
@@ -488,19 +488,19 @@ void do_no_page(unsigned long error_code,unsigned long address) {    
 </span><span class=lnt>13
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// memory.c
-// address 缺页产生的线性地址 0x8000000
-void do_no_page(unsigned long address) {    
-    ...    
-    // 计算这个地址在文件中的哪个数据块 1    
-    int block = 1 + tmp/BLOCK_SIZE;    
-    // 一个数据块 1024 字节，所以一页内存需要读 4 个数据块    
-    int nr[4];    
-    for (int i=0 ; i&lt;4 ; block++,i++)        
-        nr[i] = bmap(current-&gt;executable,block);    
-    bread_page(page,current-&gt;executable-&gt;i_dev,nr);    
-    ...
-}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// memory.c
+</span><span class=c1>// address 缺页产生的线性地址 0x8000000
+</span><span class=c1></span><span class=kt>void</span> <span class=nf>do_no_page</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>address</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=p>...</span>    
+    <span class=c1>// 计算这个地址在文件中的哪个数据块 1    
+</span><span class=c1></span>    <span class=kt>int</span> <span class=n>block</span> <span class=o>=</span> <span class=mi>1</span> <span class=o>+</span> <span class=n>tmp</span><span class=o>/</span><span class=n>BLOCK_SIZE</span><span class=p>;</span>    
+    <span class=c1>// 一个数据块 1024 字节，所以一页内存需要读 4 个数据块    
+</span><span class=c1></span>    <span class=kt>int</span> <span class=n>nr</span><span class=p>[</span><span class=mi>4</span><span class=p>];</span>    
+    <span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>i</span><span class=o>=</span><span class=mi>0</span> <span class=p>;</span> <span class=n>i</span><span class=o>&lt;</span><span class=mi>4</span> <span class=p>;</span> <span class=n>block</span><span class=o>++</span><span class=p>,</span><span class=n>i</span><span class=o>++</span><span class=p>)</span>        
+        <span class=n>nr</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>=</span> <span class=n>bmap</span><span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>executable</span><span class=p>,</span><span class=n>block</span><span class=p>);</span>    
+    <span class=n>bread_page</span><span class=p>(</span><span class=n>page</span><span class=p>,</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>executable</span><span class=o>-&gt;</span><span class=n>i_dev</span><span class=p>,</span><span class=n>nr</span><span class=p>);</span>    
+    <span class=p>...</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>从硬盘的哪个位置开始读呢？</p>
@@ -551,19 +551,19 @@ void do_no_page(unsigned long address) {    
 </span><span class=lnt>13
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// memory.c
-unsigned long put_page(unsigned long page,unsigned long address) {    
-    unsigned long tmp, *page_table;    
-    // 找到页目录项    
-    page_table = (unsigned long *) ((address&gt;&gt;20) &amp; 0xffc);    
-    // 写入页目录项    
-    tmp = get_free_page();    
-    *page_table = tmp|7;    
-    // 写入页表项    
-    page_table = (unsigned long *) tmp;    
-    page_table[(address&gt;&gt;12) &amp; 0x3ff] = page | 7;    
-    return page;
-}
+<pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=c1>// memory.c
+</span><span class=c1></span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=nf>put_page</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>page</span><span class=p>,</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>address</span><span class=p>)</span> <span class=p>{</span>    
+    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>tmp</span><span class=p>,</span> <span class=o>*</span><span class=n>page_table</span><span class=p>;</span>    
+    <span class=c1>// 找到页目录项    
+</span><span class=c1></span>    <span class=n>page_table</span> <span class=o>=</span> <span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=o>*</span><span class=p>)</span> <span class=p>((</span><span class=n>address</span><span class=o>&gt;&gt;</span><span class=mi>20</span><span class=p>)</span> <span class=o>&amp;</span> <span class=mh>0xffc</span><span class=p>);</span>    
+    <span class=c1>// 写入页目录项    
+</span><span class=c1></span>    <span class=n>tmp</span> <span class=o>=</span> <span class=n>get_free_page</span><span class=p>();</span>    
+    <span class=o>*</span><span class=n>page_table</span> <span class=o>=</span> <span class=n>tmp</span><span class=o>|</span><span class=mi>7</span><span class=p>;</span>    
+    <span class=c1>// 写入页表项    
+</span><span class=c1></span>    <span class=n>page_table</span> <span class=o>=</span> <span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=o>*</span><span class=p>)</span> <span class=n>tmp</span><span class=p>;</span>    
+    <span class=n>page_table</span><span class=p>[(</span><span class=n>address</span><span class=o>&gt;&gt;</span><span class=mi>12</span><span class=p>)</span> <span class=o>&amp;</span> <span class=mh>0x3ff</span><span class=p>]</span> <span class=o>=</span> <span class=n>page</span> <span class=o>|</span> <span class=mi>7</span><span class=p>;</span>    
+    <span class=k>return</span> <span class=n>page</span><span class=p>;</span>
+<span class=p>}</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>大家可以结合页目录表和页表的数据结构看一下，很简单，就是个计算过程。</p>
@@ -658,7 +658,7 @@ unsigned long put_page(unsigned long page,unsigned long address) {   �
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-06 09:05:06
+2024-01-07 23:13:18
 </span>
 </p>
 <p class=copyright-item>
@@ -697,8 +697,8 @@ unsigned long put_page(unsigned long page,unsigned long address) {   �
 <span class="prev-text nav-default">35.扒开execve的皮</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/39.%E7%95%AA%E5%A4%96%E7%AF%87-linux_0.11%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/>
-<span class="next-text nav-default">39.调试Linux最早期的代码</span>
+<a class=next href=/post/09.pub/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC4%E9%83%A8%E5%88%86/37.shell%E7%A8%8B%E5%BA%8F%E8%B7%91%E8%B5%B7%E6%9D%A5%E4%BA%86/>
+<span class="next-text nav-default">37.shell程序跑起来了</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>
