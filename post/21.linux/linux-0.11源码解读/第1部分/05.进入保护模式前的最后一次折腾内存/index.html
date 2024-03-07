@@ -30,7 +30,7 @@
 <meta itemprop=name content="05.进入保护模式前的最后一次折腾内存">
 <meta itemprop=description content="05.进入保护模式前的最后一次折腾内存 上回书咱们说到，操作系统已经完成了各种从硬盘到内存的加载，以及内存到内存的复制。 至此，整个 bootsect.s 的使命就完"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
 <meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
-<meta itemprop=wordCount content="1965">
+<meta itemprop=wordCount content="1828">
 <meta itemprop=keywords content="linux,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="05.进入保护模式前的最后一次折腾内存">
 <meta name=twitter:description content="05.进入保护模式前的最后一次折腾内存 上回书咱们说到，操作系统已经完成了各种从硬盘到内存的加载，以及内存到内存的复制。 至此，整个 bootsect.s 的使命就完"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -210,13 +210,14 @@ Justice's Blog
 <span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=p>[</span><span class=mi>0</span><span class=p>],</span><span class=nb>dx</span><span class=err>      </span><span class=c1>; it from 0x90000.</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>又有个 <strong>int</strong> 指令。</p>
-<p>前面的文章好好看过的话，一下就能猜出它要干嘛。还记不记得之前有个 <strong>int 0x13</strong> 表示触发 BIOS 提供的<strong>读磁盘</strong>中断程序？这个 <strong>int 0x10</strong> 也是一样的，它也是触发 BIOS 提供的<strong>显示服务</strong>中断处理程序，而 <strong>ah</strong> 寄存器被赋值为 <strong>0x03</strong> 表示显示服务里具体的<strong>读取光标位置功能</strong>。</p>
+</div><p>又有个 <code>int</code> 指令。</p>
+<p>前面的文章好好看过的话，一下就能猜出它要干嘛。还记不记得之前有个 <code>int 0x13</code>表示触发 BIOS 提供的<strong>读磁盘</strong>中断程序？这个 <code>int 0x10</code>也是一样的，它也是触发 BIOS 提供的<strong>显示服务</strong>中断处理程序，而 <strong>ah</strong> 寄存器被赋值为 <strong>0x03</strong> 表示显示服务里具体的<strong>读取光标位置功能</strong>。</p>
 <p>具体 BIOS 提供了哪些中断服务，如何去调用和获取返回值，请大家自行寻找资料，这里只说结果。</p>
-<p>这个 int 0x10 中断程序执行完毕并返回时，<strong>dx</strong> 寄存器里的值表示<strong>光标的位置</strong>，具体说来其高八位 dh 存储了<strong>行号</strong>，低八位 dl 存储了列号。</p>
+<p>这个 <code>int 0x10</code> 中断程序执行完毕并返回时，<strong>dx</strong> 寄存器里的值表示<strong>光标的位置</strong>，具体说来其高八位 dh 存储了<strong>行号</strong>，低八位 dl 存储了列号。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-36-35-76d116c9ac2b413cbfe012c608da053c.png alt=图片></p>
 <p>这里说明一下：计算机在加电自检后会自动初始化到文字模式，在这种模式下，一屏幕可以显示 25 行，每行 80 个字符，也就是 80 列。</p>
-<p>那下一步 <strong>mov [0],dx</strong> 就是把这个光标位置存储在 [0] 这个内存地址处。注意，前面我们说过，这个内存地址仅仅是偏移地址，还需要加上 ds 这个寄存器里存储的段基址，最终的内存地址是在 <strong>0x90000</strong> 处，这里存放着光标的位置，以便之后在初始化控制台的时候用到。</p>
+<p>那下一步 <code>mov [0],dx</code> 就是把这个光标位置存储在 [0] 这个内存地址处。</p>
+<p>注意，前面我们说过，这个内存地址仅仅是偏移地址，还需要加上 ds 这个寄存器里存储的段基址，最终的内存地址是在 <strong>0x90000</strong> 处，这里存放着光标的位置，以便之后在初始化控制台的时候用到。</p>
 <p>所以从这里也可以看出，这和我们平时调用一个方法没什么区别，只不过这里的<strong>寄存器</strong>的用法相当于<strong>入参和返回值</strong>，这里的 <strong>0x10 中断号</strong>相当于<strong>方法名</strong>。</p>
 <p>这里又应了之前说的一句话，操作系统内核的最开始也处处都是 BIOS 的调包侠，有现成的就用呗。</p>
 <p>再接下来的几行代码，都是和刚刚一样的逻辑，调用一个 BIOS 中断获取点什么信息，然后存储在内存中某个位置，我们迅速浏览一下就好咯。</p>
@@ -267,53 +268,52 @@ Justice's Blog
 </span><span class=lnt>43
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>; 比如获取内存信息。
-; Get memory size (extended mem, kB)    
-mov ah,#0x88    
-int 0x15    
-mov [2],ax
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=c1>; 比如获取内存信息。</span>
+<span class=c1>; Get memory size (extended mem, kB)    </span>
+<span class=nf>mov</span> <span class=nb>ah</span><span class=p>,</span><span class=err>#</span><span class=mh>0x88</span>    
+<span class=nf>int</span> <span class=mh>0x15</span>    
+<span class=nf>mov</span> <span class=p>[</span><span class=mi>2</span><span class=p>],</span><span class=nb>ax</span>
 
-; 获取显卡显示模式。
-; Get video-card data:    
-mov ah,#0x0f    
-int 0x10    
-mov [4],bx      ; bh = display page    
-mov [6],ax      ; al = video mode, ah = window width
+<span class=c1>; 获取显卡显示模式。</span>
+<span class=c1>; Get video-card data:    </span>
+<span class=nf>mov</span> <span class=nb>ah</span><span class=p>,</span><span class=err>#</span><span class=mh>0x0f</span>    
+<span class=nf>int</span> <span class=mh>0x10</span>    
+<span class=nf>mov</span> <span class=p>[</span><span class=mi>4</span><span class=p>],</span><span class=nb>bx</span>      <span class=c1>; bh = display page    </span>
+<span class=nf>mov</span> <span class=p>[</span><span class=mi>6</span><span class=p>],</span><span class=nb>ax</span>      <span class=c1>; al = video mode, ah = window width</span>
 
-; 检查显示方式并取参数
-; check for EGA/VGA and some config parameters    
-mov ah,#0x12    
-mov bl,#0x10    
-int 0x10    
-mov [8],ax    
-mov [10],bx    
-mov [12],cx
+<span class=c1>; 检查显示方式并取参数</span>
+<span class=c1>; check for EGA/VGA and some config parameters    </span>
+<span class=nf>mov</span> <span class=nb>ah</span><span class=p>,</span><span class=err>#</span><span class=mh>0x12</span>    
+<span class=nf>mov</span> <span class=nb>bl</span><span class=p>,</span><span class=err>#</span><span class=mh>0x10</span>    
+<span class=nf>int</span> <span class=mh>0x10</span>    
+<span class=nf>mov</span> <span class=p>[</span><span class=mi>8</span><span class=p>],</span><span class=nb>ax</span>    
+<span class=nf>mov</span> <span class=p>[</span><span class=mi>10</span><span class=p>],</span><span class=nb>bx</span>    
+<span class=nf>mov</span> <span class=p>[</span><span class=mi>12</span><span class=p>],</span><span class=nb>cx</span>
 
-; 获取第一块硬盘的信息。
-; Get hd0 data    
-mov ax,#0x0000    
-mov ds,ax    
-lds si,[4*0x41]    
-mov ax,#INITSEG    
-mov es,ax    
-mov di,#0x0080    
-mov cx,#0x10    
-rep    movsb
+<span class=c1>; 获取第一块硬盘的信息。</span>
+<span class=c1>; Get hd0 data    </span>
+<span class=nf>mov</span> <span class=nb>ax</span><span class=p>,</span><span class=err>#</span><span class=mh>0x0000</span>    
+<span class=nf>mov</span> <span class=nb>ds</span><span class=p>,</span><span class=nb>ax</span>    
+<span class=nf>lds</span> <span class=nb>si</span><span class=p>,[</span><span class=mi>4</span><span class=o>*</span><span class=mh>0x41</span><span class=p>]</span>    
+<span class=nf>mov</span> <span class=nb>ax</span><span class=p>,</span><span class=err>#</span><span class=nv>INITSEG</span>    
+<span class=nf>mov</span> <span class=nb>es</span><span class=p>,</span><span class=nb>ax</span>    
+<span class=nf>mov</span> <span class=nb>di</span><span class=p>,</span><span class=err>#</span><span class=mh>0x0080</span>    
+<span class=nf>mov</span> <span class=nb>cx</span><span class=p>,</span><span class=err>#</span><span class=mh>0x10</span>    
+<span class=nf>rep</span>    <span class=nv>movsb</span>
 
-; 获取第二块硬盘的信息。
-; Get hd1 data    
-mov ax,#0x0000    
-mov ds,ax    
-lds si,[4*0x46]    
-mov ax,#INITSEG    
-mov es,ax    
-mov di,#0x0090    
-mov cx,#0x10    
-rep    movsb
+<span class=c1>; 获取第二块硬盘的信息。</span>
+<span class=c1>; Get hd1 data    </span>
+<span class=nf>mov</span> <span class=nb>ax</span><span class=p>,</span><span class=err>#</span><span class=mh>0x0000</span>    
+<span class=nf>mov</span> <span class=nb>ds</span><span class=p>,</span><span class=nb>ax</span>    
+<span class=nf>lds</span> <span class=nb>si</span><span class=p>,[</span><span class=mi>4</span><span class=o>*</span><span class=mh>0x46</span><span class=p>]</span>    
+<span class=nf>mov</span> <span class=nb>ax</span><span class=p>,</span><span class=err>#</span><span class=nv>INITSEG</span>    
+<span class=nf>mov</span> <span class=nb>es</span><span class=p>,</span><span class=nb>ax</span>    
+<span class=nf>mov</span> <span class=nb>di</span><span class=p>,</span><span class=err>#</span><span class=mh>0x0090</span>    
+<span class=nf>mov</span> <span class=nb>cx</span><span class=p>,</span><span class=err>#</span><span class=mh>0x10</span>    
+<span class=nf>rep</span>    <span class=nv>movsb</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>以上原理都是一样的。</p>
-<p>我们就没必要细琢磨了，对操作系统的理解作用不大，只需要知道最终存储在内存中的信息是什么，在什么位置，就好了，之后会用到他们的。</p>
 <table>
 <thead>
 <tr>
@@ -402,12 +402,11 @@ rep    movsb
 <pre tabindex=0 class=chroma><code><span class=lnt>1
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>cli         ; no interrupts allowed ;
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>cli</span><span class=err>         </span><span class=c1>; no interrupts allowed ;</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>就一行 cli，表示<strong>关闭中断</strong>的意思。</p>
-<p>因为后面我们要把原本是 BIOS 写好的中断向量表给覆盖掉，也就是给破坏掉了，写上我们自己的中断向量表，所以这个时候是不允许中断进来的。</p>
-<p>继续看。</p>
+<p>因为后面我们要把原本是 BIOS 写好的中断向量表给覆盖掉，也就是给破坏掉了，写上我们自己的中断向量表，所以这个时候是不允许中断进来的。继续看。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt> 1
@@ -448,21 +447,26 @@ rep    movsb
 <span class=err>    </span><span class=nf>...</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>看到后面那个 <strong>rep movsw</strong> 熟不熟悉，一开始我们把操作系统代码从 <strong>0x7c00</strong> 移动到 <strong>0x90000</strong> 的时候就是用的这个指令，来图回忆一下。</p>
+</div><p>看到后面那个 <code>rep movsw</code> 熟不熟悉，一开始我们把操作系统代码从 <strong>0x7c00</strong> 移动到 <strong>0x90000</strong> 的时候就是用的这个指令，来图回忆一下。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-36-48-0ca44d29e1add2c568ed4ca0562ade31.png alt=图片></p>
 <p>同前面的原理一样，也是做了个内存复制操作，最终的结果是，把内存地址 <strong>0x10000</strong> 处开始往后一直到 <strong>0x90000</strong> 的内容，统统复制到内存的最开始的 <strong>0</strong> 位置，大概就是这么个效果。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-36-55-49e0243b4b209160b235a0aa093f89e2.png alt=图片></p>
 <p>由于之前的各种加载和复制，导致内存看起来很乱，是时候进行一波取舍和整理了，我们重新梳理一下此时的内存布局。</p>
+<ul>
+<li>
 <p>栈顶地址仍然是 <strong>0x9FF00</strong> 没有改变。</p>
+</li>
+<li>
 <p><strong>0x90000</strong> 开始往上的位置，原来是 <strong>bootsect</strong> 和 <strong>setup</strong> 程序的代码，现 bootsect 的一部分代码在已经被操作系统为了记录内存、硬盘、显卡等一些<strong>临时存放的</strong>数据给覆盖了一部分。</p>
+</li>
+<li>
 <p>内存最开始的 <strong>0</strong> 到 <strong>0x80000</strong> 这 512K 被 <strong>system</strong> 模块给占用了，之前讲过，这个 system 模块就是除了 bootsect 和 setup 之外的全部程序链接在一起的结果，可以理解为<strong>操作系统的全部</strong>。</p>
+</li>
+</ul>
 <p>那么现在的内存布局就是这个样子。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-37-04-7c2f4af64e0ed98d08c634c33ae74404.png alt=图片></p>
 <p>好了，记住上面的图就好了，这回是不是又重新清晰起来了？之前的什么 0x7c00，已经是过去式了，<strong>赶紧忘掉它</strong>，向前看！</p>
 <p>接下来，就要进行有点技术含量的工作了，那就是<strong>模式的转换</strong>，需要从现在的 16 位的<strong>实模式</strong>转变为之后 32 位的<strong>保护模式</strong>，这是一项大工程！也是我认为的这趟操作系统源码旅程中，第一个颇为精彩的地方，大家做好准备！</p>
-<p>后面的世界越来越精彩，欲知后事如何，且听下回分解。</p>
-<p><strong>&mdash;&mdash;- 本回扩展与延伸 &mdash;&mdash;-</strong></p>
-<p>尝试在文本模式下，用直接写显存的方式，把自己的名字输出在屏幕上。实验源码请自行到 GitHub 上寻找。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

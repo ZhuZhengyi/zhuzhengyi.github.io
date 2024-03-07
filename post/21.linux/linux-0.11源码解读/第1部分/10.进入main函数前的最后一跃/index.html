@@ -25,11 +25,11 @@
 <meta property="og:description" content="10.进入 main 函数前的最后一跃 上回书咱们说到，我们终于把这些杂七杂八的，idt、gdt、页表都设置好了，并且也开启了保护模式，相当于所有苦力活">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://justice.bj.cn/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/10.%E8%BF%9B%E5%85%A5main%E5%87%BD%E6%95%B0%E5%89%8D%E7%9A%84%E6%9C%80%E5%90%8E%E4%B8%80%E8%B7%83/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-01-08T06:47:33+08:00">
-<meta property="article:modified_time" content="2024-01-08T06:47:33+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta property="article:published_time" content="2024-01-11T15:25:53+08:00">
+<meta property="article:modified_time" content="2024-01-11T15:25:53+08:00"><meta property="og:site_name" content="Justice的小站">
 <meta itemprop=name content="10.进入 main 函数前的最后一跃">
-<meta itemprop=description content="10.进入 main 函数前的最后一跃 上回书咱们说到，我们终于把这些杂七杂八的，idt、gdt、页表都设置好了，并且也开启了保护模式，相当于所有苦力活"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
-<meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
+<meta itemprop=description content="10.进入 main 函数前的最后一跃 上回书咱们说到，我们终于把这些杂七杂八的，idt、gdt、页表都设置好了，并且也开启了保护模式，相当于所有苦力活"><meta itemprop=datePublished content="2024-01-11T15:25:53+08:00">
+<meta itemprop=dateModified content="2024-01-11T15:25:53+08:00">
 <meta itemprop=wordCount content="1268">
 <meta itemprop=keywords content="linux,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="10.进入 main 函数前的最后一跃">
@@ -166,8 +166,8 @@ Justice's Blog
 <header class=post-header>
 <h1 class=post-title>10.进入 main 函数前的最后一跃</h1>
 <div class=post-meta>
-<time datetime=2024-01-08 class=post-time>
-2024-01-08 06:47:33
+<time datetime=2024-01-11 class=post-time>
+2024-01-11 15:25:53
 </time>
 <div class=post-category>
 <a href=https://justice.bj.cn/categories/linux/> linux </a>
@@ -222,8 +222,8 @@ Justice's Blog
 </div><p>直接解释起来非常简单。</p>
 <p>push 指令就是<strong>压栈</strong>，五个 push 指令过去后，栈会变成这个样子。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-19-05-13-156eda85004701c15cf3e4b8f42a1009.png alt=图片></p>
-<p>然后注意，setup_paging 最后一个指令是 <strong>ret</strong>，也就是我们上一回讲的设置分页的代码的最后一个指令，形象地说它叫<strong>返回指令</strong>，但 CPU 可没有那么聪明，它并不知道该返回到哪里执行，只是很机械地<strong>把栈顶的元素值当做返回地址</strong>，跳转去那里执行。</p>
-<p>再具体说是，把 esp 寄存器（栈顶地址）所指向的内存处的值，赋值给 eip 寄存器，而 cs:eip 就是 CPU 要执行的下一条指令的地址。而此时栈顶刚好是 main.c 里写的 main 函数的内存地址，是我们刚刚特意压入栈的，所以 CPU 就理所应当跳过来了。</p>
+<p>然后注意，<code>setup_paging</code> 最后一个指令是 <code>ret</code>，也就是我们上一回讲的设置分页的代码的最后一个指令，形象地说它叫<strong>返回指令</strong>，但 CPU 可没有那么聪明，它并不知道该返回到哪里执行，只是很机械地<strong>把栈顶的元素值当做返回地址</strong>，跳转去那里执行。</p>
+<p>再具体说是，把 <code>esp</code> 寄存器（栈顶地址）所指向的内存处的值，赋值给 eip 寄存器，而 cs:eip 就是 CPU 要执行的下一条指令的地址。而此时栈顶刚好是 main.c 里写的 main 函数的内存地址，是我们刚刚特意压入栈的，所以 CPU 就理所应当跳过来了。</p>
 <p>当然 Intel CPU 是设计了 call 和 ret 这一配对儿的指令，意为调用函数和返回，具体可以看后面本回扩展资料里的内容。</p>
 <p>至于其他压入栈的 L6 是用作当 main 函数返回时的跳转地址，但由于在操作系统层面的设计上，main 是绝对不会返回的，所以也就没用了。而其他的三个压栈的 0，本意是作为 main 函数的参数，但实际上似乎也没有用到，所以也不必关心。</p>
 <p>总之，经过这一个小小的骚操作，程序终于跳转到 main.c 这个由 c 语言写就的主函数 main 里了！我们先一睹为快一下。</p>
@@ -323,7 +323,7 @@ Justice's Blog
 <p class=copyright-item>
 <span class=item-title>上次更新</span>
 <span class=item-content>
-2024-01-08 06:47:33
+2024-01-11 15:25:53
 </span>
 </p>
 <p class=copyright-item>
@@ -356,14 +356,14 @@ Justice's Blog
 <a href=https://justice.bj.cn/tags/%E7%AC%AC1%E9%83%A8%E5%88%86/>第1部分</a>
 </div>
 <nav class=post-nav>
-<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/10.1.%E5%B0%8F%E7%BB%93/>
+<a class=prev href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/09.intel%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B8%A4%E6%9D%BF%E6%96%A7_%E5%88%86%E6%AE%B5%E4%B8%8E%E5%88%86%E9%A1%B5/>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
 </i>
-<span class="prev-text nav-default">10.1.小结</span>
+<span class="prev-text nav-default">09.Intel 内存管理两板斧：分段与分页</span>
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
-<a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC2%E9%83%A8%E5%88%86/11.%E6%95%B4%E4%B8%AA%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E5%B0%B120%E5%87%A0%E8%A1%8C%E4%BB%A3%E7%A0%81/>
-<span class="next-text nav-default">11.整个操作系统就 20 几行代码</span>
+<a class=next href=/post/70.tool/macos/>
+<span class="next-text nav-default">macos日常</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

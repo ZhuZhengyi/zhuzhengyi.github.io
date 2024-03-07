@@ -1,0 +1,958 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>CPU异常 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="CPU异常 原文：https://os.phil-opp.com/cpu-exceptions/ 原作者：@phil-opp 译者：倪广野 触发CP">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/05-cpu-exceptions/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="CPU异常">
+<meta property="og:description" content="CPU异常 原文：https://os.phil-opp.com/cpu-exceptions/ 原作者：@phil-opp 译者：倪广野 触发CP">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/05-cpu-exceptions/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-03-07T11:58:54+08:00">
+<meta property="article:modified_time" content="2024-03-07T11:58:54+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="CPU异常">
+<meta itemprop=description content="CPU异常 原文：https://os.phil-opp.com/cpu-exceptions/ 原作者：@phil-opp 译者：倪广野 触发CP"><meta itemprop=datePublished content="2024-03-07T11:58:54+08:00">
+<meta itemprop=dateModified content="2024-03-07T11:58:54+08:00">
+<meta itemprop=wordCount content="7115">
+<meta itemprop=keywords content="pub,writing-an-os-in-rust,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="CPU异常">
+<meta name=twitter:description content="CPU异常 原文：https://os.phil-opp.com/cpu-exceptions/ 原作者：@phil-opp 译者：倪广野 触发CP"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>CPU异常</h1>
+<div class=post-meta>
+<time datetime=2024-03-07 class=post-time>
+2024-03-07 11:58:54
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#概述>概述</a>
+<ul>
+<li><a href=#中断描述符表interrupt-descriptor-table>中断描述符表（interrupt descriptor table)</a></li>
+</ul>
+</li>
+<li><a href=#一个idt类型an-idt-type>一个IDT类型（An IDT Type)</a></li>
+<li><a href=#中断调用约定-the-interrupt-calling-convention>中断调用约定（ The Interrupt Calling Convention）</a>
+<ul>
+<li><a href=#preserved-and-scratch-寄存器>Preserved and Scratch 寄存器</a></li>
+<li><a href=#保存所有寄存器>保存所有寄存器</a></li>
+<li><a href=#中断栈帧-the-interrupt-stack-frame>中断栈帧（ The Interrupt Stack Frame）</a></li>
+<li><a href=#幕后工作>幕后工作</a></li>
+</ul>
+</li>
+<li><a href=#实现>实现</a>
+<ul>
+<li><a href=#加载idt>加载IDT</a></li>
+<li><a href=#运行>运行</a></li>
+<li><a href=#增加test>增加Test</a></li>
+</ul>
+</li>
+<li><a href=#过于抽象-too-much-magic>过于抽象?（ Too much Magic?）</a></li>
+<li><a href=#接下来>接下来?</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=cpu异常>CPU异常</h1>
+<blockquote>
+<p>原文：<a href=https://os.phil-opp.com/cpu-exceptions/>https://os.phil-opp.com/cpu-exceptions/</a></p>
+<p>原作者：@phil-opp</p>
+<p>译者：<a href=https://github.com/niguangye>倪广野</a></p>
+</blockquote>
+<p>触发CPU异常的情况多种多样，例如：访问非法内存地址或执行非法指令（除以零）等。为了应对CPU异常，我们需要建立中断描述符表（interrupt descriptor table)，它列举了不同异常所对应的处理函数(handler functions)。在博文的最后，我们的内核（kernel)可以捕获断点异常（<a href=https://wiki.osdev.org/Exceptions#Breakpoint>breakpoint exceptions</a>）并且恢复CPU的正常运行。</p>
+<p>[TOC]</p>
+<h2 id=概述>概述</h2>
+<p>异常的发生标志着当前正在执行的指令出现了问题。例如：指令试图除以0的时候，CPU会抛出一个异常。当异常发生，CPU会中断（interrupt）它当前的流程，并立即调用该类型异常对应的处理函数。</p>
+<p>在x86体系结构中，有大约20种不同的CPU 异常类型。常见的如下：</p>
+<ul>
+<li>
+<p><strong>缺页错误（Page Fault）</strong>：缺页错误发生在非法的内存访问操作中。例如：当前指令试图访问没有映射的内存页或试图写入只读的内存页。</p>
+</li>
+<li>
+<p><strong>非法操作码（Invalid Opcode）</strong>：非法操作码发生在当前指令不正确的情况下。例如：试图在不支持 <a href=https://en.wikipedia.org/wiki/Streaming_SIMD_Extensions>SSE 指令集</a> 的老旧CPU上使用该指令集。</p>
+</li>
+<li>
+<p><strong>通用保护错误（General Protection Fault）</strong>：这是一个触发原因相对宽泛的异常。试图在用户态程序中执行特权指令或试图写入配置寄存器的保留位等非法访问操作均会触发该异常。</p>
+</li>
+<li>
+<p><strong>双重异常（Double Fault）</strong>：异常发生后，CPU会调用对应的异常处理函数。在调用过程中如果发生另一个异常，CPU会触发双重异常。双重异常也会在找不到对应的异常处理函数的情况下发生。</p>
+</li>
+<li>
+<p><strong>三重异常（Triple Fault）</strong>：如果异常发生在CPU调用双重异常处理函数的过程中，这会导致严重的三重异常。我们不能捕获或者处理三重异常。大多数处理器会选择复位并重启操作系统。</p>
+</li>
+</ul>
+<p>你可以在<a href=https://wiki.osdev.org/Exceptions>这里</a>找到所有的CPU异常列表。</p>
+<h3 id=中断描述符表interrupt-descriptor-table>中断描述符表（interrupt descriptor table)</h3>
+<p>为了捕获并处理CPU异常，我们需要建立所谓的中断描述符表（interrupt descriptor table，IDT)。在IDT中，我们可以为每种异常指定一个处理函数。硬件会直接使用这张表，所以我们需要遵循提前约定好的格式。IDT的每一项（entry）必须是16字节的结构：</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>u16</td>
+<td>函数指针 [0:15]</td>
+<td>处理函数（handler function)指针的低16位</td>
+</tr>
+<tr>
+<td>u16</td>
+<td>GDT 选择子</td>
+<td><a href=https://en.wikipedia.org/wiki/Global_Descriptor_Table>global descriptor table</a> 代码段的选择子</td>
+</tr>
+<tr>
+<td>u16</td>
+<td>选项参数</td>
+<td>参见下文</td>
+</tr>
+<tr>
+<td>u16</td>
+<td>函数指针 [16:31]</td>
+<td>处理函数（handler function)指针的中间16位</td>
+</tr>
+<tr>
+<td>u32</td>
+<td>函数指针 [32:63]</td>
+<td>处理函数（handler function)指针剩下的32位</td>
+</tr>
+<tr>
+<td>u32</td>
+<td>保留位</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>选项参数必须是下面的结构：</p>
+<table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-2</td>
+<td>中断栈表索引</td>
+<td>0: 不切换栈, 1-7:当处理函数被调用时，切换到中断栈表（Interrupt Stack Table）的第n个栈</td>
+</tr>
+<tr>
+<td>3-7</td>
+<td>保留位</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>0: 中断门, 1: 陷阱门</td>
+<td>如果这个bit被设置为0，处理函数被调用的时候，中断会被禁用。</td>
+</tr>
+<tr>
+<td>9-11</td>
+<td>必须为1</td>
+<td></td>
+</tr>
+<tr>
+<td>12</td>
+<td>必须为0</td>
+<td></td>
+</tr>
+<tr>
+<td>13‑14</td>
+<td>特权等级描述符 (DPL)</td>
+<td>允许调用该处理函数的最小特权等级。</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Present</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>每个异常都拥有提前约定好的IDT索引。例如：非法操作码的表索引是6，而缺页错误的的表索引是14。因此，硬件可以找到每种异常对应的中断描述符表的条目（interrupt descriptor table entry, IDT entry)。<a href=https://wiki.osdev.org/Exceptions>OSDev wiki</a>页面的Exception Table的“Vector nr.”列展示了所有异常的IDT索引。</p>
+<p>当异常发生时，CPU大致遵循下面的流程：</p>
+<ol>
+<li>
+<p>将一些寄存器的内容压入栈中，包括当前指令的指针和<a href=http://en.wikipedia.org/wiki/FLAGS_register>RFLAGS</a>寄存器的内容（我们会在文章的后续部分用到这些值）。</p>
+</li>
+<li>
+<p>读取中断描述符表（IDT）中对应的条目。例如：缺页错误发生时，CPU会读取IDT的第十四个条目。</p>
+</li>
+<li>
+<p>检查这个条目是否存在，如果没有则升级为双重错误（double fault)。</p>
+</li>
+<li>
+<p>如果条目是一个中断门（第40个bit没有被设置为1），则禁用硬件中断。</p>
+</li>
+<li>
+<p>装载指定的GDT 选择子到CS段。</p>
+</li>
+<li>
+<p>跳转到指定的处理函数。</p>
+</li>
+</ol>
+<p>现在不要担心第四、五步，我们会在未来的文章中研究GDT和硬件中断。</p>
+<h2 id=一个idt类型an-idt-type>一个IDT类型（An IDT Type)</h2>
+<p>我们选择使用<code>x86_64</code> crate中的 <code>InterruptDescriptorTable</code> 结构体，而不是创建自己的 IDT 类型：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=cp>#[repr(C)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>divide_by_zero</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>debug</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>non_maskable_interrupt</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>break</span><span class=n>point</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>overflow</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>bound_range_exceeded</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>invalid_opcode</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>device_not_available</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>double_fault</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>invalid_tss</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>segment_not_present</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>stack_segment_fault</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>general_protection_fault</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>page_fault</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>PageFaultHandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>x87_floating_point</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>alignment_check</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>machine_check</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>simd_floating_point</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>virtualization</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFunc</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=n>security_exception</span>: <span class=nc>Entry</span><span class=o>&lt;</span><span class=n>HandlerFuncWithErrCode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=c1>// some fields omitted
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>InterruptDescriptorTable</code>结构体的字段都是<a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.Entry.html><code>idt::Entry</code></a>类型，这种类型是一种代表<code>IDT</code>条目字段的结构体（见上面的示例）。类型参数<code>F</code>定义了预期的处理函数类型。我们可以发现上面的条目字段需要 <a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.HandlerFunc.html><code>HandlerFunc </code></a> 或 <a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.HandlerFuncWithErrCode.html><code>HandlerFuncWithErrCode </code></a> 参数。缺页错误甚至拥有它独有的处理函数类型：<a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.PageFaultHandlerFunc.html><code>PageFaultHandlerFunc </code></a> 。</p>
+<p>首先，我们探讨一下 <code>HandlerFunc</code> 类型：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>type</span> <span class=nc>HandlerFunc</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span><span class=p>(</span><span class=n>_</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>);</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>HandlerFunc </code> 是 <code>extern "x86-interrupt" fn</code> 的类型别名。<code>extern</code> 关键字定义了一个外部调用约定（ <a href=https://doc.rust-lang.org/nomicon/ffi.html#foreign-calling-conventions>foreign calling convention</a> ），它经常被用于链接C语言代码（<code>extern "C" fn</code>）。那么，<code>x86-interrupt</code>调用约定是什么呢?</p>
+<h2 id=中断调用约定-the-interrupt-calling-convention>中断调用约定（ The Interrupt Calling Convention）</h2>
+<p>CPU异常与函数调用非常相似：CPU跳转到调用函数的第一条指令并执行它。然后，CPU跳转到返回地址并继续执行函数的调用者函数（<code>parent function</code>)。</p>
+<p>然而，异常和函数调用有一个重要的区别：函数调用是被编译器生成的 <code>call</code> 指令主动发起，而</p>
+<p>异常可以发生在所有指令的执行过程中。为了理解这个区别的重要性，我们需要更进一步地研究函数调用。</p>
+<p><a href=https://en.wikipedia.org/wiki/Calling_convention>调用约定 Calling conventions</a> 明确规定了函数调用的细节。例如，它规定了函数参数的位置（ 寄存器还是函数栈）和结果的返回方式。在x86_64 Linux体系中，C语言函数调用适用下面的规则（在<a href=https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf>System V ABI</a>中规定）：</p>
+<ul>
+<li>前六个整数参数会被放在寄存器中传递：<code>rdi</code>, <code>rsi</code>, <code>rdx</code>, <code>rcx</code>, <code>r8</code>, <code>r9</code></li>
+<li>剩下的参数被放在栈中传递</li>
+<li>结果被放在 <code>rax</code> 和 <code>rdx</code> 中返回</li>
+</ul>
+<p>Rust 没有遵顼C ABI （事实上，Rust甚至没有规定的ABI），所以这些规则仅仅适用于声明了 <code>extern "C" fn</code> 的函数。</p>
+<h3 id=preserved-and-scratch-寄存器>Preserved and Scratch 寄存器</h3>
+<p>调用约定（ <code>calling convention</code>）将寄存器分为两个部分： <em>preserved</em> 和 <em>scratch</em> 寄存器。</p>
+<p>在函数调用的过程中，<em>preserved</em>寄存器的值必须保持不变。所以，被调用的函数（<code>callee</code>）必须保证会在返回以前会主动复原这些寄存器的原始值，才可以修改这些寄存器的值。因此，这些寄存器被称为被<strong>调用者保存寄存器</strong>（<em>callee-saved</em>，译者注：也就是AKA非易失性寄存器）。通行的模式是在函数的开始保存这些寄存器的值到函数栈中，并在函数马上返回的时候复原他们。</p>
+<p>相比之下，被调用的函数（<code>callee</code>）可以无约束地修改 <em>scratch</em>寄存器。如果调用者函数希望在函数调用的过程中保留 <em>scratch</em>寄存器的值，它需要在调用函数之前备份和复原 <em>scratch</em>寄存器的值（例如将这些值压入栈中）。所以，这些寄存器被称为<strong>调用者寄存器</strong>（<em>caller-saved</em>，译者注：也就是AKA易失性寄存器）。</p>
+<p>在x86_64架构中，C语言调用约定明确规定了下面的 preserved and scratch 寄存器：</p>
+<table>
+<thead>
+<tr>
+<th>preserved 寄存器</th>
+<th>scratch 寄存器</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rbp</code>, <code>rbx</code>, <code>rsp</code>, <code>r12</code>, <code>r13</code>, <code>r14</code>, <code>r15</code></td>
+<td><code>rax</code>, <code>rcx</code>, <code>rdx</code>, <code>rsi</code>, <code>rdi</code>, <code>r8</code>, <code>r9</code>, <code>r10</code>, <code>r11</code></td>
+</tr>
+<tr>
+<td><em>callee-saved</em></td>
+<td><em>caller-saved</em></td>
+</tr>
+</tbody>
+</table>
+<p>编译器遵顼这些规定生成二进制字节码。例如：绝大多数函数地字节码开始于<code>push rbp</code>指令，这个指令会备份<code>rbp</code>寄存器地值到函数栈中（因为这是一个<code>callee-saved</code>寄存器）。</p>
+<h3 id=保存所有寄存器>保存所有寄存器</h3>
+<p>与函数调用形成鲜明对比的是，异常可以发生在所有指令的执行过程中。大多数情况下，我们甚至不能识别出编译器生成的代码是否会引起异常。例如，编译器不能预见到一个指令是否会引起栈溢出或缺页错误。</p>
+<p>既然不能预见到异常的发生时机，我们自然也无法做到提前备份任何寄存器的值。这意味着我们不能使用依赖于 <code>caller-saved</code> 寄存器的调用约定去处理异常。然而，我们需要一个会保存所有寄存器值的调用约定。<code>x86-interrupt</code>调用约定恰恰能够保证所有寄存器会在函数调用结束以前复原到原始值。</p>
+<p>这并不意味着所有寄存器的值会在函数开始时被保存到函数栈中。相反，编译器（生成的代码）只会备份被函数覆盖的寄存器的值。在这种方式下，较短的函数编译生成的二进制字节码会非常高效，也就是只使用尽可能少的寄存器。</p>
+<h3 id=中断栈帧-the-interrupt-stack-frame>中断栈帧（ The Interrupt Stack Frame）</h3>
+<p>在寻常的函数调用（<code>call</code>指令执行）中，CPU跳转到相应的函数之前会将返回地址压入到函数栈中。在函数返回（<code>ret</code>指令执行）的时候，CPU会弹出并跳转到这个返回地址。所以，寻常的函数调用栈帧会如下图所示：</p>
+<p><img src=https://markdown-ngy.oss-cn-beijing.aliyuncs.com/function-stack-frame.svg alt=function-stack-frame></p>
+<p>然而，异常和中断处理函数并不能将返回地址压入到函数栈中，因为中断处理函数往往运行在不同的上下文（栈指针，CPU flags等）中。相反，在异常发生的时候，CPU会执行以下步骤：</p>
+<ol>
+<li><strong>对齐栈指针</strong>：中断可以发生在任何指令的执行过程中，栈指针自然也可能是任何值。然而，一些CPU指令集（e.g. 一些 SSE指令集）需要栈指针在16字节边界上对齐，因此CPU会在中断之后靠右对齐栈指针。</li>
+<li><strong>切换栈（在某种情况下）</strong>：CPU特权等级发生改变的时候，栈会被切换，例如CPU 异常发生在用户态程序的时候。用所谓的中断栈表（ <em>Interrupt Stack Table</em> , 下篇文章解释 ）配置特定中断的栈切换也是可行的。</li>
+<li><strong>压入原来的栈指针</strong>：在中断发生的时候（对齐栈指针发生之前），CPU将栈指针（<code>rsp</code>）和栈段（<code>ss</code>)寄存器压入栈中。如此一来，中断处理函数返回时就可以复原栈指针的原始值。</li>
+<li><strong>压入并更新<code>RFLAGS</code>寄存器</strong>：<a href=https://en.wikipedia.org/wiki/FLAGS_register><code>RFLAGS</code></a>寄存器保存了多种控制和状态位。进入中断函数时，CPU修改一些位并压入旧的值。</li>
+<li><strong>压入指令指针</strong>：跳转到中断处理函数之前，CPU压入指令指针（<code>rip</code>）和代码段（<code>cs</code>)。这类似于寻常的函数调用压入返回地址的过程。</li>
+<li><strong>压入错误码（对于部分异常）</strong>：对于缺页错误等特定的异常，CPU会压入解释异常原因的错误码。</li>
+<li><strong>调用中断处理函数</strong>：CPU从IDT对应的字段中读取中断处理函数的地址和段描述符。然后通过加载这些值到<code>rip</code>和<code>cs</code>寄存器中，调用中断处理函数。</li>
+</ol>
+<p>所以，中断调用栈帧会如下图所示：</p>
+<p><img src=https://markdown-ngy.oss-cn-beijing.aliyuncs.com/exception-stack-frame.svg alt=exception-stack-frame></p>
+<p>在Rust的<code>x86_64</code>库中，中断调用栈帧被抽象为<a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.InterruptStackFrame.html><code>InterruptStackFrame</code></a>结构体。它会被作为<code>&mut</code>传递给中断处理函数，并被用来获取更多的关于异常原因的信息。由于只有小部分异常会压入错误码，所以<a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.InterruptStackFrame.html><code>InterruptStackFrame</code></a>并没有设置<code>error_code</code>字段。这些异常会另外使用<a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.HandlerFuncWithErrCode.html><code>HandlerFuncWithErrCode</code></a>函数来处理，这个函数有一个<code>error_code</code>参数用来保存错误码。</p>
+<h3 id=幕后工作>幕后工作</h3>
+<p><code>x86-interrupt</code>调用约定作为一个优秀的抽象，它几乎隐藏了异常处理过程中所有繁杂的细节。然而，理解幕布后的工作在某些时候是有益的。下面简要概述了<code>x86-interrupt</code>调用约定所处理的事情：</p>
+<ul>
+<li><strong>抽取参数</strong>：大多数调用约定希望参数被放在寄存器中传递。这对于异常处理函数是不可能的，因为我们不能在保存寄存器的值之前覆盖这些寄存器。然而，<code>x86-interrupt</code>调用约定明白这些参数早就被放在栈的某个位置上了。</li>
+<li><strong>使用<code>iretq</code>返回</strong>：既然中断栈帧和寻常函数调用的栈帧是不同的，我们不能使用<code>ret</code>指令从中断处理函数中返回。但是可以使用<code>iretq</code>指令。</li>
+<li><strong>处理错误码</strong>：部分特定异常压入的错误码是事情变得更加复杂。它改变了栈对齐（见对齐栈部分）并且需要在返回之前从栈中弹出。<code>x86-interrupt</code>调用约定处理了所有难题。但是，它无法获得每种异常对应的处理函数，所以，它需要从函数的参数中推断这些信息。这意味着，程序员有责任使用正确的函数类型处理每种异常。幸运的是，<code>x86_64</code>库的<code>InterruptDescriptorTable</code>可以确保这一过程不会出错。</li>
+<li><strong>对齐栈</strong>：一些指令集（尤其是SSE指令集）使用16字节的栈对齐。在异常发生的时候，CPU会确保栈对齐。但是在压入错误码后，栈对齐会再次被破坏。<code>x86-interrupt</code>调用约定会通过再次对齐栈解决这个问题。</li>
+</ul>
+<p>如果你对更多的细节感兴趣：我们也有一系列文章解释了如何使用 <a href=https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md>naked functions</a>处理异常。</p>
+<h2 id=实现>实现</h2>
+<p>现在我们理解了这些理论，是时候在我们的内核中实现CPU异常处理了。我们首先在<code>src/interrupts.rs</code>中创建一个新的interrupts 模块，其中<code>init_idt</code>函数创建了一个新的<code>InterruptDescriptorTable</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>interrupts</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>idt</span>::<span class=n>InterruptDescriptorTable</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init_idt</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在我们可以增加更多的处理函数。我们首先创建断点异常（<a href=https://wiki.osdev.org/Exceptions#Breakpoint>breakpoint exception</a>）的处理函数。断点异常是一个绝佳的测试处理异常过程的示例。它唯一的用途是在断点指令<code>int3</code>执行的时候暂停整个程序。</p>
+<p>断点异常通常被用于调试程序（debugger）：当用户设置了断点，调试程序会使用<code>int3</code>指令覆盖对应位置的指令，当CPU执行到这一位置的时候会抛出断点异常。当用户希望继续执行程序时，调试程序将<code>int3</code>指令替换回原来的指令并继续执行。可以从 <a href=https://eli.thegreenplace.net/2011/01/27/how-debuggers-work-part-2-breakpoints>"<em>How debuggers work</em>"</a> 系列获取更多的细节。</p>
+<p>我们无需覆盖任何指令。因为我们只希望程序在异常指令执行的时候打印一条消息，然后继续执行。让我们创建一个简单的断点异常处理函数（breakpoint_handler）并添加到IDT：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>idt</span>::<span class=p>{</span><span class=n>InterruptDescriptorTable</span><span class=p>,</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>crate</span>::<span class=n>println</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init_idt</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>idt</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>breakpoint_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;EXCEPTION: BREAKPOINT\n{:#?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>stack_frame</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>处理函数只输出了一条消息并美观的打印了中断栈帧。</p>
+<p>当我们试图编译程序的时候，错误出现了：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=n>error</span><span class=p>[</span><span class=n>E0658</span><span class=p>]</span>: <span class=nc>x86</span><span class=o>-</span><span class=n>interrupt</span><span class=w> </span><span class=n>ABI</span><span class=w> </span><span class=n>is</span><span class=w> </span><span class=n>experimental</span><span class=w> </span><span class=n>and</span><span class=w> </span><span class=n>subject</span><span class=w> </span><span class=n>to</span><span class=w> </span><span class=n>change</span><span class=w> </span><span class=p>(</span><span class=n>see</span><span class=w> </span><span class=n>issue</span><span class=w> </span><span class=err>#</span><span class=mi>40180</span><span class=p>)</span><span class=w>
+</span><span class=w>  </span><span class=o>-</span>-&gt; <span class=nc>src</span><span class=o>/</span><span class=n>main</span><span class=p>.</span><span class=n>rs</span>:<span class=mi>53</span>:<span class=mi>1</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>
+</span><span class=w></span><span class=mi>53</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=o>/</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>breakpoint_handler</span><span class=p>(</span><span class=n>stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w></span><span class=mi>54</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=o>|</span><span class=w>     </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;EXCEPTION: BREAKPOINT\n{:#?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>stack_frame</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=mi>55</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>}</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w> </span><span class=o>|</span><span class=n>_</span><span class=o>^</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>
+</span><span class=w>   </span><span class=o>=</span><span class=w> </span><span class=n>help</span>: <span class=nc>add</span><span class=w> </span><span class=cp>#![feature(abi_x86_interrupt)]</span><span class=w> </span><span class=n>to</span><span class=w> </span><span class=n>the</span><span class=w> </span><span class=k>crate</span><span class=w> </span><span class=n>attributes</span><span class=w> </span><span class=n>to</span><span class=w> </span><span class=n>enable</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这个错误是因为 <code>x86-interrupt</code> 中断调用约定仍然不稳定。我们需要明确地在<code>lib.rs</code>顶部增加<code>#![feature(abi_x86_interrupt)]</code>去激活它。</p>
+<h3 id=加载idt>加载IDT</h3>
+<p>为了让CPU使用我们新的中断描述符表，我们需要使用 <a href=https://www.felixcloutier.com/x86/lgdt:lidt><code>lidt</code></a> 指令去加载它。<code>x86_64</code> 库的<code>InterruptDescriptorTable</code> 结构体提供了一个 <code>load</code> 方法去实现这个操作：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init_idt</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>idt</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>idt</span><span class=p>.</span><span class=n>load</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>当我们试图编译程序的时候，下面的错误出现了：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=n>error</span>: <span class=err>`</span><span class=n>idt</span><span class=err>`</span><span class=w> </span><span class=n>does</span><span class=w> </span><span class=n>not</span><span class=w> </span><span class=n>live</span><span class=w> </span><span class=n>long</span><span class=w> </span><span class=n>enough</span><span class=w>
+</span><span class=w>  </span><span class=o>-</span>-&gt; <span class=nc>src</span><span class=o>/</span><span class=n>interrupts</span><span class=o>/</span><span class=k>mod</span><span class=p>.</span><span class=n>rs</span>:<span class=mi>43</span>:<span class=mi>5</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>
+</span><span class=w></span><span class=mi>43</span><span class=w> </span><span class=o>|</span><span class=w>     </span><span class=n>idt</span><span class=p>.</span><span class=n>load</span><span class=p>();</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>     </span><span class=o>^^^</span><span class=w> </span><span class=n>does</span><span class=w> </span><span class=n>not</span><span class=w> </span><span class=n>live</span><span class=w> </span><span class=n>long</span><span class=w> </span><span class=n>enough</span><span class=w>
+</span><span class=w></span><span class=mi>44</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>}</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>borrowed</span><span class=w> </span><span class=n>value</span><span class=w> </span><span class=n>only</span><span class=w> </span><span class=n>lives</span><span class=w> </span><span class=n>until</span><span class=w> </span><span class=n>here</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>
+</span><span class=w>   </span><span class=o>=</span><span class=w> </span><span class=n>note</span>: <span class=nc>borrowed</span><span class=w> </span><span class=n>value</span><span class=w> </span><span class=n>must</span><span class=w> </span><span class=n>be</span><span class=w> </span><span class=n>valid</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>the</span><span class=w> </span><span class=k>static</span><span class=w> </span><span class=n>lifetime</span><span class=p>...</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>load</code> 方法期望一个 <code>&'static self</code>，以确保 <code>idt</code> 引用在整个程序生命周期中可用。因为CPU会在每个异常发生的时候访问这张表，直到我们加载了其它的<code>InterruptDescriptorTable</code>对象。所以，使用比 <code>'static</code> 短的生命周期会导致 use-after-free bug。</p>
+<p>事实上，情况很明白。我们的 <code>idt</code> 在栈上创建，所以它只在 <code>init</code> 函数的生命周期中有效。一旦这个栈内存被其它函数重用，CPU会把随机的栈内存当作IDT。幸运的是， <code>InterruptDescriptorTable::load</code> 在函数定义中明确要求了必要的生命周期条件（译者注：也就是必须使用 <code>'static</code> 生命周期）。所以，Rust 编译器可以在编译期就阻止这个潜在的 bug 。</p>
+<p>为了解决这个问题，我们需要保存我们的 <code>idt</code> 对象到拥有 <code>'static</code> 生命周期的地方。我们可以使用 <code>Box</code> 把 IDT 分配到堆上，并转换为 <code>'static</code> 引用，但是我们是在开发操作系统内核，所以并不会有堆这个概念。</p>
+<p>作为代替，我们可以把 IDT 保存为 常量（<code>static</code>）：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>static IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
+
+pub fn init_idt() {
+    IDT.breakpoint.set_handler_fn(breakpoint_handler);
+    IDT.load();
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>但是，这有一个问题：常量是不可变的，所以我们不能修改来自 <code>init</code> 函数的IDT中的断点条目。我们可以使用 <a href=https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#accessing-or-modifying-a-mutable-static-variable><code>static mut</code></a> 解决这个问题：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>IDT</span>: <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init_idt</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>IDT</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>IDT</span><span class=p>.</span><span class=n>load</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这种变体不会出现编译错误，但是并不符合优雅的编程风格。 <code>static mut</code> 非常容易造成数据竞争，所以在每一次访问中都需要使用 <a href=https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers><code>unsafe</code></a> 代码块。</p>
+<h4 id=懒加载常量>懒加载常量</h4>
+<p><code>lazy_static</code> 宏的存在令人庆幸。它可以让常量在被第一次使用的时候被初始化，而不是在编译期。因此，我们可以在初始化代码块中做几乎所有的事情，甚至读取常量在运行时的值。</p>
+<p>我们已经在 <a href=https://os.phil-opp.com/vga-text-mode/#lazy-statics>created an abstraction for the VGA text buffer</a> 引用了 <code>lazy_static</code> 库。所以我们可以直接使用 <code>lazy_static!</code> 宏去创建静态的IDT：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// in src/interrupts.rs
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref IDT: InterruptDescriptorTable = {
+        let mut idt = InterruptDescriptorTable::new();
+        idt.breakpoint.set_handler_fn(breakpoint_handler);
+        idt
+    };
+}
+
+pub fn init_idt() {
+    IDT.load();
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>这种方法不需要 <a href=https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers><code>unsafe</code></a> 代码块，因为 <code>lazy_static!</code> 宏在底层使用了 <a href=https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers><code>unsafe</code></a> 代码块，但是抽象出了一个安全接口。</p>
+<h3 id=运行>运行</h3>
+<p>让内核种的异常处理工作的最后一步是在 <code>main.rs</code> 中调用 <code>init_idt</code> 函数。在 <code>lib.rs</code> 中抽象一个总体的 <code>init</code> 函数而不是直接调用:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// in src/lib.rs
+
+pub fn init() {
+    interrupts::init_idt();
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>这个函数用来放置可以被 <code>main.rs</code> , <code>lib.rs</code>中的 <code>_start</code> 函数和集成测试所共享的初始化代码。</p>
+<p>在 <code>main.rs</code> 中的 <code>_start</code> 函数中调用 <code>init</code> 函数，并触发一个断点异常。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// in src/main.rs
+
+#[no_mangle]
+pub extern &#34;C&#34; fn _start() -&gt; ! {
+    println!(&#34;Hello World{}&#34;, &#34;!&#34;);
+
+    blog_os::init(); // new
+
+    // invoke a breakpoint exception
+    x86_64::instructions::interrupts::int3(); // new
+
+    // as before
+    #[cfg(test)]
+    test_main();
+
+    println!(&#34;It did not crash!&#34;);
+    loop {}
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>使用 <code>cargo run</code> 命令在QEMU中运行程序：</p>
+<p><img src=https://markdown-ngy.oss-cn-beijing.aliyuncs.com/qemu-breakpoint-exception.png alt=qemu-breakpoint-exception></p>
+<p>CPU成功调用了断点异常处理函数，并打印了一些消息，然后返回 <code>_start</code> 函数继续打印了 <code>It did not crash!</code> 消息。</p>
+<p>可以发现，中断栈帧显示了中断发生时的指令和栈指针地址。这有助于调试不该发生的异常。</p>
+<h3 id=增加test>增加Test</h3>
+<p>增加一个确认上文中CPU继续工作的测试。首先，让 <code>lib.rs</code> 的 <code>_start</code> 函数同样调用 <code>init</code> 函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// in src/lib.rs
+
+/// Entry point for `cargo test`
+#[cfg(test)]
+#[no_mangle]
+pub extern &#34;C&#34; fn _start() -&gt; ! {
+    init();      // new
+    test_main();
+    loop {}
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>既然 <code>lib.rs</code> 中的测试完全独立于 <code>main.rs</code> ，必须使用命令 <code>cargo test --lib</code> 来指定运行 <code>lib.rs</code> 中的 <code>_start</code> 函数。在<code>lib.rs</code> 中的测试运行以前，我们需要调用 <code>init</code> 函数去建立IDT。</p>
+<p>现在，创建一个 <code>test_breakpoint_exception</code> 测试：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// in src/interrupts.rs
+
+#[test_case]
+fn test_breakpoint_exception() {
+    // invoke a breakpoint exception
+    x86_64::instructions::interrupts::int3();
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>这个测试调用了 <code>x86_64</code> 库的 <code>int3</code> 函数去触发断点异常。通过检查异常处理后程序继续执行，可以验证断点异常处理函数正常工作。</p>
+<p>使用 <code>cargo test</code> （所有测试）或 <code>cargo test --lib</code>（只限于 <code>lib.rs</code> 和它的子模块中的测试）命令运行新的测试，应当可以看见：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>blog_os::interrupts::test_breakpoint_exception...	[ok]
+</code></pre></td></tr></table>
+</div>
+</div><h2 id=过于抽象-too-much-magic>过于抽象?（ Too much Magic?）</h2>
+<p><code>x86-interrupt</code> 调用约定和 <a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.InterruptDescriptorTable.html><code>InterruptDescriptorTable</code></a> 让异常处理流程变得相当简单愉快。如果你觉得太过抽象或有兴趣学习异常处理更硬核的细节，<a href=https://os.phil-opp.com/first-edition/extra/naked-exceptions/>“Handling Exceptions with Naked Functions”</a> 系列会告诉你如何在不使用 <code>x86-interrupt</code> 调用约定的情况下处理异常并建立自己的IDT类型。在 <code>x86-interrupt</code> 调用约定和 <code>x86_64</code> 库问世以前，这个系列可以说是最主流的异常处理主体相关的博客。不得不提的是，这些文章基于第一版本的 <a href=https://os.phil-opp.com/first-edition/>Writing an OS in Rust </a>，所以可能会有些过时。</p>
+<h2 id=接下来>接下来?</h2>
+<p>我们成功地触发了第一个异常并从中返回！下一步是确保可以捕获所有异常，因为未被捕获地异常会引发严重的 <a href=https://wiki.osdev.org/Triple_Fault>triple fault</a> ，继而导致系统复位。下一篇文章解释了如何通过捕获 <a href=https://wiki.osdev.org/Double_Fault#Double_Fault>双重异常 double faults</a> 来避免这些问题。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-03-07 11:58:54
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/writing-an-os-in-rust/>writing-an-os-in-rust</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/%E9%92%A5%E5%8C%99%E4%B9%A6keybook/8.%E9%81%97%E6%86%BE%E7%95%8C/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default"></span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/14.language/golang/golang-channel/>
+<span class="next-text nav-default">Go Channel</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

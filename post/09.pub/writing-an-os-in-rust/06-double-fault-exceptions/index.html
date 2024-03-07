@@ -1,0 +1,1078 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>双重异常 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="双重异常 原文：https://os.phil-opp.com/double-fault-exceptions/ 原作者：@phil-opp 译者">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/06-double-fault-exceptions/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="双重异常">
+<meta property="og:description" content="双重异常 原文：https://os.phil-opp.com/double-fault-exceptions/ 原作者：@phil-opp 译者">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/06-double-fault-exceptions/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-03-07T11:58:54+08:00">
+<meta property="article:modified_time" content="2024-03-07T11:58:54+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="双重异常">
+<meta itemprop=description content="双重异常 原文：https://os.phil-opp.com/double-fault-exceptions/ 原作者：@phil-opp 译者"><meta itemprop=datePublished content="2024-03-07T11:58:54+08:00">
+<meta itemprop=dateModified content="2024-03-07T11:58:54+08:00">
+<meta itemprop=wordCount content="7127">
+<meta itemprop=keywords content="pub,writing-an-os-in-rust,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="双重异常">
+<meta name=twitter:description content="双重异常 原文：https://os.phil-opp.com/double-fault-exceptions/ 原作者：@phil-opp 译者"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>双重异常</h1>
+<div class=post-meta>
+<time datetime=2024-03-07 class=post-time>
+2024-03-07 11:58:54
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#双重异常的定义>双重异常的定义</a>
+<ul>
+<li><a href=#触发一个双重异常>触发一个双重异常</a></li>
+</ul>
+</li>
+<li><a href=#双重异常处理函数>双重异常处理函数</a></li>
+<li><a href=#双重异常的触发原因>双重异常的触发原因</a>
+<ul>
+<li><a href=#内核栈溢出>内核栈溢出</a></li>
+</ul>
+</li>
+<li><a href=#切换栈>切换栈</a>
+<ul>
+<li><a href=#中断栈表和任务状态段-the-ist-and-tss>中断栈表和任务状态段（ The IST and TSS）</a></li>
+<li><a href=#创建任务状态段>创建任务状态段</a></li>
+<li><a href=#全局描述符表-the-global-descriptor-tablegdt>全局描述符表（ The Global Descriptor Table，GDT）</a></li>
+<li><a href=#最后的步骤>最后的步骤</a></li>
+</ul>
+</li>
+<li><a href=#栈溢出测试>栈溢出测试</a>
+<ul>
+<li><a href=#实现-_start>实现 <code>_start</code></a></li>
+<li><a href=#测试用idt>测试用IDT</a></li>
+<li><a href=#双重异常处理函数-1>双重异常处理函数</a></li>
+</ul>
+</li>
+<li><a href=#总结>总结</a></li>
+<li><a href=#接下来>接下来?</a></li>
+<li><a href=#支持我>支持我</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=双重异常>双重异常</h1>
+<blockquote>
+<p>原文：<a href=https://os.phil-opp.com/double-fault-exceptions/>https://os.phil-opp.com/double-fault-exceptions/</a></p>
+<p>原作者：@phil-opp</p>
+<p>译者：<a href=https://github.com/niguangye>倪广野</a></p>
+</blockquote>
+<p>这篇文章将深入探究双重异常（<em>double fault</em>），这是一个在CPU调用异常处理函数失败的时候触发的异常。通过处理双重异常，可以避免会引起系统复位的三重异常。为了彻底防止各种情况下的三重异常，需要建立中断栈表（ <em>Interrupt Stack Table</em> ）去捕获所有不同内核栈的双重异常。</p>
+<p>这个博客在 <a href=https://github.com/phil-opp/blog_os>GitHub</a> 上开源。如果你遇到问题或困难，请到那里提 issue 。或者你也可以在博客的最下方留言。你可以在 <a href=https://github.com/phil-opp/blog_os/tree/post-06><code>post-06</code></a> 分支找到这篇文章的完整源码。</p>
+<blockquote>
+<p>译注：中文版请移步<a href=https://github.com/rustcc/writing-an-os-in-rust>《编写 Rust 语言的操作系统》</a></p>
+</blockquote>
+<h2 id=双重异常的定义>双重异常的定义</h2>
+<p>简单点说，双重异常就是一个在CPU调用异常处理函数失败的时候触发的特定异常。例如，CPU触发缺页异常（<em>page fault</em>），但是中断描述符表（ <em><a href=https://os.phil-opp.com/cpu-exceptions/#the-interrupt-descriptor-table>Interrupt Descriptor Table</a></em> ，<em>IDT</em>）中却没有对应处理函数的情况。所以，这和编程语言中捕获所有异常的代码块（<em>catch-all blocks</em>）有些相似，例如 C++ 中的 <code>catch(...)</code> 或 Java和 C# 中的 <code>catch(Exception e)</code> 。</p>
+<p>双重异常的表现和普通异常区别不大。它拥有一个特定的向量号（<em>Interrupt Vector Number</em>） <code>8</code> ，我们可以在 <em>IDT</em> 中定义一个对应的处理函数。定义双重异常的处理函数十分重要，因为双重异常在不被处理的情况下会引发致命的三重异常。三重异常不能被捕获，而且会引起大多数硬件的系统复位。</p>
+<h3 id=触发一个双重异常>触发一个双重异常</h3>
+<p>让我们通过触发一个没有处理函数的普通异常来引发双重异常：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Hello World{}&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// trigger a page fault
+</span><span class=c1></span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=o>*</span><span class=p>(</span><span class=mh>0xdeadbeef</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u64</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>42</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// as before
+</span><span class=c1></span><span class=w>    </span><span class=cp>#[cfg(test)]</span><span class=w>
+</span><span class=w>    </span><span class=n>test_main</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;It did not crash!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用 <code>unsafe</code> 去写入非法的内存地址 <code>0xdeadbeef</code> 。这个虚拟地址没有在页表中被映射到物理地址，这会触发一个缺页异常。而缺页异常的处理函数还没有被定义到 <a href=https://os.phil-opp.com/cpu-exceptions/#the-interrupt-descriptor-table>IDT</a> ，因此双重异常被触发了。</p>
+<p>现在启动内核，它会进入到无穷尽的启动循环。原因如下：</p>
+<ol>
+<li><em>CPU</em> 试图写入非法的内存地址 <code>0xdeadbeef</code> ，这会触发缺页异常。</li>
+<li><em>CPU</em> 查找到 <em>IDT</em> 中缺页异常对应的条目，并且没有发现对应的处理函数。因为它不能正常调用缺页异常的处理函数，所以触发了双重异常。</li>
+<li><em>CPU</em> 查找到 <em>IDT</em> 中双重异常对应的条目，并且也没有发现对应的处理函数。因此，三重异常被触发。</li>
+<li>三重异常是致命的。<em>QEMU</em> 像大多数的硬件一样选择系统复位。</li>
+</ol>
+<p>所以为了阻止三重异常，我们需要提供缺页异常或双重异常的处理函数。我们希望阻止所有情况下的三重异常，因此我们选择建立所有异常未被处理时都会调用的双重异常处理函数。</p>
+<h2 id=双重异常处理函数>双重异常处理函数</h2>
+<p>双重异常由普通异常和错误码组成，所以我们可以像断点异常处理函数那样定义一个双重异常处理函数。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>IDT</span>: <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=p>.</span><span class=n>double_fault</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=n>double_fault_handler</span><span class=p>);</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=w>        </span><span class=n>idt</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// new
+</span><span class=c1></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>double_fault_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>,</span><span class=w> </span><span class=n>_error_code</span>: <span class=kt>u64</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>panic</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;EXCEPTION: DOUBLE FAULT\n{:#?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>stack_frame</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>双重异常处理函数打印了一个简短的错误消息和异常栈帧信息。双重异常的错误码通常会是0，所以没有必要打印出来。双重异常处理函数和断点异常处理函数的区别在于，它是一个发散函数（ <a href=https://doc.rust-lang.org/stable/rust-by-example/fn/diverging.html><em>diverging</em></a>）。因为 <code>x86_64</code> 体系架构不允许从双重异常中返回。</p>
+<p>现在启动内核，我们可以看见双重异常处理函数被调用了：</p>
+<p><img src=https://markdown-ngy.oss-cn-beijing.aliyuncs.com/qemu-catch-double-fault.png alt=qemu-catch-double-fault></p>
+<p>工作正常！这次发生了什么：</p>
+<ol>
+<li><em>CPU</em> 试图写入非法的内存地址 <code>0xdeadbeef</code> ，这会触发缺页异常。</li>
+<li>像上次一样，<em>CPU</em> 查找到 <em>IDT</em> 中缺页异常对应的条目，并且没有发现对应的处理函数。因为它不能正常调用缺页异常的处理函数，所以触发了双重异常。</li>
+<li><em>CPU</em> 跳转到双重异常处理函数——它现在是就绪的了。</li>
+</ol>
+<p>因为 <em>CPU</em> 现在可以正常调用双重异常处理函数，所以三重异常（和启动循环）不会再次出现。</p>
+<p>这非常容易理解！那么我们为什么需要用整篇文章讨论这个话题? 我们现在可以捕获大多数双重异常，但是在某些情况下，现在的方式并不足够有效。</p>
+<h2 id=双重异常的触发原因>双重异常的触发原因</h2>
+<p>在探究某个特定的原因之前，我们需要理解双重异常的确切定义。上文中，我们给出了相当粗略的定义：</p>
+<blockquote>
+<p>双重异常就是一个在CPU调用异常处理函数失败的时候触发的特定异常。</p>
+</blockquote>
+<p>“调用异常处理函数失败”的准确含义是什么? 处理函数不可用? 处理函数被换出（ <a href=http://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf>swapped out</a>）? 并且如果处理函数自身触发了异常会发生什么?</p>
+<p>例如，下列情况会发生什么：</p>
+<ol>
+<li>断点异常触发，但是对应的处理函数被换出?</li>
+<li>缺页异常触发，但是缺页异常处理函数被换出?</li>
+<li>除0异常引发了断点异常，但是断点异常处理函数被换出?</li>
+<li>内核栈溢出，同时保护页（ <em>guard page</em>）被命中（<em>hit</em>）?</li>
+</ol>
+<p>幸运的是，AMD64手册（(<a href=https://www.amd.com/system/files/TechDocs/24593.pdf>PDF</a>）给出了明确定义（8.2.9章节）。根据手册的定义，“当第二个异常出现在先前的（第一个）异常处理函数执行期间，双重异常<strong>可能</strong>会被触发”。“<strong>可能</strong>”二字说明：只有特定的异常组合才会导致双重异常。这些组合是：</p>
+<table>
+<thead>
+<tr>
+<th>第一个异常</th>
+<th>第二个异常</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href=https://wiki.osdev.org/Exceptions#Divide-by-zero_Error>Divide-by-zero，除0</a>,<br> <a href=https://wiki.osdev.org/Exceptions#Invalid_TSS>Invalid TSS，非法任务状态段</a>, <br><a href=https://wiki.osdev.org/Exceptions#Segment_Not_Present>Segment Not Present，段不存在</a>,<br> <a href=https://wiki.osdev.org/Exceptions#Stack-Segment_Fault>Stack-Segment Fault，栈段错误</a>, <br><a href=https://wiki.osdev.org/Exceptions#General_Protection_Fault>General Protection Fault，一般保护错误</a></td>
+<td><a href=https://wiki.osdev.org/Exceptions#Invalid_TSS>Invalid TSS，非法任务状态段</a>, <br><a href=https://wiki.osdev.org/Exceptions#Segment_Not_Present>Segment Not Present，段不存在</a>, <br><a href=https://wiki.osdev.org/Exceptions#Stack-Segment_Fault>Stack-Segment Fault，栈段错误</a>, <br><a href=https://wiki.osdev.org/Exceptions#General_Protection_Fault>General Protection Fault，一般保护错误</a></td>
+</tr>
+<tr>
+<td><a href=https://wiki.osdev.org/Exceptions#Page_Fault>Page Fault，缺页异常</a></td>
+<td><a href=https://wiki.osdev.org/Exceptions#Page_Fault>Page Fault，缺页异常</a>,<br> <a href=https://wiki.osdev.org/Exceptions#Invalid_TSS>Invalid TSS，非法任务状态段</a>, <br><a href=https://wiki.osdev.org/Exceptions#Segment_Not_Present>Segment Not Present，段不存在</a>,<br> <a href=https://wiki.osdev.org/Exceptions#Stack-Segment_Fault>Stack-Segment Fault，栈段错误</a>,<br> <a href=https://wiki.osdev.org/Exceptions#General_Protection_Fault>General Protection Fault，一般保护错误</a></td>
+</tr>
+</tbody>
+</table>
+<p>所以缺页异常紧跟除0异常不会触发双重异常（缺页异常处理函数被调用），但是一般保护错误紧跟除0异常一定会触发双重异常。</p>
+<p>参考这张表格，可以得到上述前三个问题的答案：</p>
+<ol>
+<li>断点异常触发，但是对应的处理函数被换出，缺页异常会被触发，然后调用缺页异常处理函数。</li>
+<li>缺页异常触发，但是缺页异常处理函数被换出，双重异常会被触发，然后调用双重异常处理函数。</li>
+<li>除0异常引发了断点异常，CPU试图调用断点异常处理函数。如果断点异常处理函数被换出，缺页异常会被触发，然后调用缺页异常处理函数。</li>
+</ol>
+<p>实际上，异常在 <em>IDT</em> 中没有对应的处理函数时会遵顼以下方案：</p>
+<p>当异常发生时，<em>CPU</em> 试图读取对应的 <em>IDT</em> 条目。如果条目是0，说明这不是一个合法的 <em>IDT</em> 条目，一般保护错误会被触发。我们没有定义一般保护错误的处理函数，所以另一个一般保护错误被触发。根据上表，这会导致双重异常。</p>
+<h3 id=内核栈溢出>内核栈溢出</h3>
+<p>让我们开始探究第四个问题：</p>
+<blockquote>
+<p>内核栈溢出，同时保护页（ <em>guard page</em>）被命中（<em>hit</em>）?</p>
+</blockquote>
+<p>保护页是存在栈底的特定内存页，它被用来发现栈溢出。保护页没有映射到任何物理内存页，所以访问它会导致缺页异常而不是无声无息地损坏其它内存。引导程序（<em>bootloader</em>）为内核栈建立了保护页，所以内核栈溢出会触发缺页异常。</p>
+<p>当缺页异常发生，CPU 查找 IDT 中地缺页异常处理函数并将中断栈帧（ <a href=https://os.phil-opp.com/cpu-exceptions/#the-interrupt-stack-frame>interrupt stack frame</a>）压入内核栈。然而，当前栈指针依然指向不可用地保护页。因此，第二个缺页异常被触发了，这会引发双重异常（根据上表）。</p>
+<p>CPU 试图调用双重异常处理函数，它当然会试图压入异常栈帧。此时栈指针依然会指向保护页（因为栈溢出了），所以第三个缺页异常被触发了，紧接着三重异常和系统复位也发生了。当前的双重异常处理函数无法阻止这种情形下的三重异常。</p>
+<p>让我们复现这个情形吧！通过调用无穷的递归函数可以轻易引发内核栈溢出：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w> </span><span class=c1>// don&#39;t mangle the name of this function
+</span><span class=c1></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Hello World{}&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>stack_overflow</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>stack_overflow</span><span class=p>();</span><span class=w> </span><span class=c1>// for each recursion, the return address is pushed
+</span><span class=c1></span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// trigger a stack overflow
+</span><span class=c1></span><span class=w>    </span><span class=n>stack_overflow</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// test_main(), println(…), and loop {}
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在QEMU中执行程序的时候，操作系统再次进入无限重启的情况：</p>
+<p>如何阻止这个问题? 由于压入异常栈帧是CPU硬件的操作，所以我们不能干扰这一步。我们只能以某种方式让内核栈在双重异常触发的时候保持可用（不会溢出）。幸运的是，<code>x86_64</code> 架构提供了这个问题的解决方式。</p>
+<h2 id=切换栈>切换栈</h2>
+<p><code>x86_64</code> 架构可以在异常发生时切换到预定义且已知良好的栈中。这个切换发生在硬件级别，所以它可以在<em>CPU</em>压入异常栈帧之前完成。</p>
+<p>切换机制基于中断栈表（ <em>Interrupt Stack Table</em> ，<em>IST</em>）。<em>IST</em>由7个指向已知良好的栈的指针组成。Rust风格的伪代码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>struct</span> <span class=nc>InterruptStackTable</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>stack_pointers</span>: <span class=p>[</span><span class=nb>Option</span><span class=o>&lt;</span><span class=n>StackPointer</span><span class=o>&gt;</span><span class=p>;</span><span class=w> </span><span class=mi>7</span><span class=p>],</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>对于每一个异常处理器，我们可以通过对应 <a href=https://os.phil-opp.com/cpu-exceptions/#the-interrupt-descriptor-table>IDT entry</a> 中的 <code>stack_pointers</code>字段在 <em>IST</em> 中找到一个栈。例如，双重异常处理器可以使用 <em>IST</em> 中的第一个栈。此后，CPU会主动在双重异常发生时切换到这个栈。切换之前不会由任何东西被压入栈中，所以它可以阻止三重异常的发生。</p>
+<h3 id=中断栈表和任务状态段-the-ist-and-tss>中断栈表和任务状态段（ The IST and TSS）</h3>
+<p>中断栈表是早期遗留下来的结构体——任务状态段（ <em><a href=https://en.wikipedia.org/wiki/Task_state_segment>Task State Segment</a>，TSS</em>）的一部分。在32位模式下，<em>TSS</em> 被用来保存任务（<em>task</em>）相关的各种信息（例如寄存器的状态），包括硬件上下文切换（<a href=https://wiki.osdev.org/Context_Switching#Hardware_Context_Switching>hardware context switching</a>）等。然而，在64位模式下，硬件上下文切换不再被支持，同时 <em>TSS</em> 的格式也已经面目全非。</p>
+<p>在 <code>x86_64</code> 架构下，<em>TSS</em> 不再保存任何关于任务（<em>task</em>）的信息。取而代之的是两个栈表（ <em>IST</em> 是其中之一）。<em>TSS</em> 在32位和64位模式下唯一相同的字段是指向 <a href=https://en.wikipedia.org/wiki/Task_state_segment#I.2FO_port_permissions>I/O port permissions bitmap</a> 的指针。</p>
+<p>在64位模式下， <em>TSS</em> 的格式如下：</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(保留位)</td>
+<td><code>u32</code></td>
+</tr>
+<tr>
+<td>特权栈表（Privilege Stack Table）</td>
+<td><code>[u64; 3]</code></td>
+</tr>
+<tr>
+<td>(保留位)</td>
+<td><code>u64</code></td>
+</tr>
+<tr>
+<td>中断栈表（Interrupt Stack Table）</td>
+<td><code>[u64; 7]</code></td>
+</tr>
+<tr>
+<td>(保留位)</td>
+<td><code>u64</code></td>
+</tr>
+<tr>
+<td>(保留位)</td>
+<td><code>u16</code></td>
+</tr>
+<tr>
+<td>I/O Map Base Address</td>
+<td><code>u16</code></td>
+</tr>
+</tbody>
+</table>
+<p>特权栈表会在 <em>CPU</em> 改变特权级别的时候被使用。例如，<em>CPU</em> 处在用户模式（<em>user mode</em>，特权级别 3 ）时触发了异常，它通常会在调用异常处理函数之前切换到内核模式（<em>kernel mode</em>，特权级别 0 ）。在这种情况下，<em>CPU</em> 会切换到特权栈表的第0个栈中（因为目标特权级别是0）。我们当前的内核没有运行在用户模式下的程序，所以可以暂时忽略特权栈表。</p>
+<h3 id=创建任务状态段>创建任务状态段</h3>
+<p>为了创建一个在自身的中断栈表中包含不同双重异常栈的 <em>TSS</em> ，我们需要一个 <em>TSS</em> 结构体。幸运的是， <code>x86_64</code> 模块已经提供了 <a href=https://docs.rs/x86_64/0.12.1/x86_64/structures/tss/struct.TaskStateSegment.html><code>TaskStateSegment</code> 结构体</a> 供我们使用。</p>
+<p>我们在新的 <code>gdt</code> 模块（下文中解释）中创建 <em>TSS</em> 。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>gdt</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// in src/gdt.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>VirtAddr</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>tss</span>::<span class=n>TaskStateSegment</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>lazy_static</span>::<span class=n>lazy_static</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=n>DOUBLE_FAULT_IST_INDEX</span>: <span class=kt>u16</span> <span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>TSS</span>: <span class=nc>TaskStateSegment</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>tss</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>TaskStateSegment</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>tss</span><span class=p>.</span><span class=n>interrupt_stack_table</span><span class=p>[</span><span class=n>DOUBLE_FAULT_IST_INDEX</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>usize</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=k>const</span><span class=w> </span><span class=n>STACK_SIZE</span>: <span class=kt>usize</span> <span class=o>=</span><span class=w> </span><span class=mi>4096</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=mi>5</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=k>static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>STACK</span>: <span class=p>[</span><span class=kt>u8</span><span class=p>;</span><span class=w> </span><span class=n>STACK_SIZE</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=mi>0</span><span class=p>;</span><span class=w> </span><span class=n>STACK_SIZE</span><span class=p>];</span><span class=w>
+</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>stack_start</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>from_ptr</span><span class=p>(</span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;</span><span class=n>STACK</span><span class=w> </span><span class=p>});</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>stack_end</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>stack_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>STACK_SIZE</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=n>stack_end</span><span class=w>
+</span><span class=w>        </span><span class=p>};</span><span class=w>
+</span><span class=w>        </span><span class=n>tss</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>由于Rust的常量求值器（ Rust&rsquo;s const evaluator ）并不支持在编译期内完成初始化，所以我们使用了 <code>lazy_static</code> 。我们定义了 <em>IST</em> 的第0个条目指向双重异常栈（ <em>IST</em> 的其它条目也可以正常运行），然后向第0个条目写入了双重异常栈的顶部地址（因为 <code>x86</code> 机器的栈地址向下扩展，也就是从高地址到低地址）。</p>
+<p>因为我们的内核还没有实现内存管理机制，所以我们还没有一个像样的方式去分配新的栈。作为替代，我们当前使用 <code>static mut</code> 数组作为栈的存储。 <code>unsafe</code> 是必要的，因为编译器不能确保可变静态变量被访问时的竞争自由。使用 <code>static mut</code> 而不是 <code>static</code> 是因为 <em>bootloader</em> 会把它映射到只读内存页上。下篇文章中，我们会使用一个像样的栈内存分配方式去取代这个方式，那时就不再需要 <code>unsafe</code> 了。</p>
+<p>不得不提的是，这个双重异常栈没有保护页去避免栈溢出。这意味着我们不能在双重异常处理函数中做任何过度使用函数栈的的事情，以避免栈溢出破坏栈地址以下的内存。</p>
+<h4 id=加载-tss>加载 <em>TSS</em></h4>
+<p>我们需要一种方式让 <em>CPU</em> 明白新的 <em>TSS</em> 已经可用了。不幸的是，这个过程很复杂，因为 <em>TSS</em> 使用了分段系统（历史遗留问题）。既然不能直接加载 <em>TSS</em> ，我们需要在全局描述符表（ <em><a href=https://web.archive.org/web/20190217233448/https://www.flingos.co.uk/docs/reference/Global-Descriptor-Table/>Global Descriptor Table</a> ，GDT</em>）中增加一个段描述符。然后就可以通过各自的 <em>GDT</em> 指针调用 <a href=https://www.felixcloutier.com/x86/ltr><code>ltr</code> 指令</a> 去加载 <em>TSS</em> 。</p>
+<h3 id=全局描述符表-the-global-descriptor-tablegdt>全局描述符表（ The Global Descriptor Table，GDT）</h3>
+<p>全局描述符表是分页机制成为事实上的标准之前的一个古老概念，它被用于内存分段（ <a href=https://en.wikipedia.org/wiki/X86_memory_segmentation>memory segmentation</a> ）。全局描述符表在64位模式下依然发挥着作用，例如内核/用户模式的配置和 <em>TSS</em> 的加载。<em>GDT</em> 包含了一个程序的所有分段。在分页机制还没有成为标准的古老体系架构中，<em>GDT</em> 被用来隔离所有的程序。你可以检阅开源手册 <a href=http://pages.cs.wisc.edu/~remzi/OSTEP/>“Three Easy Pieces” </a> 的同名章节获取更多关于分段机制的信息。虽然64位模式下不再支持分段机制，但是<em>GDT</em> 仍然保留了下来。它被用于两件事情：在内核空间和用户空间之间切换，加载 <em>TSS</em> 结构体。</p>
+<h4 id=创建gdt>创建GDT</h4>
+<p>创建一个包含用于 <code>TSS</code> 静态变量的段的 <em>GDT</em> ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/gdt.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>gdt</span>::<span class=p>{</span><span class=n>GlobalDescriptorTable</span><span class=p>,</span><span class=w> </span><span class=n>Descriptor</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>GDT</span>: <span class=nc>GlobalDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>gdt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>GlobalDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>gdt</span><span class=p>.</span><span class=n>add_entry</span><span class=p>(</span><span class=n>Descriptor</span>::<span class=n>kernel_code_segment</span><span class=p>());</span><span class=w>
+</span><span class=w>        </span><span class=n>gdt</span><span class=p>.</span><span class=n>add_entry</span><span class=p>(</span><span class=n>Descriptor</span>::<span class=n>tss_segment</span><span class=p>(</span><span class=o>&amp;</span><span class=n>TSS</span><span class=p>));</span><span class=w>
+</span><span class=w>        </span><span class=n>gdt</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>由于Rust的常量求值器（ Rust&rsquo;s const evaluator ）并不支持在编译期内完成初始化，所以我们再次使用了 <code>lazy_static</code> 。我们创建了一个包含代码段（code segment）和 <em>TSS</em> 段（ <em>TSS</em> segment）的 <em>GDT</em> 。</p>
+<h4 id=加载gdt>加载GDT</h4>
+<p>通过在 <code>init</code> 函数调用新建立的 <code>gdt::init</code> 函数加载 <em>GDT</em> ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/gdt.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>GDT</span><span class=p>.</span><span class=n>load</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>gdt</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>interrupts</span>::<span class=n>init_idt</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在 <em>GDT</em> 已经加载完毕（因为 <code>_start</code> 函数调用了 <code>init</code> 函数），但是仍然出现了栈溢出引发的启动循环。</p>
+<h3 id=最后的步骤>最后的步骤</h3>
+<p>由于段寄存器和 <em>TSS</em> 寄存器仍然保存着来自于旧的 <em>GDT</em> 的内容，我们新 <em>GDT</em> 的分段并没有起作用。所以我们还需要修改双重异常对应的 <em>IDT</em> 条目去让它使用新的栈。</p>
+<p>总的来说，我们需要完成以下步骤：</p>
+<ol>
+<li><strong>重新装载代码段寄存器</strong>：我们修改了 <em>GDT</em> ，所以应当重新装载代码段寄存器—— <code>cs</code> 。这是必要的，既然现在旧的段选择子可以指向不同的 <em>GDT</em> 描述符（例如 <em>TSS</em> 描述符）。</li>
+<li><strong>加载 <em>TSS</em></strong> ：我们已经加载了包含 <em>TSS</em> 段选择子的 <em>GDT</em> ，但是仍然需要告知 <em>CPU</em> 使用新的 <em>TSS</em> 。</li>
+<li><strong>更新 IDT 条目</strong>：一旦 <em>TSS</em> 加载完毕，CPU便访问到了合法的中断栈表（ <em>IST</em> ）。然后通过更新双重异常条目告知 <em>CPU</em> 使用新的双重异常栈。</li>
+</ol>
+<p>第一、二步需要我们在 <code>gdt::init</code> 函数中访问 <code>code_selector</code> 和 <code>tss_selector</code> 变量。为了实现这个操作，我们可以通过一个新的 <code>Selectors</code> 结构体将它们包含在 <em>static</em> 块中。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/gdt.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>gdt</span>::<span class=n>SegmentSelector</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>GDT</span>: <span class=p>(</span><span class=n>GlobalDescriptorTable</span><span class=p>,</span><span class=w> </span><span class=n>Selectors</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>gdt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>GlobalDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>code_selector</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>gdt</span><span class=p>.</span><span class=n>add_entry</span><span class=p>(</span><span class=n>Descriptor</span>::<span class=n>kernel_code_segment</span><span class=p>());</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>tss_selector</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>gdt</span><span class=p>.</span><span class=n>add_entry</span><span class=p>(</span><span class=n>Descriptor</span>::<span class=n>tss_segment</span><span class=p>(</span><span class=o>&amp;</span><span class=n>TSS</span><span class=p>));</span><span class=w>
+</span><span class=w>        </span><span class=p>(</span><span class=n>gdt</span><span class=p>,</span><span class=w> </span><span class=n>Selectors</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>code_selector</span><span class=p>,</span><span class=w> </span><span class=n>tss_selector</span><span class=w> </span><span class=p>})</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>Selectors</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>code_selector</span>: <span class=nc>SegmentSelector</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>tss_selector</span>: <span class=nc>SegmentSelector</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在可以使用选择子（<em>selectors</em>）重新加载 <code>cs</code> 段寄存器并加载新的 <code>TSS</code> ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/gdt.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>segmentation</span>::<span class=n>set_cs</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>tables</span>::<span class=n>load_tss</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>GDT</span><span class=p>.</span><span class=mf>0.</span><span class=n>load</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>set_cs</span><span class=p>(</span><span class=n>GDT</span><span class=p>.</span><span class=mf>1.</span><span class=n>code_selector</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>load_tss</span><span class=p>(</span><span class=n>GDT</span><span class=p>.</span><span class=mf>1.</span><span class=n>tss_selector</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用 <a href=https://docs.rs/x86_64/0.12.1/x86_64/instructions/segmentation/fn.set_cs.html><code>set_cs</code></a> 和 <a href=https://docs.rs/x86_64/0.12.1/x86_64/instructions/tables/fn.load_tss.html><code>load_tss</code></a> 函数分别重新加载代码段寄存器和 <code>TSS</code> 。我们需要在 <code>unsafe</code> 代码块中调用这两个函数，因为它们均被声明为 <code>unsafe</code> —— 它们可能由于加载了非法的选择子而破坏内存安全。</p>
+<p>现在，合法的 <em>TSS</em> 和 中断栈表已经加载完毕，我们可以在 <em>IDT</em> 中设置用于双重异常的栈指针：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>crate</span>::<span class=n>gdt</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>IDT</span>: <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>idt</span><span class=p>.</span><span class=n>double_fault</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=n>double_fault_handler</span><span class=p>)</span><span class=w>
+</span><span class=w>                </span><span class=p>.</span><span class=n>set_stack_index</span><span class=p>(</span><span class=n>gdt</span>::<span class=n>DOUBLE_FAULT_IST_INDEX</span><span class=p>);</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>set_stack_index</code> 方法是不安全的，因为调用者必须保证使用的指针是合法的并且没有被用于其它异常。</p>
+<p>That&rsquo;s it! <em>CPU</em> 会在所有双重异常发生的时候切换到双重异常栈。因此，我们可以捕获所有双重异常——包括在内核栈溢出的情况中。</p>
+<p><img src=https://markdown-ngy.oss-cn-beijing.aliyuncs.com/qemu-double-fault-on-stack-overflow.png alt=qemu-double-fault-on-stack-overflow></p>
+<p>从现在起，三重异常永远不会再次出现了！为了确保不会意外地弄坏上面的程序，我们应该加上测试。</p>
+<h2 id=栈溢出测试>栈溢出测试</h2>
+<p>为了测试新的 <code>gdt</code> 模块并且确保在栈溢出的情况下，双重异常处理函数被正确的调用，我们可以增加一个集成测试。思路是在测试函数中触发一个双重异常并验证双重异常处理函数被调用。</p>
+<p>从最小可用版本开始：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/stack_overflow.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#![no_std]</span><span class=w>
+</span><span class=w></span><span class=cp>#![no_main]</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>panic</span>::<span class=n>PanicInfo</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>unimplemented</span><span class=o>!</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[panic_handler]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>test_panic_handler</span><span class=p>(</span><span class=n>info</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>类似于 <code>panic_handler</code> 测试，新的测试不会运行在测试环境下（ <a href=https://os.phil-opp.com/testing/#no-harness-tests>without a test harness</a>）。原因在于我们不能在双重异常之后继续执行，所以连续进行多个测试是行不通的。为了禁用测试环境，需要在 <code>Cargo.toml</code> 中增加以下配置：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=err>#</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>Cargo</span><span class=p>.</span><span class=n>toml</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=p>[[</span><span class=n>test</span><span class=p>]]</span><span class=w>
+</span><span class=w></span><span class=n>name</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s>&#34;stack_overflow&#34;</span><span class=w>
+</span><span class=w></span><span class=n>harness</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在，执行 <code>cargo test --test stack_overflow</code> 会编译成功。测试当然会由于 <code>unimplemented</code> 宏的崩溃（panics）而失败。</p>
+<h3 id=实现-_start>实现 <code>_start</code></h3>
+<p><code>_start</code> 函数的实现如下所示：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/stack_overflow.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>serial_print</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;stack_overflow::stack_overflow...\t&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>gdt</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>init_test_idt</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// trigger a stack overflow
+</span><span class=c1></span><span class=w>    </span><span class=n>stack_overflow</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>panic</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Execution continued after stack overflow&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[allow(unconditional_recursion)]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>stack_overflow</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>stack_overflow</span><span class=p>();</span><span class=w> </span><span class=c1>// for each recursion, the return address is pushed
+</span><span class=c1></span><span class=w>    </span><span class=n>volatile</span>::<span class=n>Volatile</span>::<span class=n>new</span><span class=p>(</span><span class=mi>0</span><span class=p>).</span><span class=n>read</span><span class=p>();</span><span class=w> </span><span class=c1>// prevent tail recursion optimizations
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>调用 <code>gdt::init</code> 函数初始化新的 <em>GDT</em> 。我们调用了 <code>init_test_idt</code> 函数（稍后会解释它）而不是 <code>interrupts::init_idt</code> 函数。原因在于我们希望注册一个自定义的双重异常处理函数执行<code>exit_qemu(QemuExitCode::Success) </code> 而不是直接崩溃（ <em>panicking</em>）。</p>
+<p><code>stack_overflow</code> 函数和 <code>main.rs</code> 中的函数几乎一致。唯一的不同是我们在函数末尾增加了额外的 <a href=https://en.wikipedia.org/wiki/Volatile_(computer_programming)>volatile</a> 读，这是使用 <a href=https://docs.rs/volatile/0.2.6/volatile/struct.Volatile.html><code>Volatile</code></a> 类型阻止编译器的尾调用优化（ <a href=https://en.wikipedia.org/wiki/Tail_call><em>tail call elimination</em></a>）。此外，这个优化允许编译器将递归函数转化为循环。因此，函数调用的时候不会有额外的栈帧产生，栈的使用是固定不变的（<em>译注：上文中提到这个双重异常栈没有保护页去避免栈溢出。如果在双重异常处理函数中做任何过度使用函数栈的的事情，会导致栈溢出破坏栈地址以下的内存</em>）。</p>
+<p>在测试场景中，我们希望栈溢出的发生，所以在函数的末尾增加了一个模拟的 <em>volatile</em> 读语句，这个语句不会被编译器优化掉。因此，这个函数不再是尾递归，也不会被转化为循环。我们同时使用 <code>allow(unconditional_recursion)</code> 属性禁止了编译器的警告——这个函数会无休止地重复。</p>
+<h3 id=测试用idt>测试用IDT</h3>
+<p>如上所述，这个测试需要独立持有双重异常处理函数的 <em>IDT</em> 。实现如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/stack_overflow.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>lazy_static</span>::<span class=n>lazy_static</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>idt</span>::<span class=n>InterruptDescriptorTable</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>TEST_IDT</span>: <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>idt</span><span class=p>.</span><span class=n>double_fault</span><span class=w>
+</span><span class=w>                </span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=n>test_double_fault_handler</span><span class=p>)</span><span class=w>
+</span><span class=w>                </span><span class=p>.</span><span class=n>set_stack_index</span><span class=p>(</span><span class=n>blog_os</span>::<span class=n>gdt</span>::<span class=n>DOUBLE_FAULT_IST_INDEX</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init_test_idt</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>TEST_IDT</span><span class=p>.</span><span class=n>load</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这个实现和 <code>interrupts.rs</code> 中普通的 <em>IDT</em> 非常相似。和在普通的 <em>IDT</em> 中一样，我们在 <em>IST</em> 中将双重异常处理函数设置为独立的栈。 <code>init_test_idt</code> 函数通过 <code>load</code> 方法加载 <em>IDT</em> 到CPU中。</p>
+<h3 id=双重异常处理函数-1>双重异常处理函数</h3>
+<p>现在唯一缺少的便是双重异常处理函数了。实现如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/stack_overflow.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=p>{</span><span class=n>exit_qemu</span><span class=p>,</span><span class=w> </span><span class=n>QemuExitCode</span><span class=p>,</span><span class=w> </span><span class=n>serial_println</span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>idt</span>::<span class=n>InterruptStackFrame</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>test_double_fault_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>_error_code</span>: <span class=kt>u64</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Success</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>当双重异常处理函数被调用，我们退出<em>QEMU</em>，并且退出码是代表着测试通过的成功退出码。随着集成测试各自独立地执行完毕，我们需要在测试文件的顶部再次设置 <code>#![feature(abi_x86_interrupt)]</code> 属性。</p>
+<p>现在可以使用 <code>cargo test --test stack_overflow</code>命令运行双重异常测试了（或者使用 <code>cargo test</code> 直接运行所有测试）。不出所料，控制台输出了 <code>stack_overflow... [ok]</code> 消息。如果注释掉 <code>set_stack_index</code> 行：测试应当失败。</p>
+<h2 id=总结>总结</h2>
+<p>在这篇文章中，我们学到了双重异常及其触发条件，添加了基本的双重异常处理函数打印错误消息，同时补充了相应的集成测试。</p>
+<p>我们也让硬件支持了双重异常发生时的栈切换，这让它可以在栈溢出的情况下正常工作。在实现的同时，我们学到了任务状态段（<em>TSS</em>），包含其中的中断栈表（<em>IST</em>），以及旧体系架构中用于分段机制的全局描述符（<em>GDT</em>）。</p>
+<h2 id=接下来>接下来?</h2>
+<p>下一篇文章，我们将阐明如何处理来自外部设备的中断，例如时钟、键盘或网卡等。这些硬件中断和异常十分相似，它们也会通过 <em>IDT</em> 分发到相应的处理函数。然而与异常不同的是，它们并不直接由 <em>CPU</em> 内部产生。中断控制器（<em>interrupt controller</em>）会汇总这些中断，然后根据它们的优先级高低发送到 <em>CPU</em> 。在下篇文章中，我们会介绍 <a href=https://en.wikipedia.org/wiki/Intel_8259>Intel 8259</a> (“PIC”) 中断控制器，并学习如何实现键盘支持（<em>keyboard support</em>）。</p>
+<h2 id=支持我>支持我</h2>
+<p>创建并维护这个<a href=https://os.phil-opp.com/status-update/>博客</a> 和相关的库是一个繁重的工作，但是我非常喜欢这个它。你的支持可以鼓励我投入更多的时间在新的内容，新的功能以及持续维护工作上。</p>
+<p>支持我的最好方式是 <a href=https://github.com/sponsors/phil-opp><em>sponsor me on GitHub</em></a> 。GitHub 会匹配赞助（<em>译注：见<a href=https://docs.github.com/en/free-pro-team@latest/github/supporting-the-open-source-community-with-github-sponsors/about-github-sponsors>GitHub Sponsors Matching Fund</a></em>）直到2020年10月！我同时拥有 <a href=https://www.patreon.com/phil_opp><em>Patreon</em></a> 和 <a href=https://donorbox.org/phil-opp><em>Donorbox</em></a> 账户。最后一种是最灵活的，它支持多国货币和一次性捐赠。</p>
+<p>谢谢！</p>
+<blockquote>
+<p>译注：《支持我》章节中的“我”均指原作者 <a href=https://github.com/phil-opp>@Philipp Oppermann</a> 。</p>
+</blockquote>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-03-07 11:58:54
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/writing-an-os-in-rust/>writing-an-os-in-rust</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/writing-an-os-in-rust/appendix-b-red-zone/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">使用Rust编写操作系统（附录二）：禁用红区</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/12.data_struct/00.%E5%9F%BA%E7%A1%80%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/>
+<span class="next-text nav-default">基础数据结构</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

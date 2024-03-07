@@ -30,7 +30,7 @@
 <meta itemprop=name content="06.先解决段寄存器的历史包袱问题">
 <meta itemprop=description content="06.先解决段寄存器的历史包袱问题 上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
 <meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
-<meta itemprop=wordCount content="2126">
+<meta itemprop=wordCount content="2127">
 <meta itemprop=keywords content="linux,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="06.先解决段寄存器的历史包袱问题">
 <meta name=twitter:description content="06.先解决段寄存器的历史包袱问题 上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -189,7 +189,14 @@ Justice's Blog
 <h1 id=06先解决段寄存器的历史包袱问题>06.先解决段寄存器的历史包袱问题</h1>
 <p>上回书咱们说到，操作系统又折腾了一下内存，之后的很长一段时间内存布局就不会变了，终于稳定下来了，目前它长这个样子。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-37-17-d345b3fc056f120897aba11e13f8e2eb.png alt=图片></p>
-<p>0 地址开始处存放着操作系统的全部代码吗，也就是 system 模块，0x90000 位置处往后的几十个字节存放着一些设备的信息，方便以后使用。</p>
+<ul>
+<li>
+<p>0地址开始处存放着操作系统的全部代码，也就是 system 模块;</p>
+</li>
+<li>
+<p>0x90000 位置处往后的几十个字节存放着一些设备的信息，方便以后使用。</p>
+</li>
+</ul>
 <table>
 <thead>
 <tr>
@@ -206,7 +213,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x90002</td>
-<td>2<br></td>
+<td>2</td>
 <td>扩展内存数</td>
 </tr>
 <tr>
@@ -216,7 +223,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x90006</td>
-<td>1<br></td>
+<td>1</td>
 <td>显示模式</td>
 </tr>
 <tr>
@@ -231,12 +238,12 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x9000A</td>
-<td>1<br></td>
+<td>1</td>
 <td>显示内存</td>
 </tr>
 <tr>
 <td>0x9000B</td>
-<td>1<br></td>
+<td>1</td>
 <td>显示状态</td>
 </tr>
 <tr>
@@ -246,7 +253,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x9000E</td>
-<td>1<br></td>
+<td>1</td>
 <td>屏幕行数</td>
 </tr>
 <tr>
@@ -256,7 +263,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x90080</td>
-<td>16<br></td>
+<td>16</td>
 <td>硬盘1参数表</td>
 </tr>
 <tr>
@@ -266,7 +273,7 @@ Justice's Blog
 </tr>
 <tr>
 <td>0x901FC</td>
-<td>2<br></td>
+<td>2</td>
 <td>根设备号</td>
 </tr>
 </tbody>
@@ -295,11 +302,14 @@ Justice's Blog
 </code></pre></td></tr></table>
 </div>
 </div><p>上来就是两行看不懂的指令，别急。</p>
-<p>要理解这两条指令，就涉及到实模式和保护模式的第一个区别了。我们现在还处于实模式下，这个模式的 CPU 计算物理地址的方式还记得么？不记得的话看一下 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499226&idx=1&sn=1ff3d54a3608423b7781142ae3ac62ca&chksm=c2c58777f5b20e61664a51d31ab779bbe68c317c3459218c7cd4b9530887dbb33470628c3248&scene=21#wechat_redirect">第一回 最开始的两行代码</a></p>
+<p>要理解这两条指令，就涉及到实模式和保护模式的第一个区别了。</p>
+<p>我们现在还处于实模式下，这个模式的 CPU 计算物理地址的方式还记得么？不记得的话看一下 <a href="http://mp.weixin.qq.com/s?__biz=Mzk0MjE3NDE0Ng==&mid=2247499226&idx=1&sn=1ff3d54a3608423b7781142ae3ac62ca&chksm=c2c58777f5b20e61664a51d31ab779bbe68c317c3459218c7cd4b9530887dbb33470628c3248&scene=21#wechat_redirect">第一回 最开始的两行代码</a></p>
 <p>就是段基址左移四位，再加上偏移地址。比如：</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-37-28-d089322cf665638a49e4d8b4a1980468.png alt=图片></p>
-<p>是不是觉得很别扭，那更别扭的地方就要来了。当 CPU 切换到<strong>保护模式</strong>后，同样的代码，内存地址的计算方式还不一样，你说气不气人？</p>
-<p>变成啥样了呢？刚刚那个 ds 寄存器里存储的值，在实模式下叫做<strong>段基址</strong>，在保护模式下叫<strong>段选择子</strong>。段选择子里存储着<strong>段描述符</strong>的索引。</p>
+<p>是不是觉得很别扭，那更别扭的地方就要来了。</p>
+<p>当 CPU 切换到<strong>保护模式</strong>后，同样的代码，内存地址的计算方式还不一样，你说气不气人？</p>
+<p>变成啥样了呢？刚刚那个 ds 寄存器里存储的值，在实模式下叫做<strong>段基址</strong>，在保护模式下叫<strong>段选择子</strong>。</p>
+<p>段选择子里存储着<strong>段描述符</strong>的索引。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-37-40-b20e37ee621c59421c5bb3f61c7565bd.png alt=图片></p>
 <p>通过段描述符索引，可以从<strong>全局描述符表 gdt</strong> 中找到一个段描述符，段描述符里存储着段基址。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-37-52-c85d99cfcc463fe47d7b6bccd14c0f1e.png alt=图片></p>
@@ -319,7 +329,7 @@ Justice's Blog
 <pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>lgdt</span>    <span class=nv>gdt_48</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>其中 <strong>lgdt</strong> 就表示把后面的值(gdt_48)放在 gdtr寄存器中，gdt_48 标签，我们看看它长什么样。</p>
+</div><p>其中 <code>lgdt</code> 就表示把后面的值(gdt_48)放在 gdtr寄存器中，gdt_48 标签，我们看看它长什么样。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
@@ -332,8 +342,7 @@ Justice's Blog
 <span class=err>    </span><span class=nf>.word</span>   <span class=mi>512</span><span class=o>+</span><span class=nv>gdt</span><span class=p>,</span><span class=mh>0x9</span> <span class=c1>; gdt base = 0X9xxxx</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>可以看到这个标签位置处表示一个48位的数据，其中高 32 位存储着的正是全局描述符表 gdt 的内存地址</p>
-<p><strong>0x90200 + gdt</strong></p>
+</div><p>可以看到这个标签位置处表示一个48位的数据，其中高 32 位存储着的正是全局描述符表 gdt 的内存地址<code>0x90200 + gdt</code></p>
 <p><strong>gdt</strong> 是个标签，表示在本文件内的偏移量，而本文件是 <strong>setup.s</strong>，编译后是放在 <strong>0x90200</strong> 这个内存地址的，还记得吧？所以要加上 0x90200 这个值。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-17-52475622dc23017ba52cc7535b534c88.png alt=图片></p>
 <p>那 gdt 这个标签处，就是全局描述符表在内存中的真正数据了。</p>
@@ -349,30 +358,47 @@ Justice's Blog
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>gdt:    
-    .word   0,0,0,0     ; dummy    
-    .word   0x07FF      ; 8Mb - limit=2047 (2048*4096=8Mb)    
-    .word   0x0000      ; base address=0    
-    .word   0x9A00      ; code read/exec    
-    .word   0x00C0      ; granularity=4096, 386    
-    .word   0x07FF      ; 8Mb - limit=2047 (2048*4096=8Mb)    
-    .word   0x0000      ; base address=0    
-    .word   0x9200      ; data read/write    
-    .word   0x00C0      ; granularity=4096, 386
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nl>gdt:</span>    
+<span class=err>    </span><span class=nf>.word</span>   <span class=mi>0</span><span class=p>,</span><span class=mi>0</span><span class=p>,</span><span class=mi>0</span><span class=p>,</span><span class=mi>0</span>     <span class=c1>; dummy    </span>
+
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x07FF</span>      <span class=c1>; 8Mb - limit=2047 (2048*4096=8Mb)    </span>
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x0000</span>      <span class=c1>; base address=0    </span>
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x9A00</span>      <span class=c1>; code read/exec    </span>
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x00C0</span>      <span class=c1>; granularity=4096, 386  </span>
+  
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x07FF</span>      <span class=c1>; 8Mb - limit=2047 (2048*4096=8Mb)    </span>
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x0000</span>      <span class=c1>; base address=0    </span>
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x9200</span>      <span class=c1>; data read/write    </span>
+<span class=err>    </span><span class=nf>.word</span>   <span class=mh>0x00C0</span>      <span class=c1>; granularity=4096, 386</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>具体细节不用关心，跟我看重点。</p>
 <p>根据刚刚的段描述符格式。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-27-c85d99cfcc463fe47d7b6bccd14c0f1e.png alt=图片></p>
-<p>可以看出目前全局描述符表有三个段描述符，第一个为<strong>空</strong>，第二个是<strong>代码段描述符（type=code）</strong>，第三个是<strong>数据段描述符（type=data）</strong>，第二个和第三个段描述符的段基址都是 0，也就是之后在逻辑地址转换物理地址的时候，通过段选择子查找到无论是代码段还是数据段，取出的段基址都是 0，那么物理地址将直接等于程序员给出的逻辑地址（准确说是逻辑地址中的偏移地址）。先记住这点就好。</p>
+<p>可以看出目前全局描述符表有三个段描述符:</p>
+<ul>
+<li>
+<p>第一个为<strong>空</strong>;</p>
+</li>
+<li>
+<p>第二个是<strong>代码段描述符（type=code）</strong>;</p>
+</li>
+<li>
+<p>第三个是<strong>数据段描述符（type=data）</strong>;</p>
+</li>
+</ul>
+<p>第二个和第三个段描述符的段基址都是 0，也就是之后在逻辑地址转换物理地址的时候，通过段选择子查找到无论是代码段还是数据段，取出的段基址都是 0，那么物理地址将直接等于程序员给出的逻辑地址（准确说是逻辑地址中的偏移地址）。先记住这点就好。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-41-588c4850dfaa3b60e5109a68d5f7c777.png alt=图片></p>
 <p>具体段描述符的细节还有很多，就不展开了，比如这里的高 22 位就表示它是代码段还是数据段。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-49-c85d99cfcc463fe47d7b6bccd14c0f1e.png alt=图片></p>
 <p>接下来我们看看目前的内存布局，还是别管比例。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-38-58-6c49f0dea2d622c3c637015fb6554ecd.png alt=图片></p>
-<p>这里我把 <strong>idtr</strong> 寄存器也画出来了，这个是<strong>中断描述符表</strong>，其原理和全局描述符表一样。全局描述符表是让段选择子去里面寻找段描述符用的，而中断描述符表是用来在发生中断时，CPU 拿着中断号去中断描述符表中寻找中断处理程序的地址，找到后就跳到相应的中断程序中去执行，具体我们后面遇到了再说。</p>
+<p>这里我把 <code>idtr</code> 寄存器也画出来了，这个是<strong>中断描述符表</strong>，其原理和全局描述符表一样。</p>
+<p>全局描述符表是让段选择子去里面寻找段描述符用的，而中断描述符表是用来在发生中断时，CPU 拿着中断号去中断描述符表中寻找中断处理程序的地址，找到后就跳到相应的中断程序中去执行，具体我们后面遇到了再说。</p>
 <p>好了，今天我们就讲，操作系统设置了个<strong>全局描述符表 gdt</strong>，为后面切换到<strong>保护模式</strong>后，能去那里寻找到段描述符，然后拼凑成最终的物理地址，就这个作用。当然，还有很多段描述符，作用不仅仅是转换成最终的物理地址，不过这是后话了。</p>
 <p>这仅仅是进入保护模式前准备工作的其中一个，后面的路还长着呢。欲知后事如何，且听下回分解。</p>
 <p><strong>&mdash;&mdash;- 本回扩展资料 &mdash;&mdash;-</strong></p>
@@ -433,7 +459,7 @@ Justice's Blog
 <span class="prev-text nav-mobile">上一篇</span>
 </a>
 <a class=next href=/post/21.linux/linux-0.11%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/%E7%AC%AC1%E9%83%A8%E5%88%86/07.%E5%85%AD%E8%A1%8C%E4%BB%A3%E7%A0%81%E5%B0%B1%E8%BF%9B%E5%85%A5%E4%BA%86%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/>
-<span class="next-text nav-default">07.六行代码就进入了保护模式</span>
+<span class="next-text nav-default">07.进入保护模式</span>
 <span class="prev-text nav-mobile">下一篇</span>
 <i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
 </i>

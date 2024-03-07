@@ -1,0 +1,1310 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>使用Rust编写操作系统（三）：VGA字符模式 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="使用Rust编写操作系统（三）：VGA字符模式 VGA字符模式（VGA text mode）是打印字符到屏幕的一种简单方式。在这篇文章中，为了包装这个模">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="使用Rust编写操作系统（三）：VGA字符模式">
+<meta property="og:description" content="使用Rust编写操作系统（三）：VGA字符模式 VGA字符模式（VGA text mode）是打印字符到屏幕的一种简单方式。在这篇文章中，为了包装这个模">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-03-07T11:58:54+08:00">
+<meta property="article:modified_time" content="2024-03-07T11:58:54+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="使用Rust编写操作系统（三）：VGA字符模式">
+<meta itemprop=description content="使用Rust编写操作系统（三）：VGA字符模式 VGA字符模式（VGA text mode）是打印字符到屏幕的一种简单方式。在这篇文章中，为了包装这个模"><meta itemprop=datePublished content="2024-03-07T11:58:54+08:00">
+<meta itemprop=dateModified content="2024-03-07T11:58:54+08:00">
+<meta itemprop=wordCount content="8648">
+<meta itemprop=keywords content="pub,writing-an-os-in-rust,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="使用Rust编写操作系统（三）：VGA字符模式">
+<meta name=twitter:description content="使用Rust编写操作系统（三）：VGA字符模式 VGA字符模式（VGA text mode）是打印字符到屏幕的一种简单方式。在这篇文章中，为了包装这个模"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>使用Rust编写操作系统（三）：VGA字符模式</h1>
+<div class=post-meta>
+<time datetime=2024-03-07 class=post-time>
+2024-03-07 11:58:54
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#vga字符缓冲区>VGA字符缓冲区</a></li>
+<li><a href=#包装到rust模块>包装到Rust模块</a>
+<ul>
+<li><a href=#颜色>颜色</a></li>
+<li><a href=#字符缓冲区>字符缓冲区</a></li>
+<li><a href=#打印字符>打印字符</a></li>
+<li><a href=#易失操作>易失操作</a></li>
+<li><a href=#格式化宏>格式化宏</a></li>
+<li><a href=#换行>换行</a></li>
+</ul>
+</li>
+<li><a href=#全局接口>全局接口</a>
+<ul>
+<li><a href=#延迟初始化>延迟初始化</a></li>
+<li><a href=#自旋锁>自旋锁</a></li>
+<li><a href=#安全性>安全性</a></li>
+<li><a href=#println宏><code>println!</code>宏</a></li>
+<li><a href=#使用println的hello-world>使用<code>println!</code>的Hello World</a></li>
+<li><a href=#打印panic信息>打印panic信息</a></li>
+</ul>
+</li>
+<li><a href=#小结>小结</a></li>
+<li><a href=#下篇预告>下篇预告</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=使用rust编写操作系统三vga字符模式>使用Rust编写操作系统（三）：VGA字符模式</h1>
+<p><strong>VGA字符模式</strong>（<a href=https://en.wikipedia.org/wiki/VGA-compatible_text_mode>VGA text mode</a>）是打印字符到屏幕的一种简单方式。在这篇文章中，为了包装这个模式为一个安全而简单的接口，我们包装unsafe代码到独立的模块。我们还将实现对Rust语言<strong>格式化宏</strong>（<a href=https://doc.rust-lang.org/std/fmt/#related-macros>formatting macros</a>）的支持。</p>
+<h2 id=vga字符缓冲区>VGA字符缓冲区</h2>
+<p>为了在VGA字符模式向屏幕打印字符，我们必须将它写入硬件提供的<strong>VGA字符缓冲区</strong>（VGA text buffer）。通常状况下，VGA字符缓冲区是一个25行、80列的二维数组，它的内容将被实时渲染到屏幕。这个数组的元素被称作<strong>字符单元</strong>（character cell），它使用下面的格式描述一个屏幕上的字符：</p>
+<table>
+<thead>
+<tr>
+<th>Bit(s)</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-7</td>
+<td>ASCII code point</td>
+</tr>
+<tr>
+<td>8-11</td>
+<td>Foreground color</td>
+</tr>
+<tr>
+<td>12-14</td>
+<td>Background color</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Blink</td>
+</tr>
+</tbody>
+</table>
+<p>其中，<strong>前景色</strong>（foreground color）和<strong>背景色</strong>（background color）取值范围如下：</p>
+<table>
+<thead>
+<tr>
+<th>Number</th>
+<th>Color</th>
+<th>Number + Bright Bit</th>
+<th>Bright Color</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x0</td>
+<td>Black</td>
+<td>0x8</td>
+<td>Dark Gray</td>
+</tr>
+<tr>
+<td>0x1</td>
+<td>Blue</td>
+<td>0x9</td>
+<td>Light Blue</td>
+</tr>
+<tr>
+<td>0x2</td>
+<td>Green</td>
+<td>0xa</td>
+<td>Light Green</td>
+</tr>
+<tr>
+<td>0x3</td>
+<td>Cyan</td>
+<td>0xb</td>
+<td>Light Cyan</td>
+</tr>
+<tr>
+<td>0x4</td>
+<td>Red</td>
+<td>0xc</td>
+<td>Light Red</td>
+</tr>
+<tr>
+<td>0x5</td>
+<td>Magenta</td>
+<td>0xd</td>
+<td>Pink</td>
+</tr>
+<tr>
+<td>0x6</td>
+<td>Brown</td>
+<td>0xe</td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td>0x7</td>
+<td>Light Gray</td>
+<td>0xf</td>
+<td>White</td>
+</tr>
+</tbody>
+</table>
+<p>每个颜色的第四位称为<strong>加亮位</strong>（bright bit）。</p>
+<p>要修改VGA字符缓冲区，我们可以通过<strong>存储器映射输入输出</strong>（<a href=https://en.wikipedia.org/wiki/Memory-mapped_I/O>memory-mapped I/O</a>）的方式，读取或写入地址<code>0xb8000</code>；这意味着，我们可以像操作普通的内存区域一样操作这个地址。</p>
+<p>需要注意的是，一些硬件虽然映射到存储器，却可能不会完全支持所有的内存操作：可能会有一些设备支持按<code>u8</code>字节读取，却在读取<code>u64</code>时返回无效的数据。幸运的是，字符缓冲区都<a href=https://web.stanford.edu/class/cs140/projects/pintos/specs/freevga/vga/vgamem.htm#manip>支持标准的读写操作</a>，所以我们不需要用特殊的标准对待它。</p>
+<h2 id=包装到rust模块>包装到Rust模块</h2>
+<p>既然我们已经知道VGA文字缓冲区如何工作，也是时候创建一个Rust模块来处理文字打印了。我们输入这样的代码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=k>mod</span> <span class=nn>vga_buffer</span><span class=p>;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这行代码定义了一个Rust模块，它的内容应当保存在<code>src/vga_buffer.rs</code>文件中。使用<strong>2018版次</strong>（2018 edition）的Rust时，我们可以把模块的<strong>子模块</strong>（submodule）文件直接保存到<code>src/vga_buffer/</code>文件夹下，与<code>vga_buffer.rs</code>文件共存，而无需创建一个<code>mod.rs</code>文件。</p>
+<p>我们的模块暂时不需要添加子模块，所以我们将它创建为<code>src/vga_buffer.rs</code>文件。除非另有说明，本文中的代码都保存到这个文件中。</p>
+<h3 id=颜色>颜色</h3>
+<p>首先，我们使用Rust的<strong>枚举</strong>（enum）表示一种颜色：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[allow(dead_code)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[repr(u8)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>enum</span> <span class=nc>Color</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>Black</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Blue</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>1</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Green</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>2</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Cyan</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>3</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Red</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>4</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Magenta</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>5</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Brown</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>6</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>LightGray</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>7</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>DarkGray</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>8</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>LightBlue</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>9</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>LightGreen</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>10</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>LightCyan</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>11</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>LightRed</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>12</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Pink</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>13</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Yellow</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>14</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>White</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>15</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用<strong>类似于C语言的枚举</strong>（C-like enum），为每个颜色明确指定一个数字。在这里，每个用<code>repr(u8)</code>注记标注的枚举类型，都会以一个<code>u8</code>的形式存储——事实上4个二进制位就足够了，但Rust语言并不提供<code>u4</code>类型。</p>
+<p>通常来说，编译器会对每个未使用的变量发出<strong>警告</strong>（warning）；使用<code>#[allow(dead_code)]</code>，我们可以对<code>Color</code>枚举类型禁用这个警告。</p>
+<p>我们还<strong>生成</strong>（<a href=http://rustbyexample.com/trait/derive.html>derive</a>）了 <a href=https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html><code>Copy</code></a>、<a href=https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html><code>Clone</code></a>、<a href=https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html><code>Debug</code></a>、<a href=https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html><code>PartialEq</code></a>和<a href=https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html><code>Eq</code></a> 这几个trait：这让我们的类型遵循<strong>复制语义</strong>（<a href=https://doc.rust-lang.org/book/first-edition/ownership.html#copy-types>copy semantics</a>），也让它可以被比较、被调试打印。</p>
+<p>为了描述包含前景色和背景色的、完整的<strong>颜色代码</strong>（color code），我们基于<code>u8</code>创建一个新类型：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[repr(transparent)]</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>ColorCode</span><span class=p>(</span><span class=kt>u8</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>ColorCode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>new</span><span class=p>(</span><span class=n>foreground</span>: <span class=nc>Color</span><span class=p>,</span><span class=w> </span><span class=n>background</span>: <span class=nc>Color</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>ColorCode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>ColorCode</span><span class=p>((</span><span class=n>background</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>u8</span><span class=p>)</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>4</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>foreground</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>u8</span><span class=p>))</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这里，<code>ColorCode</code>类型包装了一个完整的颜色代码字节，它包含前景色和背景色信息。和<code>Color</code>类型类似，我们为它生成<code>Copy</code>和<code>Debug</code>等一系列trait。为了确保<code>ColorCode</code>和<code>u8</code>有完全相同的内存布局，我们添加<a href=https://doc.rust-lang.org/nomicon/other-reprs.html#reprtransparent>repr(transparent)标记</a>。</p>
+<h3 id=字符缓冲区>字符缓冲区</h3>
+<p>现在，我们可以添加更多的结构体，来描述屏幕上的字符和整个字符缓冲区：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[repr(C)]</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>ScreenChar</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>ascii_character</span>: <span class=kt>u8</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>color_code</span>: <span class=nc>ColorCode</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>const</span><span class=w> </span><span class=n>BUFFER_HEIGHT</span>: <span class=kt>usize</span> <span class=o>=</span><span class=w> </span><span class=mi>25</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>const</span><span class=w> </span><span class=n>BUFFER_WIDTH</span>: <span class=kt>usize</span> <span class=o>=</span><span class=w> </span><span class=mi>80</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[repr(transparent)]</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>Buffer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>chars</span>: <span class=p>[[</span><span class=n>ScreenChar</span><span class=p>;</span><span class=w> </span><span class=n>BUFFER_WIDTH</span><span class=p>];</span><span class=w> </span><span class=n>BUFFER_HEIGHT</span><span class=p>],</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在内存布局层面，Rust并不保证按顺序布局成员变量。因此，我们需要使用<code>#[repr(C)]</code>标记结构体；这将按C语言约定的顺序布局它的成员变量，让我们能正确地映射内存片段。对<code>Buffer</code>类型，我们再次使用<code>repr(transparent)</code>，来确保类型和它的单个成员有相同的内存布局。</p>
+<p>为了输出字符到屏幕，我们来创建一个<code>Writer</code>类型：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>column_position</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>color_code</span>: <span class=nc>ColorCode</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>buffer</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>Buffer</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们将让这个<code>Writer</code>类型将字符写入屏幕的最后一行，并在一行写满或收到换行符<code>\n</code>的时候，将所有的字符向上位移一行。<code>column_position</code>变量将跟踪光标在最后一行的位置。当前字符的前景和背景色将由<code>color_code</code>变量指定；另外，我们存入一个VGA字符缓冲区的可变借用到<code>buffer</code>变量中。需要注意的是，这里我们对借用使用<strong>显式生命周期</strong>（<a href=https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html#lifetime-annotation-syntax>explicit lifetime</a>），告诉编译器这个借用在何时有效：我们使用**<code>'static</code>生命周期**（<a href=https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html#the-static-lifetime>&lsquo;static lifetime</a>），意味着这个借用应该在整个程序的运行期间有效；这对一个全局有效的VGA字符缓冲区来说，是非常合理的。</p>
+<h3 id=打印字符>打印字符</h3>
+<p>现在我们可以使用<code>Writer</code>类型来更改缓冲区内的字符了。首先，为了写入一个ASCII码字节，我们创建这样的函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>write_byte</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>byte</span>: <span class=kt>u8</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>match</span><span class=w> </span><span class=n>byte</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=sc>b&#39;\n&#39;</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>new_line</span><span class=p>(),</span><span class=w>
+</span><span class=w>            </span><span class=n>byte</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=k>if</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>column_position</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=n>BUFFER_WIDTH</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                    </span><span class=bp>self</span><span class=p>.</span><span class=n>new_line</span><span class=p>();</span><span class=w>
+</span><span class=w>                </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>row</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>BUFFER_HEIGHT</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>col</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>column_position</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>color_code</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>color_code</span><span class=p>;</span><span class=w>
+</span><span class=w>                </span><span class=bp>self</span><span class=p>.</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>row</span><span class=p>][</span><span class=n>col</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>ScreenChar</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                    </span><span class=n>ascii_character</span>: <span class=nc>byte</span><span class=p>,</span><span class=w>
+</span><span class=w>                    </span><span class=n>color_code</span><span class=p>,</span><span class=w>
+</span><span class=w>                </span><span class=p>};</span><span class=w>
+</span><span class=w>                </span><span class=bp>self</span><span class=p>.</span><span class=n>column_position</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>new_line</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=cm>/* TODO */</span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>如果这个字节是一个<strong>换行符</strong>（<a href=https://en.wikipedia.org/wiki/Newline>line feed</a>）字节<code>\n</code>，我们的<code>Writer</code>不应该打印新字符，相反，它将调用我们稍后会实现的<code>new_line</code>方法；其它的字节应该将在<code>match</code>语句的第二个分支中被打印到屏幕上。</p>
+<p>当打印字节时，<code>Writer</code>将检查当前行是否已满。如果已满，它将首先调用<code>new_line</code>方法来将这一行字向上提升，再将一个新的<code>ScreenChar</code>写入到缓冲区，最终将当前的光标位置前进一位。</p>
+<p>要打印整个字符串，我们把它转换为字节并依次输出：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>write_string</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>s</span>: <span class=kp>&amp;</span><span class=kt>str</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>for</span><span class=w> </span><span class=n>byte</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>s</span><span class=p>.</span><span class=n>bytes</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=k>match</span><span class=w> </span><span class=n>byte</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=c1>// 可以是能打印的ASCII码字节，也可以是换行符
+</span><span class=c1></span><span class=w>                </span><span class=mh>0x20</span><span class=p>...</span><span class=mh>0x7e</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=sc>b&#39;\n&#39;</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>write_byte</span><span class=p>(</span><span class=n>byte</span><span class=p>),</span><span class=w>
+</span><span class=w>                </span><span class=c1>// 不包含在上述范围之内的字节
+</span><span class=c1></span><span class=w>                </span><span class=n>_</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>write_byte</span><span class=p>(</span><span class=mh>0xfe</span><span class=p>),</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>VGA字符缓冲区只支持ASCII码字节和<strong>代码页437</strong>（<a href=https://en.wikipedia.org/wiki/Code_page_437>Code page 437</a>）定义的字节。Rust语言的字符串默认编码为<a href=http://www.fileformat.info/info/unicode/utf8.htm>UTF-8</a>，也因此可能包含一些VGA字符缓冲区不支持的字节：我们使用<code>match</code>语句，来区别可打印的ASCII码或换行字节，和其它不可打印的字节。对每个不可打印的字节，我们打印一个<code>■</code>符号；这个符号在VGA硬件中被编码为十六进制的<code>0xfe</code>。</p>
+<p>我们可以亲自试一试已经编写的代码。为了这样做，我们可以临时编写一个函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>print_something</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>writer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>column_position</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>color_code</span>: <span class=nc>ColorCode</span>::<span class=n>new</span><span class=p>(</span><span class=n>Color</span>::<span class=n>Yellow</span><span class=p>,</span><span class=w> </span><span class=n>Color</span>::<span class=n>Black</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=n>buffer</span>: <span class=nc>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=p>(</span><span class=mh>0xb8000</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>Buffer</span><span class=p>)</span><span class=w> </span><span class=p>},</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>writer</span><span class=p>.</span><span class=n>write_byte</span><span class=p>(</span><span class=sc>b&#39;H&#39;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>writer</span><span class=p>.</span><span class=n>write_string</span><span class=p>(</span><span class=s>&#34;ello &#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>writer</span><span class=p>.</span><span class=n>write_string</span><span class=p>(</span><span class=s>&#34;Wörld!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这个函数首先创建一个指向<code>0xb8000</code>地址VGA缓冲区的<code>Writer</code>。实现这一点，我们需要编写的代码可能看起来有点奇怪：首先，我们把整数<code>0xb8000</code>强制转换为一个可变的<strong>裸指针</strong>（<a href=https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html#dereferencing-a-raw-pointer>raw pointer</a>）；之后，通过运算符<code>*</code>，我们将这个裸指针解引用；最后，我们再通过<code>&mut</code>，再次获得它的可变借用。这些转换需要**<code>unsafe</code>语句块**（<a href=https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html>unsafe block</a>），因为编译器并不能保证这个裸指针是有效的。</p>
+<p>然后它将字节 <code>b'H'</code> 写入缓冲区内. 前缀 <code>b</code>创建了一个字节字面量（<a href=https://doc.rust-lang.org/reference/tokens.html#byte-literals>byte literal</a>），表示单个ASCII码字符；通过尝试写入 <code>"ello "</code> 和 <code>"Wörld!"</code>，我们可以测试 <code>write_string</code> 方法和其后对无法打印字符的处理逻辑。为了观察输出，我们需要在<code>_start</code>函数中调用<code>print_something</code>方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>vga_buffer</span>::<span class=n>print_something</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>编译运行后，黄色的<code>Hello W■■rld!</code>字符串将会被打印在屏幕的左下角：</p>
+<p><img src=https://os.phil-opp.com/vga-text-mode/vga-hello.png alt="QEMU output with a yellow Hello W■■rld! in the lower left corner"></p>
+<p>需要注意的是，<code>ö</code>字符被打印为两个<code>■</code>字符。这是因为在<a href=http://www.fileformat.info/info/unicode/utf8.htm>UTF-8</a>编码下，字符<code>ö</code>是由两个字节表述的——而这两个字节并不处在可打印的ASCII码字节范围之内。事实上，这是UTF-8编码的基本特点之一：<strong>如果一个字符占用多个字节，那么每个组成它的独立字节都不是有效的ASCII码字节</strong>（the individual bytes of multi-byte values are never valid ASCII）。</p>
+<h3 id=易失操作>易失操作</h3>
+<p>我们刚才看到，自己想要输出的信息被正确地打印到屏幕上。然而，未来Rust编译器更暴力的优化可能让这段代码不按预期工作。</p>
+<p>产生问题的原因在于，我们只向<code>Buffer</code>写入，却不再从它读出数据。此时，编译器不知道我们事实上已经在操作VGA缓冲区内存，而不是在操作普通的RAM——因此也不知道产生的副作用，即会有几个字符显示在屏幕上。这时，编译器也许会认为这些写入操作都没有必要，甚至会选择忽略这些操作！所以，为了避免这些并不正确的优化，这些写入操作应当被指定为<a href=https://en.wikipedia.org/wiki/Volatile_(computer_programming)>易失操作</a>。这将告诉编译器，这些写入可能会产生副效应，不应该被优化掉。</p>
+<p>为了在我们的VGA缓冲区中使用易失的写入操作，我们使用<a href=https://docs.rs/volatile>volatile</a>库。这个<strong>包</strong>（crate）提供一个名为<code>Volatile</code>的<strong>包装类型</strong>（wrapping type），它的<code>read</code>、<code>write</code>方法；这些方法包装了<code>core::ptr</code>内的<a href=https://doc.rust-lang.org/nightly/core/ptr/fn.read_volatile.html>read_volatile</a>和<a href=https://doc.rust-lang.org/nightly/core/ptr/fn.write_volatile.html>write_volatile</a> 函数，从而保证读操作或写操作不会被编译器优化。</p>
+<p>要添加<code>volatile</code>包为项目的<strong>依赖项</strong>（dependency），我们可以在<code>Cargo.toml</code>文件的<code>dependencies</code>中添加下面的代码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+
+<span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
+<span class=nx>volatile</span> <span class=p>=</span> <span class=s2>&#34;0.2.3&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p><code>0.2.3</code>表示一个<strong>语义版本号</strong>（<a href=http://semver.org/>semantic version number</a>），在cargo文档的<a href=https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html>《指定依赖项》章节</a>可以找到与它相关的使用指南。</p>
+<p>现在，我们使用它来完成VGA缓冲区的volatile写入操作。我们将<code>Buffer</code>类型的定义修改为下列代码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>volatile</span>::<span class=n>Volatile</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>Buffer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>chars</span>: <span class=p>[[</span><span class=n>Volatile</span><span class=o>&lt;</span><span class=n>ScreenChar</span><span class=o>&gt;</span><span class=p>;</span><span class=w> </span><span class=n>BUFFER_WIDTH</span><span class=p>];</span><span class=w> </span><span class=n>BUFFER_HEIGHT</span><span class=p>],</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在这里，我们不使用<code>ScreenChar</code>，而选择使用<code>Volatile&lt;ScreenChar></code>——在这里，<code>Volatile</code>类型是一个<strong>泛型</strong>（<a href=https://doc.rust-lang.org/book/ch10-01-syntax.html>generic</a>），可以包装几乎所有的类型——这确保了我们不会通过普通的写入操作，意外地向它写入数据；我们转而使用提供的<code>write</code>方法。</p>
+<p>这意味着，我们必须要修改我们的<code>Writer::write_byte</code>方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>write_byte</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>byte</span>: <span class=kt>u8</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>match</span><span class=w> </span><span class=n>byte</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=sc>b&#39;\n&#39;</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>new_line</span><span class=p>(),</span><span class=w>
+</span><span class=w>            </span><span class=n>byte</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=p>...</span><span class=w>
+</span><span class=w>
+</span><span class=w>                </span><span class=bp>self</span><span class=p>.</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>row</span><span class=p>][</span><span class=n>col</span><span class=p>].</span><span class=n>write</span><span class=p>(</span><span class=n>ScreenChar</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                    </span><span class=n>ascii_character</span>: <span class=nc>byte</span><span class=p>,</span><span class=w>
+</span><span class=w>                    </span><span class=n>color_code</span>: <span class=nc>color_code</span><span class=p>,</span><span class=w>
+</span><span class=w>                </span><span class=p>});</span><span class=w>
+</span><span class=w>                </span><span class=p>...</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>...</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>正如代码所示，我们不再使用普通的<code>=</code>赋值，而使用了<code>write</code>方法：这能确保编译器不再优化这个写入操作。</p>
+<h3 id=格式化宏>格式化宏</h3>
+<p>支持Rust提供的<strong>格式化宏</strong>（formatting macros）也是一个相当棒的主意。通过这种途径，我们可以轻松地打印不同类型的变量，如整数或浮点数。为了支持它们，我们需要实现<a href=https://doc.rust-lang.org/nightly/core/fmt/trait.Write.html><code>core::fmt::Write</code></a> trait；要实现它，唯一需要提供的方法是<code>write_str</code>，它和我们先前编写的<code>write_string</code>方法差别不大，只是返回值类型变成了<code>fmt::Result</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>fmt</span>::<span class=n>Write</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>write_str</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>s</span>: <span class=kp>&amp;</span><span class=kt>str</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>fmt</span>::<span class=nb>Result</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>write_string</span><span class=p>(</span><span class=n>s</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=nb>Ok</span><span class=p>(())</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这里，<code>Ok(())</code>属于<code>Result</code>枚举类型中的<code>Ok</code>，包含一个值为<code>()</code>的变量。</p>
+<p>现在我们就可以使用Rust内置的格式化宏<code>write!</code>和<code>writeln!</code>了：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>print_something</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>writer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>column_position</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>color_code</span>: <span class=nc>ColorCode</span>::<span class=n>new</span><span class=p>(</span><span class=n>Color</span>::<span class=n>Yellow</span><span class=p>,</span><span class=w> </span><span class=n>Color</span>::<span class=n>Black</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=n>buffer</span>: <span class=nc>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=p>(</span><span class=mh>0xb8000</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>Buffer</span><span class=p>)</span><span class=w> </span><span class=p>},</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>writer</span><span class=p>.</span><span class=n>write_byte</span><span class=p>(</span><span class=sc>b&#39;H&#39;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>writer</span><span class=p>.</span><span class=n>write_string</span><span class=p>(</span><span class=s>&#34;ello! &#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>write</span><span class=o>!</span><span class=p>(</span><span class=n>writer</span><span class=p>,</span><span class=w> </span><span class=s>&#34;The numbers are {} and {}&#34;</span><span class=p>,</span><span class=w> </span><span class=mi>42</span><span class=p>,</span><span class=w> </span><span class=mf>1.0</span><span class=o>/</span><span class=mf>3.0</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在，你应该在屏幕下端看到一串<code>Hello! The numbers are 42 and 0.3333333333333333</code>。<code>write!</code>宏返回的<code>Result</code>类型必须被使用，所以我们调用它的<a href=https://doc.rust-lang.org/core/result/enum.Result.html#method.unwrap><code>unwrap</code></a>方法，它将在错误发生时panic。这里的情况下应该不会发生这样的问题，因为写入VGA字符缓冲区并没有可能失败。</p>
+<h3 id=换行>换行</h3>
+<p>在之前的代码中，我们忽略了换行符，因此没有处理超出一行字符的情况。当换行时，我们想要把每个字符向上移动一行——此时最顶上的一行将被删除——然后在最后一行的起始位置继续打印。要做到这一点，我们要为<code>Writer</code>实现一个新的<code>new_line</code>方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>new_line</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>for</span><span class=w> </span><span class=n>row</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=mi>1</span><span class=p>..</span><span class=n>BUFFER_HEIGHT</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=k>for</span><span class=w> </span><span class=n>col</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=mi>0</span><span class=p>..</span><span class=n>BUFFER_WIDTH</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>character</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>row</span><span class=p>][</span><span class=n>col</span><span class=p>].</span><span class=n>read</span><span class=p>();</span><span class=w>
+</span><span class=w>                </span><span class=bp>self</span><span class=p>.</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>row</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=mi>1</span><span class=p>][</span><span class=n>col</span><span class=p>].</span><span class=n>write</span><span class=p>(</span><span class=n>character</span><span class=p>);</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>clear_row</span><span class=p>(</span><span class=n>BUFFER_HEIGHT</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=mi>1</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>column_position</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>clear_row</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>row</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=cm>/* TODO */</span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们遍历每个屏幕上的字符，把每个字符移动到它上方一行的相应位置。这里，<code>..</code>符号是<strong>区间标号</strong>（range notation）的一种；它表示左闭右开的区间，因此不包含它的上界。在外层的枚举中，我们从第1行开始，省略了对第0行的枚举过程——因为这一行应该被移出屏幕，即它将被下一行的字符覆写。</p>
+<p>所以我们实现的<code>clear_row</code>方法代码如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>clear_row</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>row</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>blank</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>ScreenChar</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>ascii_character</span>: <span class=nc>b</span><span class=sc>&#39; &#39;</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=n>color_code</span>: <span class=nc>self</span><span class=p>.</span><span class=n>color_code</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=p>};</span><span class=w>
+</span><span class=w>        </span><span class=k>for</span><span class=w> </span><span class=n>col</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=mi>0</span><span class=p>..</span><span class=n>BUFFER_WIDTH</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=bp>self</span><span class=p>.</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>row</span><span class=p>][</span><span class=n>col</span><span class=p>].</span><span class=n>write</span><span class=p>(</span><span class=n>blank</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>通过向对应的缓冲区写入空格字符，这个方法能清空一整行的字符位置。</p>
+<h2 id=全局接口>全局接口</h2>
+<p>编写其它模块时，我们希望无需随身携带<code>Writer</code>实例，便能使用它的方法。我们尝试创建一个静态的<code>WRITER</code>变量：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>static</span><span class=w> </span><span class=n>WRITER</span>: <span class=nc>Writer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>column_position</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>color_code</span>: <span class=nc>ColorCode</span>::<span class=n>new</span><span class=p>(</span><span class=n>Color</span>::<span class=n>Yellow</span><span class=p>,</span><span class=w> </span><span class=n>Color</span>::<span class=n>Black</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=n>buffer</span>: <span class=nc>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=p>(</span><span class=mh>0xb8000</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>Buffer</span><span class=p>)</span><span class=w> </span><span class=p>},</span><span class=w>
+</span><span class=w></span><span class=p>};</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们尝试编译这些代码，却发生了下面的编译错误：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>error[E0015]: calls in statics are limited to constant functions, tuple structs and tuple variants
+ --&gt; src/vga_buffer.rs:7:17
+  |
+7 |     color_code: ColorCode::new(Color::Yellow, Color::Black),
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0396]: raw pointers cannot be dereferenced in statics
+ --&gt; src/vga_buffer.rs:8:22
+  |
+8 |     buffer: unsafe { &amp;mut *(0xb8000 as *mut Buffer) },
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ dereference of raw pointer in constant
+
+error[E0017]: references in statics may only refer to immutable values
+ --&gt; src/vga_buffer.rs:8:22
+  |
+8 |     buffer: unsafe { &amp;mut *(0xb8000 as *mut Buffer) },
+  |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ statics require immutable values
+
+error[E0017]: references in statics may only refer to immutable values
+ --&gt; src/vga_buffer.rs:8:13
+  |
+8 |     buffer: unsafe { &amp;mut *(0xb8000 as *mut Buffer) },
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ statics require immutable values
+</code></pre></td></tr></table>
+</div>
+</div><p>为了明白现在发生了什么，我们需要知道一点：一般的变量在运行时初始化，而静态变量在编译时初始化。Rust编译器规定了一个称为<strong>常量求值器</strong>（<a href=https://rust-lang.github.io/rustc-guide/const-eval.html>const evaluator</a>）的组件，它应该在编译时处理这样的初始化工作。虽然它目前的功能较为有限，但对它的扩展工作进展活跃，比如允许在常量中panic的<a href=https://github.com/rust-lang/rfcs/pull/2345>一篇RFC文档</a>。</p>
+<p>关于<code>ColorCode::new</code>的问题应该能使用<strong>常函数</strong>（<a href=https://doc.rust-lang.org/unstable-book/language-features/const-fn.html><code>const</code> functions</a>）解决，但常量求值器还存在不完善之处，它还不能在编译时直接转换裸指针到变量的引用——也许未来这段代码能够工作，但在那之前，我们需要寻找另外的解决方案。</p>
+<h3 id=延迟初始化>延迟初始化</h3>
+<p>使用非常函数初始化静态变量是Rust程序员普遍遇到的问题。幸运的是，有一个叫做<a href=https://docs.rs/lazy_static/1.0.1/lazy_static/>lazy_static</a>的包提供了一个很棒的解决方案：它提供了名为<code>lazy_static!</code>的宏，定义了一个<strong>延迟初始化</strong>（lazily initialized）的静态变量；这个变量的值将在第一次使用时计算，而非在编译时计算。这时，变量的初始化过程将在运行时执行，任意的初始化代码——无论简单或复杂——都是能够使用的。</p>
+<p>现在，我们将<code>lazy_static</code>包导入到我们的项目：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+
+<span class=p>[</span><span class=nx>dependencies</span><span class=p>.</span><span class=nx>lazy_static</span><span class=p>]</span>
+<span class=nx>version</span> <span class=p>=</span> <span class=s2>&#34;1.0&#34;</span>
+<span class=nx>features</span> <span class=p>=</span> <span class=p>[</span><span class=s2>&#34;spin_no_std&#34;</span><span class=p>]</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在这里，由于程序不连接标准库，我们需要启用<code>spin_no_std</code>特性。</p>
+<p>使用<code>lazy_static</code>我们就可以定义一个不出问题的<code>WRITER</code>变量：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>lazy_static</span>::<span class=n>lazy_static</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>WRITER</span>: <span class=nc>Writer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>column_position</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>color_code</span>: <span class=nc>ColorCode</span>::<span class=n>new</span><span class=p>(</span><span class=n>Color</span>::<span class=n>Yellow</span><span class=p>,</span><span class=w> </span><span class=n>Color</span>::<span class=n>Black</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=n>buffer</span>: <span class=nc>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=p>(</span><span class=mh>0xb8000</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>Buffer</span><span class=p>)</span><span class=w> </span><span class=p>},</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>然而，这个<code>WRITER</code>可能没有什么用途，因为它目前还是<strong>不可变变量</strong>（immutable variable）：这意味着我们无法向它写入数据，因为所有与写入数据相关的方法都需要实例的可变引用<code>&mut self</code>。一种解决方案是使用<strong>可变静态</strong>（<a href=https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html#accessing-or-modifying-a-mutable-static-variable>mutable static</a>）的变量，但所有对它的读写操作都被规定为不安全的（unsafe）操作，因为这很容易导致数据竞争或发生其它不好的事情——使用<code>static mut</code>极其不被赞成，甚至有一些提案认为<a href=https://internals.rust-lang.org/t/pre-rfc-remove-static-mut/1437>应该将它删除</a>。也有其它的替代方案，比如可以尝试使用比如<a href=https://doc.rust-lang.org/book/ch15-05-interior-mutability.html#keeping-track-of-borrows-at-runtime-with-refcellt>RefCell</a>或甚至<a href=https://doc.rust-lang.org/nightly/core/cell/struct.UnsafeCell.html>UnsafeCell</a>等类型提供的<strong>内部可变性</strong>（<a href=https://doc.rust-lang.org/book/ch15-05-interior-mutability.html>interior mutability</a>）；但这些类型都被设计为非同步类型，即不满足<a href=https://doc.rust-lang.org/nightly/core/marker/trait.Sync.html>Sync</a>约束，所以我们不能在静态变量中使用它们。</p>
+<h3 id=自旋锁>自旋锁</h3>
+<p>要定义同步的内部可变性，我们往往使用标准库提供的互斥锁类<a href=https://doc.rust-lang.org/nightly/std/sync/struct.Mutex.html>Mutex</a>，它通过提供当资源被占用时将线程<strong>阻塞</strong>（block）的<strong>互斥条件</strong>（mutual exclusion）实现这一点；但我们初步的内核代码还没有线程和阻塞的概念，我们将不能使用这个类。不过，我们还有一种较为基础的互斥锁实现方式——<strong>自旋锁</strong>（<a href=https://en.wikipedia.org/wiki/Spinlock>spinlock</a>）。自旋锁并不会调用阻塞逻辑，而是在一个小的无限循环中反复尝试获得这个锁，也因此会一直占用CPU时间，直到互斥锁被它的占用者释放。</p>
+<p>为了使用自旋的互斥锁，我们添加<a href=https://crates.io/crates/spin>spin包</a>到项目的依赖项列表：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+<span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
+<span class=nx>spin</span> <span class=p>=</span> <span class=s2>&#34;0.4.9&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>现在，我们能够使用自旋的互斥锁，为我们的<code>WRITER</code>类实现安全的<a href=https://doc.rust-lang.org/book/ch15-05-interior-mutability.html>内部可变性</a>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>spin</span>::<span class=n>Mutex</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=p>...</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>WRITER</span>: <span class=nc>Mutex</span><span class=o>&lt;</span><span class=n>Writer</span><span class=o>&gt;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Mutex</span>::<span class=n>new</span><span class=p>(</span><span class=n>Writer</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>column_position</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>color_code</span>: <span class=nc>ColorCode</span>::<span class=n>new</span><span class=p>(</span><span class=n>Color</span>::<span class=n>Yellow</span><span class=p>,</span><span class=w> </span><span class=n>Color</span>::<span class=n>Black</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=n>buffer</span>: <span class=nc>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=p>(</span><span class=mh>0xb8000</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>Buffer</span><span class=p>)</span><span class=w> </span><span class=p>},</span><span class=w>
+</span><span class=w>    </span><span class=p>});</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在我们可以删除<code>print_something</code>函数，尝试直接在<code>_start</code>函数中打印字符：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=n>vga_buffer</span>::<span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>write_str</span><span class=p>(</span><span class=s>&#34;Hello again&#34;</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>write</span><span class=o>!</span><span class=p>(</span><span class=n>vga_buffer</span>::<span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>(),</span><span class=w> </span><span class=s>&#34;, some numbers: {} {}&#34;</span><span class=p>,</span><span class=w> </span><span class=mi>42</span><span class=p>,</span><span class=w> </span><span class=mf>1.337</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在这里，我们需要导入名为<code>fmt::Write</code>的trait，来使用实现它的类的相应方法。</p>
+<h3 id=安全性>安全性</h3>
+<p>经过上文的努力后，我们现在的代码只剩一个unsafe语句块，它用于创建一个指向<code>0xb8000</code>地址的<code>Buffer</code>类型引用；在这步之后，所有的操作都是安全的。Rust将为每个数组访问检查边界，所以我们不会在不经意间越界到缓冲区之外。因此，我们把需要的条件编码到Rust的类型系统，这之后，我们为外界提供的接口就符合内存安全原则了。</p>
+<h3 id=println宏><code>println!</code>宏</h3>
+<p>现在我们有了一个全局的<code>Writer</code>实例，我们就可以基于它实现<code>println!</code>宏，这样它就能被任意地方的代码使用了。Rust提供的<a href=https://doc.rust-lang.org/nightly/book/ch19-06-macros.html#declarative-macros-with-macro_rules-for-general-metaprogramming>宏定义语法</a>需要时间理解，所以我们将不从零开始编写这个宏。我们先看看标准库中<a href=https://doc.rust-lang.org/nightly/std/macro.println!.html><code>println!</code>宏的实现源码</a>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=cp>#[macro_export]</span><span class=w>
+</span><span class=w></span><span class=n>macro_rules</span><span class=o>!</span><span class=w> </span><span class=n>println</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>()</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;\n&#34;</span><span class=p>));</span><span class=w>
+</span><span class=w>    </span><span class=p>(</span><span class=cp>$($arg</span>:<span class=nc>tt</span><span class=p>)</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}\n&#34;</span><span class=p>,</span><span class=w> </span><span class=n>format_args</span><span class=o>!</span><span class=p>(</span><span class=cp>$($arg</span><span class=p>)</span><span class=o>*</span><span class=p>)));</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>宏是通过一个或多个<strong>规则</strong>（rule）定义的，这就像<code>match</code>语句的多个分支。<code>println!</code>宏有两个规则：第一个规则不要求传入参数——就比如<code>println!()</code>——它将被扩展为<code>print!("\n")</code>，因此只会打印一个新行；第二个要求传入参数——好比<code>println!("Rust能够编写操作系统")</code>或<code>println!("我学习Rust已经{}年了", 3)</code>——它将使用<code>print!</code>宏扩展，传入它需求的所有参数，并在输出的字符串最后加入一个换行符<code>\n</code>。</p>
+<p>这里，<code>#[macro_export]</code>属性让整个包（crate）和基于它的包都能访问这个宏，而不仅限于定义它的模块（module）。它还将把宏置于包的根模块（crate root）下，这意味着比如我们需要通过<code>use std::println</code>来导入这个宏，而不是通过<code>std::macros::println</code>。</p>
+<p><a href=https://doc.rust-lang.org/nightly/std/macro.print!.html><code>print!</code>宏</a>是这样定义的：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) =&gt; ($crate::io::_print(format_args!($($arg)*)));
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>这个宏将扩展为一个对<code>io</code>模块中<a href=https://github.com/rust-lang/rust/blob/29f5c699b11a6a148f097f82eaa05202f8799bbc/src/libstd/io/stdio.rs#L698><code>_print</code>函数</a>的调用。<a href=https://doc.rust-lang.org/1.30.0/book/first-edition/macros.html#the-variable-crate><code>$crate</code>变量</a>将在<code>std</code>包之外被解析为<code>std</code>包，保证整个宏在<code>std</code>包之外也可以使用。</p>
+<p><a href=https://doc.rust-lang.org/nightly/std/macro.format_args.html><code>format_args!</code>宏</a>将传入的参数搭建为一个<a href=https://doc.rust-lang.org/nightly/core/fmt/struct.Arguments.html>fmt::Arguments</a>类型，这个类型将被传入<code>_print</code>函数。<code>std</code>包中的<a href=https://github.com/rust-lang/rust/blob/29f5c699b11a6a148f097f82eaa05202f8799bbc/src/libstd/io/stdio.rs#L698><code>_print</code> 函数</a>将调用复杂的私有函数<code>print_to</code>，来处理对不同<code>Stdout</code>设备的支持。我们不需要编写这样的复杂函数，因为我们只需要打印到VGA字符缓冲区。</p>
+<p>要打印到字符缓冲区，我们把<code>println!</code>和<code>print!</code>两个宏复制过来，但修改部分代码，让这些宏使用我们定义的<code>_print</code>函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[macro_export]</span><span class=w>
+</span><span class=w></span><span class=n>macro_rules</span><span class=o>!</span><span class=w> </span><span class=n>print</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>(</span><span class=cp>$($arg</span>:<span class=nc>tt</span><span class=p>)</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=cp>$crate</span>::<span class=n>vga_buffer</span>::<span class=n>_print</span><span class=p>(</span><span class=n>format_args</span><span class=o>!</span><span class=p>(</span><span class=cp>$($arg</span><span class=p>)</span><span class=o>*</span><span class=p>)));</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[macro_export]</span><span class=w>
+</span><span class=w></span><span class=n>macro_rules</span><span class=o>!</span><span class=w> </span><span class=n>println</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>()</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=cp>$crate</span>::<span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;\n&#34;</span><span class=p>));</span><span class=w>
+</span><span class=w>    </span><span class=p>(</span><span class=cp>$($arg</span>:<span class=nc>tt</span><span class=p>)</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=cp>$crate</span>::<span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}\n&#34;</span><span class=p>,</span><span class=w> </span><span class=n>format_args</span><span class=o>!</span><span class=p>(</span><span class=cp>$($arg</span><span class=p>)</span><span class=o>*</span><span class=p>)));</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[doc(hidden)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>_print</span><span class=p>(</span><span class=n>args</span>: <span class=nc>fmt</span>::<span class=n>Arguments</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>write_fmt</span><span class=p>(</span><span class=n>args</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们首先修改了<code>println!</code>宏，在每个使用的<code>print!</code>宏前面添加了<code>$crate</code>变量。这样我们在只需要使用<code>println!</code>时，不必也编写代码导入<code>print!</code>宏。</p>
+<p>就像标准库做的那样，我们为两个宏都添加了<code>#[macro_export]</code>属性，这样在包的其它地方也可以使用它们。需要注意的是，这将占用包的<strong>根命名空间</strong>（root namespace），所以我们不能通过<code>use crate::vga_buffer::println</code>来导入它们；我们应该使用<code>use crate::println</code>。</p>
+<p>另外，<code>_print</code>函数将占有静态变量<code>WRITER</code>的锁，并调用它的<code>write_fmt</code>方法。这个方法是从名为<code>Write</code>的trait中获得的，所以我们需要导入这个trait。额外的<code>unwrap()</code>函数将在打印不成功的时候panic；但既然我们的<code>write_str</code>总是返回<code>Ok</code>，这种情况不应该发生。</p>
+<p>如果这个宏将能在模块外访问，它们也应当能访问<code>_print</code>函数，因此这个函数必须是公有的（public）。然而，考虑到这是一个私有的实现细节，我们添加一个<a href=https://doc.rust-lang.org/nightly/rustdoc/the-doc-attribute.html#dochidden><code>doc(hidden)</code>属性</a>，防止它在生成的文档中出现。</p>
+<h3 id=使用println的hello-world>使用<code>println!</code>的Hello World</h3>
+<p>现在，我们可以在<code>_start</code>里使用<code>println!</code>了：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Hello World{}&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>要注意的是，我们在入口函数中不需要导入这个宏——因为它已经被置于包的根命名空间了。</p>
+<p>运行这段代码，和我们预料的一样，一个 <em>“Hello World!”</em> 字符串被打印到了屏幕上：</p>
+<p><img src=https://os.phil-opp.com/vga-text-mode/vga-hello-world.png alt="QEMU printing “Hello World!”"></p>
+<h3 id=打印panic信息>打印panic信息</h3>
+<p>既然我们已经有了<code>println!</code>宏，我们可以在panic处理函数中，使用它打印panic信息和panic产生的位置：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// 这个函数将在panic发生时被调用
+</span><span class=sd></span><span class=cp>#[panic_handler]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>info</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>当我们在<code>_start</code>函数中插入一行<code>panic!("Some panic message");</code>后，我们得到了这样的输出：</p>
+<p><img src=https://os.phil-opp.com/vga-text-mode/vga-panic.png alt="QEMU printing “panicked at &lsquo;Some panic message&rsquo;, src/main.rs:28:5"></p>
+<p>所以，现在我们不仅能知道panic已经发生，还能够知道panic信息和产生panic的代码。</p>
+<h2 id=小结>小结</h2>
+<p>这篇文章中，我们学习了VGA字符缓冲区的结构，以及如何在<code>0xb8000</code>的内存映射地址访问它。我们将所有的不安全操作包装为一个Rust模块，以便在外界安全地访问它。</p>
+<p>我们也发现了——感谢便于使用的cargo——在Rust中使用第三方提供的包是及其容易的。我们添加的两个依赖项，<code>lazy_static</code>和<code>spin</code>，都在操作系统开发中及其有用；我们将在未来的文章中多次使用它们。</p>
+<h2 id=下篇预告>下篇预告</h2>
+<p>下一篇文章中，我们将会讲述如何配置Rust内置的单元测试框架。我们还将为本文编写的VGA缓冲区模块添加基础的单元测试项目。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-03-07 11:58:54
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/writing-an-os-in-rust/>writing-an-os-in-rust</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/writing-an-os-in-rust/07-hardware-interrupts/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">使用Rust编写操作系统（七）：硬件中断</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/>
+<span class="next-text nav-default">使用Rust编写操作系统（二）：最小化内核</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

@@ -30,7 +30,7 @@
 <meta itemprop=name content="02.自己给自己挪个地儿">
 <meta itemprop=description content="02.自己给自己挪个地儿 书接上回，上回书咱们说到，CPU 执行操作系统的最开始的两行代码。 1 2 movax,0x07c0 movds,ax 将数据段寄存器 ds 的值变成了 0x07c0，方便"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
 <meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
-<meta itemprop=wordCount content="1154">
+<meta itemprop=wordCount content="1072">
 <meta itemprop=keywords content="linux,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="02.自己给自己挪个地儿">
 <meta name=twitter:description content="02.自己给自己挪个地儿 书接上回，上回书咱们说到，CPU 执行操作系统的最开始的两行代码。 1 2 movax,0x07c0 movds,ax 将数据段寄存器 ds 的值变成了 0x07c0，方便"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -229,44 +229,39 @@ Justice's Blog
 <pre tabindex=0 class=chroma><code><span class=lnt>1
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sub a,b
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>sub</span><span class=err> </span><span class=nv>a</span><span class=p>,</span><span class=nv>b</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>就表示</p>
+</div><p>就表示<code>a = a - b</code></p>
+<p>那么代码中的</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>a = a - b
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>sub</span><span class=err> </span><span class=nb>si</span><span class=p>,</span><span class=nb>si</span>
 </code></pre></td></tr></table>
 </div>
-</div><p>那么代码中的</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sub si,si
-</code></pre></td></tr></table>
-</div>
-</div><p>就表示</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>si = si - si
-</code></pre></td></tr></table>
-</div>
-</div><p>所以如果 sub 后面的两个寄存器一模一样，就相当于把这个寄存器里的值<strong>清零</strong>，这是一个基本玩法。</p>
+</div><p>就表示<code>si = si - si</code></p>
+<p>所以如果 sub 后面的两个寄存器一模一样，就相当于把这个寄存器里的值<strong>清零</strong>，这是一个基本玩法。</p>
 <p>那就非常简单了，经过这些指令后，以下几个寄存器分别被附上了指定的值，我们梳理一下。</p>
-<p><strong>ds = 0x07c0</strong></p>
-<p><strong>es = 0x9000</strong></p>
-<p><strong>cx = 256</strong></p>
-<p><strong>si = 0</strong></p>
-<p><strong>di = 0</strong></p>
-<p>还记得上一讲画的 CPU 寄存器的总图么？此时就是这样了</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>ds = 0x07c0
+es = 0x9000
+cx = 256
+si = 0
+di = 0
+</code></pre></td></tr></table>
+</div>
+</div><p>还记得上一讲画的 CPU 寄存器的总图么？此时就是这样了</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-33-19-2aa5f289431f24f5538fd0df64fc31cb.png alt=图片></p>
 <p>干嘛要给这些毫不相干的寄存器附上值呢？其实就是为下一条指令服务的，就是</p>
 <div class=highlight><div class=chroma>
@@ -274,7 +269,7 @@ Justice's Blog
 <pre tabindex=0 class=chroma><code><span class=lnt>1
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>rep movw
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>rep</span><span class=err> </span><span class=nv>movw</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>其中 <strong>rep</strong> 表示重复执行后面的指令。</p>
@@ -295,8 +290,8 @@ Justice's Blog
 <p>    <strong>将内存地址 0x7c00 处开始往后的 512 字节的数据，原封不动复制到 0x90000 处</strong>。</p>
 <p>就是下图的第二步。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-33-28-473d798e39c782462529871a24333534.png alt=图片></p>
-<p>没错，就是这么折腾了一下。现在，操作系统最开头的代码，已经被挪到了 <strong>0x90000</strong> 这个位置了。</p>
-<p>再往后是一个<strong>跳转</strong>指令。</p>
+<p>没错，就是这么折腾了一下。</p>
+<p>现在，操作系统最开头的代码，已经被挪到了 <strong>0x90000</strong> 这个位置了。再往后是一个<strong>跳转</strong>指令。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
@@ -305,22 +300,20 @@ Justice's Blog
 </span><span class=lnt>4
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>    jmpi go,0x9000
-go:   
-    mov ax,cs  
-    mov ds,ax
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=err>    </span><span class=nf>jmpi</span><span class=err> </span><span class=nv>go</span><span class=p>,</span><span class=mh>0x9000</span>
+<span class=nl>go:</span><span class=err> </span>  
+<span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=nb>ax</span><span class=p>,</span><span class=nb>cs</span>  
+<span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=nb>ds</span><span class=p>,</span><span class=nb>ax</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>仔细想想或许你能猜到它想干嘛。</p>
-<p><strong>jmpi</strong> 是一个<strong>段间跳转指令</strong>，表示跳转到 <strong>0x9000:go</strong> 处执行。</p>
+<p><strong>jmpi</strong> 是一个<strong>段间跳转指令</strong>，表示跳转到 <code>0x9000:go</code>处执行。</p>
 <p>还记得上一讲说的 <strong>段基址 : 偏移地址</strong> 这种格式的内存地址要如何计算吧？段基址仍然要先左移四位，因此结论就是跳转到 <strong>0x90000 + go</strong> 这个内存地址处执行。忘记的赶紧回去看看，这才过了一回哦，要稳扎稳打。</p>
 <p>再说 go，go 就是一个<strong>标签</strong>，最终编译成机器码的时候会被翻译成一个值，这个值就是 go 这个标签在文件内的偏移地址。</p>
-<p>这个偏移地址再加上 0x90000，就刚好是 go 标签后面那段代码 <strong>mov ax,cs</strong> 此时所在的内存地址了。</p>
+<p>这个偏移地址再加上 0x90000，就刚好是 go 标签后面那段代码 <code>mov ax,cs</code> 此时所在的内存地址了。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-33-33-15ef0cbb2b1faa8b2a5531afa7e5863f.png alt=图片></p>
-<p>那假如 <strong>mov ax,cx</strong> 这行代码位于最终编译好后的二进制文件的 <strong>0x08</strong> 处，那 go 就等于 0x08，而最终 CPU 跳转到的地址就是 <strong>0x90008</strong> 处。</p>
-<p>所以到此为止，前两回的内容，其实就是一段 <strong>512</strong> 字节的代码和数据，从硬盘的启动区先是被移动到了内存 <strong>0x7c00</strong> 处，然后又立刻被移动到 <strong>0x90000</strong> 处，并且跳转到此处往后再稍稍偏移 <strong>go</strong> 这个标签所代表的偏移地址处，也就是 <strong>mov ax,cs</strong> 这行指令的位置。</p>
-<p>仍然是保持每回的简洁，本文就讲到这里，希望大家还跟得上，接下来的下一回，我们就把目光定位到 go 标签处往后的代码，看看他又要折腾些什么吧。</p>
-<p>后面的世界越来越精彩，欲知后事如何，且听下回分解。</p>
+<p>那假如 <code>mov ax,cx</code>这行代码位于最终编译好后的二进制文件的 <strong>0x08</strong> 处，那 go 就等于 0x08，而最终 CPU 跳转到的地址就是 <strong>0x90008</strong> 处。</p>
+<p>所以到此为止，前两回的内容，其实就是一段 <strong>512</strong> 字节的代码和数据，从硬盘的启动区先是被移动到了内存 <strong>0x7c00</strong> 处，然后又立刻被移动到 <strong>0x90000</strong> 处，并且跳转到此处往后再稍稍偏移 <strong>go</strong> 这个标签所代表的偏移地址处，也就是 <code>mov ax,cs</code> 这行指令的位置。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

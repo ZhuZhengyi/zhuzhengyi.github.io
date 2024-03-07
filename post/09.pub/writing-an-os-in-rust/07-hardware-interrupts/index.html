@@ -1,0 +1,1340 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>使用Rust编写操作系统（七）：硬件中断 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="使用Rust编写操作系统（七）：硬件中断 在这一章中，我们将会学习如何设置可编程中断控制器（Programmable Interrupt Controller，P">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/07-hardware-interrupts/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="使用Rust编写操作系统（七）：硬件中断">
+<meta property="og:description" content="使用Rust编写操作系统（七）：硬件中断 在这一章中，我们将会学习如何设置可编程中断控制器（Programmable Interrupt Controller，P">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/07-hardware-interrupts/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2024-03-07T11:58:54+08:00">
+<meta property="article:modified_time" content="2024-03-07T11:58:54+08:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="使用Rust编写操作系统（七）：硬件中断">
+<meta itemprop=description content="使用Rust编写操作系统（七）：硬件中断 在这一章中，我们将会学习如何设置可编程中断控制器（Programmable Interrupt Controller，P"><meta itemprop=datePublished content="2024-03-07T11:58:54+08:00">
+<meta itemprop=dateModified content="2024-03-07T11:58:54+08:00">
+<meta itemprop=wordCount content="7754">
+<meta itemprop=keywords content="pub,writing-an-os-in-rust,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="使用Rust编写操作系统（七）：硬件中断">
+<meta name=twitter:description content="使用Rust编写操作系统（七）：硬件中断 在这一章中，我们将会学习如何设置可编程中断控制器（Programmable Interrupt Controller，P"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>使用Rust编写操作系统（七）：硬件中断</h1>
+<div class=post-meta>
+<time datetime=2024-03-07 class=post-time>
+2024-03-07 11:58:54
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#8259-可编程中断控制器>8259 可编程中断控制器</a>
+<ul>
+<li><a href=#实现>实现</a></li>
+</ul>
+</li>
+<li><a href=#启用中断>启用中断</a></li>
+<li><a href=#处理定时器中断>处理定时器中断</a>
+<ul>
+<li><a href=#中断结束>中断结束</a></li>
+<li><a href=#配置定时器>配置定时器</a></li>
+</ul>
+</li>
+<li><a href=#死锁>死锁</a>
+<ul>
+<li><a href=#引发死锁>引发死锁</a></li>
+<li><a href=#修复死锁>修复死锁</a></li>
+</ul>
+</li>
+<li><a href=#修复竞争条件>修复竞争条件</a></li>
+<li><a href=#hlt-指令><code>hlt</code> 指令</a></li>
+<li><a href=#键盘输入>键盘输入</a>
+<ul>
+<li><a href=#读取键盘扫描码>读取键盘扫描码</a></li>
+<li><a href=#解释键盘扫描码>解释键盘扫描码</a></li>
+<li><a href=#配置键盘>配置键盘</a></li>
+</ul>
+</li>
+<li><a href=#小结>小结</a></li>
+<li><a href=#下篇预告>下篇预告</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h1 id=使用rust编写操作系统七硬件中断>使用Rust编写操作系统（七）：硬件中断</h1>
+<p>在这一章中，我们将会学习如何设置可编程中断控制器（Programmable Interrupt Controller，PIC），以将硬件中断正确转发到 CPU 。为了处理这些中断，需要向中断描述符表（Interrupt Descriptor Table，IDT）中添加新的表项，就像我们实现异常处理程序那样。通过对这一章的学习，你会了解到如何获取周期性定时器中断以及键盘输入。</p>
+<h2 id=简介>简介</h2>
+<p>中断为外部硬件设备提供了向 CPU 发送通知的方法。这样一来，内核就不必定期检查键盘上是否有新字符产生（这一过程称作「<a href=https://en.wikipedia.org/wiki/Polling_(computer_science)>轮询</a>」），而是由键盘在出现按键事件时通知内核。采用这种方法有两个好处：一是中断处理更高效，因为内核只需要在硬件触发中断后进行响应；二是响应时间更短，因为内核可以即时作出响应，而不是在下一次轮询中进行处理。</p>
+<p>要将所有硬件设备都与 CPU 直接连接是不现实的。替代办法是使用一个单独的「中断控制器」（Interrupt Controller）来聚合所有中断，然后再通知 CPU ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-text data-lang=text>                                     ____________             _____
+               定时器 ------------&gt; |            |           |     |
+               键盘 --------------&gt; | 中断控制器 |---------&gt; | CPU |
+               其他硬件 ----------&gt; |            |           |_____|
+               更多... -----------&gt; |____________|
+
+</code></pre></td></tr></table>
+</div>
+</div><p>大多数中断控制器都是可编程的，这意味着它们支持为中断分配不同的优先级。举个例子：如果需要保证计时准确，我们可以为定时器中断设置比键盘中断更高的优先级。</p>
+<p>与异常不同的是，硬件中断是异步（Asynchronously）发生的。这意味着它们完全独立于执行的代码，并且可能在任何时候发生。因此，内核中就突然出现了一种并发形式，而且我们也不得不面对所有与并发相关的潜在错误。Rust 严格的所有权模型会为我们提供一定帮助，因为它禁止使用可变的全局状态。然而，死锁仍然可能发生，我们在后面也会遇到这种情况。</p>
+<h2 id=8259-可编程中断控制器>8259 可编程中断控制器</h2>
+<p><a href=https://en.wikipedia.org/wiki/Intel_8259>Intel 8259</a> 是一款在 1976 年推出的可编程中断控制器（PIC）。早已被新的「<a href=https://en.wikipedia.org/wiki/Intel_APIC_Architecture>高级可编程中断控制器（APIC）</a>」所取代，但由于 APIC 保持了较好的向后兼容，所以它的接口仍然在当前系统上得到较好的支持。8259 PIC 比 APIC 更容易设置，所以在我们切换到 APIC 之前，将先使用它来介绍中断。</p>
+<p>8259 有 8 条中断控制线和几条与 CPU 通信的线。当时的典型系统配备了一主一从两个 8259 PIC 实例，其中从控制器连接到主控制器的一条中断控制线上。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-text data-lang=text>                     ____________                          ____________
+实时时钟 ---------&gt; |            |   定时器 ------------&gt; |            |
+ACPI -------------&gt; |            |   键盘 --------------&gt; |            |      _____
+可用 -------------&gt; |            |----------------------&gt; |            |     |     |
+可用 -------------&gt; | 从中断     |   串行端口 2 --------&gt; | 主中断     |---&gt; | CPU |
+鼠标 -------------&gt; |     控制器 |   串行端口 1 --------&gt; |     控制器 |     |_____|
+协处理器 ---------&gt; |            |   并行端口 2/3 ------&gt; |            |
+主 ATA -----------&gt; |            |   软盘 --------------&gt; |            |
+次 ATA -----------&gt; |____________|   并行端口 1 --------&gt; |____________|
+
+</code></pre></td></tr></table>
+</div>
+</div><p>上图显示了中断控制线的经典分配方案。我们看到剩下 15 条线中的大多数都对应有一个固定的映射，例如从中断控制器的第 4 条中断控制线被分配给了鼠标。</p>
+<p>每个控制器可以通过两个 <a href=./04-testing.md#IO-%E7%AB%AF%E5%8F%A3>I/O 端口</a> 进行配置，其中一个是「命令」端口，另一个是「数据」端口。 在主控制器中，这两个端口分别位于 0x20（命令）和 0x21（数据）。 而在从控制器中，分别是 0xa0（命令）和 0xa1（数据）。 如果你想要了解关于「如何配置可编程中断控制器」的更多信息，可以参考 <a href=https://wiki.osdev.org/8259_PIC>osdev.org 上的文章</a>。</p>
+<h3 id=实现>实现</h3>
+<p>不能使用默认的 PIC 配置，因为它将会向 CPU 发送 0-15 范围内的中断类型码。而这些数字已经被 CPU 异常占用了，例如数字 8 对应二重错误。为了解决此重叠问题，我们需要将中断重新映射到不同的中断类型码。实际范围并不重要，只要不与异常重叠就可以，但通常会选择范围 32-47 的数字，因为这是 32 个异常槽之后的第一组空闲数字。</p>
+<p>配置是通过向 PIC 的命令和数据端口写入特殊值来完成的。幸运的是，已经有一个名为 <a href=https://docs.rs/pic8259_simple/0.1.1/pic8259_simple/><code>pic8259_simple</code></a> 的包，所以我们不需要自己编写初始化序列。如果您对它的工作原理感兴趣，请查看 <a href=https://docs.rs/crate/pic8259_simple/0.1.1/source/src/lib.rs>它的源代码</a> ，它相当小并且有齐全的文档说明。</p>
+<p>要将包添加为依赖项，我们需要将以下内容添加到项目中:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+
+<span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
+<span class=nx>pic8259</span> <span class=p>=</span> <span class=s2>&#34;0.10.0&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>这个包提供的主要抽象是 <a href=https://docs.rs/pic8259_simple/0.1.1/pic8259_simple/struct.ChainedPics.html><code>ChainedPics</code></a> 结构，它表示我们上面看到的「主/从二级可编程中断控制器」布局。基于它的设计，我们可以按以下方式来使用它：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>pic8259</span>::<span class=n>ChainedPics</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>spin</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=n>PIC_1_OFFSET</span>: <span class=kt>u8</span> <span class=o>=</span><span class=w> </span><span class=mi>32</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=n>PIC_2_OFFSET</span>: <span class=kt>u8</span> <span class=o>=</span><span class=w> </span><span class=n>PIC_1_OFFSET</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=mi>8</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>static</span><span class=w> </span><span class=n>PICS</span>: <span class=nc>spin</span>::<span class=n>Mutex</span><span class=o>&lt;</span><span class=n>ChainedPics</span><span class=o>&gt;</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>    </span><span class=n>spin</span>::<span class=n>Mutex</span>::<span class=n>new</span><span class=p>(</span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>ChainedPics</span>::<span class=n>new</span><span class=p>(</span><span class=n>PIC_1_OFFSET</span><span class=p>,</span><span class=w> </span><span class=n>PIC_2_OFFSET</span><span class=p>)</span><span class=w> </span><span class=p>});</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>就像在前面提过的那样，我们将会为 PIC 设置偏移量，使得中断类型码范围为 32-47 。 通过用 <code>Mutex</code> 包装 <code>ChainedPics</code> 结构，能够获得安全的可变访问（通过 <a href=https://docs.rs/spin/0.5.2/spin/struct.Mutex.html#method.lock><code>lock</code> 方法</a>），这是下一步所需要的。<code>ChainedPics::new</code> 函数不安全，因为错误的偏移量可能会导致未定义行为。</p>
+<p>现在我们可以在 <code>init</code> 函数中初始化 8259 PIC：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>gdt</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>interrupts</span>::<span class=n>init_idt</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>interrupts</span>::<span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>initialize</span><span class=p>()</span><span class=w> </span><span class=p>};</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用 <a href=https://docs.rs/pic8259_simple/0.1.1/pic8259_simple/struct.ChainedPics.html#method.initialize><code>initialize</code></a> 函数来执行 PIC 的初始化。 像 <code>ChainedPics::new</code> 函数一样，这个函数也不安全，因为如果 PIC 配置错误，它可能导致未定义行为。</p>
+<p>如果一切顺利，我们应该在执行 <code>cargo xrun</code> 时继续看到「It did not crash」这条消息。</p>
+<h2 id=启用中断>启用中断</h2>
+<p>到目前为止，什么都没有发生，因为 CPU 配置中仍然禁用了中断。 这意味着 CPU 根本没有侦听中断控制器，因此没有中断可以到达 CPU。让我们试着改变这一点:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>gdt</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>interrupts</span>::<span class=n>init_idt</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>interrupts</span>::<span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>initialize</span><span class=p>()</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>interrupts</span>::<span class=n>enable</span><span class=p>();</span><span class=w>     </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>x86_64</code> 包的 <code>interrupts::enable</code> 函数执行特殊的 <code>sti</code> 指令（设置中断「set interrupts」）以启用外部中断。现在尝试运行 <code>cargo xrun</code> 命令，我们会看到发生双重错误：</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-hardware-timer-double-fault.png alt="QEMU printing EXCEPTION: DOUBLE FAULT because of hardware timer"></p>
+<p>出现这种双重错误的原因是硬件定时器（确切地说是 <a href=https://en.wikipedia.org/wiki/Intel_8253>Intel 8253</a>）被设置为默认启用，一旦启用中断，我们就会开始接收定时器中断。 由于我们还没有为它定义中断处理程序，因此就会调用双重错误处理程序。</p>
+<h2 id=处理定时器中断>处理定时器中断</h2>
+<p>如 <a href=#8259-%E5%8F%AF%E7%BC%96%E7%A8%8B%E4%B8%AD%E6%96%AD%E6%8E%A7%E5%88%B6%E5%99%A8>上文</a> 中的图例所示，定时器使用了主 PIC 的第 0 条中断控制线。 这意味着中断会以中断类型码 32（ 0 + 偏移量 32 ）的形式到达 CPU。 我们不会对索引 32 进行硬编码，而是将它存储在枚举结构（enum） <code>InterruptIndex</code> 中：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[repr(u8)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>enum</span> <span class=nc>InterruptIndex</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>Timer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>PIC_1_OFFSET</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>InterruptIndex</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>as_u8</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>u8</span> <span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>u8</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>as_usize</span><span class=p>(</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kt>usize</span>::<span class=n>from</span><span class=p>(</span><span class=bp>self</span><span class=p>.</span><span class=n>as_u8</span><span class=p>())</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>Rust 中的枚举是 <a href=https://doc.rust-lang.org/reference/items/enumerations.html#custom-discriminant-values-for-field-less-enumerations>c-like 风格的枚举</a>，因此我们可以直接为其内的每个变体指定索引。 <code>repr(u8)</code> 属性指定每个变体都以 <code>u8</code> 类型表示。 接下来，我们将会为其他中断添加更多的变体。</p>
+<p>现在我们可以为定时器中断添加一个处理函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>crate</span>::<span class=n>print</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>IDT</span>: <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=p>[</span><span class=n>InterruptIndex</span>::<span class=n>Timer</span><span class=p>.</span><span class=n>as_usize</span><span class=p>()]</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=n>timer_interrupt_handler</span><span class=p>);</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>timer_interrupt_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;.&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>定时器中断处理程序 <code>timer_interrupt_handler</code> 具有与异常处理程序相同的函数签名，因为 CPU 对异常和外部中断的反应是相同的（唯一的区别是有些异常会返回错误代码）。 <a href=https://docs.rs/x86_64/0.8.1/x86_64/structures/idt/struct.InterruptDescriptorTable.html><code>InterruptDescriptorTable</code></a> 结构实现了 <a href=https://doc.rust-lang.org/core/ops/trait.IndexMut.html><code>IndexMut</code></a> 特质（trait），因此我们可以通过数组索引语法访问单个表项。</p>
+<p>定时器定时器中断处理程序将会在屏幕上输出一个点 <code>'.'</code>。由于定时器中断周期性地发生，我们期望看到每当定时器「滴答」一下就输出一个点。但是，当我们运行程序时，屏幕上只输出了一个点:</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-single-dot-printed.png alt="QEMU printing only a single dot for hardware timer"></p>
+<h3 id=中断结束>中断结束</h3>
+<p>之所以出现上面的故障，是因为 PIC 期望从错误处理程序得到一个明确的「中断结束」（End of Interrupt，EOI）信号。 这个信号告诉控制器：中断已经被处理，并且系统已经准备好接收下一个中断。 所以 PIC 认为系统仍然忙于处理第一个定时器中断，并在发送下一个中断之前耐心地等待 EOI 信号。</p>
+<p>为了发送 EOI ，我们再次使用静态结构 <code>PICS</code> ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>timer_interrupt_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;.&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>notify_end_of_interrupt</span><span class=p>(</span><span class=n>InterruptIndex</span>::<span class=n>Timer</span><span class=p>.</span><span class=n>as_u8</span><span class=p>());</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>通知中断结束函数 <code>notify_end_of_interrupt</code> 将会指出主控制器或从控制器是否发送中断，然后使用 <code>命令</code> 和 <code>数据</code> 端口向各控制器发送相应的 EOI 信号。 如果从 PIC 发送了中断，那么需要通知两个 PIC ，因为从 PIC 与主 PIC 的一条输入线相连。</p>
+<p>我们需要谨慎地使用正确的中断类型码，否则可能会意外地删除重要的未发送中断或导致我们的系统挂起。这也是该函数不安全的原因。</p>
+<p>现在执行 <code>cargo xrun</code> ，我们会看到一些点周期性地出现在屏幕上:</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-hardware-timer-dots.gif alt="QEMU printing consecutive dots showing the hardware timer"></p>
+<h3 id=配置定时器>配置定时器</h3>
+<p>我们使用的硬件定时器是可编程间隔定时器（Progammable Interval Timer, PIT）。 顾名思义，可以配置两个中断之间的间隔。我们不会详细介绍这些，因为我们很快就会切换到 <a href=https://wiki.osdev.org/APIC_timer>APIC 定时器</a>，但是 OSDev wiki 上有一篇详细的关于「<a href=https://wiki.osdev.org/Programmable_Interval_Timer>如何配置 PIT </a>」的文章。</p>
+<h2 id=死锁>死锁</h2>
+<p>现在内核中存在一种并发的情形：定时器中断是异步发生的，因此它们可以随时中断我们的 <code>_start</code> 函数。 幸运的是，Rust 的所有权系统可以在编译时防止许多种类型的与并发相关的错误。 但死锁是一个值得注意的例外。 如果一个线程试图获取一个永远不会释放的锁，就会发生死锁。 这样，线程将会无限期地处于挂起状态。</p>
+<p>当前我们的内核中已经可以引发死锁。请注意，我们的 <code>println</code> 宏调用 <code>vga_buffer::_print</code> 函数，它使用自旋锁来<a href=./03-vga-text-mode.md#%E8%87%AA%E6%97%8B%E9%94%81>锁定一个全局的 WRITER 类</a>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[doc(hidden)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>_print</span><span class=p>(</span><span class=n>args</span>: <span class=nc>fmt</span>::<span class=n>Arguments</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>write_fmt</span><span class=p>(</span><span class=n>args</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>它锁定 <code>WRITER</code>，调用 <code>write_fmt</code>，并在函数的末尾隐式地解锁。现在，我们设想一下，如果在 <code>WRITER</code> 被锁定时触发一个中断，同时相应的中断处理程序也试图打印一些东西：</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>_start</th>
+<th>interrupt_handler</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>调用 <code>println!</code></td>
+<td> </td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>print</code> 锁定 <code>WRITER</code></td>
+<td> </td>
+</tr>
+<tr>
+<td>2</td>
+<td></td>
+<td><strong>中断发生</strong>，处理程序开始运行</td>
+</tr>
+<tr>
+<td>3</td>
+<td></td>
+<td>调用 <code>println!</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td><code>print</code> 尝试锁定 <code>WRITER</code>（已经被锁定）</td>
+</tr>
+<tr>
+<td>5</td>
+<td></td>
+<td><code>print</code> 尝试锁定 <code>WRITER</code>（已经被锁定）</td>
+</tr>
+<tr>
+<td>…</td>
+<td></td>
+<td>…</td>
+</tr>
+<tr>
+<td><em>无法发生</em></td>
+<td><em>解锁 <code>WRITER</code></em></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>由于 <code>WRITER</code> 已经被锁定，所以中断处理程序将会一直等待，直到它被释放。但这种情况永远不会发生，因为 <code>_start</code> 函数只有在中断处理程序返回后才继续运行。因此，整个系统就会挂起。</p>
+<h3 id=引发死锁>引发死锁</h3>
+<p>通过在 <code>_start</code> 函数末尾的循环中打印一些内容，我们很容易在内核中引发这样的死锁:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>print</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;-&#34;</span><span class=p>);</span><span class=w>        </span><span class=c1>// new
+</span><span class=c1></span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>当我们在 QEMU 中运行它时，得到的输出如下:</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-deadlock.png alt="QEMU output with many rows of hyphens and no dots"></p>
+<p>只有有限数量的连字符 <code>'-'</code> 被打印，直到第一次定时器中断发生。接着系统挂起，因为定时器中断处理程序试图打印点时引发了死锁。这就是为什么我们在上面的输出中看不到任何点的原因。</p>
+<p>由于定时器中断是异步发生的，因此连字符的实际数量在两次运行之间会有所不同。这种不确定性使得与并发相关的错误很难调试。</p>
+<h3 id=修复死锁>修复死锁</h3>
+<p>为了避免这种死锁，我们可以采取这样的方案：只要互斥锁 <code>Mutex</code> 是锁定的，就可以禁用中断。</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// Prints the given formatted string to the VGA text buffer
+</span><span class=sd>/// through the global `WRITER` instance.
+</span><span class=sd></span><span class=cp>#[doc(hidden)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>_print</span><span class=p>(</span><span class=n>args</span>: <span class=nc>fmt</span>::<span class=n>Arguments</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>interrupts</span><span class=p>;</span><span class=w>   </span><span class=c1>// new
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=n>interrupts</span>::<span class=n>without_interrupts</span><span class=p>(</span><span class=o>||</span><span class=w> </span><span class=p>{</span><span class=w>     </span><span class=c1>// new
+</span><span class=c1></span><span class=w>        </span><span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>write_fmt</span><span class=p>(</span><span class=n>args</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>});</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><a href=https://docs.rs/x86_64/0.8.1/x86_64/instructions/interrupts/fn.without_interrupts.html><code>without_interrupts</code></a> 函数接受一个 <a href=https://doc.rust-lang.org/book/second-edition/ch13-01-closures.html>闭包（closure）</a>，并在无中断的环境中执行。我们使用它来确保只要 <code>Mutex</code> 处于锁定状态，就不会发生中断。现在运行内核，就可以看到它一直运行而不会挂起。（我们仍然无法看到任何点，但这是因为他们滚动过快。尝试减慢打印速度，例如在循环中加上 <code>for _ in 0..10000 {}</code>）。</p>
+<p>我们可以对串行打印函数进行相同的更改，以确保它不会发生死锁：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/serial.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[doc(hidden)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>_print</span><span class=p>(</span><span class=n>args</span>: ::<span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Arguments</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>interrupts</span><span class=p>;</span><span class=w>       </span><span class=c1>// new
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=n>interrupts</span>::<span class=n>without_interrupts</span><span class=p>(</span><span class=o>||</span><span class=w> </span><span class=p>{</span><span class=w>         </span><span class=c1>// new
+</span><span class=c1></span><span class=w>        </span><span class=n>SERIAL1</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>write_fmt</span><span class=p>(</span><span class=n>args</span><span class=p>)</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;Printing to serial failed&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>});</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>值得注意的是，禁用中断不应该成为一种通用的解决方案。这一方案的弊端是，它会延长最坏情况下的中断等待时间，也就是系统对中断做出反应之前的时间。 因此，应该只在非常短的时间内禁用中断。</p>
+<h2 id=修复竞争条件>修复竞争条件</h2>
+<p>如果你运行 <code>cargo xtest</code>，可能会看到 <code>test_println_output</code> 测试失败:</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>&gt; cargo xtest --lib
+<span class=o>[</span>…<span class=o>]</span>
+Running <span class=m>4</span> tests
+test_breakpoint_exception...<span class=o>[</span>ok<span class=o>]</span>
+test_println... <span class=o>[</span>ok<span class=o>]</span>
+test_println_many... <span class=o>[</span>ok<span class=o>]</span>
+test_println_output... <span class=o>[</span>failed<span class=o>]</span>
+
+Error: panicked at <span class=s1>&#39;assertion failed: `(left == right)`
+</span><span class=s1>  left: `&#39;</span>.<span class=s1>&#39;`,
+</span><span class=s1> right: `&#39;</span>S<span class=s1>&#39;`&#39;</span>, src/vga_buffer.rs:205:9
+</code></pre></td></tr></table>
+</div>
+</div><p>这是由测试和定时器处理程序之间的竞争条件导致的。测试程序是这样的：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[test_case]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>test_println_output</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;test_println_output... &#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>s</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s>&#34;Some test string that fits on a single line&#34;</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>s</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=p>(</span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>c</span><span class=p>)</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>s</span><span class=p>.</span><span class=n>chars</span><span class=p>().</span><span class=n>enumerate</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>screen_char</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>BUFFER_HEIGHT</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=mi>2</span><span class=p>][</span><span class=n>i</span><span class=p>].</span><span class=n>read</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=n>char</span>::<span class=n>from</span><span class=p>(</span><span class=n>screen_char</span><span class=p>.</span><span class=n>ascii_character</span><span class=p>),</span><span class=w> </span><span class=n>c</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>测试将一个字符串打印到 VGA 缓冲区，然后通过在缓冲区字符数组 <code>buffer_chars</code> 上手动迭代来检查输出。 出现竞争条件是因为定时器中断处理程序可能在 <code>println</code> 和读取屏幕字符之间运行。注意，这不是危险的 <strong>数据竞争</strong>，Rust 在编译时完全避免了这种竞争。 更多详细信息，可以参考 <a href=https://doc.rust-lang.org/nomicon/races.html><em>Rustonomicon</em></a> 。</p>
+<p>要解决这个问题，我们需要在测试的整个持续时间内保持对 <code>WRITER</code> 的锁定状态，这样定时器处理程序就不能在操作之间将 <code>.</code> 写入屏幕。修复后的测试看起来像这样：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[test_case]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>test_println_output</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>interrupts</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;test_println_output... &#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>s</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s>&#34;Some test string that fits on a single line&#34;</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=n>interrupts</span>::<span class=n>without_interrupts</span><span class=p>(</span><span class=o>||</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>writer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>WRITER</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>writeln</span><span class=o>!</span><span class=p>(</span><span class=n>writer</span><span class=p>,</span><span class=w> </span><span class=s>&#34;\n{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>s</span><span class=p>).</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;writeln failed&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=k>for</span><span class=w> </span><span class=p>(</span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>c</span><span class=p>)</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>s</span><span class=p>.</span><span class=n>chars</span><span class=p>().</span><span class=n>enumerate</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>screen_char</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>writer</span><span class=p>.</span><span class=n>buffer</span><span class=p>.</span><span class=n>chars</span><span class=p>[</span><span class=n>BUFFER_HEIGHT</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=mi>2</span><span class=p>][</span><span class=n>i</span><span class=p>].</span><span class=n>read</span><span class=p>();</span><span class=w>
+</span><span class=w>            </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=n>char</span>::<span class=n>from</span><span class=p>(</span><span class=n>screen_char</span><span class=p>.</span><span class=n>ascii_character</span><span class=p>),</span><span class=w> </span><span class=n>c</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>});</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们做了下述改动：</p>
+<ul>
+<li>显式地使用 <code>lock()</code> 方法来保证 <code>writer</code> 在整个测试期间都处于锁定状态。使用 <a href=https://doc.rust-lang.org/core/macro.writeln.html><code>writeln</code></a> 宏替代 <code>println</code> ，这将会允许打印字符到已锁定的 <code>writer</code> 中。</li>
+<li>为避免再次出现死锁，我们在测试期间禁用中断。 否则，在 <code>writer</code> 仍然处于锁定状态时，测试可能会中断。</li>
+<li>由于计时器中断处理程序仍然可以在测试之前运行，因此我们在打印字符串 <code>s</code> 之前再打印一个换行符 <code>'\n'</code> 。这样可以避免因计时器处理程序已经将一些 <code>'.'</code> 字符打印到当前行而引起的测试失败。</li>
+</ul>
+<p>经过修改后，<code>cargo xtest</code> 现在确实又成功了。</p>
+<p>这是一个相对无害的竞争条件，它只会导致测试失败。可以想象，由于其他竞争条件的不确定性，它们的调试可能更加困难。幸运的是，Rust 防止了数据竞争的出现，这是最严重的竞争条件，因为它们可以导致各种各样的未定义行为，包括系统崩溃和静默内存损坏。</p>
+<h2 id=hlt-指令><code>hlt</code> 指令</h2>
+<p>到目前为止，我们在 <code>_start</code> 和 <code>panic</code> 函数的末尾使用了一个简单的空循环语句。这将导致 CPU 无休止地自旋，从而按预期工作。但是这种方法也是非常低效的，因为即使在没有任何工作要做的情况下，CPU 仍然会继续全速运行。在运行内核时，您可以在任务管理器中看到这个问题: QEMU 进程在整个过程中都需要接近 100% 的 CPU。</p>
+<p>我们真正想做的是让 CPU 停下来，直到下一个中断到达。这允许 CPU 进入休眠状态，在这种状态下它消耗的能量要少得多。<a href=https://en.wikipedia.org/wiki/HLT_(x86_instruction)><code>hlt</code> 指令</a> 正是为此而生。让我们使用它来创建一个节能的无限循环：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>hlt_loop</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>hlt</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>instructions::hlt</code> 函数只是汇编指令的 <a href=https://github.com/rust-osdev/x86_64/blob/5e8e218381c5205f5777cb50da3ecac5d7e3b1ab/src/instructions/mod.rs#L16-L22>瘦包装</a>。这是安全的，因为它不可能危及内存安全。</p>
+<p>现在，我们可以使用 <code>hlt_loop</code> 循环来代替 <code>_start</code> 和 <code>panic</code> 函数中的无限循环：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;It did not crash!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>hlt_loop</span><span class=p>();</span><span class=w>            </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[cfg(not(test))]</span><span class=w>
+</span><span class=w></span><span class=cp>#[panic_handler]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>info</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>hlt_loop</span><span class=p>();</span><span class=w>            </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>让我们也更新一下 <code>lib.rs</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// Entry point for `cargo xtest`
+</span><span class=sd></span><span class=cp>#[cfg(test)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>test_main</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>hlt_loop</span><span class=p>();</span><span class=w>         </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>test_panic_handler</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[failed]\n&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Error: {}\n&#34;</span><span class=p>,</span><span class=w> </span><span class=n>info</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Failed</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>hlt_loop</span><span class=p>();</span><span class=w>         </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>现在，用 QEMU 运行内核，我们会发现 CPU 使用率大大降低。</p>
+<h2 id=键盘输入>键盘输入</h2>
+<p>现在已经能够处理来自外部设备的中断，我们终于可以添加对键盘输入的支持。 这将是我们与内核进行的第一次交互。</p>
+<blockquote>
+<p>注意，这里只描述如何处理 <a href=https://en.wikipedia.org/wiki/PS/2_port>PS/2</a> 键盘，而不包括 USB 键盘。然而，主板会将 USB 键盘模拟为 PS/2 设备，以支持旧的软件，所以可以放心地忽略 USB 键盘，直到内核中有 USB 支持为止。</p>
+</blockquote>
+<p>与硬件定时器一样，键盘控制器也被设置为默认启用。因此，当你按下一个键时，键盘控制器会向 PIC 发送一个中断，然后由 PIC 将中断转发给 CPU 。CPU 在 IDT 中查找处理程序函数，但是相应的表项是空的。所以会引发双重错误。</p>
+<p>那么，让我们为键盘中断添加一个处理程序函数。它和我们定义的定时器中断处理程序非常相似，只是使用了一个不同的中断类型码：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy)]</span><span class=w>
+</span><span class=w></span><span class=cp>#[repr(u8)]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>enum</span> <span class=nc>InterruptIndex</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>Timer</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>PIC_1_OFFSET</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>Keyboard</span><span class=p>,</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>IDT</span>: <span class=nc>InterruptDescriptorTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>idt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>InterruptDescriptorTable</span>::<span class=n>new</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=p>.</span><span class=k>break</span><span class=n>point</span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=k>break</span><span class=n>point_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>        </span><span class=c1>// new
+</span><span class=c1></span><span class=w>        </span><span class=n>idt</span><span class=p>[</span><span class=n>InterruptIndex</span>::<span class=n>Keyboard</span><span class=p>.</span><span class=n>as_usize</span><span class=p>()]</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>set_handler_fn</span><span class=p>(</span><span class=n>keyboard_interrupt_handler</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=n>idt</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>keyboard_interrupt_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;k&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>notify_end_of_interrupt</span><span class=p>(</span><span class=n>InterruptIndex</span>::<span class=n>Keyboard</span><span class=p>.</span><span class=n>as_u8</span><span class=p>());</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>如 <a href=#8259-%E5%8F%AF%E7%BC%96%E7%A8%8B%E4%B8%AD%E6%96%AD%E6%8E%A7%E5%88%B6%E5%99%A8>上文</a> 中的图例所示，键盘使用了主 PIC 的第 1 条中断控制线。这意味着中断会以中断类型码 33（ 1 + 偏移量 32 ）的形式到达 CPU 。我们将这个索引作为新的 <code>Keyboard</code> 变体添加到 <code>InterruptIndex</code> 枚举中。 我们不需要显式指定这个值，因为它默认为前一个值加 1 ，也就是 33 。 在中断处理程序中，我们输出一个 <code>k</code> 并将中断结束信号发送给中断控制器。</p>
+<p>现在看到，当我们按下一个键时，屏幕上会出现一个 <code>k</code> 。 然而，这只适用于按下的第一个键，即使我们继续按键，也不会有更多的 <code>k</code> 出现在屏幕上。 这是因为键盘控制器在我们读取所谓的「键盘扫描码（scancode）」之前不会发送另一个中断。</p>
+<h3 id=读取键盘扫描码>读取键盘扫描码</h3>
+<p>要找出按了 <em>哪个</em> 键，需要查询键盘控制器。我们可以通过读取 PS/2 控制器的数据端口来实现这一点，该端口属于 <a href=./04-testing.md#IO-%E7%AB%AF%E5%8F%A3>I/O 端口</a> ，编号为 <code>0x60</code> ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>keyboard_interrupt_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>port</span>::<span class=n>Port</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>port</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Port</span>::<span class=n>new</span><span class=p>(</span><span class=mh>0x60</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>scancode</span>: <span class=kt>u8</span> <span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>port</span><span class=p>.</span><span class=n>read</span><span class=p>()</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>scancode</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>notify_end_of_interrupt</span><span class=p>(</span><span class=n>InterruptIndex</span>::<span class=n>Keyboard</span><span class=p>.</span><span class=n>as_u8</span><span class=p>());</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用 <code>x86_64</code> 包提供的端口类型 <a href=https://docs.rs/x86_64/0.8.1/x86_64/instructions/port/struct.Port.html><code>Port</code></a> 从键盘的数据端口读取一个字节。这个字节就是「<a href=https://en.wikipedia.org/wiki/Scancode><strong>键盘扫描码</strong></a>」，一个表示物理键 按下/松开 的数字。 目前，我们还没有对键盘扫描码进行处理，只是把它打印到屏幕上：</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-printing-scancodes.gif alt="QEMU printing scancodes to the screen when keys are pressed"></p>
+<p>上图显示了我正在慢慢地键入字符串 <code>"123"</code> 。可以看到，相邻物理键的键盘扫描码也相邻，而 按下/松开 物理键触发的键盘扫描码是不同的。但是我们如何将键盘扫描码转换为实际的按键操作呢？</p>
+<h3 id=解释键盘扫描码>解释键盘扫描码</h3>
+<p>键盘扫描码和物理键之间的映射有三种不同的标准，即所谓的「键盘扫描码集」。这三者都可以追溯到早期 IBM 计算机的键盘：<a href=https://en.wikipedia.org/wiki/IBM_Personal_Computer_XT>IBM XT</a>、 <a href=https://en.wikipedia.org/wiki/IBM_3270_PC>IBM 3270 PC</a> 和 <a href=https://en.wikipedia.org/wiki/IBM_Personal_Computer/AT>IBM AT</a> 。幸运地是，后来的计算机没有继续定义新的键盘扫描码集的趋势，而是对现有的集合进行模拟和扩展。时至今日，大多数键盘都可以配置为模拟这三种标准中的任何一组。</p>
+<p>默认情况下，PS/2 键盘模拟键盘扫描码集 1（「XT」）。在这个码集中，每个键盘扫描码的低 7 位字节定义了物理键信息，而最高有效位则定义了物理键状态是按下（「0」）还是释放（「1」）。原始的「IBM XT」键盘上没有的键，如键盘上的 <code>enter</code> 键，会连续生成两个键盘扫描码: <code>0xe0</code> 转义字节和一个表示物理键的字节。有关键盘扫描码集 1 中的所有键盘扫描码及其对应物理键的列表，请访问 <a href=https://wiki.osdev.org/Keyboard#Scan_Code_Set_1>OSDev Wiki</a> 。</p>
+<p>要将键盘扫描码转换为按键操作，可以使用 <code>match</code> 语句：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>keyboard_interrupt_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>port</span>::<span class=n>Port</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>port</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Port</span>::<span class=n>new</span><span class=p>(</span><span class=mh>0x60</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>scancode</span>: <span class=kt>u8</span> <span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>port</span><span class=p>.</span><span class=n>read</span><span class=p>()</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// new
+</span><span class=c1></span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>key</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>match</span><span class=w> </span><span class=n>scancode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x02</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;1&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x03</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;2&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x04</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;3&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x05</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;4&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x06</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;5&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x07</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;6&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x08</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;7&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x09</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;8&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x0a</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;9&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=mh>0x0b</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=sc>&#39;0&#39;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=n>_</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=nb>None</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=k>if</span><span class=w> </span><span class=kd>let</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=n>key</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>key</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>key</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>notify_end_of_interrupt</span><span class=p>(</span><span class=n>InterruptIndex</span>::<span class=n>Keyboard</span><span class=p>.</span><span class=n>as_u8</span><span class=p>());</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>上面的代码转换数字键 0-9 的按键操作，并忽略所有其他键。 它使用 <a href=https://doc.rust-lang.org/book/ch06-02-match.html>match</a> 语句为每个键盘扫描码分配相应的字符或 <code>None</code>。 然后它使用 <a href=https://doc.rust-lang.org/book/ch18-01-all-the-places-for-patterns.html#conditional-if-let-expressions><code>if let</code></a> 来解构可选的 <code>key</code> 。 通过在模式中使用相同的变量名 <code>key</code> ，我们可以 <a href=https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html#shadowing>隐藏</a> 前面的声明，这是 Rust 中解构 <code>Option</code> 类型的常见模式。</p>
+<p>现在我们可以往屏幕上写数字了:</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-printing-numbers.gif alt="QEMU printing numbers to the screen"></p>
+<p>我们也可以用同样的方式转换其他按键操作。幸运的是，有一个名为 <a href=https://docs.rs/pc-keyboard/0.5.0/pc_keyboard/><code>pc-keyboard</code></a> 的包，专门用于翻译键盘扫描码集 1 和 2 中的键盘扫描码，因此我们无须自己实现。要使用这个包，需要将它添加到 <code>Cargo.toml</code> 内，并导入到 <code>lib.rs</code> 中：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+
+<span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
+<span class=nx>pc-keyboard</span> <span class=p>=</span> <span class=s2>&#34;0.5.0&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>现在我们可以使用这个包来重写键盘中断处理程序 <code>keyboard_interrupt_handler</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in/src/interrupts.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>extern</span><span class=w> </span><span class=s>&#34;x86-interrupt&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>keyboard_interrupt_handler</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>_stack_frame</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>InterruptStackFrame</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>pc_keyboard</span>::<span class=p>{</span><span class=n>layouts</span><span class=p>,</span><span class=w> </span><span class=n>DecodedKey</span><span class=p>,</span><span class=w> </span><span class=n>HandleControl</span><span class=p>,</span><span class=w> </span><span class=n>Keyboard</span><span class=p>,</span><span class=w> </span><span class=n>ScancodeSet1</span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>spin</span>::<span class=n>Mutex</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>instructions</span>::<span class=n>port</span>::<span class=n>Port</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>lazy_static</span><span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>static</span><span class=w> </span><span class=k>ref</span><span class=w> </span><span class=n>KEYBOARD</span>: <span class=nc>Mutex</span><span class=o>&lt;</span><span class=n>Keyboard</span><span class=o>&lt;</span><span class=n>layouts</span>::<span class=n>Us104Key</span><span class=p>,</span><span class=w> </span><span class=n>ScancodeSet1</span><span class=o>&gt;&gt;</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>            </span><span class=n>Mutex</span>::<span class=n>new</span><span class=p>(</span><span class=n>Keyboard</span>::<span class=n>new</span><span class=p>(</span><span class=n>layouts</span>::<span class=n>Us104Key</span><span class=p>,</span><span class=w> </span><span class=n>ScancodeSet1</span><span class=p>,</span><span class=w>
+</span><span class=w>                </span><span class=n>HandleControl</span>::<span class=n>Ignore</span><span class=p>)</span><span class=w>
+</span><span class=w>            </span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>keyboard</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>KEYBOARD</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>port</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Port</span>::<span class=n>new</span><span class=p>(</span><span class=mh>0x60</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>scancode</span>: <span class=kt>u8</span> <span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>port</span><span class=p>.</span><span class=n>read</span><span class=p>()</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=k>if</span><span class=w> </span><span class=kd>let</span><span class=w> </span><span class=nb>Ok</span><span class=p>(</span><span class=nb>Some</span><span class=p>(</span><span class=n>key_event</span><span class=p>))</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>keyboard</span><span class=p>.</span><span class=n>add_byte</span><span class=p>(</span><span class=n>scancode</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=kd>let</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=n>key</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>keyboard</span><span class=p>.</span><span class=n>process_keyevent</span><span class=p>(</span><span class=n>key_event</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=k>match</span><span class=w> </span><span class=n>key</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=n>DecodedKey</span>::<span class=n>Unicode</span><span class=p>(</span><span class=n>character</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>character</span><span class=p>),</span><span class=w>
+</span><span class=w>                </span><span class=n>DecodedKey</span>::<span class=n>RawKey</span><span class=p>(</span><span class=n>key</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{:?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>key</span><span class=p>),</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>PICS</span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>notify_end_of_interrupt</span><span class=p>(</span><span class=n>InterruptIndex</span>::<span class=n>Keyboard</span><span class=p>.</span><span class=n>as_u8</span><span class=p>());</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用 <code>lazy_static</code> 宏来创建一个由互斥锁保护的静态对象 <a href=https://docs.rs/pc-keyboard/0.5.0/pc_keyboard/struct.Keyboard.html><code>Keyboard</code></a>。 我们使用美国键盘布局初始化键盘，并采用键盘扫描码集 1 。 <a href=https://docs.rs/pc-keyboard/0.5.0/pc_keyboard/enum.HandleControl.html><code>HandleControl</code></a> 参数允许将 <code>ctrl+[a-z]</code> 映射到 Unicode 字符 <code>U+0001</code> - <code>U+001A</code> 。 我们不想这样做，所以使用 <code>Ignore</code> 选项来像处理普通键一样处理 <code>ctrl</code> 键。</p>
+<p>每当中断发生，我们锁定互斥对象，从键盘控制器读取键盘扫描码并将其传递给 <a href=https://docs.rs/pc-keyboard/0.5.0/pc_keyboard/struct.Keyboard.html#method.add_byte><code>add_byte</code></a> 方法，后者将键盘扫描码转换为 <code>Option&lt;KeyEvent></code> 。 <a href=https://docs.rs/pc-keyboard/0.5.0/pc_keyboard/struct.KeyEvent.html><code>KeyEvent</code></a> 包含引发事件的物理键以及它的事件类型——按下或是松开。</p>
+<p>为了解释按键事件，我们将其传递给 <a href=https://docs.rs/pc-keyboard/0.5.0/pc_keyboard/struct.Keyboard.html#method.process_keyevent><code>process_keyevent</code></a> ，该方法将按键事件转换为字符。例如，根据是否按下 <code>shift</code> 键，将物理键 <code>a</code> 的按下事件转换为对应的小写字符或大写字符。</p>
+<p>有了这个修改过的中断处理程序，我们就可以写一些文本内容：</p>
+<p><img src=https://os.phil-opp.com/hardware-interrupts/qemu-typing.gif alt="Typing &ldquo;Hello World&rdquo; in QEMU"></p>
+<h3 id=配置键盘>配置键盘</h3>
+<p>我们也可以对 PS/2 键盘的某些方面进行配置，例如应该使用哪个键盘扫描码集。我们不会在这里讨论它，因为这篇文章已经足够长了，但是 OSDev Wiki 上有一篇关于可能的 <a href=https://wiki.osdev.org/PS/2_Keyboard#Commands>配置命令</a> 的概述。</p>
+<h2 id=小结>小结</h2>
+<p>这篇文章解释了如何启用和处理外部中断。 我们学习了 8259 PIC 和经典的主/从二级布局，中断类型码的重映射，以及「中断结束」信号。 我们实现了硬件定时器和键盘的中断处理程序，并且学习了 <code>hlt</code> 指令，它会暂停 CPU 直到触发下一个中断。</p>
+<p>现在我们可以与内核进行交互，并且有一些基本的构建块，可以用来创建一个小 shell 或简单的游戏。</p>
+<h2 id=下篇预告>下篇预告</h2>
+<p>定时器中断对于操作系统来说是必不可少的，因为它们提供了一种周期性地中断运行进程并使内核重新获得控制权的方法。这样一来，内核就可以切换到不同的进程，并营造出一种多个进程并行运行的错觉。</p>
+<p>但是在创建进程或线程之前，我们需要一种为它们分配内存的方法。下一篇文章将探讨内存管理，以提供这一基本构建块。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2024-03-07 11:58:54
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/pub/>pub</a>
+<a href=https://justice.bj.cn/tags/writing-an-os-in-rust/>writing-an-os-in-rust</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/writing-an-os-in-rust/01-freestanding-rust-binary/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">使用Rust编写操作系统（一）：独立式可执行程序</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/>
+<span class="next-text nav-default">使用Rust编写操作系统（三）：VGA字符模式</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

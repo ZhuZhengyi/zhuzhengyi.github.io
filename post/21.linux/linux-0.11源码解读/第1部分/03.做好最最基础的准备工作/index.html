@@ -30,7 +30,7 @@
 <meta itemprop=name content="03.做好最最基础的准备工作">
 <meta itemprop=description content="03.做好最最基础的准备工作 上回说到，操作系统的代码最开头的 512 字节的数据，从硬盘的启动区先是被移动到了内存 0x7c00 处，然后又立刻被移动到 0x90000 处，并且"><meta itemprop=datePublished content="2024-01-08T06:47:33+08:00">
 <meta itemprop=dateModified content="2024-01-08T06:47:33+08:00">
-<meta itemprop=wordCount content="1231">
+<meta itemprop=wordCount content="1042">
 <meta itemprop=keywords content="linux,linux-0.11源码解读,第1部分,"><meta name=twitter:card content="summary">
 <meta name=twitter:title content="03.做好最最基础的准备工作">
 <meta name=twitter:description content="03.做好最最基础的准备工作 上回说到，操作系统的代码最开头的 512 字节的数据，从硬盘的启动区先是被移动到了内存 0x7c00 处，然后又立刻被移动到 0x90000 处，并且"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
@@ -189,8 +189,7 @@ Justice's Blog
 <h1 id=03做好最最基础的准备工作>03.做好最最基础的准备工作</h1>
 <p>上回说到，操作系统的代码最开头的 512 字节的数据，从硬盘的启动区先是被移动到了内存 <strong>0x7c00</strong> 处，然后又立刻被移动到 <strong>0x90000</strong> 处，并且跳转到此处往后再稍稍偏移 <strong>go</strong> 这个标签所代表的偏移地址处。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-33-45-b48a60587353a5da64eb7951d74d4c29.png alt=图片></p>
-<p> </p>
-<p>那我们接下来，就继续把我们的目光放在 go 这个标签的位置，跟着 CPU 的步伐往后看。</p>
+<p>接下来，就继续把目光放在 go 这个标签的位置，跟着 CPU 的步伐往后看。</p>
 <div class=highlight><div class=chroma>
 <table class=lntable><tr><td class=lntd>
 <pre tabindex=0 class=chroma><code><span class=lnt>1
@@ -206,7 +205,7 @@ Justice's Blog
 <span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=nb>ds</span><span class=p>,</span><span class=nb>ax</span><span class=err>    </span>
 <span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=nb>es</span><span class=p>,</span><span class=nb>ax</span><span class=err>    </span>
 <span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=nb>ss</span><span class=p>,</span><span class=nb>ax</span><span class=err>    </span>
-<span class=nf>mov</span><span class=err> </span><span class=nb>sp</span><span class=p>,</span><span class=err>#</span><span class=mh>0xFF00</span>
+<span class=err>    </span><span class=nf>mov</span><span class=err> </span><span class=nb>sp</span><span class=p>,</span><span class=err>#</span><span class=mh>0xFF00</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>全都是 mov 操作，那好办了。</p>
@@ -220,26 +219,31 @@ Justice's Blog
 <pre tabindex=0 class=chroma><code><span class=lnt>1
 </span></code></pre></td>
 <td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>jmpi go,0x9000
+<pre tabindex=0 class=chroma><code class=language-nasm data-lang=nasm><span class=nf>jmpi</span><span class=err> </span><span class=nv>go</span><span class=p>,</span><span class=mh>0x9000</span>
 </code></pre></td></tr></table>
 </div>
 </div><p>所以现在 cs 寄存器里的值就是 <strong>0x9000</strong>，ip 寄存器里的值是 <strong>go</strong> 这个标签的偏移地址。那这三个 mov 指令就分别给 ds、es 和 ss 寄存器赋值为了 0x9000。</p>
 <p>ds 为数据段寄存器，之前我们说过了，当时它被复制为 <strong>0x07c0</strong>，是因为之前的代码在 0x7c00 处，现在代码已经被挪到了 0x90000 处，所以现在自然又改赋值为 <strong>0x9000</strong> 了。</p>
 <p>es 是扩展段寄存器，仅仅是个扩展，不是主角，先不用理它。</p>
-<p>ss 为<strong>栈段寄存器</strong>，后面要配合栈基址寄存器 sp 来表示此时的栈顶地址。而此时 sp 寄存器被赋值为了 <strong>0xFF00</strong> 了，所以目前的栈顶地址就是 <strong>ss:sp</strong> 所指向的地址 <strong>0x9FF00</strong> 处。</p>
+<p>ss 为<strong>栈段寄存器</strong>，后面要配合栈基址寄存器 sp 来表示此时的栈顶地址。</p>
+<p>而此时 sp 寄存器被赋值为了 <strong>0xFF00</strong> 了，所以目前的栈顶地址就是 <strong>ss:sp</strong> 所指向的地址 <strong>0x9FF00</strong> 处。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-34-06-82a8347250d22ab48d7f7f92fff2b0c8.png alt=图片></p>
 <p>其实到这里，操作系统的一些最最最最基础的准备工作，就做好了。都做了些啥事呢？</p>
-<p><strong>第一</strong>，代码从硬盘移到内存，又从内存挪了个地方，放在了 <strong>0x90000</strong> 处。</p>
+<ul>
+<li>
+<p>第一，代码从硬盘移到内存，又从内存挪了个地方，放在了 <strong>0x90000</strong> 处。</p>
+</li>
+<li>
 <p><strong>第二</strong>，<strong>数据段寄存器 ds</strong> 和<strong>代码段寄存器 cs</strong> 此时都被设置为了 0x9000，也就为跳转代码和访问内存数据，奠定了同一个内存的基址地址，方便了跳转和内存访问，因为仅仅需要指定偏移地址即可了。</p>
+</li>
+<li>
 <p><strong>第三</strong>，栈顶地址被设置为了 0x9FF00，具体表现为<strong>栈段寄存器 ss</strong> 为 0x9000，<strong>栈基址寄存器 sp</strong> 为 0xFF00。栈是向下发展的，这个栈顶地址 0x9FF00 要远远大于此时代码所在的位置 0x90000，所以栈向下发展就很难撞见代码所在的位置，也就比较安全。这也是为什么给栈顶地址设置为这个值的原因，其实只需要离代码的位置远远的即可。</p>
+</li>
+</ul>
 <p>做好这些基础工作后，接下来就又该折腾了其他事了。</p>
 <p>总结拔高一下，这一部分其实就是把<strong>代码段寄存器 cs</strong>，<strong>数据段寄存器 ds</strong>，<strong>栈段寄存器 ss</strong> 和<strong>栈基址寄存器 sp</strong> 分别设置好了值，方便后续使用。</p>
 <p>再拔高一下，其实操作系统在做的事情，就是给如何访问代码，如何访问数据，如何访问栈进行了一下<strong>内存的初步规划</strong>。其中访问代码和访问数据的规划方式就是设置了一个<strong>基址</strong>而已，访问栈就是把<strong>栈顶指针</strong>指向了一个远离代码位置的地方而已。</p>
 <p><img src=https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2024/01/02-15-34-16-8f34892f8b27a5ecbd2ad1b83dc6b307.png alt=图片></p>
-<p>所以，千万别多想，就这么点事儿。那再给大家留个作业，把当前的内存布局画出来，告诉我现在 <strong>cs、ip、ds、ss、sp</strong> 这些寄存器的值，在内存布局中的位置。</p>
-<p>好了，接下来我们应该干什么呢？我们回忆下，我们目前仅仅把硬盘中 512 字节加载到内存中了，但操作系统还有很多代码仍然在硬盘里，不能抛下他们不管呀。</p>
-<p>所以你猜下一步要干嘛了？</p>
-<p>后面的世界越来越精彩，欲知后事如何，且听下回分解。</p>
 </div>
 <div class=post-copyright>
 <p class=copyright-item>

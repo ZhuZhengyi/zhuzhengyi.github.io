@@ -1,0 +1,1553 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>实现分页 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="这篇文章展示了如何在我们的内核中实现分页支持。 首先探讨了使内核可以访问物理页表帧的各种技术，并讨论了它们各自的优缺点。 然后，它实现了地址转换功能和创建新地址映射的功能。">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/09-paging-implementation/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="实现分页">
+<meta property="og:description" content="这篇文章展示了如何在我们的内核中实现分页支持。 首先探讨了使内核可以访问物理页表帧的各种技术，并讨论了它们各自的优缺点。 然后，它实现了地址转换功能和创建新地址映射的功能。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/09-paging-implementation/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2019-09-25T07:43:38+00:00">
+<meta property="article:modified_time" content="2019-09-25T07:43:38+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="实现分页">
+<meta itemprop=description content="这篇文章展示了如何在我们的内核中实现分页支持。 首先探讨了使内核可以访问物理页表帧的各种技术，并讨论了它们各自的优缺点。 然后，它实现了地址转换功能和创建新地址映射的功能。"><meta itemprop=datePublished content="2019-09-25T07:43:38+00:00">
+<meta itemprop=dateModified content="2019-09-25T07:43:38+00:00">
+<meta itemprop=wordCount content="15341">
+<meta itemprop=keywords content="Memory Management,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="实现分页">
+<meta name=twitter:description content="这篇文章展示了如何在我们的内核中实现分页支持。 首先探讨了使内核可以访问物理页表帧的各种技术，并讨论了它们各自的优缺点。 然后，它实现了地址转换功能和创建新地址映射的功能。"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>实现分页</h1>
+<div class=post-meta>
+<time datetime=2019-09-25 class=post-time>
+2019-09-25 07:43:38
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#简介>简介</a></li>
+<li><a href=#访问页表>访问页表</a>
+<ul>
+<li><a href=#恒等映射>恒等映射</a></li>
+<li><a href=#以固定偏移量映射>以固定偏移量映射</a></li>
+<li><a href=#映射整个物理内存>映射整个物理内存</a></li>
+<li><a href=#临时映射>临时映射</a></li>
+<li><a href=#递归页表>递归页表</a></li>
+</ul>
+</li>
+<li><a href=#bootloader-支持>Bootloader 支持</a>
+<ul>
+<li><a href=#引导信息>引导信息</a></li>
+<li><a href=#entry_point宏><code>entry_point</code>宏</a></li>
+</ul>
+</li>
+<li><a href=#实现>实现</a>
+<ul>
+<li><a href=#访问页表-1>访问页表</a></li>
+<li><a href=#地址转换>地址转换</a></li>
+<li><a href=#使用-offsetpagetable>使用 <code>OffsetPageTable</code></a></li>
+<li><a href=#创建一个新映射>创建一个新映射</a></li>
+</ul>
+</li>
+<li><a href=#总结>总结</a></li>
+<li><a href=#接下来>接下来？</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h2 id=简介>简介</h2>
+<p>上一篇文章介绍了分页的概念。通过与分段进行比较，它介绍了分页，解释了分页和页表的工作原理，然后介绍了 <code>x86_64</code> 的4级页表设计。我们发现引导加载程序已经为内核建立了页表层次结构，这意味着我们的内核已经在虚拟地址上运行。非法内存访问会导致页面错误异常，而不是修改任意物理内存，因此可以提高安全性。</p>
+<p>帖子的结尾是我们无法从内核访问页表的问题，因为它们存储在物理内存中，并且内核已经在虚拟地址上运行。这篇文章在这一点上继续，并探讨使我们的内核可访问页表帧的不同方法。我们将讨论每种方法的优缺点，然后为我们的内核决定一种方法。</p>
+<p>要实现此方法，我们将需要引导加载程序的支持，因此我们将首先对其进行配置。之后，我们将实现遍历页表层次结构的功能，以将虚拟地址转换为物理地址。最后，我们学习如何在页表中创建新的映射以及如何找到未使用的内存帧来创建新的页表。</p>
+<h2 id=访问页表>访问页表</h2>
+<p>从我们的内核访问页表并不像看起来那样容易。 为了理解这个问题，让我们再次看一下前一篇文章的示例4级页面表层次结构：</p>
+<p><img src=https://os.phil-opp.com/paging-introduction/x86_64-page-table-translation.svg alt="An example 4-level page hierarchy with each page table shown in physical memory"></p>
+<p>这里重要的是每个页面条目都存储下一张表的 <em>物理地址</em>。 这避免了再次为这些地址运行地址转换，否则将对性能造成不利影响，并很容易导致无限的转换循环。</p>
+<p>对我们来说，问题在于我们无法直接从内核访问物理地址，因为我们的内核也运行在虚拟地址之上。例如，当我们访问地址 <code>4 KiB</code> 时，我们访问的是 <em>虚拟</em> 地址 <code>4 KiB</code>，而不是存储第4级页表的 <em>物理</em> 地址 <code>4 KiB</code>。 当我们想访问 <em>物理</em> 地址 <code>4 KiB</code> 时，我们只能通过一些映射到它的虚拟地址来进行访问。</p>
+<p>因此，为了访问页表帧，我们需要将一些虚拟页映射到它们。 创建这些映射的方法有很多，所有这些方法都允许我们访问任意页表帧。</p>
+<h3 id=恒等映射>恒等映射</h3>
+<p>一个简单的解决方案是<strong>对所有页表进行恒等映射</strong>：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/identity-mapped-page-tables.svg alt="A virtual and a physical address space with various virtual pages mapped to the physical frame with the same address"></p>
+<p>在此示例中，我们看到了很多被恒等映射的页表帧。这样一来，页表的物理地址也是有效的虚拟地址，因此我们可以轻松地从CR3寄存器访问所有级别的页表。</p>
+<p>但是，它会使虚拟地址空间变得混乱，并使得找到大尺寸的连续内存区域变得更加困难。例如，假设我们要在上面的图形中创建一个大小为 1000 KiB 的虚拟内存区域，例如用于<a href=https://zh.wikipedia.org/wiki/%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84%E6%96%87%E4%BB%B6>内存映射文件</a>。我们无法在 <code>28 KiB</code> 处开始该区域，因为它会与 <code>1004KiB</code> 处已映射的页碰撞。因此，我们必须继续寻找，直到找到足够大的未映射区域，例如 <code>1008 KiB</code> 。这是与分段类似的碎片问题。</p>
+<p>同样，这使创建新的页表变得更加困难，因为我们需要找到其对应的页尚未使用的物理帧。例如，假设我们为内存映射文件保留了从<code>1008 KiB</code> 开始的虚拟 1000 KiB 内存区域。现在我们不能再使用物理地址在<code>1000 KiB</code>和<code>2008 KiB</code>之间的任何帧，因为我们无法对其进行恒等映射。</p>
+<h3 id=以固定偏移量映射>以固定偏移量映射</h3>
+<p>为了避免弄乱虚拟地址空间，我们可以 <strong>为页表映射使用单独的内存区域</strong>。我们不再对页表帧进行恒等映射，而是将其从一个有固定偏移量的虚拟地址空间开始映射。例如，偏移量可以是 10 TiB：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/page-tables-mapped-at-offset.svg alt="The same figure as for the identity mapping, but each mapped virtual page is offset by 10 TiB."></p>
+<p>通过将 <code>10TiB..(10TiB + 物理内存大小)</code> 范围内的虚拟地址专门用于页表映射，我们避免了恒等映射的冲突问题。但要保留虚拟地址空间中这么大的一块区域，只能在虚拟地址空间远大于物理内存大小时才可行。这在x86_64上不是问题，因为其 48 位地址空间大小为 256 TiB。</p>
+<p>这种方法仍然有一个缺点，那就是每当我们创建一个新的页表时我们都需要创建一个新的映射。 另外，它不允许访问其他地址空间的页表，这在创建新进程时很有用。</p>
+<h3 id=映射整个物理内存>映射整个物理内存</h3>
+<p>我们可以通过映射完整的物理内存——而不是仅映射页表帧——来解决这些问题：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/map-complete-physical-memory.svg alt="The same figure as for the offset mapping, but every physical frame has a mapping (at 10TiB + X) instead of only page table frames."></p>
+<p>此方法允许我们的内核访问任意物理内存，包括其他地址空间的页表帧。 保留的虚拟内存范围具有与以前相同的大小，不同之处在于它不再包含未映射的页面。</p>
+<p>这种方法的缺点是需要额外的页表来存储物理内存的映射。 这些页表需要存储在某个地方，因此它们会占用一部分物理内存，这在内存量较小的设备上可能会成为问题。</p>
+<p>但是在 x86_64 上，我们可以使用大小为 2MiB 的 huge 页 (<a href=https://en.wikipedia.org/wiki/Page_%28computer_memory%29#Multiple_page_sizes>huge pages</a>) 来进行映射，而不是使用默认的 4KiB 页。 这样一来，由于只需要一个 3 级表和 32 个 2 级表，映射 32 GiB 物理内存仅需要 132 KiB 大小的页表。 huge 页还可以提高缓存效率，因为它们在转译后备缓冲器（TLB）中使用的条目更少。</p>
+<h3 id=临时映射>临时映射</h3>
+<p>对于物理内存量很小的设备，我们只能在需要访问它们时才 <strong>临时映射页表帧</strong> 。 为了能够创建临时映射，我们只需要一个恒等映射的 1 级页表：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/temporarily-mapped-page-tables.svg alt="A virtual and a physical address space with an identity mapped level 1 table, which maps its 0th entry to the level 2 table frame, thereby mapping that frame to page with address 0"></p>
+<p>此图中的 1 级表控制虚拟地址空间的前2MiB。这是因为它可以通过从CR3寄存器开始，沿着4级，3级和2级页表中的第0个条目来最终访问到。索引为 8 的条目将地址 <code>32 KiB</code> 的虚拟页映射到地址<code>32 KiB</code>的物理帧，从而恒等映射了 1 级页表自身。该图通过 32 KiB 处的水平箭头显示了此恒等映射。</p>
+<p>通过写这个恒等映射的 1 级页表，内核最多可以创建511个临时映射（512减去映射自身所需的条目）。在上面的示例中，内核创建了两个临时映射：</p>
+<ul>
+<li>通过将 1 级表的第 0 个条目映射到地址为 <code>24 KiB</code> 的帧，它创建了一个临时映射，将 <code>0 KiB</code> 处的虚拟页映射到第 2 级页表的物理帧，如虚线箭头所示。</li>
+<li>通过将 1 级表的第 9 个条目映射到地址为 <code>4 KiB</code> 的帧，它创建了一个虚拟映射，将 <code>36 KiB</code> 处的虚拟页映射到 4 级页表的物理帧，如虚线箭头所示。</li>
+</ul>
+<p>现在内核可以通过写入 <code>0 KiB</code> 处的页面来访问2级页面表，并通过写入 <code>36 KiB</code> 处的页面来访问 4 级页面表。</p>
+<p>使用临时映射访问任意页表帧的过程将是：</p>
+<ul>
+<li>在恒等映射的第 1 级页表中搜索空闲条目。</li>
+<li>将该条目映射到我们要访问的页表的物理帧。</li>
+<li>通过映射到条目的虚拟页面访问目标帧。</li>
+<li>将条目设置回未使用状态，从而删除临时映射。</li>
+</ul>
+<p>这种方法重复使用相同的512个虚拟页来创建映射，因此仅需要4KiB的物理内存。缺点是它有点麻烦，特别是因为新映射可能需要修改多个表级别，这意味着我们将需要重复上述过程多次。</p>
+<h3 id=递归页表>递归页表</h3>
+<p>另一个有趣的方法——根本不需要额外页表——是递归地映射页表。 这种方法的思想是将 4 级页面表的某些条目映射到 4 级表本身。 通过这样做，我们有效地保留了虚拟地址空间的一部分，并将所有当前和将来的页表帧映射到该空间。</p>
+<p>让我们通过一个例子来理解这一切是如何工作的：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/recursive-page-table.png alt="An example 4-level page hierarchy with each page table shown in physical memory. Entry 511 of the level 4 page is mapped to frame 4KiB, the frame of the level 4 table itself."></p>
+<p>与本文开头示例的唯一区别是，第 4 级表中索引为 <code>511</code> 的条目被映射到了物理帧<code>4 KiB</code>，也就是这个 4 级表它本身。</p>
+<p>当 CPU 在翻译地址的过程中跟随这个条目，它不会到达一个 3 级表，而是又到达同一个 4 级表。这类似于一个调用自身的递归函数，因此这个表被称为 <em>递归页表</em> 。需要注意的是，CPU 假定 4 级表中的每个条目都指向一个 3 级表，因此现在 CPU 将这个 4 级表视为一个 3 级表。这是可行的，因为在x86_64上，所有级别的页表的布局都完全相同。</p>
+<p>通过在开始实际转换之前进行一次或多次递归，我们可以有效地缩短CPU遍历的级别数。例如，如果我们只跟踪一次递归条目，然后进入 3 级表，则CPU认为 3 级表是 2 级表。更进一步，它将 2 级表视为 1 级表，1 级表视为映射的帧。这意味着我们现在可以读写1级页表，因为CPU认为它是映射的帧。下图说明了5个翻译步骤：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/recursive-page-table-access-level-1.png alt="The above example 4-level page hierarchy with 5 arrows: &ldquo;Step 0&rdquo; from CR4 to level 4 table, &ldquo;Step 1&rdquo; from level 4 table to level 4 table, &ldquo;Step 2&rdquo; from level 4 table to level 3 table, &ldquo;Step 3&rdquo; from level 3 table to level 2 table, and &ldquo;Step 4&rdquo; from level 2 table to level 1 table."></p>
+<p>同样，在开始翻译之前，我们可以两次跟踪递归项，以将遍历级别的数量减少到两个：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/recursive-page-table-access-level-2.png alt="The same 4-level page hierarchy with the following 4 arrows: &ldquo;Step 0&rdquo; from CR4 to level 4 table, &ldquo;Steps 1&2&rdquo; from level 4 table to level 4 table, &ldquo;Step 3&rdquo; from level 4 table to level 3 table, and &ldquo;Step 4&rdquo; from level 3 table to level 2 table."></p>
+<p>让我们一步步看：首先，CPU 根据 4 级表上的递归条目进行跳转，并认为它到达了一个 3 级表。然后，它再次进行递归，并认为它到达了一个 2 级表。但实际上，它仍然位于此 4 级表中。现在，CPU跟着另一个不同的条目跳转时，它将实际到达一个 3 级表，但 CPU 认为它已经到了一个 1 级表上。因此，当下一个条目指向2级表时，CPU 认为它指向一个被映射的帧。这使我们可以读写2级表。</p>
+<p>访问3级和4级表的工作方式相同。为了访问3级表，我们跟随递归条目进行了 3 次跳转，使CPU认为它已经在1级表中。然后，我们跟随另一个条目并到达第 3 级表，CPU将其视为映射帧。要访问4级表本身，我们只需遵循递归项四次，直到CPU将4级表本身视为映射帧（下图中的蓝色）。</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/recursive-page-table-access-level-3.png alt="The same 4-level page hierarchy with the following 3 arrows: &ldquo;Step 0&rdquo; from CR4 to level 4 table, &ldquo;Steps 1,2,3&rdquo; from level 4 table to level 4 table, and &ldquo;Step 4&rdquo; from level 4 table to level 3 table. In blue the alternative &ldquo;Steps 1,2,3,4&rdquo; arrow from level 4 table to level 4 table."></p>
+<p>你可能需要一点时间理清楚这些概念，但是它在实际中很有用。</p>
+<p>在下面的部分，我们将解释如何构建虚拟地址以方便进行一次或多次的递归。在我们实际的内核实现中我们不会使用递归页表，所以你可以不继续读下面这部分了。但如果你觉得有兴趣，可以点击“地址计算”以展开。</p>
+<details>
+<summary> 地址计算 </summary>
+<p>我们看到我们可以通过在实际翻译之前递归一次或多次来访问所有级别的表。 由于四个级别的表中的索引直接来自虚拟地址，因此我们需要为此技术构建特殊的虚拟地址。 请记住，页表索引是通过以下方式从地址中得到的：</p>
+<p><img src=https://d33wubrfki0l68.cloudfront.net/55d00a7a89ddaf126f40bb1414de0d78fcde09e4/478a7/paging-introduction/x86_64-table-indices-from-address.svg alt="Bits 0–12 are the page offset, bits 12–21 the level 1 index, bits 21–30 the level 2 index, bits 30–39 the level 3 index, and bits 39–48 the level 4 index"></p>
+<p>假设我们想要访问映射特定页面的1级页表。 如上所述，这意味着在继续使用4级，3级和2级索引之前，我们必须递归一次。 为此，我们将地址的每个块向右移动一个块，并将原始的4级索引设置为递归条目的索引：</p>
+<p><img src=https://os.phil-opp.com/advanced-paging/table-indices-from-address-recursive-level-1.svg alt="Bits 0–12 are the offset into the level 1 table frame, bits 12–21 the level 2 index, bits 21–30 the level 3 index, bits 30–39 the level 4 index, and bits 39–48 the index of the recursive entry"></p>
+<p>为了访问该页面的2级页表，我们将每个索引块向右移动两个块，并将原来的4级索引和原来的3级索引的块都设置为递归条目的索引：</p>
+<p><img src=https://os.phil-opp.com/advanced-paging/table-indices-from-address-recursive-level-2.svg alt="Bits 0–12 are the offset into the level 2 table frame, bits 12–21 the level 3 index, bits 21–30 the level 4 index, and bits 30–39 and bits 39–48 are the index of the recursive entry"></p>
+<p>访问3级表的方法是将每个块向右移动三个块，并使用原来的4级，3级和2级地址块的递归索引：</p>
+<p><img src=https://os.phil-opp.com/advanced-paging/table-indices-from-address-recursive-level-3.svg alt="Bits 0–12 are the offset into the level 3 table frame, bits 12–21 the level 4 index, and bits 21–30, bits 30–39 and bits 39–48 are the index of the recursive entry"></p>
+<p>最后，我们可以通过向右移动每个块四个块并使用除偏移之外的所有地址块的递归索引来访问4级表：</p>
+<p><img src=https://os.phil-opp.com/advanced-paging/table-indices-from-address-recursive-level-4.svg alt="Bits 0–12 are the offset into the level l table frame and bits 12–21, bits 21–30, bits 30–39 and bits 39–48 are the index of the recursive entry"></p>
+<p>我们现在可以计算所有四个级别的页表的虚拟地址。 我们甚至可以通过将其索引乘以8（页表条目的大小）来计算精确指向特定页表条目的地址。</p>
+<p>下表总结了访问不同类型帧的地址结构：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>虚拟地址的结构(八进制)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>页</td>
+<td><code>0o_SSSSSS_AAA_BBB_CCC_DDD_EEEE</code></td>
+</tr>
+<tr>
+<td>1级页表项</td>
+<td><code>0o_SSSSSS_RRR_AAA_BBB_CCC_DDDD</code></td>
+</tr>
+<tr>
+<td>2级页表项</td>
+<td><code>0o_SSSSSS_RRR_RRR_AAA_BBB_CCCC</code></td>
+</tr>
+<tr>
+<td>3级页表项</td>
+<td><code>0o_SSSSSS_RRR_RRR_RRR_AAA_BBBB</code></td>
+</tr>
+<tr>
+<td>4级页表项</td>
+<td><code>0o_SSSSSS_RRR_RRR_RRR_RRR_AAAA</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>AAA</code>是4级索引，<code>BBB</code>是3级索引，<code>CCC</code>是2级索引，<code>DDD</code>是映射帧的1级索引，而<code>EEEE</code>是偏移量。 <code>RRR</code>是递归条目的索引。 当索引（三位数）转换为偏移量（四位数）时，通过将其乘以8（页面表条目的大小）来完成。使用此偏移量，结果地址直接指向相应的页表条目。</p>
+<p><code>SSSSSS</code>是符号扩展位，这意味着它们都是第47位的副本。这是x86_64体系结构上对有效地址的特殊要求。 我们在上一篇文章中解释过它。</p>
+<p>我们使用八进制数来表示地址，因为每个八进制字符代表三位，这使我们能够清楚地分离不同页表级别的9位索引。 对于每个字符代表四位的十六进制系统，这是不可能的。</p>
+<h4 id=rust代码>Rust代码</h4>
+<p>要在Rust代码中构造这样的地址，可以使用按位操作：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// the virtual address whose corresponding page tables you want to access
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>addr</span>: <span class=kt>usize</span> <span class=o>=</span><span class=w> </span><span class=p>[</span><span class=err>…</span><span class=p>];</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>r</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mo>0o777</span><span class=p>;</span><span class=w> </span><span class=c1>// recursive index
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>sign</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mo>0o177777</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>48</span><span class=p>;</span><span class=w> </span><span class=c1>// sign extension
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=c1>// retrieve the page table indices of the address that we want to translate
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>l4_idx</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>addr</span><span class=w> </span><span class=o>&gt;&gt;</span><span class=w> </span><span class=mi>39</span><span class=p>)</span><span class=w> </span><span class=o>&amp;</span><span class=w> </span><span class=mo>0o777</span><span class=p>;</span><span class=w> </span><span class=c1>// level 4 index
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>l3_idx</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>addr</span><span class=w> </span><span class=o>&gt;&gt;</span><span class=w> </span><span class=mi>30</span><span class=p>)</span><span class=w> </span><span class=o>&amp;</span><span class=w> </span><span class=mo>0o777</span><span class=p>;</span><span class=w> </span><span class=c1>// level 3 index
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>l2_idx</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>addr</span><span class=w> </span><span class=o>&gt;&gt;</span><span class=w> </span><span class=mi>21</span><span class=p>)</span><span class=w> </span><span class=o>&amp;</span><span class=w> </span><span class=mo>0o777</span><span class=p>;</span><span class=w> </span><span class=c1>// level 2 index
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>l1_idx</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>(</span><span class=n>addr</span><span class=w> </span><span class=o>&gt;&gt;</span><span class=w> </span><span class=mi>12</span><span class=p>)</span><span class=w> </span><span class=o>&amp;</span><span class=w> </span><span class=mo>0o777</span><span class=p>;</span><span class=w> </span><span class=c1>// level 1 index
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>page_offset</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>addr</span><span class=w> </span><span class=o>&amp;</span><span class=w> </span><span class=mo>0o7777</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// calculate the table addresses
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>level_4_table_addr</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>    </span><span class=n>sign</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>39</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>30</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>21</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>12</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>level_3_table_addr</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>    </span><span class=n>sign</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>39</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>30</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>21</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>l4_idx</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>12</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>level_2_table_addr</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>    </span><span class=n>sign</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>39</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>30</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>l4_idx</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>21</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>l3_idx</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>12</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>level_1_table_addr</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>    </span><span class=n>sign</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>r</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>39</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>l4_idx</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>30</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>l3_idx</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>21</span><span class=p>)</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=p>(</span><span class=n>l2_idx</span><span class=w> </span><span class=o>&lt;&lt;</span><span class=w> </span><span class=mi>12</span><span class=p>);</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>上面的代码假定索引为<code>0o777</code>（511）的最后一个4级条目被递归映射。 目前情况并非如此，因此代码尚无法使用。 请参阅下文，了解如何告诉引导加载程序设置递归映射。</p>
+<p>除了手动执行按位运算，还可以使用<code>x86_64</code> crate的<a href=https://docs.rs/x86_64/0.7.5/x86_64/structures/paging/mapper/struct.RecursivePageTable.html><code>RecursivePageTable</code></a>类型，该类型为各种页表操作提供安全的抽象。 例如，以下代码显示了如何将虚拟地址转换为其映射的物理地址：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>paging</span>::<span class=p>{</span><span class=n>Mapper</span><span class=p>,</span><span class=w> </span><span class=n>Page</span><span class=p>,</span><span class=w> </span><span class=n>PageTable</span><span class=p>,</span><span class=w> </span><span class=n>RecursivePageTable</span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=p>{</span><span class=n>VirtAddr</span><span class=p>,</span><span class=w> </span><span class=n>PhysAddr</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Creates a RecursivePageTable instance from the level 4 address.
+</span><span class=sd></span><span class=kd>let</span><span class=w> </span><span class=n>level_4_table_addr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=err>…</span><span class=p>];</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>level_4_table_ptr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>level_4_table_addr</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>PageTable</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>recursive_page_table</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>level_4_table</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=n>level_4_table_ptr</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=n>RecursivePageTable</span>::<span class=n>new</span><span class=p>(</span><span class=n>level_4_table</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Retrieve the physical address for the given virtual address
+</span><span class=sd></span><span class=kd>let</span><span class=w> </span><span class=n>addr</span>: <span class=kt>u64</span> <span class=o>=</span><span class=w> </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>addr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>addr</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=kd>let</span><span class=w> </span><span class=n>page</span>: <span class=nc>Page</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Page</span>::<span class=n>containing_address</span><span class=p>(</span><span class=n>addr</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// perform the translation
+</span><span class=c1></span><span class=kd>let</span><span class=w> </span><span class=n>frame</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>recursive_page_table</span><span class=p>.</span><span class=n>translate_page</span><span class=p>(</span><span class=n>page</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=n>frame</span><span class=p>.</span><span class=n>map</span><span class=p>(</span><span class=o>|</span><span class=n>frame</span><span class=o>|</span><span class=w> </span><span class=n>frame</span><span class=p>.</span><span class=n>start_address</span><span class=p>()</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=kt>u64</span>::<span class=n>from</span><span class=p>(</span><span class=n>addr</span><span class=p>.</span><span class=n>page_offset</span><span class=p>()))</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>同样，此代码需要有效的递归映射。 使用这种映射，可以像第一个代码示例中那样计算<code>level_4_table_addr</code>。</p>
+</details>
+<p>递归分页是一种有趣的技术，它向我们展示了一个页表中的映射可以非常有用。 它相对容易实现，只需要很少的设置（只需一个递归项），因此它是第一个分页实验的不错选择。</p>
+<p>但是，它也有一些缺点：</p>
+<ul>
+<li>它占用大量虚拟内存（512GiB）。 在较大的 48 位地址空间中，这不是一个大问题，但它可能导致非最优的缓存行为。</li>
+<li>它仅允许轻松访问当前活动的地址空间。 通过更改递归项仍然可以访问其他地址空间，但是需要临时映射才能切换回去。 我们在（过时的）“<a href=https://os.phil-opp.com/remap-the-kernel/#overview>重新映射内核</a>”一文中描述了如何执行此操作。</li>
+<li>它在很大程度上依赖于 x86 的页表格式，可能无法在其他体系结构上使用。</li>
+</ul>
+<h2 id=bootloader-支持>Bootloader 支持</h2>
+<p>所有这些方法都需要在初始化时对页表进行修改。 例如，需要创建物理内存的映射，或者需要递归映射一个 4 级表的条目。问题在于，如果没有现有的访问页表的方法，我们将无法创建这些必需的映射。</p>
+<p>这意味着我们需要引导加载程序的帮助——它创建内核运行的页表。引导加载程序有权访问页表，因此它可以创建我们需要的任何映射。在当前的实现中，<code>bootloader</code> crate支持上述两种方法，并通过 cargo fratures 进行控制：</p>
+<ul>
+<li><code>map_physical_memory</code> 功能将整个物理内存映射到虚拟地址空间中的某个位置。因此，内核可以访问所有物理内存，并且可以遵循 “映射完整物理内存” 方法。</li>
+<li>借助 <code>recursive_page_table</code> 功能，引导加载程序将递归映射一个 4 级页面表的条目。这允许内核按照“递归页面表”部分中的描述访问页面表。</li>
+</ul>
+<p>我们为内核选择第一种方法，因为它简单，平台无关且功能更强大（它还允许访问 <em>非页表帧</em>）。为了启用所需的引导程序支持，我们将<code>map_physical_memory</code>功能添加到了引导程序依赖项中：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
+<span class=nx>bootloader</span> <span class=p>=</span> <span class=p>{</span> <span class=nx>version</span> <span class=p>=</span> <span class=s2>&#34;0.8.0&#34;</span><span class=p>,</span> <span class=nx>features</span> <span class=p>=</span> <span class=p>[</span><span class=s2>&#34;map_physical_memory&#34;</span><span class=p>]}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>启用此功能后，引导加载程序会将完整的物理内存映射到一些未使用的虚拟地址范围。 为了将虚拟地址范围传达给我们的内核，引导加载程序会传递一个 <em>引导信息</em> 结构。</p>
+<h3 id=引导信息>引导信息</h3>
+<p><code>bootloader</code> crate定义了一个<a href=https://docs.rs/bootloader/0.3.11/bootloader/bootinfo/struct.BootInfo.html><code>BootInfo</code></a> 结构体，该结构包含传递给我们内核的所有信息。
+这个结构体仍处于早期阶段，因此如果日后升级为 <a href=https://doc.rust-lang.org/stable/cargo/reference/specifying-dependencies.html#caret-requirements>语义版本号不兼容</a> 的版本时，可能会出现不向后兼容的情况。
+当启用 <code>map_physical_memory</code> 功能后，当前它具有两个字段 <code>memory_map</code> 和 <code>physical_memory_offset</code>：</p>
+<ul>
+<li><code>memory_map</code> 字段包含可用物理内存的概述。这告诉我们内核系统中有多少可用物理内存，以及哪些内存区域为 VGA 硬件等设备保留。内存映射可以从 BIOS 或 UEFI 固件中查询，但是只能在启动过程中的早期进行查询。出于这个原因，它必须由引导加载程序提供，因为内核无法在之后获取它。在本文的后面，我们将需要内存映射。</li>
+<li><code>physical_memory_offset</code> 告诉我们物理内存映射的虚拟起始地址。通过将此偏移量添加到物理地址，我们可以获得相应的虚拟地址。这使我们可以从内核访问任意物理内存。</li>
+</ul>
+<p>引导加载程序以 <code>_start</code> 函数的 <code>&'static BootInfo</code> 参数的形式将 <code>BootInfo</code> 结构体传递给我们的内核。我们尚未在函数中声明此参数，因此让我们添加一下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>bootloader</span>::<span class=n>BootInfo</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=c1>// new argument
+</span><span class=c1></span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在此之前我们不此参数不是问题，因为 x86_64 调用约定在 CPU 寄存器中传递第一个参数。 因此，如果不声明参数，这个参数会被忽略。 但是，如果我们不小心使用了错误的参数类型，那就有问题了，因为编译器不知道我们入口点函数的正确类型签名。</p>
+<h3 id=entry_point宏><code>entry_point</code>宏</h3>
+<p>由于<code>_start</code>函数是从引导加载程序外部调用的，因此不会检查函数签名。 这意味着我们可以让它接受任意参数而没有任何编译错误，但是它将失败或在运行时导致未定义的行为。</p>
+<p>为了确保入口点函数始终具有引导程序期望的正确签名，<code>bootloader</code> crate提供了<code>entry_point</code>宏，该宏提供了类型检查的方式来将Rust函数定义为入口点。 让我们重写我们的入口点函数以使用此宏：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>bootloader</span>::<span class=p>{</span><span class=n>BootInfo</span><span class=p>,</span><span class=w> </span><span class=n>entry_point</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=n>entry_point</span><span class=o>!</span><span class=p>(</span><span class=n>kernel_main</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们不再需要在我们的入口点上使用<code>extern "C"</code>或<code>no_mangle</code>，因为该宏为我们定义了真正的下层<code>_start</code>入口点。 现在，<code>kernel_main</code>函数是一个完全正常的Rust函数，因此我们可以为其选择任意名称。 重要的是对它进行类型检查，以便在我们使用错误的函数签名时（例如通过添加参数或更改参数类型）发生编译错误。</p>
+<p>让我们在<code>lib.rs</code>中执行相同的更改：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[cfg(test)]</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>bootloader</span>::<span class=p>{</span><span class=n>entry_point</span><span class=p>,</span><span class=w> </span><span class=n>BootInfo</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[cfg(test)]</span><span class=w>
+</span><span class=w></span><span class=n>entry_point</span><span class=o>!</span><span class=p>(</span><span class=n>test_kernel_main</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Entry point for `cargo xtest`
+</span><span class=sd></span><span class=cp>#[cfg(test)]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>test_kernel_main</span><span class=p>(</span><span class=n>_boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=c1>// like before
+</span><span class=c1></span><span class=w>    </span><span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>test_main</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=n>hlt_loop</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>由于入口点仅在测试模式下使用，因此我们将<code>＃[cfg(test)]</code>属性添加到所有项。 我们为测试入口点指定不同的名称<code>test_kernel_main</code>，以避免与main.rs的<code>kernel_main</code>混淆。 我们暂时不使用<code>BootInfo</code>参数，因此我们在参数名称前添加<code>_</code>以禁用"未使用的变量"警告。</p>
+<h2 id=实现>实现</h2>
+<p>现在，我们可以访问物理内存了，我们终于可以开始实现页表代码了。 首先，我们来看看运行内核的当前活动页表。 在第二步中，我们将创建一个转换函数，该函数返回给定虚拟地址映射到的物理地址。 作为最后一步，我们将尝试修改页表以创建新的映射。</p>
+<p>在开始之前，我们为代码创建一个新的内存模块：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>memory</span><span class=p>;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id=访问页表-1>访问页表</h3>
+<p>在上一篇文章的末尾，我们试图查看内核运行的页表，但是由于无法访问CR3寄存器指向的物理帧而失败。 现在，我们可以通过创建一个 <code>active_level_4_table</code> 函数来返回对活动4级页面表的引用，从而继续：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>structures</span>::<span class=n>paging</span>::<span class=n>PageTable</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>VirtAddr</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Returns a mutable reference to the active level 4 table.
+</span><span class=sd>///
+</span><span class=sd>/// This function is unsafe because the caller must guarantee that the
+</span><span class=sd>/// complete physical memory is mapped to virtual memory at the passed
+</span><span class=sd>/// `physical_memory_offset`. Also, this function must be only called once
+</span><span class=sd>/// to avoid aliasing `&amp;mut` references (which is undefined behavior).
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>active_level_4_table</span><span class=p>(</span><span class=n>physical_memory_offset</span>: <span class=nc>VirtAddr</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span>-&gt; <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>PageTable</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>registers</span>::<span class=n>control</span>::<span class=n>Cr3</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=p>(</span><span class=n>level_4_table_frame</span><span class=p>,</span><span class=w> </span><span class=n>_</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Cr3</span>::<span class=n>read</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>phys</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>level_4_table_frame</span><span class=p>.</span><span class=n>start_address</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>virt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>physical_memory_offset</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>phys</span><span class=p>.</span><span class=n>as_u64</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>page_table_ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>PageTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>virt</span><span class=p>.</span><span class=n>as_mut_ptr</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=n>page_table_ptr</span><span class=w> </span><span class=c1>// unsafe
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>首先，我们从CR3寄存器中读取活动的4级表的物理帧。 然后，我们获取其物理起始地址，将其转换为u64，并将其与 <code>physical_memory_offset</code> 相加，以获取页表帧所映射的虚拟地址。 最后，我们通过 <code>as_mut_ptr</code> 方法将虚拟地址转换为<code>*mut PageTable</code> 原始指针，然后从中安全地创建 <code>&mut PageTable</code> 引用。 我们创建一个 <code>&mut</code> 引用而不是 <code>&</code> 引用，因为我们将在本文后面中对此页表进行可变操作。</p>
+<p>我们在这里不需要使用 unsafe 块，因为 Rust 将 <code>unsafe fn</code> 整个函数体都视作一个大的 <code>unsafe</code> 块。 这使我们的代码更加危险，因为我们可能在不注意的情况下意外引入了不安全的操作。 这也使发现不安全操作变得更加困难。 有一个 <a href=https://github.com/rust-lang/rfcs/pull/2585>RFC提案</a> 希望可以更改此行为。</p>
+<p>现在，我们可以使用此函数来打印 4 级页表的条目：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>memory</span>::<span class=n>active_level_4_table</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>VirtAddr</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Hello World{}&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>init</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>phys_mem_offset</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>boot_info</span><span class=p>.</span><span class=n>physical_memory_offset</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>l4_table</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>active_level_4_table</span><span class=p>(</span><span class=n>phys_mem_offset</span><span class=p>)</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=p>(</span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>entry</span><span class=p>)</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>l4_table</span><span class=p>.</span><span class=n>iter</span><span class=p>().</span><span class=n>enumerate</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=o>!</span><span class=n>entry</span><span class=p>.</span><span class=n>is_unused</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;L4 Entry {}: {:?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>entry</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// as before
+</span><span class=c1></span><span class=w>    </span><span class=cp>#[cfg(test)]</span><span class=w>
+</span><span class=w>    </span><span class=n>test_main</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;It did not crash!&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>hlt_loop</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>首先，我们 将<code>BootInfo</code> 结构的<code>physical_memory_offset</code> 转换为 <code>VirtAddr</code>，并将其传递给<code>active_level_4_table</code> 函数。 然后，我们使用 <code>iter</code> 函数对页表条目进行迭代，并使用 <code>enumerate</code> 组合子为每个元素添加索引 <code>i</code>。 我们仅打印非空条目，因为所有512个条目均无法显示在屏幕上。</p>
+<p>运行它时，我们看到以下输出：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/qemu-print-level-4-table.png alt="QEMU printing entry 0 (0x2000, PRESENT, WRITABLE, ACCESSED), entry 1 (0x894000, PRESENT, WRITABLE, ACCESSED, DIRTY), entry 31 (0x88e000, PRESENT, WRITABLE, ACCESSED, DIRTY), entry 175 (0x891000, PRESENT, WRITABLE, ACCESSED, DIRTY), and entry 504 (0x897000, PRESENT, WRITABLE, ACCESSED, DIRTY)"></p>
+<p>我们看到有各种非空条目，它们都映射到不同的3级表。 有这么多区域是因为内核代码，内核堆栈，物理内存映射和引导信息都使用隔开的内存区域。</p>
+<p>为了进一步遍历页表并查看 3 级表，我们可以将一个条目的映射到的帧再次转换为虚拟地址：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in the `for` loop in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>paging</span>::<span class=n>PageTable</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>if</span><span class=w> </span><span class=o>!</span><span class=n>entry</span><span class=p>.</span><span class=n>is_unused</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;L4 Entry {}: {:?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>entry</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// get the physical address from the entry and convert it
+</span><span class=c1></span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>phys</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>entry</span><span class=p>.</span><span class=n>frame</span><span class=p>().</span><span class=n>unwrap</span><span class=p>().</span><span class=n>start_address</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>virt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>phys</span><span class=p>.</span><span class=n>as_u64</span><span class=p>()</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>boot_info</span><span class=p>.</span><span class=n>physical_memory_offset</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>ptr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>virt</span><span class=p>).</span><span class=n>as_mut_ptr</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>l3_table</span>: <span class=kp>&amp;</span><span class=nc>PageTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=o>&amp;*</span><span class=n>ptr</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// print non-empty entries of the level 3 table
+</span><span class=c1></span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=p>(</span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>entry</span><span class=p>)</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>l3_table</span><span class=p>.</span><span class=n>iter</span><span class=p>().</span><span class=n>enumerate</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=o>!</span><span class=n>entry</span><span class=p>.</span><span class=n>is_unused</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;  L3 Entry {}: {:?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>i</span><span class=p>,</span><span class=w> </span><span class=n>entry</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>为了查看2级和1级表，我们对 3 级和 2 级条目重复该过程。 您可以想象，这很快就会变得非常冗长，因此我们在这里不显示完整的代码。</p>
+<p>手动遍历页表很有趣，因为它有助于了解CPU如何执行转换。 但是，大多数时候我们只对给定虚拟地址的映射物理地址感兴趣，因此让我们为其创建一个函数。</p>
+<h3 id=地址转换>地址转换</h3>
+<p>为了将虚拟地址转换为物理地址，我们必须遍历四级页表，直到到达映射的帧。 让我们创建一个执行此转换的函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>PhysAddr</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Translates the given virtual address to the mapped physical address, or
+</span><span class=sd>/// `None` if the address is not mapped.
+</span><span class=sd>///
+</span><span class=sd>/// This function is unsafe because the caller must guarantee that the
+</span><span class=sd>/// complete physical memory is mapped to virtual memory at the passed
+</span><span class=sd>/// `physical_memory_offset`.
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>translate_addr</span><span class=p>(</span><span class=n>addr</span>: <span class=nc>VirtAddr</span><span class=p>,</span><span class=w> </span><span class=n>physical_memory_offset</span>: <span class=nc>VirtAddr</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=n>PhysAddr</span><span class=o>&gt;</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>translate_addr_inner</span><span class=p>(</span><span class=n>addr</span><span class=p>,</span><span class=w> </span><span class=n>physical_memory_offset</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们将该函数转发给安全的<code>translate_addr_inner</code>函数，以限制 <code>unsafe</code> 的范围。 如上所述，Rust 将 <code>unsafe fn</code> 的整个函数体视为一个大的 <code>unsafe</code> 块。 通过调用私有safe函数，我们使每个 <code>unsafe</code> 操作是显式的。</p>
+<p>内部私有函数包含实际的实现：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// Private function that is called by `translate_addr`.
+</span><span class=sd>///
+</span><span class=sd>/// This function is safe to limit the scope of `unsafe` because Rust treats
+</span><span class=sd>/// the whole body of unsafe functions as an unsafe block. This function must
+</span><span class=sd>/// only be reachable through `unsafe fn` from outside of this module.
+</span><span class=sd></span><span class=k>fn</span> <span class=nf>translate_addr_inner</span><span class=p>(</span><span class=n>addr</span>: <span class=nc>VirtAddr</span><span class=p>,</span><span class=w> </span><span class=n>physical_memory_offset</span>: <span class=nc>VirtAddr</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=n>PhysAddr</span><span class=o>&gt;</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>paging</span>::<span class=n>page_table</span>::<span class=n>FrameError</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>registers</span>::<span class=n>control</span>::<span class=n>Cr3</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// read the active level 4 frame from the CR3 register
+</span><span class=c1></span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=p>(</span><span class=n>level_4_table_frame</span><span class=p>,</span><span class=w> </span><span class=n>_</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Cr3</span>::<span class=n>read</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>table_indexes</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=w>
+</span><span class=w>        </span><span class=n>addr</span><span class=p>.</span><span class=n>p4_index</span><span class=p>(),</span><span class=w> </span><span class=n>addr</span><span class=p>.</span><span class=n>p3_index</span><span class=p>(),</span><span class=w> </span><span class=n>addr</span><span class=p>.</span><span class=n>p2_index</span><span class=p>(),</span><span class=w> </span><span class=n>addr</span><span class=p>.</span><span class=n>p1_index</span><span class=p>()</span><span class=w>
+</span><span class=w>    </span><span class=p>];</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>frame</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>level_4_table_frame</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// traverse the multi-level page table
+</span><span class=c1></span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=o>&amp;</span><span class=n>index</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=o>&amp;</span><span class=n>table_indexes</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// convert the frame into a page table reference
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>virt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>physical_memory_offset</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>frame</span><span class=p>.</span><span class=n>start_address</span><span class=p>().</span><span class=n>as_u64</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>table_ptr</span>: <span class=o>*</span><span class=k>const</span><span class=w> </span><span class=n>PageTable</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>virt</span><span class=p>.</span><span class=n>as_ptr</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>table</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=o>&amp;*</span><span class=n>table_ptr</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=c1>// read the page table entry and update `frame`
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>entry</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=o>&amp;</span><span class=n>table</span><span class=p>[</span><span class=n>index</span><span class=p>];</span><span class=w>
+</span><span class=w>        </span><span class=n>frame</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>match</span><span class=w> </span><span class=n>entry</span><span class=p>.</span><span class=n>frame</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=nb>Ok</span><span class=p>(</span><span class=n>frame</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>frame</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=nb>Err</span><span class=p>(</span><span class=n>FrameError</span>::<span class=n>FrameNotPresent</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=k>return</span><span class=w> </span><span class=nb>None</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=nb>Err</span><span class=p>(</span><span class=n>FrameError</span>::<span class=n>HugeFrame</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>panic</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;huge pages not supported&#34;</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// calculate the physical address by adding the page offset
+</span><span class=c1></span><span class=w>    </span><span class=nb>Some</span><span class=p>(</span><span class=n>frame</span><span class=p>.</span><span class=n>start_address</span><span class=p>()</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=kt>u64</span>::<span class=n>from</span><span class=p>(</span><span class=n>addr</span><span class=p>.</span><span class=n>page_offset</span><span class=p>()))</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们不再重用我们的 <code>active_level_4_table</code> 函数，而是再次从<code>CR3</code>寄存器读取4级帧。我们这样做是因为它简化了此原型的实现。不用担心，我们稍后会创建一个更好的解决方案。</p>
+<p><code>VirtAddr</code> 结构已经提供了将索引计算到四个级别的页表中的方法。我们将这些索引存储在一个小的数组中，因为它允许我们使用 <code>for</code> 循环遍历页表。在循环之外，我们记住最后访问的帧，以便稍后计算物理地址。 <code>frame</code> 变量在迭代时指向页表帧，并在最后一次迭代后（即在跟随1级条目之后）指向映射的帧。</p>
+<p>在循环内部，我们再次使用 <code>physical_memory_offset</code> 将帧转换为页表引用。 然后，我们读取当前页表的条目，并使用 <code>PageTableEntry::frame</code> 函数检索映射的帧。 如果条目未映射到帧，则返回 <code>None</code>。 如果条目映射了一个 <code>2MiB</code> 或<code>1GiB</code> 的huge页面，我们现在会 panic。</p>
+<p>让我们通过翻译一些地址来测试我们的翻译功能：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=c1>// new imports
+</span><span class=c1></span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>memory</span>::<span class=n>translate_addr</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>VirtAddr</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// hello world and blog_os::init
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>phys_mem_offset</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>boot_info</span><span class=p>.</span><span class=n>physical_memory_offset</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>addresses</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=w>
+</span><span class=w>        </span><span class=c1>// the identity-mapped vga buffer page
+</span><span class=c1></span><span class=w>        </span><span class=mh>0xb8000</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=c1>// some code page
+</span><span class=c1></span><span class=w>        </span><span class=mh>0x201008</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=c1>// some stack page
+</span><span class=c1></span><span class=w>        </span><span class=mh>0x0100_0020_1a10</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=c1>// virtual address mapped to physical address 0
+</span><span class=c1></span><span class=w>        </span><span class=n>boot_info</span><span class=p>.</span><span class=n>physical_memory_offset</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=p>];</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=o>&amp;</span><span class=n>address</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=o>&amp;</span><span class=n>addresses</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>virt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>address</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>phys</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>translate_addr</span><span class=p>(</span><span class=n>virt</span><span class=p>,</span><span class=w> </span><span class=n>phys_mem_offset</span><span class=p>)</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>        </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{:?} -&gt; {:?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>virt</span><span class=p>,</span><span class=w> </span><span class=n>phys</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// test_main(), &#34;it did not crash&#34; printing, and hlt_loop()
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>跑一下看看，我们可以看到如下输出：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/qemu-translate-addr.png alt="0xb8000 -> 0xb8000, 0x201008 -> 0x401008, 0x10000201a10 -> 0x279a10, &ldquo;panicked at &lsquo;huge pages not supported&rsquo;"></p>
+<p>如预期的那样，恒等映射的地址 <code>0xb8000</code> 转换为相同的物理地址。代码页和堆栈页转换为不定的物理地址，这取决于引导加载程序如何为内核创建初始映射。值得注意的是，转换后的最后12位始终保持不变，这也应该是这样的，因为这些位是页面偏移量，不是转换的一部分。</p>
+<p>由于可以通过添加 <code>physical_memory_offset</code> 来访问每个物理地址，因此 <code>physical_memory_offset</code> 地址本身的转换应指向物理地址0。但是，转换失败了，因为该映射使用 huge页 来提高效率，这在我们的实现中尚不支持。</p>
+<h3 id=使用-offsetpagetable>使用 <code>OffsetPageTable</code></h3>
+<p>将虚拟地址转换为物理地址是OS内核中的常见任务，因此<code>x86_64</code> crate 为其提供了抽象。该实现已经支持 huge 页和其他几个页面表功能（除了 <code>translate_addr</code>），因此我们将在下面使用它，而不是向我们自己的实现添加 huge 页支持。</p>
+<p>此抽象的基础是定义各种页表映射功能的两个 trait：</p>
+<ul>
+<li><code>Mapper</code> trait 在页面大小上是通用的，并提供可在页面上操作的函数。例如：<code>translate_page</code> （将给定页转换为相同大小的帧）和 <code>map_to</code>（在页面表中创建新的映射）。</li>
+<li><code>MapperAllSizes</code> trait 意味着其实现者也同时为所有的页大小都实现 <code>Mapper</code>。此外，它提供了适用于多种页面大小的函数，例如 <code>translate_addr</code> 或常规的 <code>translate</code>。</li>
+</ul>
+<p>trait 仅定义接口，它们不提供任何实现。当前，<code>x86_64</code> crate 提供了三种类型，根据不同的要求实现了这些 trait。
+<code>OffsetPageTable</code> 类型假定完整的物理内存以某个偏移量映射到虚拟地址空间。
+<code>MappedPageTable</code> 稍微灵活一些：它只需要将每个页表帧映射到可计算地址处的虚拟地址空间即可。
+最后，可以使用 <code>RecursivePageTable</code> 类型来通过递归页表访问页表帧。</p>
+<p>在我们的例子中，引导加载程序将完整的物理内存映射到由 <code>physical_memory_offset</code> 变量指定的虚拟地址，因此我们可以使用 <code>OffsetPageTable</code> 类型。要初始化它，我们在 <code>memory</code> 模块中创建一个新的 <code>init</code> 函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>paging</span>::<span class=n>OffsetPageTable</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Initialize a new OffsetPageTable.
+</span><span class=sd>///
+</span><span class=sd>/// This function is unsafe because the caller must guarantee that the
+</span><span class=sd>/// complete physical memory is mapped to virtual memory at the passed
+</span><span class=sd>/// `physical_memory_offset`. Also, this function must be only called once
+</span><span class=sd>/// to avoid aliasing `&amp;mut` references (which is undefined behavior).
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>(</span><span class=n>physical_memory_offset</span>: <span class=nc>VirtAddr</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>OffsetPageTable</span><span class=o>&lt;</span><span class=nb>&#39;static</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>level_4_table</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>active_level_4_table</span><span class=p>(</span><span class=n>physical_memory_offset</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=n>OffsetPageTable</span>::<span class=n>new</span><span class=p>(</span><span class=n>level_4_table</span><span class=p>,</span><span class=w> </span><span class=n>physical_memory_offset</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// make private
+</span><span class=c1></span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>active_level_4_table</span><span class=p>(</span><span class=n>physical_memory_offset</span>: <span class=nc>VirtAddr</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span>-&gt; <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>PageTable</span><span class=w>
+</span><span class=w></span><span class=p>{</span><span class=err>…</span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该函数接受 <code>physical_memory_offset</code> 作为参数，并返回一个具有 <code>'static</code> 生命周期的新 <code>OffsetPageTable</code> 实例。这意味着这个实例在内核整个的运行时都有效。
+在函数主体中，我们首先调用 <code>active_level_4_table</code> 函数以获取一个对第 4 级页表的可变引用。接着，我们使用这个引用来调用 <code>OffsetPageTable::new</code> 函数。
+<code>new</code> 函数的第二个参数需要一个虚拟地址，使得虚拟地址空间从此处开始映射物理地址空间，也就是 <code>physical_memory_offset</code> 变量。</p>
+<p>从现在开始，仅应从 <code>init</code> 函数调用 <code>active_level_4_table</code> 函数。
+因为如果多次调用它，很容易导致同名可变引用，从而导致未定义行为（UB）。因此，我们通过删除 <code>pub</code> 说明符来使函数私有。</p>
+<p>现在，我们可以使用 <code>MapperAllSizes::translate_addr</code> 方法来代替我们自己的 <code>memory::translate_addr</code> 函数。我们只需要在 <code>kernel_main</code> 中更改几行：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=c1>// new: different imports
+</span><span class=c1></span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>memory</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=p>{</span><span class=n>structures</span>::<span class=n>paging</span>::<span class=n>MapperAllSizes</span><span class=p>,</span><span class=w> </span><span class=n>VirtAddr</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// hello world and blog_os::init
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>phys_mem_offset</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>boot_info</span><span class=p>.</span><span class=n>physical_memory_offset</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=c1>// new: initialize a mapper
+</span><span class=c1></span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>mapper</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>memory</span>::<span class=n>init</span><span class=p>(</span><span class=n>phys_mem_offset</span><span class=p>)</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>addresses</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=err>…</span><span class=p>];</span><span class=w> </span><span class=c1>// same as before
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=o>&amp;</span><span class=n>address</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=o>&amp;</span><span class=n>addresses</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>virt</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>address</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=c1>// new: use the `mapper.translate_addr` method
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>phys</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>mapper</span><span class=p>.</span><span class=n>translate_addr</span><span class=p>(</span><span class=n>virt</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;{:?} -&gt; {:?}&#34;</span><span class=p>,</span><span class=w> </span><span class=n>virt</span><span class=p>,</span><span class=w> </span><span class=n>phys</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// test_main(), &#34;it did not crash&#34; printing, and hlt_loop()
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们需要导入 <code>MapperAllSizes</code> trait 以使用它提供的 <code>translate_addr</code> 方法。</p>
+<p>现在运行它时，我们会看到与以前相同的翻译结果，不同之处在于 huge页翻译现在也可以工作：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/qemu-mapper-translate-addr.png alt="0xb8000 -> 0xb8000, 0x201008 -> 0x401008, 0x10000201a10 -> 0x279a10, 0x18000000000 -> 0x0"></p>
+<p>不出所料，<code>0xb8000</code> 的转换以及代码和堆栈地址与我们自己的转换功能相同。 此外，我们现在看到虚拟地址<code>physical_memory_offset</code> 映射到物理地址 <code>0x0</code>。</p>
+<p>通过使用 <code>MappedPageTable</code> 类型的转换函数，我们可以节省掉实现 huge 页的工作量。 我们现在还可以调用其他页函数了，例如 <code>map_to</code>，我们将在下一部分中使用。</p>
+<p>此时，我们不再需要 <code>memory::translate_addr</code> 函数，因此可以将其删除。</p>
+<h3 id=创建一个新映射>创建一个新映射</h3>
+<p>到目前为止，我们仅查看页面表，而没有进行任何修改。让我们通过为以前未映射的页面创建一个新的映射来更改它。</p>
+<p>我们将使用 <code>Mapper</code> trait 的 <code>map_to</code> 函数进行实现，因此让我们首先看一下该函数。 文档告诉我们，它接受四个参数：我们要映射的页面，该页面应映射到的帧，页表项的一组标记（flags）以及一个 <code>frame_allocator</code>（帧分配器）。我们需要一个帧分配器，因为映射给定页面可能需要创建其他页表，这些页表需要未使用的帧作为后备存储。</p>
+<h4 id=create_example_mapping-函数><code>create_example_mapping</code> 函数</h4>
+<p>我们实现的第一步是创建一个新的 <code>create_example_mapping</code> 函数，该函数将给定的虚拟页面映射到 <code>0xb8000</code>（VGA文本缓冲区的物理帧）。我们选择该帧是因为它使我们能够轻松测试映射是否正确创建：我们只需要向新映射的页面写入，然后查看是否看到写入内容出现在屏幕上。</p>
+<p><code>create_example_mapping</code>函数如下所示：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>PhysAddr</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>structures</span>::<span class=n>paging</span>::<span class=p>{</span><span class=n>Page</span><span class=p>,</span><span class=w> </span><span class=n>PhysFrame</span><span class=p>,</span><span class=w> </span><span class=n>Mapper</span><span class=p>,</span><span class=w> </span><span class=n>Size4KiB</span><span class=p>,</span><span class=w> </span><span class=n>FrameAllocator</span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// Creates an example mapping for the given page to frame `0xb8000`.
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>create_example_mapping</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>page</span>: <span class=nc>Page</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>mapper</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=n>OffsetPageTable</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>frame_allocator</span>: <span class=kp>&amp;</span><span class=nc>mut</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>FrameAllocator</span><span class=o>&lt;</span><span class=n>Size4KiB</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=n>structures</span>::<span class=n>paging</span>::<span class=n>PageTableFlags</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=n>Flags</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>frame</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>PhysFrame</span>::<span class=n>containing_address</span><span class=p>(</span><span class=n>PhysAddr</span>::<span class=n>new</span><span class=p>(</span><span class=mh>0xb8000</span><span class=p>));</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>flags</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Flags</span>::<span class=n>PRESENT</span><span class=w> </span><span class=o>|</span><span class=w> </span><span class=n>Flags</span>::<span class=n>WRITABLE</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>map_to_result</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>mapper</span><span class=p>.</span><span class=n>map_to</span><span class=p>(</span><span class=n>page</span><span class=p>,</span><span class=w> </span><span class=n>frame</span><span class=p>,</span><span class=w> </span><span class=n>flags</span><span class=p>,</span><span class=w> </span><span class=n>frame_allocator</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=n>map_to_result</span><span class=p>.</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;map_to failed&#34;</span><span class=p>).</span><span class=n>flush</span><span class=p>();</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>除了应该映射到的 <code>page</code> 之外，该函数还需要一个对 <code>OffsetPageTable</code> 实例的可变引用，和一个 <code>frame_allocator</code>。
+<code>frame_allocator</code> 参数使用 <code>impl Trait</code> 语法以定义一个泛型函数来支持所有实现了 <code>FrameAllocator</code> 的参数类型。
+<code>FrameAllocator</code> trait 也是一个泛型，接受实现了 <code>PageSize</code> trait 的类型，以同时支持 4KiB 大小的页和 2MiB/1GiB 的页。
+这里我们只想创建 4KiB 大小的映射，因此我们设置泛型的参数为 <code>Size4KiB</code>。</p>
+<p><code>map_to</code> 方法被标记为 unsafe 的，因此调用者必须确保帧现在没有被使用。其原因是如果映射了同一个帧两次会导致未定义行为，例如两个不同的 <code>&mut</code> 引用指向了同一个物理地址。在我们这个例子中，我们重新使用 VGA 文字缓冲区帧，它已经被映射过了，我们破坏了调用条件。但是，<code>create_example_mapping</code> 函数只是一个我们用来临时测试的函数，我们马上将会删除它。为了提醒我们这个不安全因素，我们加上一句 <code>FIXME</code> 注释。</p>
+<p>除了 <code>page</code> 和 <code>unused_frame</code> 参数，<code>map_to</code> 方法还接受一组 flags 和一个 <code>frame_allcator</code> 的引用，我们马上就会解释。对于这组 flags，我们设置 <code>PRESENT</code>，因为对于所有有效的条目它都是需要的；设置 <code>WRITABLE</code> 以使得被映射的页可写。查看所有可能的 flags，查看上一篇文章的“页面表格式”部分。</p>
+<p><code>map_to</code>函数可能会失败，因此它将返回<code>Result</code>。由于这只是一些示例代码，不需要鲁棒性，因此我们直接在发生错误时使用<code>expect</code> 来引发一个panic。成功后，该函数将返回 <code>MapperFlush</code> 类型，该类型提供了一种使用其 <code>flush</code> 方法从转换后备缓冲区（TLB）中刷新新映射页面的简便方法。像 <code>Result</code> 一样，当我们意外忘记使用它时，由于使用了<code>#[must_use]</code>属性，会发出一个警告。</p>
+<h4 id=一个虚拟的-frameallocator>一个虚拟的 FrameAllocator</h4>
+<p>为了能够调用<code>create_example_mapping</code>，我们需要创建一个首先实现<code>FrameAllocator</code> Trait的类型。如上所述，如果<code>map_to</code>需要帧，则Trait负责为新页表分配帧。</p>
+<p>让我们从简单的案例开始，并假设我们不需要创建新的页表。对于这种情况，始终返回<code>None</code>的帧分配器就足够了。我们创建了一个<code>EmptyFrameAllocator</code>来测试我们的映射功能：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// A FrameAllocator that always returns `None`.
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>EmptyFrameAllocator</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>FrameAllocator</span><span class=o>&lt;</span><span class=n>Size4KiB</span><span class=o>&gt;</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>EmptyFrameAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>allocate_frame</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=n>PhysFrame</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=nb>None</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>实现 <code>FrameAllocator</code> 是 unsafe 的，因为实现者必须保证分配器仅返回未使用的帧。 否则可能会发生不确定的行为，例如，当两个虚拟页面映射到同一物帧时。 我们的 <code>EmptyFrameAllocator</code> 只返回 <code>None</code>，因此在这种情况下这不是问题。</p>
+<h4 id=选择虚拟页面>选择虚拟页面</h4>
+<p>现在，我们有了一个简单的帧分配器，可以将其传递给 <code>create_example_mapping</code> 函数。 但是，分配器始终返回<code>None</code>，因此只有在不需要其他页表帧来创建映射时，此分配器才起作用。 要了解何时需要其他页表帧以及何时不需要，我们考虑一个示例：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/required-page-frames-example.svg alt="A virtual and a physical address space with a single mapped page and the page tables of all four levels"></p>
+<p>该图在左侧显示虚拟地址空间，在右侧显示物理地址空间，在中间显示页表。页表存储在物理内存帧中，由虚线表示。虚拟地址空间在地址 <code>0x803fe00000</code> 包含一个被映射的页，以蓝色标记。为了将此页转换为其对应的帧，CPU遍历4级页表，直到到达地址36 KiB 的帧。</p>
+<p>此外，该图以红色显示VGA文本缓冲区的物理帧。我们的目标是使用我们的 <code>create_example_mapping</code> 函数将一个先前未映射的虚拟页映射到此帧。由于 <code>EmptyFrameAllocator</code> 始终返回 <code>None</code>，因此我们要创建一个不需要分配器中的其他帧的映射。这取决于我们为映射选择的虚拟页。</p>
+<p>该图显示了虚拟地址空间中的两个候选页面，均以黄色标记。一页位于地址 <code>0x803fdfd000</code>，即映射页之前的3页（蓝色）。尽管第4级和第3级页表索引与蓝页相同，但第2级和第1级索引却不同（请参阅上一篇文章）。级别2表中的索引不同，意味着此页面使用了不同的级别1表。由于此1级表尚不存在，因此如果我们为示例映射选择该页面，则需要创建该表，这将需要一个额外的未使用的物理帧。相反，位于地址 <code>0x803fe02000</code> 的第二个候选页面不存在此问题，因为它使用与蓝色页面相同的1级页面表。因此，所有必需的页表已经存在。</p>
+<p>总而言之，创建新映射的难度取决于我们要映射的虚拟页面。在最简单的情况下，该页面的1级页面表已经存在，我们只需要编写一个条目即可。在最困难的情况下，该页面位于尚不存在第3级的内存区域中，因此我们需要首先创建新的第3级，第2级和第1级页表。</p>
+<p>为了使用 <code>EmptyFrameAllocator</code> 调用 <code>create_example_mapping</code> 函数，我们需要选择一个页面，其所有页表均已存在。要找到这样的页面，我们可以利用引导加载程序将自身加载到虚拟地址空间的第一个兆字节中这一事实。这意味着该区域的所有页面都存在一个有效的1级表。因此，我们可以为示例映射选择该存储区域中任何未使用的页面，例如地址 <code>0</code> 的页。
+通常，该页面应保持未使用状态，以确保取消引用空指针会引发一个 页错误（page fault）。因此我们知道引导加载程序保留了该页未映射。</p>
+<h4 id=创建映射>创建映射</h4>
+<p>现在，我们有了用于调用 <code>create_example_mapping</code> 函数的所有必需参数，因此让我们修改 <code>kernel_main</code> 函数，以将页面映射到虚拟地址 0。由于我们将页面映射到VGA文本缓冲区的帧，因此我们应该能够向屏幕写入。实现看起来像这样：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>memory</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>x86_64</span>::<span class=p>{</span><span class=n>structures</span>::<span class=n>paging</span>::<span class=n>Page</span><span class=p>,</span><span class=w> </span><span class=n>VirtAddr</span><span class=p>};</span><span class=w> </span><span class=c1>// new import
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// hello world and blog_os::init
+</span><span class=c1></span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>phys_mem_offset</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>boot_info</span><span class=p>.</span><span class=n>physical_memory_offset</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>mapper</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>memory</span>::<span class=n>init</span><span class=p>(</span><span class=n>phys_mem_offset</span><span class=p>)</span><span class=w> </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>frame_allocator</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>memory</span>::<span class=n>EmptyFrameAllocator</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// map an unused page
+</span><span class=c1></span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>page</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Page</span>::<span class=n>containing_address</span><span class=p>(</span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=mi>0</span><span class=p>));</span><span class=w>
+</span><span class=w>    </span><span class=n>memory</span>::<span class=n>create_example_mapping</span><span class=p>(</span><span class=n>page</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=n>mapper</span><span class=p>,</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=n>frame_allocator</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=c1>// write the string `New!` to the screen through the new mapping
+</span><span class=c1></span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>page_ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u64</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>page</span><span class=p>.</span><span class=n>start_address</span><span class=p>().</span><span class=n>as_mut_ptr</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>page_ptr</span><span class=p>.</span><span class=n>offset</span><span class=p>(</span><span class=mi>400</span><span class=p>).</span><span class=n>write_volatile</span><span class=p>(</span><span class=mh>0x_f021_f077_f065_f04e</span><span class=p>)};</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w> </span><span class=c1>// test_main(), &#34;it did not crash&#34; printing, and hlt_loop()
+</span><span class=c1></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们首先通过调用 <code>create_example_mapping</code> 函数来调用地址 <code>0</code> 处的页面的映射。 这会将页面映射到 VGA 文本缓冲区帧，因此我们应该在屏幕上看到对其进行的写入。</p>
+<p>然后，我们将页面转换为原始指针，并向偏移量 <code>400</code> 写入一个值。我们不写入页面的开头，因为VGA缓冲区的第一行直接由下一个 <code>println</code> 移出屏幕。 我们写入值<code>0x_f021_f077_f065_f04e</code>，它表示字符串“ New！”。 在白色背景上。 正如我们在“ VGA Text Mode”（VGA文本模式）文章中所了解的那样，对VGA缓冲区的写入应该是易失的，因此我们使用<code>write_volatile</code> 方法。</p>
+<p>在 QEMU 中运行它时，将看到以下输出：</p>
+<p><img src=https://os.phil-opp.com/paging-implementation/qemu-new-mapping.png alt="QEMU printing &ldquo;It did not crash!&rdquo; with four completely white cells in the middle of the screen"></p>
+<p>屏幕上的 &ldquo;New!&rdquo; 是通过写入第 <code>0</code> 页来显示的，这意味着我们已在页表中成功创建了新映射。</p>
+<p>仅因为负责地址0的页面的1级表已经存在，所以创建该映射才起作用。 当我们尝试为尚不存在1级表的页面进行映射时，<code>map_to</code>函数将失败，因为它试图从 <code>EmptyFrameAllocator</code> 分配帧以创建新的页表。 当我们尝试映射页面 <code>0xdeadbeaf000</code> 而不是 <code>0</code> 时，我们可以看到这种情况：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>page</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Page</span>::<span class=n>containing_address</span><span class=p>(</span><span class=n>VirtAddr</span>::<span class=n>new</span><span class=p>(</span><span class=mh>0xdeadbeaf000</span><span class=p>));</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>当我们运行它时，会出现以下错误消息：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=n>panicked</span><span class=w> </span><span class=n>at</span><span class=w> </span><span class=na>&#39;map_to</span><span class=w> </span><span class=n>failed</span>: <span class=nc>FrameAllocationFailed</span><span class=err>&#39;</span><span class=p>,</span><span class=w> </span><span class=o>/</span><span class=err>…</span><span class=o>/</span><span class=n>result</span><span class=p>.</span><span class=n>rs</span>:<span class=mi>999</span>:<span class=mi>5</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>要映射没有 1 级页面表的页面，我们需要创建一个适当的<code>FrameAllocator</code>。 但是我们如何知道哪些帧未使用以及有多少物理内存可用？</p>
+<h4 id=分配帧>分配帧</h4>
+<p>为了创建新的页表，我们需要创建一个适当帧分配器。 为此，我们使用 <code>memory_map</code>，它由引导程序作为 <code>BootInfo</code> 结构的一部分传递：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>bootloader</span>::<span class=n>bootinfo</span>::<span class=n>MemoryMap</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=sd>/// A FrameAllocator that returns usable frames from the bootloader&#39;s memory map.
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>BootInfoFrameAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>memory_map</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>MemoryMap</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>next</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>BootInfoFrameAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Create a FrameAllocator from the passed memory map.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// This function is unsafe because the caller must guarantee that the passed
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// memory map is valid. The main requirement is that all frames that are marked
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// as `USABLE` in it are really unused.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>(</span><span class=n>memory_map</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>MemoryMap</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>BootInfoFrameAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>memory_map</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=n>next</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该结构有两个字段：对引导加载程序传递的内存映射的 <code>'static</code> 引用，以及一个跟踪分配器应返回的下一帧的编号的<code>next</code>字段。</p>
+<p>如我们在“引导信息”部分所述，内存映射由BIOS / UEFI固件提供。它只能在引导过程的早期被查询，因此引导加载程序已经为我们调用了相应的函数。内存映射由 <code>MemoryRegion</code> 结构的列表组成，这些结构包含每个存储器区域的起始地址，长度和类型（例如未使用，保留等）。</p>
+<p><code>init</code> 函数使用给定的内存映射初始化一个 <code>BootInfoFrameAllocator</code>。<code>next</code> 字段用 <code>0</code> 初始化，并且将在每次帧分配时递增，以避免两次返回同一帧。由于我们不知道内存映射的可用帧是否已在其他地方使用，因此我们的 <code>init</code> 函数必须为 <code>unsafe</code> 才能要求调用者提供额外的保证。</p>
+<h4 id=usable_frames方法><code>usable_frames</code>方法</h4>
+<p>在实现<code>FrameAllocator</code>特性之前，我们添加了一个辅助方法，该方法将内存映射转换为可用帧的迭代器：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>bootloader</span>::<span class=n>bootinfo</span>::<span class=n>MemoryRegionType</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>BootInfoFrameAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Returns an iterator over the usable frames specified in the memory map.
+</span><span class=sd></span><span class=w>    </span><span class=k>fn</span> <span class=nf>usable_frames</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>impl</span><span class=w> </span><span class=nb>Iterator</span><span class=o>&lt;</span><span class=n>Item</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>PhysFrame</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// get usable regions from memory map
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>regions</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>memory_map</span><span class=p>.</span><span class=n>iter</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>usable_regions</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>regions</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>filter</span><span class=p>(</span><span class=o>|</span><span class=n>r</span><span class=o>|</span><span class=w> </span><span class=n>r</span><span class=p>.</span><span class=n>region_type</span><span class=w> </span><span class=o>==</span><span class=w> </span><span class=n>MemoryRegionType</span>::<span class=n>Usable</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=c1>// map each region to its address range
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>addr_ranges</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>usable_regions</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>map</span><span class=p>(</span><span class=o>|</span><span class=n>r</span><span class=o>|</span><span class=w> </span><span class=n>r</span><span class=p>.</span><span class=n>range</span><span class=p>.</span><span class=n>start_addr</span><span class=p>()..</span><span class=n>r</span><span class=p>.</span><span class=n>range</span><span class=p>.</span><span class=n>end_addr</span><span class=p>());</span><span class=w>
+</span><span class=w>        </span><span class=c1>// transform to an iterator of frame start addresses
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>frame_addresses</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>addr_ranges</span><span class=p>.</span><span class=n>flat_map</span><span class=p>(</span><span class=o>|</span><span class=n>r</span><span class=o>|</span><span class=w> </span><span class=n>r</span><span class=p>.</span><span class=n>step_by</span><span class=p>(</span><span class=mi>4096</span><span class=p>));</span><span class=w>
+</span><span class=w>        </span><span class=c1>// create `PhysFrame` types from the start addresses
+</span><span class=c1></span><span class=w>        </span><span class=n>frame_addresses</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>map</span><span class=p>(</span><span class=o>|</span><span class=n>addr</span><span class=o>|</span><span class=n>PhysFrame</span>::<span class=n>containing_address</span><span class=p>(</span><span class=n>PhysAddr</span>::<span class=n>new</span><span class=p>(</span><span class=n>addr</span><span class=p>)))</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>此函数使用迭代器组合子方法将初始 <code>MemoryMap</code> 转换为可用物理帧的迭代器：</p>
+<ul>
+<li>首先，我们调用 <code>iter</code> 方法将内存映射转换为 <code>MemoryRegions</code> 的迭代器。</li>
+<li>然后，我们使用 <code>filter</code> 方法跳过任何保留的区域或其他不可用的区域。引导加载程序会为其创建的所有映射更新内存映射，因此内核使用的帧（代码，数据或堆栈）或用于存储引导信息的帧已被标记为 <code>InUse</code> 或类似的。因此，我们可以确定 <code>Usable</code> 帧没有在其他地方使用。</li>
+<li>之后，我们使用 <code>map</code> 组合子和Rust的range语法将内存区域的迭代器转换为地址范围的迭代器。</li>
+<li>下一步是最复杂的：我们通过 <code>into_iter</code> 方法将每个范围转换为一个迭代器，然后使用 <code>step_by</code> 隔 4096 选择范围内的每个地址。由于页面大小为4096字节（= 4 KiB），因此我们获得了每个帧的起始地址。 Bootloader 页面会对齐所有可用的内存区域，因此我们在此处不需要任何对齐或舍入代码。通过使用 <code>flat_map</code> 而不是 <code>map</code>，我们得到了 <code>Iterator &lt;Item = u64></code> 而不是 <code>Iterator &lt;Item = Iterator &lt;Item = u64 >></code>。</li>
+<li>最后，我们将起始地址转换为 <code>PhysFrame</code> 类型，以构造所需的 <code>Iterator &lt;Item = PhysFrame></code>。然后，我们使用此迭代器创建并返回一个新的 <code>BootInfoFrameAllocator</code>。</li>
+</ul>
+<p>该函数的返回类型使用 <code>impl Trait</code> 功能。
+这样一来，我们可以指出我们返回了一种类型，其实现了 <code>Iterator</code> trait，item 类型为 <code>PhysFram</code>，而不需要命名具体的返回类型。这一点很重要，因为我们无法命名具体类型，因为它取决于不可命名的闭包类型。</p>
+<h4 id=实现-frameallocator-trait>实现 <code>FrameAllocator</code> Trait</h4>
+<p>现在我们可以实现<code>FrameAllocator</code> trait：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/memory.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>FrameAllocator</span><span class=o>&lt;</span><span class=n>Size4KiB</span><span class=o>&gt;</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>BootInfoFrameAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>allocate_frame</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=n>PhysFrame</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>frame</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>usable_frames</span><span class=p>().</span><span class=n>nth</span><span class=p>(</span><span class=bp>self</span><span class=p>.</span><span class=n>next</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=n>frame</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们首先使用 <code>usable_frames</code> 方法从内存映射中获取可用帧的迭代器。 然后，我们使用 <code>Iterator::nth</code> 函数获取索引为 <code>self.next</code> 的帧（从而跳过 <code>(self.next-1)</code> 帧）。 在返回该帧之前，我们将<code>self.next</code>增加一，以便在下一次调用时返回下一个帧。</p>
+<p>这种实现方式并不是十分理想，因为它会在每次分配时都重新创建 <code>usable_frame</code> 分配器。 最好直接将迭代器存储为<code>struct</code> 字段。 然后，我们将不需要 <code>nth</code> 方法，而只需对每个分配调用 <code>next</code>。 这种方法的问题在于，当前无法在<code>struct</code> 字段中存储 <code>impl Trait</code> 类型。等将来完全实现了 <a href=https://github.com/rust-lang/rfcs/pull/2071>具名存在性类型</a> ，这个方法可能可以使用。</p>
+<h4 id=使用bootinfoframeallocator>使用<code>BootInfoFrameAllocator</code></h4>
+<p>现在，我们可以修改 <code>kernel_main</code> 函数，以传递 <code>BootInfoFrameAllocator</code> 实例而不是 <code>EmptyFrameAllocator</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>kernel_main</span><span class=p>(</span><span class=n>boot_info</span>: <span class=kp>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=n>BootInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>memory</span>::<span class=n>BootInfoFrameAllocator</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>frame_allocator</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>BootInfoFrameAllocator</span>::<span class=n>init</span><span class=p>(</span><span class=o>&amp;</span><span class=n>boot_info</span><span class=p>.</span><span class=n>memory_map</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span><span class=p>};</span><span class=w>
+</span><span class=w>    </span><span class=p>[</span><span class=err>…</span><span class=p>]</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>使用引导信息帧分配器，映射成功了，并且我们看到了黑白“ New！” 再次出现在屏幕上。 在后台，<code>map_to</code> 方法通过以下方式创建缺少的页表：</p>
+<ul>
+<li>从传递的 <code>frame_allocator</code> 中分配未使用的帧。</li>
+<li>将帧内容全部设置为 <code>0</code> 以创建一个新的空页表。</li>
+<li>将更高级别的表的条目映射到该帧。</li>
+<li>继续下一个表格级别。</li>
+</ul>
+<p>尽管我们的 <code>create_example_mapping</code> 函数只是一些示例代码，但我们现在能够为任意页面创建新的映射。 这对于在以后的帖子中分配内存或实现多线程至关重要。</p>
+<h2 id=总结>总结</h2>
+<p>在这篇文章中，我们了解了访问页表物理帧的各种技术，包括恒等映射，完整物理内存的映射，临时映射和递归页表。 我们选择映射完整的物理内存，因为它简单，可移植且功能强大。</p>
+<p>没有页表访问权限，我们无法映射内核中的物理内存，因此我们需要引导加载程序的支持。 <code>bootloader</code> crate 支持通过可选的 cargo features 创建所需的映射。 它将所需信息以 <code>&BootInfo</code> 参数的形式传递给我们的内核入口函数。</p>
+<p>对于我们的实现，我们首先手动遍历页表以实现地址翻译功能，然后使用 <code>x86_64</code> crate 的 <code>MappedPageTable</code> 类型。 我们还学习了如何在页表中创建新的映射，以及如何在引导加载程序传递的内存映射之上创建必要的 <code>FrameAllocator</code>。</p>
+<h2 id=接下来>接下来？</h2>
+<p>下一篇文章将为我们的内核创建一个堆内存区域，这将使我们能够分配内存并使用各种集合类型。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2019-09-25 07:43:38
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/memory-management/>Memory Management</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/09.pub/writing-an-os-in-rust/10-heap-allocation/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">分配堆内存</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/writing-an-os-in-rust/08-introduction-to-paging/>
+<span class="next-text nav-default">介绍分页</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>

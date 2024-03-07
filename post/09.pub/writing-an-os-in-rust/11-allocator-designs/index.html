@@ -1,0 +1,1802 @@
+<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=x-ua-compatible content="IE=edge">
+<title>内存分配器设计 - Justice的小站</title>
+<meta name=renderer content="webkit">
+<meta name=referrer content="no-referrer">
+<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
+<meta name=MobileOptimized content="width">
+<meta name=HandheldFriendly content="true">
+<meta name=applicable-device content="pc,mobile">
+<meta name=theme-color content="#f8f5ec">
+<meta name=msapplication-navbutton-color content="#f8f5ec">
+<meta name=apple-mobile-web-app-capable content="yes">
+<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
+<meta name=mobile-web-app-capable content="yes">
+<meta name=author content="Justice">
+<meta name=description content="这篇文章介绍了如何从头开始实现堆分配器。它提出并讨论了不同的分配器设计，包括Bump分配，基于链表的分配和固定大小的块分配。 对于这三种设计中的每一种，我们将创建一个可用于我们的内核的基本实现。">
+<meta name=keywords content="tech,it,blog">
+<meta name=generator content="Hugo 0.88.1">
+<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/11-allocator-designs/>
+<link rel=icon href=/favicon.ico>
+<link rel=stylesheet href=/sass/jane.min.34a0cf3583dc0fd6b4e3fe24a36c076984feee75ebc2792cff33928ccdcfc628.css integrity="sha256-NKDPNYPcD9a04/4ko2wHaYT+7nXrwnks/zOSjM3Pxig=" media=screen crossorigin=anonymous>
+<meta property="og:title" content="内存分配器设计">
+<meta property="og:description" content="这篇文章介绍了如何从头开始实现堆分配器。它提出并讨论了不同的分配器设计，包括Bump分配，基于链表的分配和固定大小的块分配。 对于这三种设计中的每一种，我们将创建一个可用于我们的内核的基本实现。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/11-allocator-designs/"><meta property="article:section" content="post">
+<meta property="article:published_time" content="2020-01-22T18:31:30+00:00">
+<meta property="article:modified_time" content="2020-01-22T18:31:30+00:00"><meta property="og:site_name" content="Justice的小站">
+<meta itemprop=name content="内存分配器设计">
+<meta itemprop=description content="这篇文章介绍了如何从头开始实现堆分配器。它提出并讨论了不同的分配器设计，包括Bump分配，基于链表的分配和固定大小的块分配。 对于这三种设计中的每一种，我们将创建一个可用于我们的内核的基本实现。"><meta itemprop=datePublished content="2020-01-22T18:31:30+00:00">
+<meta itemprop=dateModified content="2020-01-22T18:31:30+00:00">
+<meta itemprop=wordCount content="18470">
+<meta itemprop=keywords content="Memory Management,"><meta name=twitter:card content="summary">
+<meta name=twitter:title content="内存分配器设计">
+<meta name=twitter:description content="这篇文章介绍了如何从头开始实现堆分配器。它提出并讨论了不同的分配器设计，包括Bump分配，基于链表的分配和固定大小的块分配。 对于这三种设计中的每一种，我们将创建一个可用于我们的内核的基本实现。"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
+<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
+</head>
+<body>
+<div id=mobile-navbar class=mobile-navbar>
+<div class=mobile-header-logo>
+<a href=/ class=logo>Justice's Blog</a>
+</div>
+<div class=mobile-navbar-icon>
+<span></span>
+<span></span>
+<span></span>
+</div>
+</div>
+<nav id=mobile-menu class="mobile-menu slideout-menu">
+<ul class=mobile-menu-list>
+<li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li><li class=mobile-menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=mobile-menu-item>
+<a id=openSearchMobile class="mobile-menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
+<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
+<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
+<div class=pswp__bg></div>
+<div class=pswp__scroll-wrap>
+<div class=pswp__container>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+<div class=pswp__item></div>
+</div>
+<div class="pswp__ui pswp__ui--hidden">
+<div class=pswp__top-bar>
+<div class=pswp__counter></div>
+<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+<div class=pswp__preloader>
+<div class=pswp__preloader__icn>
+<div class=pswp__preloader__cut>
+<div class=pswp__preloader__donut></div>
+</div>
+</div>
+</div>
+</div>
+<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+<div class=pswp__share-tooltip></div>
+</div>
+<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+</button>
+<div class=pswp__caption>
+<div class=pswp__caption__center></div>
+</div>
+</div>
+</div>
+</div>
+<div class=modal-dialog>
+<div class=modal-content>
+<div id=closeSearch title=Close class=close>X</div>
+<div class=modal-header>
+<div class=modal-title>Search</div>
+</div>
+<div class=modal-body>
+<script>(function(){var c='05bff2da94121334a',a=document.createElement('script'),b;a.type='text/javascript',a.async=!0,a.src=(document.location.protocol=='https:'?'https:':'http:')+'//cse.google.com/cse.js?cx='+c,b=document.getElementsByTagName('script')[0],b.parentNode.insertBefore(a,b)})()</script>
+<gcse:search></gcse:search>
+</div>
+</div>
+</div>
+<header id=header class="header container">
+<div class=logo-wrapper>
+<a href=/ class=logo>
+Justice's Blog
+</a>
+</div>
+<nav class=site-navbar>
+<ul id=menu class=menu>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
+</li>
+<li class=menu-item>
+<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
+更多
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
+</i>
+</a>
+</li>
+<li class=menu-item>
+<a id=openSearch class="menu-item-link menu-item-search" href=#>
+<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
+</i>
+</a>
+</li>
+</ul>
+</nav>
+</header>
+<div id=mobile-panel>
+<main id=main class="main bg-llight">
+<div class=content-wrapper>
+<div id=content class="content container">
+<article class="post bg-white">
+<header class=post-header>
+<h1 class=post-title>内存分配器设计</h1>
+<div class=post-meta>
+<time datetime=2020-01-22 class=post-time>
+2020-01-22 18:31:30
+</time>
+<div class=post-category>
+<a href=https://justice.bj.cn/categories/pub/> pub </a>
+<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
+</div>
+<span id=busuanzi_container_page_pv>
+| 阅读 <span id=busuanzi_value_page_pv></span>
+</span>
+</div>
+</header>
+<div class=post-toc id=post-toc>
+<h2 class=post-toc-title>文章目录</h2>
+<div class=post-toc-content>
+<nav id=TableOfContents>
+<ul>
+<li><a href=#介绍>介绍</a>
+<ul>
+<li><a href=#设计目标>设计目标</a></li>
+</ul>
+</li>
+<li><a href=#bump分配器>Bump分配器</a>
+<ul>
+<li><a href=#基本想法>基本想法</a></li>
+<li><a href=#实现>实现</a></li>
+<li><a href=#实现globalalloc>实现<code>GlobalAlloc</code></a></li>
+<li><a href=#使用>使用</a></li>
+<li><a href=#讨论>讨论</a></li>
+</ul>
+</li>
+<li><a href=#链表分配器>链表分配器</a>
+<ul>
+<li><a href=#实现-1>实现</a></li>
+<li><a href=#使用-1>使用</a></li>
+<li><a href=#讨论-1>讨论</a></li>
+</ul>
+</li>
+<li><a href=#固定大小的块分配器>固定大小的块分配器</a>
+<ul>
+<li><a href=#介绍-1>介绍</a></li>
+<li><a href=#实现-2>实现</a></li>
+<li><a href=#使用-2>使用</a></li>
+<li><a href=#讨论-2>讨论</a></li>
+<li><a href=#变化>变化</a></li>
+</ul>
+</li>
+<li><a href=#总结>总结</a></li>
+<li><a href=#接下来是什么>接下来是什么？</a></li>
+</ul>
+</nav>
+</div>
+</div>
+<div class=post-content>
+<h2 id=介绍>介绍</h2>
+<p>在<a href=https://os.phil-opp.com/heap-allocation>上一篇文章</a>中我们向内核添加了对堆内存分配的基本支持。 为此，我们在页表中<a href=https://os.phil-opp.com/heap-allocation#creating-a-kernel-heap>创建了一个新的内存区域</a> ，并<a href=https://os.phil-opp.com/heap-allocation#using-an-allocator-crate>使用<code>linked_list_allocator</code> crate</a>管理该部分内存。 现在我们有了一个可以工作的堆，但大部分工作都是这个crate做的，而我们没有了解它是如何工作的。</p>
+<p>在本文中，我们将展示如何从头开始创建自己的堆分配器，而不是依赖现有的分配器crate。 我们将讨论不同的分配器设计，包括简单的<em>Bump分配器</em>和基本的<em>固定大小的块分配器</em> ，并使用此过程中得到的知识来实现（相比<code>linked_list_allocator</code> crate）性能更好的分配器。</p>
+<h3 id=设计目标>设计目标</h3>
+<p>分配器的职责是管理可用的堆内存。 它需要在<code>alloc</code>调用中返回未使用的内存，并跟踪由<code>dealloc</code>释放的内存，以便可以再次重用它。 最重要的是，它绝不能重复分配已经在其他地方使用的内存，因为这会导致不确定的行为。</p>
+<p>除了正确性之外，还有许多次要设计目标。 例如，分配器应有效地利用可用内存并使<a href=https://en.wikipedia.org/wiki/Fragmentation_(computing)><em>碎片</em></a>减少。此外，它对于并发应用程序应能很好地工作，并可扩展到任意数量的处理器。 为了获得最佳性能，它甚至可以针对CPU缓存优化内存布局，以提高<a href=http://docs.cray.com/books/S-2315-50/html-S-2315-50/qmeblljm.html>缓存亲和性</a>并避免<a href=http://mechanical-sympathy.blogspot.de/2011/07/false-sharing.html>False Sharing</a> 。</p>
+<p>这些要求会使好的分配器非常复杂。 例如， <a href=http://jemalloc.net/>jemalloc</a>具有超过30,000行代码。 通常我们不希望内核代码中的分配器如此复杂，因为其中的单个错误会就会导致严重的安全漏洞。 幸运的是，与用户空间代码相比，内核代码的分配模式通常要简单得多，因此相对简单的分配器设计通常就足够了。</p>
+<p>在下文中，我们介绍了三种可能的内核分配器设计，并说明了它们的优缺点。</p>
+<h2 id=bump分配器>Bump分配器</h2>
+<p>最简单的分配器设计是<em>Bump分配器</em> 。 它线性分配内存，并且仅记录分配的字节数和分配次数。 它仅在非常特定的用例中有用，因为它有一个严格的限制：它只能一次释放所有内存。</p>
+<h3 id=基本想法>基本想法</h3>
+<p>Bump分配器背后的思想是通过增加（ <em>“Bump”</em> ） <code>next</code>变量来线性分配内存，该变量指向未使用的内存的开头。 一开始， <code>next</code>等于堆的起始地址。 每次分配时， <code>next</code>都会增加，因此它始终指向已用和未用内存之间的边界：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/bump-allocation.svg alt="在三个时间点的堆内存区域：1：在堆的开始处存在一个分配；下一个指针指向其结尾 2：在第一个分配之后立即添加了第二个分配；下一个指针指向第二个分配的末尾3：在第二个分配之后立即添加了第三个分配；`下一个指针指向第三分配的末尾"></p>
+<p><code>next</code>指针单向移动，因此永远不会两次分配相同的存储区域。 当<code>next</code>到达堆末尾时，无法再分配更多的内存，从而导致下一次分配出现内存不足错误。</p>
+<p>Bump分配器通常带有一个分配计数器，分配计数器在每个<code>alloc</code>调用中增加1，在每个<code>dealloc</code>调用中减少1。 当分配计数器达到零时，表示堆上分配的所有内存都已释放。 在这种情况下，可以将<code>next</code>指针重置为堆的起始地址，以便完整的堆内存可再次用于分配。</p>
+<h3 id=实现>实现</h3>
+<p>我们通过声明一个新的<code>allocator::bump</code>子模块开始我们的实现：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>bump</span><span class=p>;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>子模块的内容位于新的<code>src/allocator/bump.rs</code>文件中，如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/bump.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>BumpAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>heap_start</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>heap_end</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>next</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>allocations</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>BumpAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Creates a new empty bump allocator.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=k>fn</span> <span class=nf>new</span><span class=p>()</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>BumpAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>heap_start</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=n>heap_end</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=n>next</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>            </span><span class=n>allocations</span>: <span class=mi>0</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Initializes the bump allocator with the given heap bounds.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// This method is unsafe because the caller must ensure that the given
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// memory range is unused. Also, this method must be called only once.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>heap_start</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>heap_size</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>heap_start</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>heap_start</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>heap_end</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>heap_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>heap_size</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>heap_start</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>heap_start</code>和<code>heap_end</code>字段跟踪堆内存区域的下限和上限。 调用者需要确保这些地址有效，否则分配器将返回无效的内存。 因此， <code>init</code>函数是<code>unsafe</code>的。</p>
+<p><code>next</code>字段的目的是始终指向堆的第一个未使用字节，即下一个分配的起始地址。 在<code>init</code>函数中将其设置为<code>heap_start</code> ，因为在开始时没有使用任何堆内存。 在每次分配时，此字段都会增加分配大小（ <em>“ bumped”</em> ），以确保我们不会两次返回相同的内存区域。</p>
+<p><code>allocations</code>字段是记录分配数的简单计数器，目的是在释放最后一个分配后重置分配器。 初始化为0。</p>
+<p>我们选择创建一个单独的<code>init</code>函数，而不是直接在<code>new</code>中直接执行初始化，以使接口与<code>linked_list_allocator</code> crate提供的分配器相同。 这样，无需更改其他代码即可切换分配器。</p>
+<h3 id=实现globalalloc>实现<code>GlobalAlloc</code></h3>
+<p>如<a href=https://os.phil-opp.com/heap-allocation#the-allocator-interface>前</a>一篇<a href=https://os.phil-opp.com/heap-allocation#the-allocator-interface>文章所述</a> ，所有堆分配器都需要实现<a href=https://doc.rust-lang.org/alloc/alloc/trait.GlobalAlloc.html><code>GlobalAlloc trait</code></a>，其定义如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>trait</span><span class=w> </span><span class=n>GlobalAlloc</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>dealloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc_zeroed</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=p>...</span><span class=w> </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>realloc</span><span class=p>(</span><span class=w>
+</span><span class=w>        </span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>,</span><span class=w>
+</span><span class=w>        </span><span class=n>new_size</span>: <span class=kt>usize</span>
+    <span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=p>...</span><span class=w> </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>仅需要<code>alloc</code>和<code>dealloc</code>方法，其他两个方法具有默认实现，可以省略。</p>
+<h4 id=首次尝试实现>首次尝试实现</h4>
+<p>让我们尝试为<code>BumpAllocator</code>实现<code>alloc</code>方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/bump.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>alloc</span>::<span class=n>alloc</span>::<span class=p>{</span><span class=n>GlobalAlloc</span><span class=p>,</span><span class=w> </span><span class=n>Layout</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>GlobalAlloc</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>BumpAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// TODO alignment and bounds check
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>next</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=n>size</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>allocations</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=n>alloc_start</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>dealloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>_ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w> </span><span class=n>_layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>todo</span><span class=o>!</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>首先，我们使用<code>next</code>字段作为分配的起始地址。 然后，我们更新<code>next</code>字段以指向分配的结束地址，这是堆上的下一个未使用的地址。 在以<code>*mut u8</code>指针返回分配的开始地址之前，我们将<code>allocations</code>计数器增加1。</p>
+<p>请注意，我们不执行任何边界检查或对齐调整，因此此实现尚不安全。 这并不要紧，因为无论如何它都无法编译并出现以下错误：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-mysql data-lang=mysql><span class=n>error</span><span class=p>[</span><span class=n>E0594</span><span class=p>]:</span><span class=w> </span><span class=n>cannot</span><span class=w> </span><span class=n>assign</span><span class=w> </span><span class=k>to</span><span class=w> </span><span class=o>`</span><span class=n>self</span><span class=p>.</span><span class=n>next</span><span class=o>`</span><span class=w> </span><span class=n>which</span><span class=w> </span><span class=k>is</span><span class=w> </span><span class=n>behind</span><span class=w> </span><span class=n>a</span><span class=w> </span><span class=o>`&amp;`</span><span class=w> </span><span class=n>reference</span><span class=w>
+</span><span class=w>  </span><span class=o>--&gt;</span><span class=w> </span><span class=n>src</span><span class=o>/</span><span class=n>allocator</span><span class=o>/</span><span class=n>bump</span><span class=p>.</span><span class=n>rs</span><span class=p>:</span><span class=mi>29</span><span class=p>:</span><span class=mi>9</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>
+</span><span class=w></span><span class=mi>26</span><span class=w> </span><span class=o>|</span><span class=w>     </span><span class=n>unsafe</span><span class=w> </span><span class=n>fn</span><span class=w> </span><span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=n>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span><span class=p>:</span><span class=w> </span><span class=n>Layout</span><span class=p>)</span><span class=w> </span><span class=o>-&gt;</span><span class=w> </span><span class=o>*</span><span class=n>mut</span><span class=w> </span><span class=n>u8</span><span class=w> </span><span class=err>{</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>                     </span><span class=o>---</span><span class=c1>-- help: consider changing this to be a mutable reference: `&amp;mut self`
+</span><span class=c1></span><span class=p>...</span><span class=w>
+</span><span class=w></span><span class=mi>29</span><span class=w> </span><span class=o>|</span><span class=w>         </span><span class=n>self</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=nf>size</span><span class=p>();</span><span class=w>
+</span><span class=w>   </span><span class=o>|</span><span class=w>         </span><span class=o>^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span><span class=w> </span><span class=o>`</span><span class=n>self</span><span class=o>`</span><span class=w> </span><span class=k>is</span><span class=w> </span><span class=n>a</span><span class=w> </span><span class=o>`&amp;`</span><span class=w> </span><span class=n>reference</span><span class=p>,</span><span class=w> </span><span class=n>so</span><span class=w> </span><span class=n>the</span><span class=w> </span><span class=n>data</span><span class=w> </span><span class=n>it</span><span class=w> </span><span class=n>refers</span><span class=w> </span><span class=k>to</span><span class=w> </span><span class=n>cannot</span><span class=w> </span><span class=n>be</span><span class=w> </span><span class=n>written</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>（ <code>self.allocations += 1</code>行也发生相同的错误。为简洁起见，在此省略。）</p>
+<p>发生该错误是因为<code>GlobalAlloc</code> trait的<a href=https://doc.rust-lang.org/alloc/alloc/trait.GlobalAlloc.html#tymethod.alloc><code>alloc</code></a>和<a href=https://doc.rust-lang.org/alloc/alloc/trait.GlobalAlloc.html#tymethod.dealloc><code>dealloc</code></a>方法仅在不可变的<code>&self</code>引用上运行，因此无法更新<code>next</code>和<code>allocations</code>字段。 这是有问题的，因为在每个分配上<code>next</code>进行更新是Bump分配器的基本原理。</p>
+<p>注意，在方法声明中将<code>&self</code>更改为<code>&mut self</code>的编译器建议在这里不起作用。 原因是方法签名是由<code>GlobalAlloc</code> trait定义的，不能在实现端进行更改。 （我在Rust 的repo开了一个关于此类不合法的编译期建议的<a href=https://github.com/rust-lang/rust/issues/68049>issue</a>。）</p>
+<h4 id=globalalloc和可变性><code>GlobalAlloc</code>和可变性</h4>
+<p>在我们研究此可变性问题的可能解决方案之前，让我们尝试理解为什么使用<code>&self</code>参数定义<code>GlobalAlloc</code> trait方法的：正如我们在上一篇文章中看到<a href=https://os.phil-opp.com/heap-allocation#the-global-allocator-attribute>的那样</a> ，全局堆分配器是通过将<code>#[global_allocator]</code>属性添加到实现<code>GlobalAlloc</code>特性的<code>static</code> 。静态变量在Rust中是不可变的，因此无法调用在静态分配器上采用<code>&mut self</code>的方法。 因此， <code>GlobalAlloc</code>所有方法仅采用不可变的<code>&self</code>引用。</p>
+<p>幸运的是，有一种方法可以从<code>&self</code>引用中获取<code>&mut self</code>引用：通过将分配器包装在<a href=https://docs.rs/spin/0.5.0/spin/struct.Mutex.html><code>spin::Mutex</code></a>自旋锁中，我们可以使用同步<a href=https://doc.rust-lang.org/book/ch15-05-interior-mutability.html>内部可变性</a> 。 这种类型提供了执行<a href=https://en.wikipedia.org/wiki/Mutual_exclusion>互斥</a>的<code>lock</code>方法，因此可以安全地将<code>&self</code>引用转换为<code>&mut self</code>引用。 我们已经在内核中多次使用了包装器类型，例如<a href=https://os.phil-opp.com/vga-text-mode#spinlocks>VGA文本缓冲区</a> 。</p>
+<h4 id=locked包装类型><code>Locked</code>包装类型</h4>
+<p>借助<code>spin::Mutex</code>包装器类型，我们可以为Bump分配器实现<code>GlobalAlloc</code>特性。 诀窍是不是直接为<code>BumpAllocator</code>实现特征，而是为包装的<code>spin::Mutex</code>类型实现特征：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>GlobalAlloc</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>spin</span>::<span class=n>Mutex</span><span class=o>&lt;</span><span class=n>BumpAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=err>…</span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>不幸的是，这仍然不起作用，因为Rust编译器不允许实现其他crate中定义trait：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>error[E0117]: only traits defined in the current crate can be implemented for arbitrary types
+  --&gt; src/allocator/bump.rs:28:1
+   |
+28 | unsafe impl GlobalAlloc for spin::Mutex&lt;BumpAllocator&gt; {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^--------------------------
+   | |                           |
+   | |                           `spin::mutex::Mutex` is not defined in the current crate
+   | impl doesn&#39;t use only types from inside the current crate
+   |
+   = note: define and implement a trait or new type instead
+</code></pre></td></tr></table>
+</div>
+</div><p>为了解决这个问题，我们需要围绕<code>spin::Mutex</code>创建我们自己的包装器类型：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// A wrapper around spin::Mutex to permit trait implementations.
+</span><span class=sd></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>Locked</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>inner</span>: <span class=nc>spin</span>::<span class=n>Mutex</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=w> </span><span class=n>Locked</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=k>fn</span> <span class=nf>new</span><span class=p>(</span><span class=n>inner</span>: <span class=nc>A</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>Locked</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>inner</span>: <span class=nc>spin</span>::<span class=n>Mutex</span>::<span class=n>new</span><span class=p>(</span><span class=n>inner</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>lock</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>spin</span>::<span class=n>MutexGuard</span><span class=o>&lt;</span><span class=n>A</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>inner</span><span class=p>.</span><span class=n>lock</span><span class=p>()</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该类型是围绕<code>spin::Mutex&lt;A></code>的通用包装。 它对包装的类型<code>A</code>没有任何限制，因此可以用于包装所有类型，而不仅仅是分配器。 它提供了一个简单的<code>new</code>构造函数，该函数将给定值包装了起来。 为了方便起见，它还提供了一个<code>lock</code> 函数，该函数调用被包装的<code>Mutex</code>上的<code>lock</code> 。 由于<code>Locked</code>类型足够通用，因此也可用于其他分配器实现，因此我们将其放在父<code>allocator</code>模块中。</p>
+<h4 id=lockedbumpallocator><code>Locked&lt;BumpAllocator></code></h4>
+<p><code>Locked</code>类型是在我们自己的crate中定义的（与<code>spin::Mutex</code>相反），因此我们可以使用它为我们的Bump分配器实现<code>GlobalAlloc</code> 。 完整的实现如下所示：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/bump.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>super</span>::<span class=p>{</span><span class=n>align_up</span><span class=p>,</span><span class=w> </span><span class=n>Locked</span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>alloc</span>::<span class=n>alloc</span>::<span class=p>{</span><span class=n>GlobalAlloc</span><span class=p>,</span><span class=w> </span><span class=n>Layout</span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>ptr</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>GlobalAlloc</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>Locked</span><span class=o>&lt;</span><span class=n>BumpAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>bump</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w> </span><span class=c1>// get a mutable reference
+</span><span class=c1></span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>align_up</span><span class=p>(</span><span class=n>bump</span><span class=p>.</span><span class=n>next</span><span class=p>,</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=n>align</span><span class=p>());</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>alloc_end</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=n>size</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=n>alloc_end</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=n>bump</span><span class=p>.</span><span class=n>heap_end</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>ptr</span>::<span class=n>null_mut</span><span class=p>()</span><span class=w> </span><span class=c1>// out of memory
+</span><span class=c1></span><span class=w>        </span><span class=p>}</span><span class=w> </span><span class=k>else</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>bump</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>alloc_end</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=n>bump</span><span class=p>.</span><span class=n>allocations</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=n>alloc_start</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>dealloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>_ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w> </span><span class=n>_layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>bump</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w> </span><span class=c1>// get a mutable reference
+</span><span class=c1></span><span class=w>
+</span><span class=w>        </span><span class=n>bump</span><span class=p>.</span><span class=n>allocations</span><span class=w> </span><span class=o>-=</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=n>bump</span><span class=p>.</span><span class=n>allocations</span><span class=w> </span><span class=o>==</span><span class=w> </span><span class=mi>0</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>bump</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>bump</span><span class=p>.</span><span class=n>heap_start</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>alloc</code>和<code>dealloc</code>第一步都是通过<code>inner</code>字段调用<a href=https://docs.rs/spin/0.5.0/spin/struct.Mutex.html#method.lock><code>Mutex::lock</code></a>方法，以获取对包装后的分配器类型的可变引用。 该实例将保持锁定状态，直到方法结束，以便在多线程上下文中不会发生数据竞争（我们将很快添加线程支持）。</p>
+<p>与以前的原型相比， <code>alloc</code>实现现在遵守对齐要求并执行边界检查以确保分配保留在堆内存区域内。 第一步是将<code>next</code>地址四舍五入为<code>Layout</code>参数指定的对齐方式。 <code>align_up</code>显示<code>align_up</code>函数的代码。 像以前一样，我们然后将请求的分配大小添加到<code>alloc_start</code>以获得分配的结束地址。 如果它大于堆的结束地址，我们将返回一个空指针，以指示内存不足的情况。否则，我们将更新<code>next</code>地址，并像以前一样将<code>allocations</code>计数器增加1。 最后，我们返回转换为<code>*mut u8</code>指针的<code>alloc_start</code>地址。</p>
+<p><code>dealloc</code>函数将忽略给定的指针和<code>Layout</code>参数。 相反，它只是减少了<code>allocations</code>计数器。如果计数器再次达到<code>0</code> ，则意味着所有分配都被再次释放。 在这种情况下，它将<code>next</code>地址重置为<code>heap_start</code>地址，以使完整的堆内存再次可用。</p>
+<p><code>align_up</code>函数足够通用，可以将其放入父<code>allocator</code>模块中。 看起来像这样：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>align_up</span><span class=p>(</span><span class=n>addr</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>align</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>remainder</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>addr</span><span class=w> </span><span class=o>%</span><span class=w> </span><span class=n>align</span><span class=p>;</span><span class=w>
+</span><span class=w>    </span><span class=k>if</span><span class=w> </span><span class=n>remainder</span><span class=w> </span><span class=o>==</span><span class=w> </span><span class=mi>0</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>addr</span><span class=w> </span><span class=c1>// addr already aligned
+</span><span class=c1></span><span class=w>    </span><span class=p>}</span><span class=w> </span><span class=k>else</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>addr</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>remainder</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>align</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该函数首先计算<code>align</code>除<code>addr</code>除法的<a href=https://en.wikipedia.org/wiki/Euclidean_division>余数</a> 。 如果余数为<code>0</code> ，则地址已与给定的对齐方式对齐。 否则，我们通过减去余数（这样新的余数为0）然后加上<code>align</code>（以便地址不会变得小于原始地址）来对齐地址。</p>
+<h3 id=使用>使用</h3>
+<p>要使用Bump分配器而不是<code>linked_list_allocator</code> crate，我们需要更新<code>allocator.rs</code>的<code>ALLOCATOR</code>静态值：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>bump</span>::<span class=n>BumpAllocator</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[global_allocator]</span><span class=w>
+</span><span class=w></span><span class=k>static</span><span class=w> </span><span class=n>ALLOCATOR</span>: <span class=nc>Locked</span><span class=o>&lt;</span><span class=n>BumpAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Locked</span>::<span class=n>new</span><span class=p>(</span><span class=n>BumpAllocator</span>::<span class=n>new</span><span class=p>());</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>在这里，重要的是，我们将<code>BumpAllocator::new</code>和<code>Locked::new</code> 定义为<a href=https://doc.rust-lang.org/reference/items/functions.html#const-functions><code>const</code>函数</a> 。 如果它们是普通函数，则将发生编译错误，因为<code>static</code>的初始化表达式必须在编译时求值。</p>
+<p>我们不需要在<code>init_heap</code>函数中更改<code>ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE)</code>调用，因为凹凸分配器提供的接口与<code>linked_list_allocator</code>提供的分配器相同。</p>
+<p>现在我们的内核使用我们的凹凸分配器！ 一切都应该仍然有效，包括我们在上<a href=https://os.phil-opp.com/heap-allocation#adding-a-test><code>heap_allocation</code></a>文章中创建的<a href=https://os.phil-opp.com/heap-allocation#adding-a-test><code>heap_allocation</code>测试</a> ：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>&gt; cargo xtest --test heap_allocation
+[…]
+Running 3 tests
+simple_allocation... [ok]
+large_vec... [ok]
+many_boxes... [ok]
+</code></pre></td></tr></table>
+</div>
+</div><h3 id=讨论>讨论</h3>
+<p>Bump分配的最大优点是它非常快。 与需要主动寻找合适的内存块并在<code>alloc</code>和<code>dealloc</code>时执行各种记录任务的其他分配器设计（请参见下文）相比， 可以将Bump分配器优化为仅使用数条汇编指令。 这使得凹凸分配器对于优化分配性能很有用，例如在创建<a href=https://hacks.mozilla.org/2019/03/fast-bump-allocated-virtual-doms-with-rust-and-wasm>虚拟DOM库时</a> 。</p>
+<p>虽然很少使用Bump分配器作为全局分配器，但是凹凸分配的原理通常以竞技场分配的形式应用，<a href=https://mgravell.github.io/Pipelines.Sockets.Unofficial/docs/arenas.html>竞技场分配</a>基本上是将多次分配集中在一起以提高性能。 Rust的竞技场分配器的一个示例是<a href=https://docs.rs/toolshed/0.8.1/toolshed/index.html><code>toolshed</code></a> 。</p>
+<h4 id=bump分配器的缺点>Bump分配器的缺点</h4>
+<p>Bump分配器的主要局限性在于，只有释放所有分配后，它才能重新使用释放的内存。 这意味着单个长期分配足以防止内存重用。 当我们添加<code>many_boxes</code>测试的变体时，我们可以看到这一点：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/heap_allocation.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=cp>#[test_case]</span><span class=w>
+</span><span class=w></span><span class=k>fn</span> <span class=nf>many_boxes_long_lived</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>serial_print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;many_boxes_long_lived... &#34;</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>long_lived</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Box</span>::<span class=n>new</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=n>i</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=mi>0</span><span class=p>..</span><span class=n>HEAP_SIZE</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>x</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Box</span>::<span class=n>new</span><span class=p>(</span><span class=n>i</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=o>*</span><span class=n>x</span><span class=p>,</span><span class=w> </span><span class=n>i</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=o>*</span><span class=n>long_lived</span><span class=p>,</span><span class=w> </span><span class=mi>1</span><span class=p>);</span><span class=w> </span><span class=c1>// new
+</span><span class=c1></span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>像<code>many_boxes</code>测试一样，如果分配器不重新使用释放的内存，此测试会创建大量分配以引发内存不足故障。 此外，测试会创建一个<code>long_lived</code>分配，该分配对于整个循环执行有效。</p>
+<p>当我们尝试运行新测试时，我们发现它确实失败了：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>&gt; cargo xtest --test heap_allocation
+Running 4 tests
+simple_allocation... [ok]
+large_vec... [ok]
+many_boxes... [ok]
+many_boxes_long_lived... [failed]
+
+Error: panicked at &#39;allocation error: Layout { size_: 8, align_: 8 }&#39;, src/lib.rs:86:5
+</code></pre></td></tr></table>
+</div>
+</div><p>让我们尝试详细了解为什么会发生此故障：首先，在堆的开头分配了<code>long_lived</code>，从而将<code>allocations</code>计数器增加1。对于循环的每次迭代，都会临时分配一次内存并在下一次迭代开始之前释放它。 这意味着<code>allocations</code>计数器在迭代开始时临时增加到2，在迭代结束时减少到1。 现在的问题是，凹凸分配器仅在释放<em>所有</em>分配后才可以重用内存，即<code>allocations</code>计数器降为0。由于在循环结束之前不会发生这种情况，因此每次循环迭代都会分配一个新的内存区域，多次迭代后导致了内存不足错误。</p>
+<h4 id=重用释放的内存>重用释放的内存？</h4>
+<p>问题是：我们可以通过某种方式扩展凹凸分配器以消除此限制吗？</p>
+<p>正如我们在上一篇文章中了解到的那样，分配可以生存任意长的时间，并且可以按任意顺序释放。 这意味着我们需要跟踪数量可能无限的非连续未使用内存区域，如以下示例所示：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/allocation-fragmentation.svg alt=img></p>
+<p>该图显示了一段时间内的堆。 一开始，整个堆还没有被使用， <code>next</code>地址等于<code>heap_start</code> （第1行）。 然后发生第一个分配（第2行）。 在第3行中，分配了第二个存储块，并释放了第一次分配的内润。 在第4行中进行了更多分配。其中一半寿命很短，在第5行中已被释放，在该行中还进行了另一次新分配。</p>
+<p>第5行显示了一个基本问题：我们共有五个未使用的内存区域，它们的大小各不相同，但是<code>next</code>指针只能指向最后一个区域的开始。 尽管对于本示例，我们可以将其他未使用的存储区域的起始地址和大小存储在大小为4的数组中，但这并不是一般的解决方案，因为我们可以轻松地创建一个包含8、16或1000个未使用的存储区域的示例。</p>
+<p>通常，当我们有数量不定的项目时，我们可以使用在堆上分配的集合类型。 但此时这是不可能的，因为堆分配器不能依赖于自身（这将导致无限递归或死锁）。 因此，我们需要找到其他解决方案。</p>
+<h2 id=链表分配器>链表分配器</h2>
+<p>在实现分配器时，跟踪任意数量的空闲内存区域的常见技巧是将这些区域本身用作后备存储。 这利用了以下事实：区域仍被映射到虚拟地址并由物理帧支持，但是不再需要存储信息。 通过在已被释放的区域中存储有关的信息，我们可以跟踪无限制数量的已被释放的区域，而无需额外的内存。</p>
+<p>最常见的实现方法是在释放的内存中构造一个链表，每个节点都是一个释放的内存区域：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/linked-list-allocation.svg alt=img></p>
+<p>每个列表节点包含两个字段：内存区域的大小和指向下一个未使用的内存区域的指针。 使用这种方法，我们只需要一个指向第一个未使用区域（称为<code>head</code> ）的指针即可跟踪所有未使用区域，而与它们的数量无关。 产生的数据结构通常称为<a href=https://en.wikipedia.org/wiki/Free_list><em>空闲列表</em></a> 。</p>
+<p>正如您可能从名称中猜到的那样，这是<code>linked_list_allocator</code> crate使用的技术。</p>
+<h3 id=实现-1>实现</h3>
+<p>在下面，我们将创建自己的简单<code>LinkedListAllocator</code>类型，该类型使用上述方法来跟踪已被释放的内存区域。 文章的其他部分不需要这一部分知识，因此您可以根据需要跳过这部分实现细节。</p>
+<h4 id=分配器类型>分配器类型</h4>
+<p>我们首先在一个新的<code>allocator::linked_list</code>子模块中创建一个私有<code>ListNode</code>结构：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>linked_list</span><span class=p>;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>ListNode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>size</span>: <span class=kt>usize</span><span class=p>,</span><span class=w>
+</span><span class=w>    </span><span class=n>next</span>: <span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>就像图中一样，列表节点具有<code>size</code>字段和指向下一个节点的可选指针，由<code>Option&lt;&'static mut ListNode></code>类型表示。 <code>&'static mut</code>类型在语义上描述了一个有所有权的，在指针后面的对象。 基本上，这是一个没有析构函数的<a href=https://doc.rust-lang.org/alloc/boxed/index.html><code>Box</code></a> ，它在所在作用域的末尾释放对象。</p>
+<p>我们为<code>ListNode</code>实现以下方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>ListNode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>const</span><span class=w> </span><span class=k>fn</span> <span class=nf>new</span><span class=p>(</span><span class=n>size</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>ListNode</span><span class=w> </span><span class=p>{</span><span class=w> </span><span class=n>size</span><span class=p>,</span><span class=w> </span><span class=n>next</span>: <span class=nb>None</span> <span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>start_addr</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>const</span><span class=w> </span><span class=n>Self</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>usize</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>fn</span> <span class=nf>end_addr</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>)</span><span class=w> </span>-&gt; <span class=kt>usize</span> <span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>start_addr</span><span class=p>()</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>size</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该类型具有一个名为<code>new</code>的简单构造函数，以及用于计算所表示区域的开始和结束地址的方法。我们将<code>new</code>函数设为<a href=https://doc.rust-lang.org/reference/items/functions.html#const-functions>const函数</a> ，稍后在构造静态链表分配器时将需要使用该函数。 请注意，在const函数中使用可变引用（包括将<code>next</code>字段设置为<code>None</code> ）仍然不稳定。 为了使其能够编译，我们需要在<code>lib.rs</code>的开头添加 <strong><code>#![feature(const_mut_refs)]</code></strong> 。</p>
+<p>使用<code>ListNode</code>结构作为构建块，我们现在可以创建<code>LinkedListAllocator</code>结构：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>LinkedListAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>head</span>: <span class=nc>ListNode</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>LinkedListAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Creates an empty LinkedListAllocator.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=k>fn</span> <span class=nf>new</span><span class=p>()</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>head</span>: <span class=nc>ListNode</span>::<span class=n>new</span><span class=p>(</span><span class=mi>0</span><span class=p>),</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Initialize the allocator with the given heap bounds.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// This function is unsafe because the caller must guarantee that the given
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// heap bounds are valid and that the heap is unused. This method must be
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// called only once.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>heap_start</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>heap_size</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>add_free_region</span><span class=p>(</span><span class=n>heap_start</span><span class=p>,</span><span class=w> </span><span class=n>heap_size</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Adds the given memory region to the front of the list.
+</span><span class=sd></span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>add_free_region</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>addr</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>size</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>todo</span><span class=o>!</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该结构包含一个指向第一个堆区域的<code>head</code>节点。 我们只对<code>next</code>指针的值感兴趣，因此我们在<code>ListNone::new</code>函数中将<code>size</code>设置为0。 我们让<code>head</code>为<code>ListNode</code>类型而非<code>&'static mut ListNode</code>类型，这样做的优点是， <code>alloc</code>方法的实现将更加简单。</p>
+<p>像Bump分配器一样， <code>new</code>函数不会使用堆边界来初始化分配器。 除了保持API兼容性之外，原因还在于初始化函数需要将节点写入堆内存，这只能在运行时发生。 但是， <code>new</code>函数必须是可以在编译时求值的<a href=https://doc.rust-lang.org/reference/items/functions.html#const-functions><code>const</code>函数</a> ，因为它将用于初始化<code>ALLOCATOR</code>静态函数。 出于这个原因，我们再次单独提供了一个非const的<code>init</code>方法。</p>
+<p><code>init</code>方法使用<code>add_free_region</code>方法，稍后将显示其实现。 现在，我们使用<a href=https://doc.rust-lang.org/core/macro.todo.html><code>todo!</code></a> 宏，以提供一个总是panic的占位符实现。</p>
+<h4 id=add_free_region方法><code>add_free_region</code>方法</h4>
+<p><code>add_free_region</code>方法提供对链表的基本<em>push</em>操作。 当前，我们仅从<code>init</code>调用此方法，但它也将成为我们<code>dealloc</code>实现中的中心方法。 请记住，当再次释放分配的内存区域时，将调用<code>dealloc</code>方法。 为了跟踪此释放的内存区域，我们希望将其push到链表。</p>
+<p><code>add_free_region</code>方法的实现如下所示：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>super</span>::<span class=n>align_up</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>mem</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>LinkedListAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Adds the given memory region to the front of the list.
+</span><span class=sd></span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>add_free_region</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>addr</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>size</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// ensure that the freed region is capable of holding ListNode
+</span><span class=c1></span><span class=w>        </span><span class=n>assert</span><span class=o>!</span><span class=p>(</span><span class=n>align_up</span><span class=p>(</span><span class=n>addr</span><span class=p>,</span><span class=w> </span><span class=n>mem</span>::<span class=n>align_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>())</span><span class=w> </span><span class=o>==</span><span class=w> </span><span class=n>addr</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>assert</span><span class=o>!</span><span class=p>(</span><span class=n>size</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=n>mem</span>::<span class=n>size_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>());</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=c1>// create a new list node and append it at the start of the list
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>node</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>ListNode</span>::<span class=n>new</span><span class=p>(</span><span class=n>size</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=n>node</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>head</span><span class=p>.</span><span class=n>next</span><span class=p>.</span><span class=n>take</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>node_ptr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>addr</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=n>node_ptr</span><span class=p>.</span><span class=n>write</span><span class=p>(</span><span class=n>node</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>head</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=n>node_ptr</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该方法以地址和大小表示的内存区域作为参数，并将其添加到列表的前面。 首先，它确保给定区域具有存储<code>ListNode</code>所需的大小和对齐方式。 然后，它通过以下步骤创建节点并将其插入到列表中：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/linked-list-allocator-push.svg alt=img></p>
+<p>步骤0显示了在<code>add_free_region</code>之前堆的状态。 在步骤1中，使用图中标记为已<code>freed</code>的内存区域调用该方法。 初步检查后，该方法在其堆栈上创建一个具有被释放区域大小的新<code>node</code> 。 然后，它使用<a href=https://doc.rust-lang.org/core/option/enum.Option.html#method.take><code>Option::take</code></a>方法将节点的<code>next</code>指针设置为当前的<code>head</code>指针，从而将<code>head</code>指针重置为<code>None</code> 。</p>
+<p>在步骤2中，该方法通过<a href=https://doc.rust-lang.org/std/primitive.pointer.html#method.write><code>write</code></a>方法将新创建的<code>node</code>写入到被释放的内存区域的开头。 然后将<code>head</code>指针指向新节点。 最终的指针结构看起来有些混乱，因为被释放区域总是插入在列表的开头，但是如果我们跟随指针，我们会看到每个空闲区域仍然可以从<code>head</code>指针到达。</p>
+<h4 id=find_region方法><code>find_region</code>方法</h4>
+<p>对链表的第二项基本操作是查找条目并将其从列表中删除。 这是实现<code>alloc</code>方法所需的中心操作。 我们通过以下方式将操作实现为<code>find_region</code>方法：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>LinkedListAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Looks for a free region with the given size and alignment and removes
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// it from the list.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// Returns a tuple of the list node and the start address of the allocation.
+</span><span class=sd></span><span class=w>    </span><span class=k>fn</span> <span class=nf>find_region</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>size</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>align</span>: <span class=kt>usize</span><span class=p>)</span><span class=w>
+</span><span class=w>        </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=p>(</span><span class=o>&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=p>,</span><span class=w> </span><span class=kt>usize</span><span class=p>)</span><span class=o>&gt;</span><span class=w>
+</span><span class=w>    </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// reference to current list node, updated for each iteration
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>current</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>head</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=c1>// look for a large enough memory region in linked list
+</span><span class=c1></span><span class=w>        </span><span class=k>while</span><span class=w> </span><span class=kd>let</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=k>ref</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>region</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>current</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=k>if</span><span class=w> </span><span class=kd>let</span><span class=w> </span><span class=nb>Ok</span><span class=p>(</span><span class=n>alloc_start</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Self</span>::<span class=n>alloc_from_region</span><span class=p>(</span><span class=o>&amp;</span><span class=n>region</span><span class=p>,</span><span class=w> </span><span class=n>size</span><span class=p>,</span><span class=w> </span><span class=n>align</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=c1>// region suitable for allocation -&gt; remove node from list
+</span><span class=c1></span><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>region</span><span class=p>.</span><span class=n>next</span><span class=p>.</span><span class=n>take</span><span class=p>();</span><span class=w>
+</span><span class=w>                </span><span class=kd>let</span><span class=w> </span><span class=n>ret</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Some</span><span class=p>((</span><span class=n>current</span><span class=p>.</span><span class=n>next</span><span class=p>.</span><span class=n>take</span><span class=p>().</span><span class=n>unwrap</span><span class=p>(),</span><span class=w> </span><span class=n>alloc_start</span><span class=p>));</span><span class=w>
+</span><span class=w>                </span><span class=n>current</span><span class=p>.</span><span class=n>next</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>next</span><span class=p>;</span><span class=w>
+</span><span class=w>                </span><span class=k>return</span><span class=w> </span><span class=n>ret</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w> </span><span class=k>else</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=c1>// region not suitable -&gt; continue with next region
+</span><span class=c1></span><span class=w>                </span><span class=n>current</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>current</span><span class=p>.</span><span class=n>next</span><span class=p>.</span><span class=n>as_mut</span><span class=p>().</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=c1>// no suitable region found
+</span><span class=c1></span><span class=w>        </span><span class=nb>None</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该方法使用一个<code>current</code>变量和一个<a href=https://doc.rust-lang.org/reference/expressions/loop-expr.html#predicate-pattern-loops><code>while let</code>循环</a>来遍历列表元素。 首先，将<code>current</code>设置到（虚拟） <code>head</code>节点。 然后在每次迭代中，将其更新到当前节点的<code>next</code>字段（在<code>else</code>块中）。 如果该区域适合于具有给定大小和对齐方式的分配，则将该区域从列表中删除，并与<code>alloc_start</code>地址一起返回。</p>
+<p>当<code>current.next</code>指针变为<code>None</code> ，循环退出。 这意味着我们遍历了整个列表，但是没有找到适合分配的区域。 在这种情况下，我们返回<code>None</code> 。 检查区域是否合适是通过<code>alloc_from_region</code>函数来进行的，稍后将展示其实现。</p>
+<p>让我们更详细地研究如何从列表中删除合适的区域：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/linked-list-allocator-remove-region.svg alt=img></p>
+<p>步骤0显示了任何指针调整之前的情况。 图中标记出了<code>region</code>和<code>current</code>区域以及<code>region.next</code>和<code>current.next</code>指针。 在步骤1中，可以使用<a href=https://doc.rust-lang.org/core/option/enum.Option.html#method.take><code>Option::take</code></a>方法将<code>region.next</code>和<code>current.next</code>指针都重置为<code>None</code> 。 原始指针存储在名为<code>next</code>和<code>ret</code>局部变量中。</p>
+<p>在步骤2中，将<code>current.next</code>指针设置为本地的<code>next</code>指针，它是原来的<code>region.next</code>指针。结果是<code>current</code>直接指向region之后的<code>region</code> ，因此<code>region</code>不再是链表的元素。 然后，该函数将指针返回到存储在本地<code>ret</code>变量中的区域。</p>
+<h5 id=alloc_from_region函数><code>alloc_from_region</code>函数</h5>
+<p><code>alloc_from_region</code>函数返回区域是否适合于具有给定大小和对齐方式的分配。 定义如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>LinkedListAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Try to use the given region for an allocation with given size and
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// alignment.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// Returns the allocation start address on success.
+</span><span class=sd></span><span class=w>    </span><span class=k>fn</span> <span class=nf>alloc_from_region</span><span class=p>(</span><span class=n>region</span>: <span class=kp>&amp;</span><span class=nc>ListNode</span><span class=p>,</span><span class=w> </span><span class=n>size</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>align</span>: <span class=kt>usize</span><span class=p>)</span><span class=w>
+</span><span class=w>        </span>-&gt; <span class=nb>Result</span><span class=o>&lt;</span><span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=p>()</span><span class=o>&gt;</span><span class=w>
+</span><span class=w>    </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>align_up</span><span class=p>(</span><span class=n>region</span><span class=p>.</span><span class=n>start_addr</span><span class=p>(),</span><span class=w> </span><span class=n>align</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>alloc_end</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>size</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=n>alloc_end</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=n>region</span><span class=p>.</span><span class=n>end_addr</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=c1>// region too small
+</span><span class=c1></span><span class=w>            </span><span class=k>return</span><span class=w> </span><span class=nb>Err</span><span class=p>(());</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>excess_size</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>region</span><span class=p>.</span><span class=n>end_addr</span><span class=p>()</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>alloc_end</span><span class=p>;</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=n>excess_size</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=mi>0</span><span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span><span class=n>excess_size</span><span class=w> </span><span class=o>&lt;</span><span class=w> </span><span class=n>mem</span>::<span class=n>size_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=c1>// rest of region too small to hold a ListNode (required because the
+</span><span class=c1></span><span class=w>            </span><span class=c1>// allocation splits the region in a used and a free part)
+</span><span class=c1></span><span class=w>            </span><span class=k>return</span><span class=w> </span><span class=nb>Err</span><span class=p>(());</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=c1>// region suitable for allocation
+</span><span class=c1></span><span class=w>        </span><span class=nb>Ok</span><span class=p>(</span><span class=n>alloc_start</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>首先，该函数使用我们之前定义的<code>align_up</code>函数来计算潜在分配的开始和结束地址。 如果要求的结束地址在该区域的结束地址之后，则该分配不适合该区域，并且我们返回错误。</p>
+<p>此后，该函数执行了一个作用不太显然的检查。 进行此检查是必要的，因为在大多数情况下，分配并不能完全适合某个合适的区域，因此分配后，该区域的一部分仍然可用。 该区域的这一部分必须在分配后存储自己的<code>ListNode</code> ，因此它必须足够大才能存储。该检查准确地验证了这一点：分配是否完全适合（<code>excess_size == 0</code>）或多余的大小足以存储a <code>ListNode</code>。</p>
+<h4 id=实现globalalloc-1>实现<code>GlobalAlloc</code></h4>
+<p>通过<code>add_free_region</code>和<code>find_region</code>方法提供的基本操作，我们现在可以最终实现<code>GlobalAlloc</code> trait。与Bump分配器一样，我们不直接针对<code>LinkedListAllocator</code>，而是仅针对包装过的<code>Locked&lt;LinkedListAllocator></code>来实现trait。该<a href=https://os.phil-opp.com/allocator-designs#a-locked-wrapper-type><code>Locked</code>包装</a>通过自旋锁向分配器实例添加了内部可变性，这使得我们可以修改它，即使<code>alloc</code>和<code>dealloc</code>方法的参数是不可变的<code>&self</code>引用。</p>
+<p>实现看起来像这样：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>super</span>::<span class=n>Locked</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>alloc</span>::<span class=n>alloc</span>::<span class=p>{</span><span class=n>GlobalAlloc</span><span class=p>,</span><span class=w> </span><span class=n>Layout</span><span class=p>};</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>ptr</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>GlobalAlloc</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>Locked</span><span class=o>&lt;</span><span class=n>LinkedListAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// perform layout adjustments
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=p>(</span><span class=n>size</span><span class=p>,</span><span class=w> </span><span class=n>align</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>LinkedListAllocator</span>::<span class=n>size_align</span><span class=p>(</span><span class=n>layout</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>allocator</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>inner</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=k>if</span><span class=w> </span><span class=kd>let</span><span class=w> </span><span class=nb>Some</span><span class=p>((</span><span class=n>region</span><span class=p>,</span><span class=w> </span><span class=n>alloc_start</span><span class=p>))</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>allocator</span><span class=p>.</span><span class=n>find_region</span><span class=p>(</span><span class=n>size</span><span class=p>,</span><span class=w> </span><span class=n>align</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>alloc_end</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>alloc_start</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=n>size</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>excess_size</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>region</span><span class=p>.</span><span class=n>end_addr</span><span class=p>()</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=n>alloc_end</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=k>if</span><span class=w> </span><span class=n>excess_size</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=mi>0</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=n>allocator</span><span class=p>.</span><span class=n>add_free_region</span><span class=p>(</span><span class=n>alloc_end</span><span class=p>,</span><span class=w> </span><span class=n>excess_size</span><span class=p>);</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>            </span><span class=n>alloc_start</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w> </span><span class=k>else</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>ptr</span>::<span class=n>null_mut</span><span class=p>()</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>dealloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=c1>// perform layout adjustments
+</span><span class=c1></span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=p>(</span><span class=n>size</span><span class=p>,</span><span class=w> </span><span class=n>_</span><span class=p>)</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>LinkedListAllocator</span>::<span class=n>size_align</span><span class=p>(</span><span class=n>layout</span><span class=p>);</span><span class=w>
+</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>inner</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>add_free_region</span><span class=p>(</span><span class=n>ptr</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>size</span><span class=p>)</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>让我们从该<code>dealloc</code>方法开始，因为它更简单：首先，它执行一些布局调整，我们将在稍后进行解释，并通过调用<a href=https://os.phil-opp.com/allocator-designs#a-locked-wrapper-type>Locked wrapper</a>的<a href=https://docs.rs/spin/0.5.0/spin/struct.Mutex.html#method.lock><code>Mutex::lock</code></a>函数来获取<code>&mut LinkedListAllocator</code>。然后，它调用<code>add_free_region</code>函数以将释放区域添加到空闲列表中。</p>
+<p>该<code>alloc</code>方法有点复杂。它以相同的布局调整开始，并且还调用该<a href=https://docs.rs/spin/0.5.0/spin/struct.Mutex.html#method.lock><code>Mutex::lock</code></a>函数以接收可变的分配器引用。然后，它使用<code>find_region</code>方法找到适合分配的存储区域，并将其从列表中删除。如果此操作失败并返回<code>None</code>，则返回<code>null_mut</code>，告知用户没有合适的存储区域。</p>
+<p>在成功的情况下，该<code>find_region</code>方法返回合适区域（不再在列表中）的元组和分配的起始地址。使用<code>alloc_start</code>、分配大小和区域的结束地址，它再次计算分配的结束地址和多余的大小。如果多余的大小不为null，则调用<code>add_free_region</code>将内存区域的多余的大小添加回空闲列表。最后，它返回转换为<code>*mut u8</code>指针的<code>alloc_start</code>。</p>
+<h4 id=布局调整>布局调整</h4>
+<p>那么我们在<code>alloc</code>和<code>dealloc</code>的一开始做的这些布局的调整，都是什么？它们确保每个分配的块都能够存储一个<code>ListNode</code>。这一点很重要，因为在某个时候我们要释放这一块内存并向其中写一个<code>ListNode</code>。如果块小于一个<code>ListNode</code>的大小或没有正确的对齐方式，则会发生未定义的行为。</p>
+<p>布局调整由一个<code>size_align</code>函数执行，该函数定义如下：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/linked_list.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>LinkedListAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Adjust the given layout so that the resulting allocated memory
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// region is also capable of storing a `ListNode`.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// Returns the adjusted size and alignment as a (size, align) tuple.
+</span><span class=sd></span><span class=w>    </span><span class=k>fn</span> <span class=nf>size_align</span><span class=p>(</span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=p>(</span><span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>layout</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>layout</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>align_to</span><span class=p>(</span><span class=n>mem</span>::<span class=n>align_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>())</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;adjusting alignment failed&#34;</span><span class=p>)</span><span class=w>
+</span><span class=w>            </span><span class=p>.</span><span class=n>pad_to_align</span><span class=p>();</span><span class=w>
+</span><span class=w>        </span><span class=kd>let</span><span class=w> </span><span class=n>size</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=n>size</span><span class=p>().</span><span class=n>max</span><span class=p>(</span><span class=n>mem</span>::<span class=n>size_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>());</span><span class=w>
+</span><span class=w>        </span><span class=p>(</span><span class=n>size</span><span class=p>,</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=n>align</span><span class=p>())</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>首先，如果需要，函数对<a href=https://doc.rust-lang.org/alloc/alloc/struct.Layout.html><code>Layout</code></a>参数应用<code>align_to</code>方法来将内存对齐到能够容纳一个 <code>ListNode</code> 。然后，它使用该<a href=https://doc.rust-lang.org/core/alloc/struct.Layout.html#method.pad_to_align><code>pad_to_align</code></a>方法将大小四舍五入为对齐方式的倍数，以确保下一个存储块的起始地址也将具有正确的对齐方式以存储<code>ListNode</code>。在第二步中，它使用<a href=https://doc.rust-lang.org/std/cmp/trait.Ord.html#method.max><code>max</code></a>方法来强制最小分配大小为<code>mem::size_of::&lt;ListNode></code>。这样，<code>dealloc</code>函数可以安全地将<code>ListNode</code>写入已释放的内存块。</p>
+<p>无论是<code>align_to</code>和<code>pad_to_align</code>方法都使用了不稳定的特性。要启用该功能，我们需要将添加**<code>#![feature(alloc_layout_extra)]</code>**到<code>lib.rs</code>的开头。</p>
+<h3 id=使用-1>使用</h3>
+<p>现在，我们可以更新 <code>allocator</code>模块中的<code>ALLOCATOR</code>静态变量以使用我们的新<code>LinkedListAllocator</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>linked_list</span>::<span class=n>LinkedListAllocator</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[global_allocator]</span><span class=w>
+</span><span class=w></span><span class=k>static</span><span class=w> </span><span class=n>ALLOCATOR</span>: <span class=nc>Locked</span><span class=o>&lt;</span><span class=n>LinkedListAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=o>=</span><span class=w>
+</span><span class=w>    </span><span class=n>Locked</span>::<span class=n>new</span><span class=p>(</span><span class=n>LinkedListAllocator</span>::<span class=n>new</span><span class=p>());</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>由于<code>init</code>函数对于Bump和链表分配器的行为相同，因此我们不需要修改<code>init_heap</code>中的<code>init</code>调用。</p>
+<p>现在，当我们再次运行<code>heap_allocation</code>测试时，我们看到所有测试现在都通过了，包括Bump分配器没有通过的<code>many_boxes_long_lived</code>：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>&gt; cargo xtest --test heap_allocation
+simple_allocation... [ok]
+large_vec... [ok]
+many_boxes... [ok]
+many_boxes_long_lived... [ok]
+</code></pre></td></tr></table>
+</div>
+</div><p>这表明我们的链表分配器能够将释放的内存重新用于后续分配。</p>
+<h3 id=讨论-1>讨论</h3>
+<p>与Bump分配器相比，链表分配器更适合用作通用分配器，主要是因为它能够直接重用释放的内存。但是，它也有一些缺点。其中一些是由我们的实现引起的，但是链表分配器这种设计本身也存在一些缺点。</p>
+<h4 id=合并释放的块>合并释放的块</h4>
+<p>我们实现的主要问题是，它只会将堆拆分为较小的块，而不会将它们重新合并在一起。考虑以下示例：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/linked-list-allocator-fragmentation-on-dealloc.svg alt=img></p>
+<p>在第一行中，在堆上进行了三次分配。它们中的两个在第2行中再次被释放，而第三个在第3行中被释放。现在整个堆都不再被使用，但仍被分成四个单独的块。此时，可能无法再进行大分配，因为四个块都不足够大。随着时间的流逝，该过程将继续进行，并将堆分成越来越小的块。这样下去总有一天，堆中会充满此类碎片，以至于正常大小的分配都将失败。</p>
+<p>要解决此问题，我们需要将相邻的释放块重新合并在一起。对于上面的示例，这意味着：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/linked-list-allocator-merge-on-dealloc.svg alt=img></p>
+<p>像以前一样，三个分配中的两个在第<code>2</code>行中被释放。现在，我们不执行保留碎片的堆的操作，而是直接执行另外一个步骤，<code>2a</code>行将两个最右边的块合并在一起。在<code>3</code>第3 行中，释放了第三个分配（如之前一样），从而导致完全未使用的堆由三个不同的块组成。然后，在附加的合并步骤中（<code>3a</code>行）我们将三个相邻的块合并在一起。</p>
+<p><code>linked_list_allocator</code> crate以下列方式这一合并策略：它始终保持列表按照起始地址排序，而不是直接在链表的开头插入被<code>deallocate</code>释放的内存块。这样，<code>deallocate</code>调用时可以通过检查列表中两个相邻块的地址和大小来进行合并。当然，这种方式的释放操作比较慢，但是可以防止我们在上面看到的堆碎片。</p>
+<h4 id=性能>性能</h4>
+<p>正如我们在上面学到的，Bump分配器非常快，可以优化为仅需几个汇编指令操作。链表分配器的性能要差得多。其问题是分配请求可能需要遍历完整的链表，直到找到合适的块为止。</p>
+<p>由于列表长度取决于未使用的存储块的数量，因此对于不同的程序，其性能可能会发生极大的变化。仅创建几个分配的程序将有相对较快的分配性能。但是，对于一个会进行很多次分配，导致堆变得碎片化的程序，分配性能将非常糟糕，因为链表将非常长，并且其中大多数包含的块都非常小。</p>
+<p>值得注意的是，这类性能问题不是由我们的实现引起的问题，而是链表方法的根本问题。由于分配性能对于内核级代码非常重要，因此我们在下面探讨了第三种分配器设计，该设计以降低内存利用率代价来提高性能。</p>
+<h2 id=固定大小的块分配器>固定大小的块分配器</h2>
+<p>下面，我们介绍一种分配器设计，该设计使用固定大小的内存块来满足分配请求。这样，分配器通常返回的块大于分配所需的块，这会由于<a href=https://en.wikipedia.org/wiki/Fragmentation_(computing)#Internal_fragmentation>内部碎片</a>而导致内存浪费。另一方面，它大大减少了找到合适块所需的时间（与链表分配器相比），从而有更好的分配性能。</p>
+<h3 id=介绍-1>介绍</h3>
+<p><em>固定大小的块分配器</em>背后的思想是：并不恰好分配大小等于所需的内存，而是固定一些块大小并将每个分配舍入到能装下它的最小块大小。例如，对于16、64和512字节的块大小，分配4个字节将返回一个16字节的块，分配一个48字节将返回一个64字节的块，而分配128个字节将返回一个512字节的块。 。</p>
+<p>像链表分配器一样，我们通过在未使用的内存中创建链表来跟踪未使用的内存。但是，我们不使用具有不同块大小的单个列表，而是为每个大小类创建一个单独的列表。然后，每个链表仅存储单个大小的块。例如，对于块大小为16、64和512的内存，将有三个单独的链表：</p>
+<p><img src=https://os.phil-opp.com/allocator-designs/fixed-size-block-example.svg alt=img></p>
+<p>我们有三个头指针<code>head_16</code>，<code>head_64</code>以及<code>head_512</code>而不是一个单一的<code>head</code>指针，每个都指到到对应的大小的第一个未使用块。单个列表中的所有节点都具有相同的大小。例如，由<code>head_16</code>指针开始的列表仅包含16字节的块。这意味着我们不再需要在每个列表节点中存储大小，因为它已经由头指针的名称指定了。</p>
+<p>由于列表中的每个元素都具有相同的大小，因此每个列表元素都同样适用于分配请求。这意味着我们可以使用以下步骤非常有效地执行分配：</p>
+<ul>
+<li>将请求的分配大小四舍五入到下一个块大小。例如，当请求分配12个字节时，在上面的示例中，我们将选择16的块大小。</li>
+<li>检索列表的头部指针，例如从一个头指针数组中检索。对于块大小16，我们需要使用<code>head_16</code>。</li>
+<li>从列表中删除第一个块并返回它。</li>
+</ul>
+<p>最值得注意的是，我们总是可以返回链表的第一个元素，而不再需要遍历整个链表。因此，分配比使用链表分配器快得多。</p>
+<h4 id=块大小和浪费的内存>块大小和浪费的内存</h4>
+<p>根据块大小，我们通过舍入会损失很多内存。例如，当返回一个512字节的块以进行128字节的分配时，分配的内存中有四分之三未被使用。通过定义合理的块大小，可以在某种程度上限制浪费的内存量。例如，当使用2的幂（4、8、16、32、64、128、…）作为块大小时，在最坏的情况下，我们可以将内存浪费限制为分配大小的一半，平均情况下为分配的四分之一。</p>
+<p>通常也会基于程序中的常用的分配大小来优化块大小。例如，我们可以额外增加块大小24，以提高经常执行24字节分配的程序的内存使用率。这样，通常可以减少浪费的内存量，而不会损失性能优势。</p>
+<h4 id=释放>释放</h4>
+<p>像分配一样，释放也非常高效。它涉及以下步骤：</p>
+<ul>
+<li>将释放的内存大小四舍五入到下一个块大小。这是必需的，因为编译器仅将请求的分配大小传递给<code>dealloc</code>，而不传递<code>alloc</code>所返回的块的大小。通过在<code>alloc</code>和<code>dealloc</code>中使用相同的大小调整函数我们可以确保始终释放正确的内存量。</li>
+<li>检索列表的头部指针，例如从一个头指针数组中检索。</li>
+<li>通过更新头指针，将释放的块添加到列表的开头。</li>
+</ul>
+<p>最值得注意的是，也无需遍历列表即可进行释放。这意味着<code>dealloc</code>无论列表长度如何，所需的时间都保持不变。</p>
+<h4 id=后备分配器>后备分配器</h4>
+<p>鉴于大容量分配（> 2KB）通常是很少见的，尤其是在操作系统内核中，因此有可能需要退回到其他分配器进行这些分配。例如，为了减少内存浪费，我们可以退回到链表分配器中进行大于2048字节的分配。由于预期该大小的分配非常少，因此这个链表将保持较小状态，因此分配和释放仍会相当快。</p>
+<h4 id=创建新块>创建新块</h4>
+<p>上面，我们始终假定列表中始终有足够的特定大小的块来满足所有分配请求。但是，在某个时候，块大小的链接列表将为空。此时，有两种方法可以创建特定大小的未使用的新块来满足分配请求：</p>
+<ul>
+<li>从后备分配器分配一个新块（如果有）。</li>
+<li>从其他列表中拆分较大的块。如果块大小为2的幂，则此方法最有效。例如，一个32字节的块可以分为两个16字节的块。</li>
+</ul>
+<p>对于我们的实现，为了简单考虑，因此我们将从后备分配器分配新块。</p>
+<h3 id=实现-2>实现</h3>
+<p>现在我们知道了固定大小的块分配器是如何工作的，我们可以开始实现它了。我们将不依赖于上一节中创建的链表分配器的实现，因此即使您跳过了链表分配器的实现，也可以看这一部分。</p>
+<h4 id=列表节点>列表节点</h4>
+<p>我们通过在新<code>allocator::fixed_size_block</code>模块中创建<code>ListNode</code>类型来开始实现：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>fixed_size_block</span><span class=p>;</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>struct</span> <span class=nc>ListNode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>next</span>: <span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>这种类型类似于我们的<a href=https://os.phil-opp.com/allocator-designs#the-allocator-type>链表分配器</a>中的<code>ListNode</code>类型，不同之处在于我们没有第二个<code>size</code>字段。不需要该字段是因为每个列表中的每个块都具有相同的大小。</p>
+<h4 id=块大小>块大小</h4>
+<p>接下来，我们定义一个常量<code>BLOCK_SIZES</code>切片，并使用用于实现的块大小：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// The block sizes to use.
+</span><span class=sd>///
+</span><span class=sd>/// The sizes must each be power of 2 because they are also used as
+</span><span class=sd>/// the block alignment (alignments must be always powers of 2).
+</span><span class=sd></span><span class=k>const</span><span class=w> </span><span class=n>BLOCK_SIZES</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=kt>usize</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=o>&amp;</span><span class=p>[</span><span class=mi>8</span><span class=p>,</span><span class=w> </span><span class=mi>16</span><span class=p>,</span><span class=w> </span><span class=mi>32</span><span class=p>,</span><span class=w> </span><span class=mi>64</span><span class=p>,</span><span class=w> </span><span class=mi>128</span><span class=p>,</span><span class=w> </span><span class=mi>256</span><span class=p>,</span><span class=w> </span><span class=mi>512</span><span class=p>,</span><span class=w> </span><span class=mi>1024</span><span class=p>,</span><span class=w> </span><span class=mi>2048</span><span class=p>];</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>我们使用从8到2048的2的幂作为块大小。我们不定义任何小于8的块大小，因为每个块在释放时必须能够存储指向下一个块的64位指针。对于大于2048字节的分配，我们将退回到链表分配器。</p>
+<p>为了简化实现，我们定义块的大小也是其在内存中所需的对齐方式。因此，一个16字节的块始终在16字节的边界上对齐，而512字节的块始终在512字节的边界上对齐。由于对齐始终需要为2的幂，因此排除了任何其他块大小。如果将来需要的块大小不是2的幂，我们仍然可以为此调整实现（例如，通过定义第二个<code>BLOCK_ALIGNMENTS</code>数组）。</p>
+<h4 id=分配器类型-1>分配器类型</h4>
+<p>使用<code>ListNode</code>类型和<code>BLOCK_SIZES</code>切片，我们现在可以定义分配器类型：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>struct</span> <span class=nc>FixedSizeBlockAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=n>list_heads</span>: <span class=p>[</span><span class=nb>Option</span><span class=o>&lt;&amp;</span><span class=nb>&#39;static</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>;</span><span class=w> </span><span class=n>BLOCK_SIZES</span><span class=p>.</span><span class=n>len</span><span class=p>()],</span><span class=w>
+</span><span class=w>    </span><span class=n>fallback_allocator</span>: <span class=nc>linked_list_allocator</span>::<span class=n>Heap</span><span class=p>,</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>该<code>list_heads</code>字段是一个<code>head</code>指针数组，每个块大小一个。这是通过<code>len()</code>将<code>BLOCK_SIZES</code>slice的用作数组长度来实现的。作为大于最大块大小的分配的后备分配器，我们使用由<code>linked_list_allocator</code>提供的分配器。我们也可以使用我们自己实现的<code>LinkedListAllocator</code>，但是它的缺点是它不<a href=https://os.phil-opp.com/allocator-designs#merging-freed-blocks>合并被释放的块</a>。</p>
+<p>对于<code>FixedSizeBlockAllocator</code>，我们提供了与其他分配器类型相同的<code>new</code>和<code>init</code>函数：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>FixedSizeBlockAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Creates an empty FixedSizeBlockAllocator.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>const</span><span class=w> </span><span class=k>fn</span> <span class=nf>new</span><span class=p>()</span><span class=w> </span>-&gt; <span class=nc>Self</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>FixedSizeBlockAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=n>list_heads</span>: <span class=p>[</span><span class=nb>None</span><span class=p>;</span><span class=w> </span><span class=n>BLOCK_SIZES</span><span class=p>.</span><span class=n>len</span><span class=p>()],</span><span class=w>
+</span><span class=w>            </span><span class=n>fallback_allocator</span>: <span class=nc>linked_list_allocator</span>::<span class=n>Heap</span>::<span class=n>empty</span><span class=p>(),</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Initialize the allocator with the given heap bounds.
+</span><span class=sd></span><span class=w>    </span><span class=sd>///
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// This function is unsafe because the caller must guarantee that the given
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// heap bounds are valid and that the heap is unused. This method must be
+</span><span class=sd></span><span class=w>    </span><span class=sd>/// called only once.
+</span><span class=sd></span><span class=w>    </span><span class=k>pub</span><span class=w> </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>init</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>heap_start</span>: <span class=kt>usize</span><span class=p>,</span><span class=w> </span><span class=n>heap_size</span>: <span class=kt>usize</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=bp>self</span><span class=p>.</span><span class=n>fallback_allocator</span><span class=p>.</span><span class=n>init</span><span class=p>(</span><span class=n>heap_start</span><span class=p>,</span><span class=w> </span><span class=n>heap_size</span><span class=p>);</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p><code>new</code>函数只是使用空节点初始化<code>list_heads</code>数组，并创建一个空链表分配器作为<code>fallback_allocator</code>。 由于初始化非<code>Copy</code>类型的数组仍然是不稳定特性，因此我们需要在lib.rs的开头添加<code>#![feature(const_in_array_repeat_expressions)]</code>。 在这种情况下，<code>None</code>不是<code>Copy</code>的原因是<code>ListNode</code>没有实现<code>Copy</code>。 因此，<code>Option</code>包装及其<code>None</code>变体也不是<code>Copy</code>。</p>
+<p>不安全的init函数仅调用<code>fallback_allocator</code>的init函数，而无需对<code>list_heads</code>数组进行任何其他初始化。 相反，我们将在<code>alloc</code>和<code>dealloc</code>调用时lazy地初始化列表。</p>
+<p>为了方便起见，我们还创建了一个私有<code>fallback_alloc</code>方法，该方法使用<code>fallback_allocator</code>分配空间：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>alloc</span>::<span class=n>alloc</span>::<span class=n>Layout</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>ptr</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>impl</span><span class=w> </span><span class=n>FixedSizeBlockAllocator</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=sd>/// Allocates using the fallback allocator.
+</span><span class=sd></span><span class=w>    </span><span class=k>fn</span> <span class=nf>fallback_alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=k>match</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>fallback_allocator</span><span class=p>.</span><span class=n>allocate_first_fit</span><span class=p>(</span><span class=n>layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=nb>Ok</span><span class=p>(</span><span class=n>ptr</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>ptr</span><span class=p>.</span><span class=n>as_ptr</span><span class=p>(),</span><span class=w>
+</span><span class=w>            </span><span class=nb>Err</span><span class=p>(</span><span class=n>_</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>ptr</span>::<span class=n>null_mut</span><span class=p>(),</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>由于<code>linked_list_allocator</code>crate的<a href=https://docs.rs/linked_list_allocator/0.6.4/linked_list_allocator/struct.Heap.html><code>Heap</code></a>类型无法实现<a href=https://doc.rust-lang.org/alloc/alloc/trait.GlobalAlloc.html><code>GlobalAlloc</code></a>（因为如果没有锁，这是不可能的）。而是提供了<a href=https://docs.rs/linked_list_allocator/0.6.4/linked_list_allocator/struct.Heap.html#method.allocate_first_fit><code>allocate_first_fit</code></a>这样一个接口稍有不同的方法。它返回<code>Result&lt;NonNull&lt;u8>, AllocErr></code>，而不是返回 <code>*mut u8</code>并使用空指针来表示错误。该<a href=https://doc.rust-lang.org/nightly/core/ptr/struct.NonNull.html><code>NonNull</code></a>类型是保证非空的原始指针的抽象。<a href=https://doc.rust-lang.org/nightly/core/alloc/struct.AllocErr.html><code>AllocErr</code></a>是用于标记分配错误的类型。通过将<code>Ok</code>case 映射到<a href=https://doc.rust-lang.org/nightly/core/ptr/struct.NonNull.html#method.as_ptr><code>NonNull::as_ptr</code></a>方法并将<code>Err</code>case 映射到空指针，我们可以轻松地将其转换回<code>*mut u8</code>类型。</p>
+<h4 id=计算链表索引>计算链表索引</h4>
+<p>在实现<code>GlobalAlloc</code>特征之前，我们定义一个<code>list_index</code>辅助函数，该函数对一个<a href=https://doc.rust-lang.org/alloc/alloc/struct.Layout.html><code>Layout</code></a>返回给定的最小可能块大小：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=sd>/// Choose an appropriate block size for the given layout.
+</span><span class=sd>///
+</span><span class=sd>/// Returns an index into the `BLOCK_SIZES` array.
+</span><span class=sd></span><span class=k>fn</span> <span class=nf>list_index</span><span class=p>(</span><span class=n>layout</span>: <span class=kp>&amp;</span><span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=nb>Option</span><span class=o>&lt;</span><span class=kt>usize</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=n>required_block_size</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>layout</span><span class=p>.</span><span class=n>size</span><span class=p>().</span><span class=n>max</span><span class=p>(</span><span class=n>layout</span><span class=p>.</span><span class=n>align</span><span class=p>());</span><span class=w>
+</span><span class=w>    </span><span class=n>BLOCK_SIZES</span><span class=p>.</span><span class=n>iter</span><span class=p>().</span><span class=n>position</span><span class=p>(</span><span class=o>|&amp;</span><span class=n>s</span><span class=o>|</span><span class=w> </span><span class=n>s</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=n>required_block_size</span><span class=p>)</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>被分配的块必须至少具有给定<code>Layout</code>所需的大小和对齐方式。由于我们让块的大小等于其对齐到的大小，因此这意味着<code>required_block_size</code>是<code>size()</code>和<code>align()</code>属性的<a href=https://doc.rust-lang.org/core/cmp/trait.Ord.html#method.max>最大值</a>。要查找<code>BLOCK_SIZES</code>切片中首个比所要求的更大的块，我们首先使用<code>iter()</code>方法来获得迭代器，然后使用<code>position</code>方法来找到第一个大小大于等于要求的块的索引。</p>
+<p>请注意，我们不返回块大小本身，而是返回<code>BLOCK_SIZES</code>切片的索引。原因是我们要使用返回的索引作为<code>list_heads</code>数组的索引。</p>
+<h4 id=实现globalalloc-2>实现<code>GlobalAlloc</code></h4>
+<p>最后一步是实现<code>GlobalAlloc</code> trait：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>super</span>::<span class=n>Locked</span><span class=p>;</span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>alloc</span>::<span class=n>alloc</span>::<span class=n>GlobalAlloc</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>impl</span><span class=w> </span><span class=n>GlobalAlloc</span><span class=w> </span><span class=k>for</span><span class=w> </span><span class=n>Locked</span><span class=o>&lt;</span><span class=n>FixedSizeBlockAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>todo</span><span class=o>!</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w>
+</span><span class=w>    </span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>dealloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=n>todo</span><span class=o>!</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>像其他分配器一样，我们不直接为<code>GlobalAlloc</code>分配器类型实现trait，而是使用<a href=https://os.phil-opp.com/allocator-designs#a-locked-wrapper-type><code>Locked</code>包装器</a>添加同步的内部可变性。由于<code>alloc</code>和的<code>dealloc</code>的实现相对较大，因此我们在下面逐一介绍它们。</p>
+<h5 id=alloc><code>alloc</code></h5>
+<p>该<code>alloc</code>方法的实现如下所示：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in `impl` block in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>alloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>allocator</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>match</span><span class=w> </span><span class=n>list_index</span><span class=p>(</span><span class=o>&amp;</span><span class=n>layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=nb>Some</span><span class=p>(</span><span class=n>index</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=k>match</span><span class=w> </span><span class=n>allocator</span><span class=p>.</span><span class=n>list_heads</span><span class=p>[</span><span class=n>index</span><span class=p>].</span><span class=n>take</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=nb>Some</span><span class=p>(</span><span class=n>node</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                    </span><span class=n>allocator</span><span class=p>.</span><span class=n>list_heads</span><span class=p>[</span><span class=n>index</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>node</span><span class=p>.</span><span class=n>next</span><span class=p>.</span><span class=n>take</span><span class=p>();</span><span class=w>
+</span><span class=w>                    </span><span class=n>node</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=w>
+</span><span class=w>                </span><span class=p>}</span><span class=w>
+</span><span class=w>                </span><span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                    </span><span class=c1>// no block exists in list =&gt; allocate new block
+</span><span class=c1></span><span class=w>                    </span><span class=kd>let</span><span class=w> </span><span class=n>block_size</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>BLOCK_SIZES</span><span class=p>[</span><span class=n>index</span><span class=p>];</span><span class=w>
+</span><span class=w>                    </span><span class=c1>// only works if all block sizes are a power of 2
+</span><span class=c1></span><span class=w>                    </span><span class=kd>let</span><span class=w> </span><span class=n>block_align</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>block_size</span><span class=p>;</span><span class=w>
+</span><span class=w>                    </span><span class=kd>let</span><span class=w> </span><span class=n>layout</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Layout</span>::<span class=n>from_size_align</span><span class=p>(</span><span class=n>block_size</span><span class=p>,</span><span class=w> </span><span class=n>block_align</span><span class=p>)</span><span class=w>
+</span><span class=w>                        </span><span class=p>.</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w>                    </span><span class=n>allocator</span><span class=p>.</span><span class=n>fallback_alloc</span><span class=p>(</span><span class=n>layout</span><span class=p>)</span><span class=w>
+</span><span class=w>                </span><span class=p>}</span><span class=w>
+</span><span class=w>            </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=n>allocator</span><span class=p>.</span><span class=n>fallback_alloc</span><span class=p>(</span><span class=n>layout</span><span class=p>),</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>让我们一步步看：</p>
+<p>首先，我们使用该<code>Locked::lock</code>方法来获取对包装后的分配器实例的可变引用。接下来，我们调用<code>list_index</code>刚刚定义的函数，以计算给定布局的适当块大小，并将相应的索引获取到<code>list_heads</code>数组中。如果此索引为<code>None</code>，则不适合该分配的块大小，因此我们使用<code>fallback_allocator</code>using <code>fallback_alloc</code>函数。</p>
+<p>如果列表索引为<code>Some</code>，则尝试<code>list_heads[index]</code>使用该<a href=https://doc.rust-lang.org/core/option/enum.Option.html#method.take><code>Option::take</code></a>方法删除相应列表中的第一个节点。如果列表不为空，则进入语句的<code>Some(node)</code>分支，在<code>match</code>该处将列表的顶部指针指向弹出的后继对象<code>node</code>（<a href=https://doc.rust-lang.org/core/option/enum.Option.html#method.take><code>take</code></a>再次使用）。最后，我们将弹出的<code>node</code>指针作为返回<code>*mut u8</code>。</p>
+<p>如果列表头为<code>None</code>，则表示块列表为空。这意味着我们需要<a href=https://os.phil-opp.com/allocator-designs#creating-new-blocks>如上所述</a>构建一个新块。为此，我们首先从<code>BLOCK_SIZES</code>切片中获取当前块的大小，并将其用作新块的大小和对齐方式。然后，我们<code>Layout</code>从中创建一个新对象，并调用该<code>fallback_alloc</code>方法来执行分配。调整布局和对齐方式的原因是，该块将在取消分配时添加到块列表中。</p>
+<h4 id=dealloc><code>dealloc</code></h4>
+<p><code>dealloc</code>方法的实现如下所示：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator/fixed_size_block.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=p>{</span><span class=n>mem</span><span class=p>,</span><span class=w> </span><span class=n>ptr</span>::<span class=n>NonNull</span><span class=p>};</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=c1>// inside the `unsafe impl GlobalAlloc` block
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>unsafe</span><span class=w> </span><span class=k>fn</span> <span class=nf>dealloc</span><span class=p>(</span><span class=o>&amp;</span><span class=bp>self</span><span class=p>,</span><span class=w> </span><span class=n>ptr</span>: <span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=kt>u8</span><span class=p>,</span><span class=w> </span><span class=n>layout</span>: <span class=nc>Layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>    </span><span class=kd>let</span><span class=w> </span><span class=k>mut</span><span class=w> </span><span class=n>allocator</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=bp>self</span><span class=p>.</span><span class=n>lock</span><span class=p>();</span><span class=w>
+</span><span class=w>    </span><span class=k>match</span><span class=w> </span><span class=n>list_index</span><span class=p>(</span><span class=o>&amp;</span><span class=n>layout</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>        </span><span class=nb>Some</span><span class=p>(</span><span class=n>index</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>new_node</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>ListNode</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>                </span><span class=n>next</span>: <span class=nc>allocator</span><span class=p>.</span><span class=n>list_heads</span><span class=p>[</span><span class=n>index</span><span class=p>].</span><span class=n>take</span><span class=p>(),</span><span class=w>
+</span><span class=w>            </span><span class=p>};</span><span class=w>
+</span><span class=w>            </span><span class=c1>// verify that block has size and alignment required for storing node
+</span><span class=c1></span><span class=w>            </span><span class=n>assert</span><span class=o>!</span><span class=p>(</span><span class=n>mem</span>::<span class=n>size_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>()</span><span class=w> </span><span class=o>&lt;=</span><span class=w> </span><span class=n>BLOCK_SIZES</span><span class=p>[</span><span class=n>index</span><span class=p>]);</span><span class=w>
+</span><span class=w>            </span><span class=n>assert</span><span class=o>!</span><span class=p>(</span><span class=n>mem</span>::<span class=n>align_of</span>::<span class=o>&lt;</span><span class=n>ListNode</span><span class=o>&gt;</span><span class=p>()</span><span class=w> </span><span class=o>&lt;=</span><span class=w> </span><span class=n>BLOCK_SIZES</span><span class=p>[</span><span class=n>index</span><span class=p>]);</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>new_node_ptr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>ptr</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=o>*</span><span class=k>mut</span><span class=w> </span><span class=n>ListNode</span><span class=p>;</span><span class=w>
+</span><span class=w>            </span><span class=n>new_node_ptr</span><span class=p>.</span><span class=n>write</span><span class=p>(</span><span class=n>new_node</span><span class=p>);</span><span class=w>
+</span><span class=w>            </span><span class=n>allocator</span><span class=p>.</span><span class=n>list_heads</span><span class=p>[</span><span class=n>index</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nb>Some</span><span class=p>(</span><span class=o>&amp;</span><span class=k>mut</span><span class=w> </span><span class=o>*</span><span class=n>new_node_ptr</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>        </span><span class=nb>None</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>{</span><span class=w>
+</span><span class=w>            </span><span class=kd>let</span><span class=w> </span><span class=n>ptr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>NonNull</span>::<span class=n>new</span><span class=p>(</span><span class=n>ptr</span><span class=p>).</span><span class=n>unwrap</span><span class=p>();</span><span class=w>
+</span><span class=w>            </span><span class=n>allocator</span><span class=p>.</span><span class=n>fallback_allocator</span><span class=p>.</span><span class=n>deallocate</span><span class=p>(</span><span class=n>ptr</span><span class=p>,</span><span class=w> </span><span class=n>layout</span><span class=p>);</span><span class=w>
+</span><span class=w>        </span><span class=p>}</span><span class=w>
+</span><span class=w>    </span><span class=p>}</span><span class=w>
+</span><span class=w></span><span class=p>}</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>像<code>alloc</code>中一样，我们首先使用<code>lock</code>方法获取可变的分配器引用，然后使用<code>list_index</code>函数获取与给定<code>Layout</code>对应的块列表。如果index为<code>None</code>，则不存在合适的块大小<code>BLOCK_SIZES</code>，这表明该分配是由后备分配器创建的。因此，我们使用后备分配器的<a href=https://docs.rs/linked_list_allocator/0.6.4/linked_list_allocator/struct.Heap.html#method.deallocate><code>deallocate</code></a>释放内存。该方法期望使用 <a href=https://doc.rust-lang.org/nightly/core/ptr/struct.NonNull.html><code>NonNull</code></a>而不是 <code>*mut u8</code>，因此我们需要先转换指针。 （<code>unwrap</code>仅在指针为null时调用失败，这在编译器调用<code>dealloc</code>时永远不会发生。）</p>
+<p>如果<code>list_index</code>返回了块索引，则需要将释放的内存块添加到列表中。为此，我们首先创建一个<code>ListNode</code>指向当前列表头的新内容（通过再次使用<a href=https://doc.rust-lang.org/core/option/enum.Option.html#method.take><code>Option::take</code></a>）。在将新节点写入释放的内存块之前，我们首先要断言由指定的当前块大小<code>index</code>具有存储<code>ListNode</code>大小和对齐方式所需的空间。然后，我们通过将给定的<code>*mut u8</code>指针转换为<code>*mut ListNode</code>指针，然后<a href=https://doc.rust-lang.org/std/primitive.pointer.html#method.write><code>write</code></a>在其上调用unsafe 方法来执行写操作。最后一步是将列表的起始指针设置为新创建的结点。为此，我们将原始指针<code>new_node_ptr</code>转换为可变引用。</p>
+<p>有几件事值得注意：</p>
+<ul>
+<li>我们不区分从块列表分配的块和从后备分配器分配的块。这意味着在<code>alloc</code>中创建的新块将添加到上的块列表中<code>dealloc</code>，从而增加了该大小的块数。</li>
+<li>该<code>alloc</code>方法是在我们的实现中唯一创建新块的地方。这意味着我们最初从空块列表开始，仅在执行针对该块大小的分配时才懒惰地填充列表。</li>
+<li>即使我们执行了某些<code>unsafe</code>操作，也不需要在<code>alloc</code>和<code>dealloc</code>中添加<code>unsafe</code>块。原因是Rust目前将<code>unsafe</code>函数的全部视为一个大<code>unsafe</code>块。由于使用显式块具有明显的优点，即哪些操作不安全，哪些操作不安全，因此<a href=https://github.com/rust-lang/rfcs/pull/2585>有一个RFC</a>建议更改此行为。</li>
+</ul>
+<h3 id=使用-2>使用</h3>
+<p>要使用新的 <code>FixedSizeBlockAllocator</code>，我们需要更新<code>allocator</code>模块中的<code>ALLOCATOR</code>静态变量：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/allocator.rs
+</span><span class=c1></span><span class=w>
+</span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>fixed_size_block</span>::<span class=n>FixedSizeBlockAllocator</span><span class=p>;</span><span class=w>
+</span><span class=w>
+</span><span class=w></span><span class=cp>#[global_allocator]</span><span class=w>
+</span><span class=w></span><span class=k>static</span><span class=w> </span><span class=n>ALLOCATOR</span>: <span class=nc>Locked</span><span class=o>&lt;</span><span class=n>FixedSizeBlockAllocator</span><span class=o>&gt;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Locked</span>::<span class=n>new</span><span class=p>(</span><span class=w>
+</span><span class=w>    </span><span class=n>FixedSizeBlockAllocator</span>::<span class=n>new</span><span class=p>());</span><span class=w>
+</span></code></pre></td></tr></table>
+</div>
+</div><p>由于<code>init</code>函数对于我们实现的所有分配器的行为均相同，因此无需修改<code>init_heap</code>中的<code>init</code>调用。</p>
+<p>现在，当我们再次运行<code>heap_allocation</code>测试时，所有测试仍应通过：</p>
+<div class=highlight><div class=chroma>
+<table class=lntable><tr><td class=lntd>
+<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td>
+<td class=lntd>
+<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>&gt; cargo xtest --test heap_allocation
+simple_allocation... [ok]
+large_vec... [ok]
+many_boxes... [ok]
+many_boxes_long_lived... [ok]
+</code></pre></td></tr></table>
+</div>
+</div><p>我们的新分配器似乎可以正常工作！</p>
+<h3 id=讨论-2>讨论</h3>
+<p>尽管固定大小的块方法比链表方法具有更好的性能，但是当使用2的幂作为块大小时，它最差情况下会浪费多达一半的内存。这种权衡是否值得，在很大程度上取决于应用程序类型。对于性能至关重要的操作系统内核，固定大小块方法似乎是更好的选择。</p>
+<p>在实现方面，我们可以在当前的实现中进行很多改进：</p>
+<ul>
+<li>与其仅使用后备分配器Lazy地分配块，还不如预先填充列表以提高初始分配的性能。</li>
+<li>为了简化实现，我们只允许块大小为2的幂，以便我们也可以将它们用作块对齐。通过以不同的方式存储（或计算）对齐方式，我们还可以允许任意其他块大小。这样，我们可以增加更多的块大小，例如常见的分配大小，以最大程度地减少浪费的内存。</li>
+<li>目前，我们仅创建新的块，但不再释放它们。这会导致碎片，最终可能导致大块内存的分配请求失败。为每种块大小列表强制设置最大长度可能是一个好的选择。当达到最大长度时，后续的释放使用后备分配器进行，而不是将其添加到列表中。</li>
+<li>我们可以使用一个特殊的分配器来分配大于4KiB的内存，而不是使用链表分配器。这个想法利用了在4KiB页面上运行的<a href=https://os.phil-opp.com/paging-introduction>分页</a>可以将连续的虚拟内存块映射到非连续的物理帧。这样，未分配内存的碎片对于大分配而言不再是问题。</li>
+<li>使用这样的页面分配器，可能有必要添加最大4KiB的块大小并完全删除链表分配器。这样做的主要优点是减少了碎片并提高了性能可预测性，即更好的最坏情况性能。</li>
+</ul>
+<p>请务必注意，上面概述的实现上的改进仅是建议。操作系统内核中使用的分配器通常会针对内核的特定工作负载进行高度优化，这只有通过广泛的性能分析才能实现。</p>
+<h3 id=变化>变化</h3>
+<p>固定大小的块分配器设计也有很多变体。<em>slab分配器</em>和<em>伙伴分配器</em>是两个流行的示例，它们也用在诸如Linux之类的流行内核中。下面，我们对这两种设计进行简短介绍。</p>
+<h4 id=slab分配器>slab分配器</h4>
+<p><a href=https://en.wikipedia.org/wiki/Slab_allocation><em>slab</em>分配器</a>的思想是使用与内核中选定类型直接对应的块大小。这样，那些类型的分配恰好适合块大小，并且不会浪费内存。有时，甚至有可能在未使用的块中预先初始化好类型实例，以进一步提高性能。</p>
+<p>slab分配通常与其他分配器结合使用。例如，它可以与固定大小的块分配器一起使用，以进一步拆分分配的块，以减少内存浪费。它还经常用于在一次分配大块内存，然后在这块内存上实现<a href=https://en.wikipedia.org/wiki/Object_pool_pattern>对象池模式</a>。</p>
+<h4 id=伙伴分配器>伙伴分配器</h4>
+<p><a href=https://en.wikipedia.org/wiki/Buddy_memory_allocation>伙伴分配器</a>设计不是使用链表来管理释放的块，而是使用<a href=https://en.wikipedia.org/wiki/Binary_tree>二叉树</a>数据结构以及2的幂次方块大小。当需要一定大小的新块时，它将一个较大的块分成两半，从而在树中创建两个子节点。每当再次释放一个块时，就会分析树中的相邻块。如果邻居也是空的，则将两个块重新连接在一起，成为一个大小两倍的块。</p>
+<p>此合并过程的优点是减少了<a href=https://en.wikipedia.org/wiki/Fragmentation_(computing)#External_fragmentation>外部碎片</a>，因此可以将较小的释放块重新用于较大的分配。它还不使用后备分配器，因此性能更可预测。最大的缺点是只能使用2的幂次的块大小，这可能会由于<a href=https://en.wikipedia.org/wiki/Fragmentation_(computing)#Internal_fragmentation>内部碎片</a>而导致大量的内存浪费。因此，伙伴分配器通常与slab分配器结合使用，以将分配的块进一步拆分为多个较小的块。</p>
+<h2 id=总结>总结</h2>
+<p>这篇文章概述了不同的分配器设计。我们学习了如何实现基本的<a href=https://os.phil-opp.com/allocator-designs#bump-allocator>Bump分配器</a>，该<a href=https://os.phil-opp.com/allocator-designs#bump-allocator>分配器</a>通过增加单个<code>next</code>指针来线性<a href=https://os.phil-opp.com/allocator-designs#bump-allocator>分配</a>内存。虽然Bump分配非常快，但是只有释放所有分配后，它才能重新使用内存。因此，它很少用作全局分配器。</p>
+<p>接下来，我们创建了一个<a href=https://os.phil-opp.com/allocator-designs#linked-list-allocator>链表分配器</a>，该<a href=https://os.phil-opp.com/allocator-designs#linked-list-allocator>分配器</a>使用空闲的内存块本身来创建链表，即所谓的<a href=https://en.wikipedia.org/wiki/Free_list>链表</a>。该列表可以存储任意数量的大小不同的已释放块。尽管不会发生内存浪费，但是由于分配请求可能需要完整遍历列表，因此该方法的性能很差。我们的实现还遭受<a href=https://en.wikipedia.org/wiki/Fragmentation_(computing)#External_fragmentation>外部碎片</a>的困扰，因为它不会将相邻的释放块重新合并在一起。</p>
+<p>为了解决链表方法的性能问题，我们创建了一个<a href=https://os.phil-opp.com/allocator-designs#fixed-size-block-allocator>固定大小块分配器</a>，该<a href=https://os.phil-opp.com/allocator-designs#fixed-size-block-allocator>分配器</a>预定义了一组固定的块大小。对于每个块大小，都存在一个单独的<a href=https://en.wikipedia.org/wiki/Free_list>空闲列表</a>，因此分配和取消分配只需要在<a href=https://en.wikipedia.org/wiki/Free_list>列表的</a>开头插入/弹出，因此非常快。由于每个分配都向上舍入到下一个更大的块大小，因此由于<a href=https://en.wikipedia.org/wiki/Fragmentation_(computing)#Internal_fragmentation>内部碎片</a>而浪费了一些内存。</p>
+<p>还有更多具有不同权衡取舍的分配器设计。<a href=https://os.phil-opp.com/allocator-designs#slab-allocator>slab分配</a>可以很好地优化常见固定大小结构的分配，但并非在所有情况下都适用。<a href=https://os.phil-opp.com/allocator-designs#buddy-allocator>伙伴分配</a>使用二叉树将释放的块合并回去，但浪费了大量内存，因为它仅支持2次幂的块大小。同样重要的是要记住，每个内核实现都有独特的工作负载，因此没有适合所有情况的“最佳”分配器设计。</p>
+<h2 id=接下来是什么>接下来是什么？</h2>
+<p>通过这篇文章，我们现在就结束了我们的内存管理部分。接下来，我们将开始探索<a href=https://en.wikipedia.org/wiki/Computer_multitasking&><em>多任务处理</em></a>，从<a href=https://en.wikipedia.org/wiki/Thread_(computing)><em>线程</em></a>开始。在随后的文章中，我们将探索多处理器、进程以及基于async/await的协作式多任务处理。</p>
+</div>
+<div class=post-copyright>
+<p class=copyright-item>
+<span class=item-title>文章作者</span>
+<span class=item-content>Justice</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>上次更新</span>
+<span class=item-content>
+2020-01-22 18:31:30
+</span>
+</p>
+<p class=copyright-item>
+<span class=item-title>许可协议</span>
+<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
+</p>
+</div>
+<div class=post-reward>
+<input type=checkbox name=reward id=reward hidden>
+<label class=reward-button for=reward>赞赏支持</label>
+<div class=qr-code>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/wx_reward_qrcode.png>
+<span>微信打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/alipay_reward_qrcode.png>
+<span>支付宝打赏</span>
+</label>
+<label class=qr-code-image for=reward>
+<img class=image src=/image/bitcoin_reward_qrcode.png>
+<span>比特币打赏</span>
+</label>
+</div>
+</div>
+<footer class=post-footer>
+<div class=post-tags>
+<a href=https://justice.bj.cn/tags/memory-management/>Memory Management</a>
+</div>
+<nav class=post-nav>
+<a class=prev href=/post/30.architech/spark/spark%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86/>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
+</i>
+<span class="prev-text nav-default">管理 Apache Spark 的 Java 和 Scala 依赖项</span>
+<span class="prev-text nav-mobile">上一篇</span>
+</a>
+<a class=next href=/post/09.pub/writing-an-os-in-rust/12-async-await/>
+<span class="next-text nav-default">Async/Await</span>
+<span class="prev-text nav-mobile">下一篇</span>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
+</i>
+</a>
+</nav>
+</footer>
+</article>
+<div class="post bg-white">
+<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
+</div>
+</div>
+</div>
+</main>
+<footer id=footer class=footer>
+<div class=icon-links>
+<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
+</a>
+<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
+</a>
+</div>
+<div class=copyright>
+<span class=power-by>
+Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
+</span>
+<span class=division>|</span>
+<span class=theme-info>
+Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
+</span>
+<span class=copyright-year>
+&copy;
+2000 -
+2024
+<span class=heart>
+<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
+</i>
+</span><span class=author>
+Justice
+</span></span>
+<span id=busuanzi_container>
+访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
+</span>
+</div>
+</footer>
+<div class=back-to-top id=back-to-top>
+<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
+</i>
+</div>
+</div>
+<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
+<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
+<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
+<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
+<script type=text/javascript src=/js/load-photoswipe.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
+<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
+<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
+<script>$("#openSearch, #openSearchMobile").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #openSearch, #openSearchMobile").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
+</body>
+</html>
