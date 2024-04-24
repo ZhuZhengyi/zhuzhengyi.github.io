@@ -143,36 +143,58 @@ function loadSearch() {
 
 
 // ==========================================
-// using the index we loaded on CMD-/, run 
+// using the index we loaded on CMD-/, run
 // a search query (for "term") every time a letter is typed
 // in the search box
 //
 function executeSearch(term) {
+  if (term.length == 0) {
+    document.getElementById("searchResults").setAttribute("style", "");
+    return;
+  }
   let results = fuse.search(term); // the actual query being run using fuse.js
-  let searchitems = ''; // our results bucket
-
+  let searchItems = ''; // our results bucket
+ 
   if (results.length === 0) { // no results based on what was typed into the input box
     resultsAvailable = false;
-    searchitems = '';
+    searchItems = '<li class="noSearchResult">无结果</li>';
   } else { // build our html
-    // console.log(results)
-    permalinks = [];
-    numLimit = 5;
-    for (let item in results) { // only show first 5 results
-        if (item > numLimit) {
-            break;
+    permalinkList = []
+    searchItemCount = 0
+    for (let item in results) {
+      if (permalinkList.includes(results[item].item.permalink)) {
+        continue;
+      }
+      // 去重
+      permalinkList.push(results[item].item.permalink);
+      searchItemCount += 1;
+ 
+      title = results[item].item.title;
+      content = results[item].item.content.slice(0, 50);
+      for (const match of results[item].matches) {
+        if (match.key == 'title') {
+          startIndex = match.indices[0][0];
+          endIndex = match.indices[0][1] + 1;
+          highText = '<span class="search-highlight">' + match.value.slice(startIndex, endIndex) + '</span>';
+          title = match.value.slice(0, startIndex) + highText + match.value.slice(endIndex);
+        } else if (match.key == 'content') {
+          startIndex = match.indices[0][0];
+          endIndex = match.indices[0][1] + 1;
+          highText = '<span class="search-highlight">' + match.value.slice(startIndex, endIndex) + '</span>';
+          content = match.value.slice(Math.max(0, startIndex - 30), startIndex) + highText + match.value.slice(endIndex, endIndex + 30);
         }
-        if (permalinks.includes(results[item].item.permalink)) {
-            continue;
-        }
-    //   console.log('item: %d, title: %s', item, results[item].item.title)
-      searchitems = searchitems + '<li><a href="' + results[item].item.permalink + '" tabindex="0">' + '<span class="title">' + results[item].item.title + '</span></a></li>';
-      permalinks.push(results[item].item.permalink);
+      }
+      searchItems = searchItems + '<li><a href="' + results[item].item.permalink + '">' + '<span class="title">' + title + '</span><br /> <span class="sc">'+ content +'</span></a></li>';
+      // only show first 5 results
+      if (searchItemCount >= 5) {
+        break;
+      }
     }
     resultsAvailable = true;
   }
-
-  document.getElementById("searchResults").innerHTML = searchitems;
+ 
+  document.getElementById("searchResults").setAttribute("style", "display: block;");
+  document.getElementById("searchResults").innerHTML = searchItems;
   if (results.length > 0) {
     first = list.firstChild.firstElementChild; // first result container — used for checking against keyboard up/down location
     last = list.lastChild.firstElementChild; // last result container — used for checking against keyboard up/down location
