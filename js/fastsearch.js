@@ -167,18 +167,6 @@ function executeSearch(term) {
         }
         permalinks.push(results[item].item.permalink);
 
-        title = results[item].item.title;
-        //content = results[item].item.content.slice(0, 50);
-        for (const match of results[item].matches) {
-            if (match.key == 'title') {
-                startIndex = match.indices[0][0];
-                endIndex = match.indices[0][1] + 1;
-                highText = '<span class="search-highlight">' + match.value.slice(startIndex, endIndex) + '</span>';
-                title = match.value.slice(0, startIndex) + highText + match.value.slice(endIndex);
-            }
-        }
-
-        //   console.log('item: %d, title: %s', item, results[item].item.title)
         searchitems = searchitems + '<li><a href="' + results[item].item.permalink + '" tabindex="0">' + '<span class="title">' + results[item].item.title + '</span></a></li>';
     }
     resultsAvailable = true;
