@@ -714,10 +714,568 @@ table1.ibd
 &lt;p>NVMe 自 Linux 内核 3.3 版本就支持了&lt;/p>
 &lt;p>基于 SCSI 协议的 SAS 和 SATA&lt;strong>只能是单个队列&lt;/strong>而且每个队列的深度也比较低，分别是 254 和 32 的队列深度。而 NVMe 协议设计之初就考虑了该问题，它的最大队列数量可以是 64K（65535 个命令队列和 1 个管理队列），&lt;/p>
 &lt;p>NVMe 协议可以最多有 64K 个队列，每个 CPU 或者核心都可以有一个队列，这样并发程度大大提升，性能也自然更高了&lt;/p>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/14-14-16-48-2020-12-14-14-16-42-image.png" alt="">&lt;/p></description></item><item><title>Tauri</title><link>https://justice.bj.cn/post/14.language/rust/rust%E5%BA%93%E4%B9%8Btauri/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/rust/rust%E5%BA%93%E4%B9%8Btauri/</guid><description>&lt;h1 id="tauri">Tauri&lt;/h1>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/12/14-14-16-48-2020-12-14-14-16-42-image.png" alt="">&lt;/p></description></item><item><title>Stable Diffusion</title><link>https://justice.bj.cn/post/50.ml/stable_diffusion/</link><pubDate>Wed, 24 Apr 2024 12:31:05 +0800</pubDate><guid>https://justice.bj.cn/post/50.ml/stable_diffusion/</guid><description>&lt;h1 id="stable-diffusion">Stable Diffusion&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;ul>
+&lt;li>Stable diffusion是一个基于Latent Diffusion Models（LDMs）实现的的文图生成（text-to-image）模型;&lt;/li>
+&lt;li>能够创造出既逼真又具有艺术风格的图像;&lt;/li>
+&lt;/ul>
+&lt;h2 id="功能">功能&lt;/h2>
+&lt;ul>
+&lt;li>文本生成图片(text2img): 输入文本描述, 输出图片;&lt;/li>
+&lt;li>图片生成图片(img2img): 输入图片+文本, 输出图片;&lt;/li>
+&lt;li>图片融合:&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h2 id="原理">原理&lt;/h2>
+&lt;p>text-to-image包含3个步骤:&lt;/p>
+&lt;ol>
+&lt;li>文本编码器(Text Encoder)将提示词(Prompt) 编码成一个77 x 768 维度的特征词向量;&lt;/li>
+&lt;li>图片信息生成器(Image Information Creator)将特征词向量和一张随机图一起转化到一个 Latent Space（潜空间）里，然后根据这些特征向量，将随机图「降噪」为一个「中间产物」;&lt;/li>
+&lt;li>图片解码器(Image Decoder)将生成的中间产物解码成真正的图片;&lt;/li>
+&lt;/ol>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/20240421152317.png" alt="">&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/20240422073809.png" alt="SD原理">&lt;/p>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="https://sspai.com/post/85704#!">深入浅出理解 AI 生图模型 Stable Diffusion&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/640545463">一文读懂Stable Diffusion 论文原理+代码超详细解读&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.cvmart.net/community/detail/8041">stable diffusion原理解读&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>CUDA编程</title><link>https://justice.bj.cn/post/50.ml/cuda/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/50.ml/cuda/</guid><description>&lt;h1 id="cuda编程">CUDA编程&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;ul>
+&lt;li>CUDA是NVIDIA于2006年发布的一个基于NVIDIA的GPU的通用并行计算平台和编程模型;&lt;/li>
+&lt;li>CUDA可以利用GPUs的并行计算引擎来更加高效地解决复杂的计算难题;&lt;/li>
+&lt;/ul>
+&lt;h2 id="架构">架构&lt;/h2>
+&lt;ul>
+&lt;li>CUDA是基于CPU+GPU的异构计算架构, 此时, GPU与CPU通过PCIe总线连接在一起来协同工作，CPU所在位置称为为主机端（host），而GPU所在位置称为设备端（device）&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/20240415210806.png" alt="">&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/20240415214127.png" alt="">&lt;/p>
+&lt;h2 id="编程模型">编程模型&lt;/h2>
+&lt;ul>
+&lt;li>CUDA中有2个重要的概念host和device，host: 指代CPU及其内存，device指:GPU及其内存。&lt;/li>
+&lt;li>CUDA程序中的host与device之间可以进行通信，进行数据拷贝;&lt;/li>
+&lt;li>典型的CUDA程序的执行流程如下：&lt;/li>
+&lt;/ul>
+&lt;ol>
+&lt;li>分配host内存，并进行数据初始化；&lt;/li>
+&lt;li>分配device内存，并从host将数据拷贝到device上；&lt;/li>
+&lt;li>调用CUDA的核函数在device上完成指定的运算；&lt;/li>
+&lt;li>将device上的运算结果拷贝到host上；&lt;/li>
+&lt;li>释放device和host上分配的内存。&lt;/li>
+&lt;/ol>
+&lt;h3 id="函数限定符">函数限定符&lt;/h3>
+&lt;p>CUDA中是通过函数类型限定词开区别host和device上的函数，主要的三个函数类型限定词如下：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>__global__&lt;/code>：在device上执行，从host中调用（一些特定的GPU也可以从device上调用），返回类型必须是&lt;code>void&lt;/code>，不支持可变参数参数，不能成为类成员函数。注意用&lt;code>__global__&lt;/code>定义的kernel是异步的，这意味着host不会等待kernel执行完就执行下一步。&lt;/li>
+&lt;li>&lt;code>__device__&lt;/code>：在device上执行，单仅可以从device中调用，不可以和&lt;code>__global__&lt;/code>同时用。&lt;/li>
+&lt;li>&lt;code>__host__&lt;/code>：在host上执行，仅可以从host上调用，一般省略不写，不可以和&lt;code>__global__&lt;/code>同时用，但可和&lt;code>__device__&lt;/code>，此时函数会在device和host都编译。&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/20240416121938.png" alt="Kernel上的两层线程组织结构（2-dim）">&lt;/p>
+&lt;h2 id="内存模型">内存模型&lt;/h2>
+&lt;p>每个线程有自己的私有本地内存（Local Memory），而每个线程块有包含共享内存（Shared Memory）,可以被线程块中所有线程共享，其生命周期与线程块一致。此外，所有的线程都可以访问全局内存（Global Memory）。还可以访问一些只读内存块：常量内存（Constant Memory）和纹理内存（Texture Memory）&lt;/p>
+&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/20240416122158.png" alt="CUDA内存模型">&lt;/p>
+&lt;h2 id="实例">实例&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;span class="lnt">50
+&lt;/span>&lt;span class="lnt">51
+&lt;/span>&lt;span class="lnt">52
+&lt;/span>&lt;span class="lnt">53
+&lt;/span>&lt;span class="lnt">54
+&lt;/span>&lt;span class="lnt">55
+&lt;/span>&lt;span class="lnt">56
+&lt;/span>&lt;span class="lnt">57
+&lt;/span>&lt;span class="lnt">58
+&lt;/span>&lt;span class="lnt">59
+&lt;/span>&lt;span class="lnt">60
+&lt;/span>&lt;span class="lnt">61
+&lt;/span>&lt;span class="lnt">62
+&lt;/span>&lt;span class="lnt">63
+&lt;/span>&lt;span class="lnt">64
+&lt;/span>&lt;span class="lnt">65
+&lt;/span>&lt;span class="lnt">66
+&lt;/span>&lt;span class="lnt">67
+&lt;/span>&lt;span class="lnt">68
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="c1">// CUDA向量加法实例
+&lt;/span>&lt;span class="c1">&lt;/span>
+&lt;span class="c1">// 两个向量加法kernel，grid和block均为一维
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">add&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">float&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">z&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">n&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="c1">// 获取全局索引
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">index&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">threadIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 步长
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">stride&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">gridDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">index&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">n&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="n">stride&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="n">z&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">y&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">];&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">N&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="mi">20&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">nBytes&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">N&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 申请host内存
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">z&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">x&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">malloc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">y&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">malloc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">z&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">malloc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 初始化数据
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">N&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="o">++&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="n">x&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">10.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">y&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">20.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 申请device内存
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">d_x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">d_y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">d_z&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">cudaMalloc&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">d_x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaMalloc&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">d_y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaMalloc&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">d_z&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 将host数据拷贝到device
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">cudaMemcpy&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">d_x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cudaMemcpyHostToDevice&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaMemcpy&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">d_y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cudaMemcpyHostToDevice&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 定义kernel的执行配置
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">dim3&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">256&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">dim3&lt;/span> &lt;span class="n">gridSize&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">N&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">/&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 执行kernel
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">add&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">gridSize&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">blockSize&lt;/span> &lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">d_x&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">d_y&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">d_z&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">N&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 将device得到的结果拷贝到host
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">cudaMemcpy&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">z&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">d_z&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cudaMemcpyDeviceToHost&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 检查执行结果
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="n">maxError&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">0.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">N&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="o">++&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="n">maxError&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">fmax&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">maxError&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">fabs&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">z&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mf">30.0&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">cout&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="s">&amp;#34;最大误差: &amp;#34;&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="n">maxError&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 释放device内存
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">cudaFree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">d_x&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaFree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">d_y&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaFree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">d_z&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 释放host内存
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">free&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">free&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">free&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">z&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="矩阵乘法实例">矩阵乘法实例&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;span class="lnt">50
+&lt;/span>&lt;span class="lnt">51
+&lt;/span>&lt;span class="lnt">52
+&lt;/span>&lt;span class="lnt">53
+&lt;/span>&lt;span class="lnt">54
+&lt;/span>&lt;span class="lnt">55
+&lt;/span>&lt;span class="lnt">56
+&lt;/span>&lt;span class="lnt">57
+&lt;/span>&lt;span class="lnt">58
+&lt;/span>&lt;span class="lnt">59
+&lt;/span>&lt;span class="lnt">60
+&lt;/span>&lt;span class="lnt">61
+&lt;/span>&lt;span class="lnt">62
+&lt;/span>&lt;span class="lnt">63
+&lt;/span>&lt;span class="lnt">64
+&lt;/span>&lt;span class="lnt">65
+&lt;/span>&lt;span class="lnt">66
+&lt;/span>&lt;span class="lnt">67
+&lt;/span>&lt;span class="lnt">68
+&lt;/span>&lt;span class="lnt">69
+&lt;/span>&lt;span class="lnt">70
+&lt;/span>&lt;span class="lnt">71
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="c1">// 获取矩阵A的(row, col)元素
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">__device__&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="nf">getElement&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Matrix&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">row&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">col&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">row&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">width&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">col&lt;/span>&lt;span class="p">];&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 为矩阵A的(row, col)元素赋值
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">__device__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">setElement&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Matrix&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">row&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">col&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">row&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">width&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">col&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 矩阵相乘kernel，2-D，每个线程计算一个元素
+&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">matMulKernel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Matrix&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">Matrix&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">Matrix&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="kt">float&lt;/span> &lt;span class="n">Cvalue&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">0.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">row&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">threadIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">y&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">y&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">col&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">threadIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">width&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="o">++&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="n">Cvalue&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="n">getElement&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">row&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">getElement&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">col&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="n">setElement&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">row&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">col&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">Cvalue&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">()&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">width&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="mi">10&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">height&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="mi">10&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">Matrix&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="c1">// 申请托管内存
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">cudaMallocManaged&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Matrix&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">cudaMallocManaged&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Matrix&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">cudaMallocManaged&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">Matrix&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="kt">int&lt;/span> &lt;span class="n">nBytes&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">width&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">height&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaMallocManaged&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaMallocManaged&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">cudaMallocManaged&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">nBytes&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 初始化数据
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">height&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">height&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">width&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">width&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">B&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">height&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">height&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">B&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">width&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">width&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">C&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">height&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">height&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">C&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">width&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">width&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">width&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">height&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="o">++&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="p">{&lt;/span>
+&lt;span class="n">A&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">1.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="n">B&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">2.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;span class="c1">// 定义kernel的执行配置
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">dim3&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="mi">32&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="n">dim3&lt;/span> &lt;span class="n">gridSize&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="n">width&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">/&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">,&lt;/span>
+&lt;span class="p">(&lt;/span>&lt;span class="n">height&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">y&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="o">/&lt;/span> &lt;span class="n">blockSize&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">y&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 执行kernel
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">matMulKernel&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">gridSize&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">blockSize&lt;/span> &lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">C&lt;/span>&lt;span class="p">);&lt;/span>
+&lt;span class="c1">// 同步device 保证结果能正确访问
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">cudaDeviceSynchronize&lt;/span>&lt;span class="p">();&lt;/span>
+&lt;span class="c1">// 检查执行结果
+&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="n">maxError&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">0.0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">for&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">width&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">height&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="o">++&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">)&lt;/span>
+&lt;span class="n">maxError&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">fmax&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">maxError&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">fabs&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">elements&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">2&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">width&lt;/span>&lt;span class="p">));&lt;/span>
+&lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">cout&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="s">&amp;#34;最大误差: &amp;#34;&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="n">maxError&lt;/span> &lt;span class="o">&amp;lt;&amp;lt;&lt;/span> &lt;span class="n">std&lt;/span>&lt;span class="o">::&lt;/span>&lt;span class="n">endl&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="k">return&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/34587739">https://zhuanlan.zhihu.com/p/34587739&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>LLM-大语言模型相关</title><link>https://justice.bj.cn/post/50.ml/llm/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/50.ml/llm/</guid><description>&lt;h1 id="llm大语言模型相关">LLM:大语言模型相关&lt;/h1>
+&lt;h2 id="准备">准备&lt;/h2>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## 安装anaconda&lt;/span>
+$ winget install Anaconda.Anaconda3
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="hf-mirror-hugging-faces镜像网站">hf-mirror: hugging-faces镜像网站&lt;/h3>
+&lt;h3 id="hfd-大模型数据下载工具">hfd: 大模型数据下载工具&lt;/h3>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## 安装&lt;/span>
+$ wget
+&lt;span class="c1">## 用法&lt;/span>
+$ hfd.sh jartine/llava-v1.5-7B-GGUF --include &lt;span class="s2">&amp;#34;llava-v1.5-7b-q4.llamafile&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="概念">概念&lt;/h2>
+&lt;h3 id="gguf">GGUF:&lt;/h3>
+&lt;ul>
+&lt;li>gguf:&lt;/li>
+&lt;/ul>
+&lt;h3 id="onnx-开发神经网络交换格式">ONNX: 开发神经网络交换格式&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>onnx: Open Neural Network Exchange，是一种模型IR，用于在各种深度学习训练和推理框架转换的一个中间表示格式。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用protobuf定义;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ONNX 模型结构：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>ModelProto&lt;/p>
+&lt;ul>
+&lt;li>GraphProto
+&lt;ul>
+&lt;li>NodeProto&lt;/li>
+&lt;li>ValueInfoProto&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="框架">框架&lt;/h2>
+&lt;h3 id="rag">RAG:&lt;/h3>
+&lt;h2 id="工具">工具&lt;/h2>
+&lt;h3 id="llama-cli">llama-cli&lt;/h3>
+&lt;h3 id="ollama-命令行运行llama工具">ollama: 命令行运行llama工具&lt;/h3>
+&lt;ul>
+&lt;li>支持平台: mac, linux, windows&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## 创建模型配置文件&lt;/span>
+$ cat &lt;span class="s2">&amp;#34;FROM d:\code\llm\&amp;lt;LLM_MODEL_GGUF&amp;gt;&amp;#34;&lt;/span> &amp;gt; modelfile.txt
+&lt;span class="c1">## ollama导入模型&lt;/span>
+$ ollama create &amp;lt;MODLE_NAME&amp;gt; -f modelfile.txt
+&lt;span class="c1">## 查看ollama导入的模型&lt;/span>
+$ ollama list
+&lt;span class="c1">## 运行模型&lt;/span>
+$ ollama run &amp;lt;MODLE_IMPORT_NAME&amp;gt;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="llamafile-单文件大模型运行工具">llamafile: 单文件大模型运行工具&lt;/h3>
+&lt;ul>
+&lt;li>支持平台: mac, linux, win&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## 安装llamafile命令行命令&lt;/span>
+$ wget -O /c/app/llamafile.exe https://github.com/Mozilla-Ocho/llamafile/releases/download/0.7/llamafile-0.7
+&lt;span class="c1">## 启动 llama服务&lt;/span>
+$ llamafile -m qwen1_5-14b-chat-q4_0.gguf
+&lt;span class="c1">## 启动浏览器: http://127.0.0.1:8080&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="gpt4all">gpt4all&lt;/h3>
+&lt;h3 id="lm-studio">lm-studio&lt;/h3>
+&lt;h3 id="anythingllm">AnythingLLM&lt;/h3>
+&lt;ul>
+&lt;li>高效、可定制且开源的企业级文档聊天机器人解决方案;&lt;/li>
+&lt;li>github: &lt;a href="https://github.com/Mintplex-Labs/anything-llm">https://github.com/Mintplex-Labs/anything-llm&lt;/a>&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ul>
+&lt;h2 id="应用">应用&lt;/h2>
+&lt;h3 id="chat-文本对话">Chat: 文本对话&lt;/h3>
+&lt;h3 id="语音识别">语音识别&lt;/h3>
+&lt;h4 id="whispercpp">whisper.cpp&lt;/h4>
+&lt;ul>
+&lt;li>基于whispe.cpp语音对话模型;&lt;/li>
+&lt;li>windows下wsl编译&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ git clone git@github.com:ggerganov/whisper.cpp.git
+$ &lt;span class="nb">cd&lt;/span> whisper.cpp
+&lt;span class="c1">## 编译talk-llama&lt;/span>
+$ make talk-llama
+&lt;span class="c1">## 下载ggml语音模型&lt;/span>
+$ models/download-ggml-model.sh small
+&lt;span class="c1">## 运行&lt;/span>
+$ ./talk-llama -mw /mnt/c/code/llm/whisper-models/ggml-whisper-small.bin -ml /mnt/c/code/llm/lmstudio/Qwen/Qwen1.5-0.5B-Chat-GGUF/qwen1_5-7b-chat-q4_0.gguf -p &lt;span class="s2">&amp;#34;Jack&amp;#34;&lt;/span> -t &lt;span class="m">8&lt;/span> -l zh
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="tts-文本转语音">TTS: 文本转语音&lt;/h3>
+&lt;h3 id="图片生成">图片生成&lt;/h3>
+&lt;h3 id="2d转3d">2d转3d&lt;/h3>
+&lt;h3 id="知识系统">知识系统&lt;/h3>
+&lt;h2 id="平台">平台&lt;/h2>
+&lt;h3 id="nvidia">Nvidia&lt;/h3>
+&lt;h4 id="cuda">CUDA&lt;/h4>
+&lt;h3 id="amd">AMD&lt;/h3>
+&lt;h3 id="zludahttpsgithubcomvosenzluda">&lt;a href="https://github.com/vosen/ZLUDA">ZLUDA&lt;/a>&lt;/h3>
+&lt;ul>
+&lt;li>zluda: 是无修改直接在amd gpu上运行cuda程序的cuda兼容库;&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## download and install&lt;/span>
+$ wget https://github.com/vosen/ZLUDA/releases/download/v3/zluda-3-windows.zip
+&lt;span class="c1">## run with zlud&lt;/span>
+$ &amp;lt;ZLUDA_DIRECTORY&amp;gt;&lt;span class="se">\z&lt;/span>luda.exe -- &amp;lt;APPLICATION&amp;gt; &amp;lt;APPLICATION_ARGUMENTS&amp;gt;
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ul>
+&lt;li>olive&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## 1. 创建虚拟环境&lt;/span>
+$ conda create --name&lt;span class="o">=&lt;/span>llama2_opt &lt;span class="nv">python&lt;/span>&lt;span class="o">=&lt;/span>3.11.5
+&lt;span class="c1">## 2. 激活虚拟环境&lt;/span>
+$ conda active llama2_opt
+&lt;span class="c1">## 下载olive源码&lt;/span>
+$ git clone https://github.com/microsoft/Olive.git
+&lt;span class="c1">## 安装依赖包&lt;/span>
+$ pip install -r ./requirements.txt
+&lt;span class="c1">## &lt;/span>
+$ pip install -e .
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a href="https://www.deepin.org/zh/llamafile-a-must-have-tool/">https://www.deepin.org/zh/llamafile-a-must-have-tool/&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://www.cvmart.net/community/detail/6550">https://www.cvmart.net/community/detail/6550&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/686886176">https://zhuanlan.zhihu.com/p/686886176&lt;/a>&lt;/li>
+&lt;/ol></description></item><item><title>Tauri</title><link>https://justice.bj.cn/post/14.language/rust/rust%E5%BA%93%E4%B9%8Btauri/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/rust/rust%E5%BA%93%E4%B9%8Btauri/</guid><description>&lt;h1 id="tauri">Tauri&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;p>Tauri是一个类似electron的跨平台基于web的客户端框架。奥法队是非得失通过Tauri可以将web网站已本地客户端的方式在pc\mac上运行。所以一些web网站无法实现的功能比如读取存储本地文件，就可以通过Tauri上提供的api实现了。&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2></description></item><item><title>Zeus- Uber的分布式Spark Shuffle Service</title><link>https://justice.bj.cn/post/30.architech/spark/zeus-uber-remote-spark-shuffle-service/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/30.architech/spark/zeus-uber-remote-spark-shuffle-service/</guid><description>&lt;h1 id="zeus-uber的分布式spark-shuffle-service">Zeus: Uber的分布式Spark Shuffle Service&lt;/h1>
+&lt;h2 id="参考">参考&lt;/h2></description></item><item><title>whisper.cpp</title><link>https://justice.bj.cn/post/50.ml/whisper.cpp/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/50.ml/whisper.cpp/</guid><description>&lt;h1 id="whispercpp">whisper.cpp&lt;/h1>
+&lt;h2 id="简介">简介&lt;/h2>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>Zeus- Uber的分布式Spark Shuffle Service</title><link>https://justice.bj.cn/post/30.architech/spark/zeus-uber-remote-spark-shuffle-service/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/30.architech/spark/zeus-uber-remote-spark-shuffle-service/</guid><description>&lt;h1 id="zeus-uber的分布式spark-shuffle-service">Zeus: Uber的分布式Spark Shuffle Service&lt;/h1>
 &lt;hr>
 &lt;h2 id="特性">特性&lt;/h2>
 &lt;ul>
@@ -813,7 +1371,74 @@ table1.ibd
 &lt;h3 id="客户端压缩">客户端压缩&lt;/h3>
 &lt;ul>
 &lt;li>shuffle client&lt;/li>
-&lt;/ul></description></item><item><title>Zerotier</title><link>https://justice.bj.cn/post/70.tool/zerotier/</link><pubDate>Thu, 28 Mar 2024 20:55:30 +0800</pubDate><guid>https://justice.bj.cn/post/70.tool/zerotier/</guid><description>&lt;h1 id="zerotier">Zerotier&lt;/h1>
+&lt;/ul></description></item><item><title>智能语音助手</title><link>https://justice.bj.cn/post/50.ml/%E6%99%BA%E8%83%BD%E8%AF%AD%E9%9F%B3%E5%8A%A9%E6%89%8B/</link><pubDate>Tue, 16 Apr 2024 17:06:35 +0800</pubDate><guid>https://justice.bj.cn/post/50.ml/%E6%99%BA%E8%83%BD%E8%AF%AD%E9%9F%B3%E5%8A%A9%E6%89%8B/</guid><description>&lt;h1 id="智能语音助手">智能语音助手&lt;/h1>
+&lt;h2 id="功能">功能&lt;/h2>
+&lt;ol>
+&lt;li>实现中英文语音对话;&lt;/li>
+&lt;/ol>
+&lt;h2 id="架构">架构&lt;/h2>
+&lt;h2 id="组件">组件&lt;/h2>
+&lt;h3 id="语音转文本">语音转文本&lt;/h3>
+&lt;ul>
+&lt;li>whisper.cpp&lt;/li>
+&lt;/ul>
+&lt;h3 id="对话大模型">对话大模型&lt;/h3>
+&lt;ul>
+&lt;li>llama&lt;/li>
+&lt;/ul>
+&lt;ol>
+&lt;li>下载大模型数据:&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">$ export HF_ENDPOINT=https://hf-mirror.com
+$ hfd.sh
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="文本转语音输出">文本转语音输出&lt;/h3>
+&lt;ul>
+&lt;li>espeak&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1">## ubuntu 安装 &lt;/span>
+$ sudo apt install espeak
+&lt;span class="c1">## 下载数据文件&lt;/span>
+$ wget https://gitee.com/xiaohe4966/espeak-data/blob/master/espeak-data.zip
+&lt;span class="c1">## 查找espeak-data目录&lt;/span>
+$ find /usr -name espeak-data
+&lt;span class="c1">## 移动espeak-data到安装目录&lt;/span>
+$ mv espeak-data /usr/lib/x86_64-linux-gnu/
+&lt;span class="c1">## 使用espeak &lt;/span>
+$ espeak -v zh &lt;span class="s2">&amp;#34;你好&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ul>
+&lt;li>audio-box: meta&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考">参考&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;a href="http://awesome-zh.nocode.site/services/espeak.html">http://awesome-zh.nocode.site/services/espeak.html&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>&lt;/li>
+&lt;/ol></description></item><item><title>Zerotier</title><link>https://justice.bj.cn/post/70.tool/zerotier/</link><pubDate>Thu, 28 Mar 2024 20:55:30 +0800</pubDate><guid>https://justice.bj.cn/post/70.tool/zerotier/</guid><description>&lt;h1 id="zerotier">Zerotier&lt;/h1>
 &lt;h2 id="简介">简介&lt;/h2>
 &lt;p>zerotier是一款智能可编程以太网交换软件，只需要经过简单的注册，安装和配置，即可建立VPN。&lt;/p>
 &lt;h2 id="安装">安装&lt;/h2>
@@ -1268,1248 +1893,5 @@ root@XiaoQiang:~# iptables-save
 &lt;li>
 &lt;p>&lt;a href="https://algo.itcharge.cn/Solutions/0800-0899/super-egg-drop/">0887. 鸡蛋掉落 | 算法通关手册（LeetCode）&lt;/a>&lt;/p>
 &lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>CPU异常</title><link>https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/05-cpu-exceptions/</link><pubDate>Thu, 07 Mar 2024 11:58:54 +0800</pubDate><guid>https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/05-cpu-exceptions/</guid><description>&lt;h1 id="cpu异常">CPU异常&lt;/h1>
-&lt;blockquote>
-&lt;p>原文：&lt;a href="https://os.phil-opp.com/cpu-exceptions/">https://os.phil-opp.com/cpu-exceptions/&lt;/a>&lt;/p>
-&lt;p>原作者：@phil-opp&lt;/p>
-&lt;p>译者：&lt;a href="https://github.com/niguangye">倪广野&lt;/a>&lt;/p>
-&lt;/blockquote>
-&lt;p>触发CPU异常的情况多种多样，例如：访问非法内存地址或执行非法指令（除以零）等。为了应对CPU异常，我们需要建立中断描述符表（interrupt descriptor table)，它列举了不同异常所对应的处理函数(handler functions)。在博文的最后，我们的内核（kernel)可以捕获断点异常（&lt;a href="https://wiki.osdev.org/Exceptions#Breakpoint">breakpoint exceptions&lt;/a>）并且恢复CPU的正常运行。&lt;/p>
-&lt;p>[TOC]&lt;/p>
-&lt;h2 id="概述">概述&lt;/h2>
-&lt;p>异常的发生标志着当前正在执行的指令出现了问题。例如：指令试图除以0的时候，CPU会抛出一个异常。当异常发生，CPU会中断（interrupt）它当前的流程，并立即调用该类型异常对应的处理函数。&lt;/p>
-&lt;p>在x86体系结构中，有大约20种不同的CPU 异常类型。常见的如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>缺页错误（Page Fault）&lt;/strong>：缺页错误发生在非法的内存访问操作中。例如：当前指令试图访问没有映射的内存页或试图写入只读的内存页。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>非法操作码（Invalid Opcode）&lt;/strong>：非法操作码发生在当前指令不正确的情况下。例如：试图在不支持 &lt;a href="https://en.wikipedia.org/wiki/Streaming_SIMD_Extensions">SSE 指令集&lt;/a> 的老旧CPU上使用该指令集。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>通用保护错误（General Protection Fault）&lt;/strong>：这是一个触发原因相对宽泛的异常。试图在用户态程序中执行特权指令或试图写入配置寄存器的保留位等非法访问操作均会触发该异常。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>双重异常（Double Fault）&lt;/strong>：异常发生后，CPU会调用对应的异常处理函数。在调用过程中如果发生另一个异常，CPU会触发双重异常。双重异常也会在找不到对应的异常处理函数的情况下发生。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>三重异常（Triple Fault）&lt;/strong>：如果异常发生在CPU调用双重异常处理函数的过程中，这会导致严重的三重异常。我们不能捕获或者处理三重异常。大多数处理器会选择复位并重启操作系统。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>你可以在&lt;a href="https://wiki.osdev.org/Exceptions">这里&lt;/a>找到所有的CPU异常列表。&lt;/p>
-&lt;h3 id="中断描述符表interrupt-descriptor-table">中断描述符表（interrupt descriptor table)&lt;/h3>
-&lt;p>为了捕获并处理CPU异常，我们需要建立所谓的中断描述符表（interrupt descriptor table，IDT)。在IDT中，我们可以为每种异常指定一个处理函数。硬件会直接使用这张表，所以我们需要遵循提前约定好的格式。IDT的每一项（entry）必须是16字节的结构：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Type&lt;/th>
-&lt;th>Name&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>u16&lt;/td>
-&lt;td>函数指针 [0:15]&lt;/td>
-&lt;td>处理函数（handler function)指针的低16位&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>u16&lt;/td>
-&lt;td>GDT 选择子&lt;/td>
-&lt;td>&lt;a href="https://en.wikipedia.org/wiki/Global_Descriptor_Table">global descriptor table&lt;/a> 代码段的选择子&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>u16&lt;/td>
-&lt;td>选项参数&lt;/td>
-&lt;td>参见下文&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>u16&lt;/td>
-&lt;td>函数指针 [16:31]&lt;/td>
-&lt;td>处理函数（handler function)指针的中间16位&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>u32&lt;/td>
-&lt;td>函数指针 [32:63]&lt;/td>
-&lt;td>处理函数（handler function)指针剩下的32位&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>u32&lt;/td>
-&lt;td>保留位&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>选项参数必须是下面的结构：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Bits&lt;/th>
-&lt;th>Name&lt;/th>
-&lt;th>Description&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>0-2&lt;/td>
-&lt;td>中断栈表索引&lt;/td>
-&lt;td>0: 不切换栈, 1-7:当处理函数被调用时，切换到中断栈表（Interrupt Stack Table）的第n个栈&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>3-7&lt;/td>
-&lt;td>保留位&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>8&lt;/td>
-&lt;td>0: 中断门, 1: 陷阱门&lt;/td>
-&lt;td>如果这个bit被设置为0，处理函数被调用的时候，中断会被禁用。&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>9-11&lt;/td>
-&lt;td>必须为1&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>12&lt;/td>
-&lt;td>必须为0&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>13‑14&lt;/td>
-&lt;td>特权等级描述符 (DPL)&lt;/td>
-&lt;td>允许调用该处理函数的最小特权等级。&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>15&lt;/td>
-&lt;td>Present&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>每个异常都拥有提前约定好的IDT索引。例如：非法操作码的表索引是6，而缺页错误的的表索引是14。因此，硬件可以找到每种异常对应的中断描述符表的条目（interrupt descriptor table entry, IDT entry)。&lt;a href="https://wiki.osdev.org/Exceptions">OSDev wiki&lt;/a>页面的Exception Table的“Vector nr.”列展示了所有异常的IDT索引。&lt;/p>
-&lt;p>当异常发生时，CPU大致遵循下面的流程：&lt;/p>
-&lt;ol>
-&lt;li>
-&lt;p>将一些寄存器的内容压入栈中，包括当前指令的指针和&lt;a href="http://en.wikipedia.org/wiki/FLAGS_register">RFLAGS&lt;/a>寄存器的内容（我们会在文章的后续部分用到这些值）。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>读取中断描述符表（IDT）中对应的条目。例如：缺页错误发生时，CPU会读取IDT的第十四个条目。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>检查这个条目是否存在，如果没有则升级为双重错误（double fault)。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>如果条目是一个中断门（第40个bit没有被设置为1），则禁用硬件中断。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>装载指定的GDT 选择子到CS段。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>跳转到指定的处理函数。&lt;/p>
-&lt;/li>
-&lt;/ol>
-&lt;p>现在不要担心第四、五步，我们会在未来的文章中研究GDT和硬件中断。&lt;/p>
-&lt;h2 id="一个idt类型an-idt-type">一个IDT类型（An IDT Type)&lt;/h2>
-&lt;p>我们选择使用&lt;code>x86_64&lt;/code> crate中的 &lt;code>InterruptDescriptorTable&lt;/code> 结构体，而不是创建自己的 IDT 类型：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="cp">#[repr(C)]&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="nc">InterruptDescriptorTable&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">divide_by_zero&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">debug&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">non_maskable_interrupt&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">overflow&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">bound_range_exceeded&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">invalid_opcode&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">device_not_available&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">double_fault&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">invalid_tss&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">segment_not_present&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">stack_segment_fault&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">general_protection_fault&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">page_fault&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">PageFaultHandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">x87_floating_point&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">alignment_check&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">machine_check&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">simd_floating_point&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">virtualization&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFunc&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">security_exception&lt;/span>: &lt;span class="nc">Entry&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="n">HandlerFuncWithErrCode&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c1">// some fields omitted
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;code>InterruptDescriptorTable&lt;/code>结构体的字段都是&lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.Entry.html">&lt;code>idt::Entry&lt;/code>&lt;/a>类型，这种类型是一种代表&lt;code>IDT&lt;/code>条目字段的结构体（见上面的示例）。类型参数&lt;code>F&lt;/code>定义了预期的处理函数类型。我们可以发现上面的条目字段需要 &lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.HandlerFunc.html">&lt;code>HandlerFunc &lt;/code>&lt;/a> 或 &lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.HandlerFuncWithErrCode.html">&lt;code>HandlerFuncWithErrCode &lt;/code>&lt;/a> 参数。缺页错误甚至拥有它独有的处理函数类型：&lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.PageFaultHandlerFunc.html">&lt;code>PageFaultHandlerFunc &lt;/code>&lt;/a> 。&lt;/p>
-&lt;p>首先，我们探讨一下 &lt;code>HandlerFunc&lt;/code> 类型：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">type&lt;/span> &lt;span class="nc">HandlerFunc&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">extern&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s">&amp;#34;x86-interrupt&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">_&lt;/span>: &lt;span class="kp">&amp;amp;&lt;/span>&lt;span class="nc">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptStackFrame&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;code>HandlerFunc &lt;/code> 是 &lt;code>extern &amp;quot;x86-interrupt&amp;quot; fn&lt;/code> 的类型别名。&lt;code>extern&lt;/code> 关键字定义了一个外部调用约定（ &lt;a href="https://doc.rust-lang.org/nomicon/ffi.html#foreign-calling-conventions">foreign calling convention&lt;/a> ），它经常被用于链接C语言代码（&lt;code>extern &amp;quot;C&amp;quot; fn&lt;/code>）。那么，&lt;code>x86-interrupt&lt;/code>调用约定是什么呢?&lt;/p>
-&lt;h2 id="中断调用约定-the-interrupt-calling-convention">中断调用约定（ The Interrupt Calling Convention）&lt;/h2>
-&lt;p>CPU异常与函数调用非常相似：CPU跳转到调用函数的第一条指令并执行它。然后，CPU跳转到返回地址并继续执行函数的调用者函数（&lt;code>parent function&lt;/code>)。&lt;/p>
-&lt;p>然而，异常和函数调用有一个重要的区别：函数调用是被编译器生成的 &lt;code>call&lt;/code> 指令主动发起，而&lt;/p>
-&lt;p>异常可以发生在所有指令的执行过程中。为了理解这个区别的重要性，我们需要更进一步地研究函数调用。&lt;/p>
-&lt;p>&lt;a href="https://en.wikipedia.org/wiki/Calling_convention">调用约定 Calling conventions&lt;/a> 明确规定了函数调用的细节。例如，它规定了函数参数的位置（ 寄存器还是函数栈）和结果的返回方式。在x86_64 Linux体系中，C语言函数调用适用下面的规则（在&lt;a href="https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf">System V ABI&lt;/a>中规定）：&lt;/p>
-&lt;ul>
-&lt;li>前六个整数参数会被放在寄存器中传递：&lt;code>rdi&lt;/code>, &lt;code>rsi&lt;/code>, &lt;code>rdx&lt;/code>, &lt;code>rcx&lt;/code>, &lt;code>r8&lt;/code>, &lt;code>r9&lt;/code>&lt;/li>
-&lt;li>剩下的参数被放在栈中传递&lt;/li>
-&lt;li>结果被放在 &lt;code>rax&lt;/code> 和 &lt;code>rdx&lt;/code> 中返回&lt;/li>
-&lt;/ul>
-&lt;p>Rust 没有遵顼C ABI （事实上，Rust甚至没有规定的ABI），所以这些规则仅仅适用于声明了 &lt;code>extern &amp;quot;C&amp;quot; fn&lt;/code> 的函数。&lt;/p>
-&lt;h3 id="preserved-and-scratch-寄存器">Preserved and Scratch 寄存器&lt;/h3>
-&lt;p>调用约定（ &lt;code>calling convention&lt;/code>）将寄存器分为两个部分： &lt;em>preserved&lt;/em> 和 &lt;em>scratch&lt;/em> 寄存器。&lt;/p>
-&lt;p>在函数调用的过程中，&lt;em>preserved&lt;/em>寄存器的值必须保持不变。所以，被调用的函数（&lt;code>callee&lt;/code>）必须保证会在返回以前会主动复原这些寄存器的原始值，才可以修改这些寄存器的值。因此，这些寄存器被称为被&lt;strong>调用者保存寄存器&lt;/strong>（&lt;em>callee-saved&lt;/em>，译者注：也就是AKA非易失性寄存器）。通行的模式是在函数的开始保存这些寄存器的值到函数栈中，并在函数马上返回的时候复原他们。&lt;/p>
-&lt;p>相比之下，被调用的函数（&lt;code>callee&lt;/code>）可以无约束地修改 &lt;em>scratch&lt;/em>寄存器。如果调用者函数希望在函数调用的过程中保留 &lt;em>scratch&lt;/em>寄存器的值，它需要在调用函数之前备份和复原 &lt;em>scratch&lt;/em>寄存器的值（例如将这些值压入栈中）。所以，这些寄存器被称为&lt;strong>调用者寄存器&lt;/strong>（&lt;em>caller-saved&lt;/em>，译者注：也就是AKA易失性寄存器）。&lt;/p>
-&lt;p>在x86_64架构中，C语言调用约定明确规定了下面的 preserved and scratch 寄存器：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>preserved 寄存器&lt;/th>
-&lt;th>scratch 寄存器&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>&lt;code>rbp&lt;/code>, &lt;code>rbx&lt;/code>, &lt;code>rsp&lt;/code>, &lt;code>r12&lt;/code>, &lt;code>r13&lt;/code>, &lt;code>r14&lt;/code>, &lt;code>r15&lt;/code>&lt;/td>
-&lt;td>&lt;code>rax&lt;/code>, &lt;code>rcx&lt;/code>, &lt;code>rdx&lt;/code>, &lt;code>rsi&lt;/code>, &lt;code>rdi&lt;/code>, &lt;code>r8&lt;/code>, &lt;code>r9&lt;/code>, &lt;code>r10&lt;/code>, &lt;code>r11&lt;/code>&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>&lt;em>callee-saved&lt;/em>&lt;/td>
-&lt;td>&lt;em>caller-saved&lt;/em>&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>编译器遵顼这些规定生成二进制字节码。例如：绝大多数函数地字节码开始于&lt;code>push rbp&lt;/code>指令，这个指令会备份&lt;code>rbp&lt;/code>寄存器地值到函数栈中（因为这是一个&lt;code>callee-saved&lt;/code>寄存器）。&lt;/p>
-&lt;h3 id="保存所有寄存器">保存所有寄存器&lt;/h3>
-&lt;p>与函数调用形成鲜明对比的是，异常可以发生在所有指令的执行过程中。大多数情况下，我们甚至不能识别出编译器生成的代码是否会引起异常。例如，编译器不能预见到一个指令是否会引起栈溢出或缺页错误。&lt;/p>
-&lt;p>既然不能预见到异常的发生时机，我们自然也无法做到提前备份任何寄存器的值。这意味着我们不能使用依赖于 &lt;code>caller-saved&lt;/code> 寄存器的调用约定去处理异常。然而，我们需要一个会保存所有寄存器值的调用约定。&lt;code>x86-interrupt&lt;/code>调用约定恰恰能够保证所有寄存器会在函数调用结束以前复原到原始值。&lt;/p>
-&lt;p>这并不意味着所有寄存器的值会在函数开始时被保存到函数栈中。相反，编译器（生成的代码）只会备份被函数覆盖的寄存器的值。在这种方式下，较短的函数编译生成的二进制字节码会非常高效，也就是只使用尽可能少的寄存器。&lt;/p>
-&lt;h3 id="中断栈帧-the-interrupt-stack-frame">中断栈帧（ The Interrupt Stack Frame）&lt;/h3>
-&lt;p>在寻常的函数调用（&lt;code>call&lt;/code>指令执行）中，CPU跳转到相应的函数之前会将返回地址压入到函数栈中。在函数返回（&lt;code>ret&lt;/code>指令执行）的时候，CPU会弹出并跳转到这个返回地址。所以，寻常的函数调用栈帧会如下图所示：&lt;/p>
-&lt;p>&lt;img src="https://markdown-ngy.oss-cn-beijing.aliyuncs.com/function-stack-frame.svg" alt="function-stack-frame">&lt;/p>
-&lt;p>然而，异常和中断处理函数并不能将返回地址压入到函数栈中，因为中断处理函数往往运行在不同的上下文（栈指针，CPU flags等）中。相反，在异常发生的时候，CPU会执行以下步骤：&lt;/p>
-&lt;ol>
-&lt;li>&lt;strong>对齐栈指针&lt;/strong>：中断可以发生在任何指令的执行过程中，栈指针自然也可能是任何值。然而，一些CPU指令集（e.g. 一些 SSE指令集）需要栈指针在16字节边界上对齐，因此CPU会在中断之后靠右对齐栈指针。&lt;/li>
-&lt;li>&lt;strong>切换栈（在某种情况下）&lt;/strong>：CPU特权等级发生改变的时候，栈会被切换，例如CPU 异常发生在用户态程序的时候。用所谓的中断栈表（ &lt;em>Interrupt Stack Table&lt;/em> , 下篇文章解释 ）配置特定中断的栈切换也是可行的。&lt;/li>
-&lt;li>&lt;strong>压入原来的栈指针&lt;/strong>：在中断发生的时候（对齐栈指针发生之前），CPU将栈指针（&lt;code>rsp&lt;/code>）和栈段（&lt;code>ss&lt;/code>)寄存器压入栈中。如此一来，中断处理函数返回时就可以复原栈指针的原始值。&lt;/li>
-&lt;li>&lt;strong>压入并更新&lt;code>RFLAGS&lt;/code>寄存器&lt;/strong>：&lt;a href="https://en.wikipedia.org/wiki/FLAGS_register">&lt;code>RFLAGS&lt;/code>&lt;/a>寄存器保存了多种控制和状态位。进入中断函数时，CPU修改一些位并压入旧的值。&lt;/li>
-&lt;li>&lt;strong>压入指令指针&lt;/strong>：跳转到中断处理函数之前，CPU压入指令指针（&lt;code>rip&lt;/code>）和代码段（&lt;code>cs&lt;/code>)。这类似于寻常的函数调用压入返回地址的过程。&lt;/li>
-&lt;li>&lt;strong>压入错误码（对于部分异常）&lt;/strong>：对于缺页错误等特定的异常，CPU会压入解释异常原因的错误码。&lt;/li>
-&lt;li>&lt;strong>调用中断处理函数&lt;/strong>：CPU从IDT对应的字段中读取中断处理函数的地址和段描述符。然后通过加载这些值到&lt;code>rip&lt;/code>和&lt;code>cs&lt;/code>寄存器中，调用中断处理函数。&lt;/li>
-&lt;/ol>
-&lt;p>所以，中断调用栈帧会如下图所示：&lt;/p>
-&lt;p>&lt;img src="https://markdown-ngy.oss-cn-beijing.aliyuncs.com/exception-stack-frame.svg" alt="exception-stack-frame">&lt;/p>
-&lt;p>在Rust的&lt;code>x86_64&lt;/code>库中，中断调用栈帧被抽象为&lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.InterruptStackFrame.html">&lt;code>InterruptStackFrame&lt;/code>&lt;/a>结构体。它会被作为&lt;code>&amp;amp;mut&lt;/code>传递给中断处理函数，并被用来获取更多的关于异常原因的信息。由于只有小部分异常会压入错误码，所以&lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.InterruptStackFrame.html">&lt;code>InterruptStackFrame&lt;/code>&lt;/a>并没有设置&lt;code>error_code&lt;/code>字段。这些异常会另外使用&lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/type.HandlerFuncWithErrCode.html">&lt;code>HandlerFuncWithErrCode&lt;/code>&lt;/a>函数来处理，这个函数有一个&lt;code>error_code&lt;/code>参数用来保存错误码。&lt;/p>
-&lt;h3 id="幕后工作">幕后工作&lt;/h3>
-&lt;p>&lt;code>x86-interrupt&lt;/code>调用约定作为一个优秀的抽象，它几乎隐藏了异常处理过程中所有繁杂的细节。然而，理解幕布后的工作在某些时候是有益的。下面简要概述了&lt;code>x86-interrupt&lt;/code>调用约定所处理的事情：&lt;/p>
-&lt;ul>
-&lt;li>&lt;strong>抽取参数&lt;/strong>：大多数调用约定希望参数被放在寄存器中传递。这对于异常处理函数是不可能的，因为我们不能在保存寄存器的值之前覆盖这些寄存器。然而，&lt;code>x86-interrupt&lt;/code>调用约定明白这些参数早就被放在栈的某个位置上了。&lt;/li>
-&lt;li>&lt;strong>使用&lt;code>iretq&lt;/code>返回&lt;/strong>：既然中断栈帧和寻常函数调用的栈帧是不同的，我们不能使用&lt;code>ret&lt;/code>指令从中断处理函数中返回。但是可以使用&lt;code>iretq&lt;/code>指令。&lt;/li>
-&lt;li>&lt;strong>处理错误码&lt;/strong>：部分特定异常压入的错误码是事情变得更加复杂。它改变了栈对齐（见对齐栈部分）并且需要在返回之前从栈中弹出。&lt;code>x86-interrupt&lt;/code>调用约定处理了所有难题。但是，它无法获得每种异常对应的处理函数，所以，它需要从函数的参数中推断这些信息。这意味着，程序员有责任使用正确的函数类型处理每种异常。幸运的是，&lt;code>x86_64&lt;/code>库的&lt;code>InterruptDescriptorTable&lt;/code>可以确保这一过程不会出错。&lt;/li>
-&lt;li>&lt;strong>对齐栈&lt;/strong>：一些指令集（尤其是SSE指令集）使用16字节的栈对齐。在异常发生的时候，CPU会确保栈对齐。但是在压入错误码后，栈对齐会再次被破坏。&lt;code>x86-interrupt&lt;/code>调用约定会通过再次对齐栈解决这个问题。&lt;/li>
-&lt;/ul>
-&lt;p>如果你对更多的细节感兴趣：我们也有一系列文章解释了如何使用 &lt;a href="https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md">naked functions&lt;/a>处理异常。&lt;/p>
-&lt;h2 id="实现">实现&lt;/h2>
-&lt;p>现在我们理解了这些理论，是时候在我们的内核中实现CPU异常处理了。我们首先在&lt;code>src/interrupts.rs&lt;/code>中创建一个新的interrupts 模块，其中&lt;code>init_idt&lt;/code>函数创建了一个新的&lt;code>InterruptDescriptorTable&lt;/code>：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// in src/lib.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mod&lt;/span> &lt;span class="nn">interrupts&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="c1">// in src/interrupts.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">x86_64&lt;/span>::&lt;span class="n">structures&lt;/span>::&lt;span class="n">idt&lt;/span>::&lt;span class="n">InterruptDescriptorTable&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">init_idt&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptDescriptorTable&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>现在我们可以增加更多的处理函数。我们首先创建断点异常（&lt;a href="https://wiki.osdev.org/Exceptions#Breakpoint">breakpoint exception&lt;/a>）的处理函数。断点异常是一个绝佳的测试处理异常过程的示例。它唯一的用途是在断点指令&lt;code>int3&lt;/code>执行的时候暂停整个程序。&lt;/p>
-&lt;p>断点异常通常被用于调试程序（debugger）：当用户设置了断点，调试程序会使用&lt;code>int3&lt;/code>指令覆盖对应位置的指令，当CPU执行到这一位置的时候会抛出断点异常。当用户希望继续执行程序时，调试程序将&lt;code>int3&lt;/code>指令替换回原来的指令并继续执行。可以从 &lt;a href="https://eli.thegreenplace.net/2011/01/27/how-debuggers-work-part-2-breakpoints">&amp;quot;&lt;em>How debuggers work&lt;/em>&amp;quot;&lt;/a> 系列获取更多的细节。&lt;/p>
-&lt;p>我们无需覆盖任何指令。因为我们只希望程序在异常指令执行的时候打印一条消息，然后继续执行。让我们创建一个简单的断点异常处理函数（breakpoint_handler）并添加到IDT：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// in src/interrupts.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">x86_64&lt;/span>::&lt;span class="n">structures&lt;/span>::&lt;span class="n">idt&lt;/span>::&lt;span class="p">{&lt;/span>&lt;span class="n">InterruptDescriptorTable&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptStackFrame&lt;/span>&lt;span class="p">};&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">use&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">crate&lt;/span>::&lt;span class="n">println&lt;/span>&lt;span class="p">;&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">init_idt&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptDescriptorTable&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">set_handler_fn&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point_handler&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">extern&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s">&amp;#34;x86-interrupt&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">breakpoint_handler&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">stack_frame&lt;/span>: &lt;span class="kp">&amp;amp;&lt;/span>&lt;span class="nc">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptStackFrame&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;EXCEPTION: BREAKPOINT\n{:#?}&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">stack_frame&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>处理函数只输出了一条消息并美观的打印了中断栈帧。&lt;/p>
-&lt;p>当我们试图编译程序的时候，错误出现了：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;span class="lnt">9
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="n">error&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">E0658&lt;/span>&lt;span class="p">]&lt;/span>: &lt;span class="nc">x86&lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="n">interrupt&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">ABI&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">is&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">experimental&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">and&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">subject&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">change&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">see&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">issue&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="err">#&lt;/span>&lt;span class="mi">40180&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">-&lt;/span>-&amp;gt; &lt;span class="nc">src&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="n">main&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">rs&lt;/span>:&lt;span class="mi">53&lt;/span>:&lt;span class="mi">1&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="mi">53&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">extern&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s">&amp;#34;x86-interrupt&amp;#34;&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">breakpoint_handler&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">stack_frame&lt;/span>: &lt;span class="kp">&amp;amp;&lt;/span>&lt;span class="nc">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptStackFrame&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="mi">54&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">println&lt;/span>&lt;span class="o">!&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;EXCEPTION: BREAKPOINT\n{:#?}&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">stack_frame&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="mi">55&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="n">_&lt;/span>&lt;span class="o">^&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">help&lt;/span>: &lt;span class="nc">add&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="cp">#![feature(abi_x86_interrupt)]&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">the&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">crate&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">attributes&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">to&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">enable&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个错误是因为 &lt;code>x86-interrupt&lt;/code> 中断调用约定仍然不稳定。我们需要明确地在&lt;code>lib.rs&lt;/code>顶部增加&lt;code>#![feature(abi_x86_interrupt)]&lt;/code>去激活它。&lt;/p>
-&lt;h3 id="加载idt">加载IDT&lt;/h3>
-&lt;p>为了让CPU使用我们新的中断描述符表，我们需要使用 &lt;a href="https://www.felixcloutier.com/x86/lgdt:lidt">&lt;code>lidt&lt;/code>&lt;/a> 指令去加载它。&lt;code>x86_64&lt;/code> 库的&lt;code>InterruptDescriptorTable&lt;/code> 结构体提供了一个 &lt;code>load&lt;/code> 方法去实现这个操作：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="c1">// in src/interrupts.rs
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">init_idt&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="kd">let&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptDescriptorTable&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">set_handler_fn&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point_handler&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">load&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>当我们试图编译程序的时候，下面的错误出现了：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;span class="lnt">9
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="n">error&lt;/span>: &lt;span class="err">`&lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="err">`&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">does&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">not&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">live&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">long&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">enough&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">-&lt;/span>-&amp;gt; &lt;span class="nc">src&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="n">interrupts&lt;/span>&lt;span class="o">/&lt;/span>&lt;span class="k">mod&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">rs&lt;/span>:&lt;span class="mi">43&lt;/span>:&lt;span class="mi">5&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="mi">43&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">idt&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">load&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">^^^&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">does&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">not&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">live&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">long&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">enough&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="mi">44&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">borrowed&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">only&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">lives&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">until&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">here&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">|&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">note&lt;/span>: &lt;span class="nc">borrowed&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">must&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">be&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">valid&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">for&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">the&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">static&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">lifetime&lt;/span>&lt;span class="p">...&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>&lt;code>load&lt;/code> 方法期望一个 &lt;code>&amp;amp;'static self&lt;/code>，以确保 &lt;code>idt&lt;/code> 引用在整个程序生命周期中可用。因为CPU会在每个异常发生的时候访问这张表，直到我们加载了其它的&lt;code>InterruptDescriptorTable&lt;/code>对象。所以，使用比 &lt;code>'static&lt;/code> 短的生命周期会导致 use-after-free bug。&lt;/p>
-&lt;p>事实上，情况很明白。我们的 &lt;code>idt&lt;/code> 在栈上创建，所以它只在 &lt;code>init&lt;/code> 函数的生命周期中有效。一旦这个栈内存被其它函数重用，CPU会把随机的栈内存当作IDT。幸运的是， &lt;code>InterruptDescriptorTable::load&lt;/code> 在函数定义中明确要求了必要的生命周期条件（译者注：也就是必须使用 &lt;code>'static&lt;/code> 生命周期）。所以，Rust 编译器可以在编译期就阻止这个潜在的 bug 。&lt;/p>
-&lt;p>为了解决这个问题，我们需要保存我们的 &lt;code>idt&lt;/code> 对象到拥有 &lt;code>'static&lt;/code> 生命周期的地方。我们可以使用 &lt;code>Box&lt;/code> 把 IDT 分配到堆上，并转换为 &lt;code>'static&lt;/code> 引用，但是我们是在开发操作系统内核，所以并不会有堆这个概念。&lt;/p>
-&lt;p>作为代替，我们可以把 IDT 保存为 常量（&lt;code>static&lt;/code>）：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">static IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
-pub fn init_idt() {
-IDT.breakpoint.set_handler_fn(breakpoint_handler);
-IDT.load();
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>但是，这有一个问题：常量是不可变的，所以我们不能修改来自 &lt;code>init&lt;/code> 函数的IDT中的断点条目。我们可以使用 &lt;a href="https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#accessing-or-modifying-a-mutable-static-variable">&lt;code>static mut&lt;/code>&lt;/a> 解决这个问题：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;span class="lnt">8
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-rust" data-lang="rust">&lt;span class="k">static&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">mut&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">IDT&lt;/span>: &lt;span class="nc">InterruptDescriptorTable&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">InterruptDescriptorTable&lt;/span>::&lt;span class="n">new&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="k">pub&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">fn&lt;/span> &lt;span class="nf">init_idt&lt;/span>&lt;span class="p">()&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="k">unsafe&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">{&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">IDT&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">set_handler_fn&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="k">break&lt;/span>&lt;span class="n">point_handler&lt;/span>&lt;span class="p">);&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="n">IDT&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">load&lt;/span>&lt;span class="p">();&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;span class="w">&lt;/span>&lt;span class="p">}&lt;/span>&lt;span class="w">
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这种变体不会出现编译错误，但是并不符合优雅的编程风格。 &lt;code>static mut&lt;/code> 非常容易造成数据竞争，所以在每一次访问中都需要使用 &lt;a href="https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers">&lt;code>unsafe&lt;/code>&lt;/a> 代码块。&lt;/p>
-&lt;h4 id="懒加载常量">懒加载常量&lt;/h4>
-&lt;p>&lt;code>lazy_static&lt;/code> 宏的存在令人庆幸。它可以让常量在被第一次使用的时候被初始化，而不是在编译期。因此，我们可以在初始化代码块中做几乎所有的事情，甚至读取常量在运行时的值。&lt;/p>
-&lt;p>我们已经在 &lt;a href="https://os.phil-opp.com/vga-text-mode/#lazy-statics">created an abstraction for the VGA text buffer&lt;/a> 引用了 &lt;code>lazy_static&lt;/code> 库。所以我们可以直接使用 &lt;code>lazy_static!&lt;/code> 宏去创建静态的IDT：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">// in src/interrupts.rs
-use lazy_static::lazy_static;
-lazy_static! {
-static ref IDT: InterruptDescriptorTable = {
-let mut idt = InterruptDescriptorTable::new();
-idt.breakpoint.set_handler_fn(breakpoint_handler);
-idt
-};
-}
-pub fn init_idt() {
-IDT.load();
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这种方法不需要 &lt;a href="https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers">&lt;code>unsafe&lt;/code>&lt;/a> 代码块，因为 &lt;code>lazy_static!&lt;/code> 宏在底层使用了 &lt;a href="https://doc.rust-lang.org/1.30.0/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers">&lt;code>unsafe&lt;/code>&lt;/a> 代码块，但是抽象出了一个安全接口。&lt;/p>
-&lt;h3 id="运行">运行&lt;/h3>
-&lt;p>让内核种的异常处理工作的最后一步是在 &lt;code>main.rs&lt;/code> 中调用 &lt;code>init_idt&lt;/code> 函数。在 &lt;code>lib.rs&lt;/code> 中抽象一个总体的 &lt;code>init&lt;/code> 函数而不是直接调用:&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">// in src/lib.rs
-pub fn init() {
-interrupts::init_idt();
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数用来放置可以被 &lt;code>main.rs&lt;/code> , &lt;code>lib.rs&lt;/code>中的 &lt;code>_start&lt;/code> 函数和集成测试所共享的初始化代码。&lt;/p>
-&lt;p>在 &lt;code>main.rs&lt;/code> 中的 &lt;code>_start&lt;/code> 函数中调用 &lt;code>init&lt;/code> 函数，并触发一个断点异常。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">// in src/main.rs
-#[no_mangle]
-pub extern &amp;#34;C&amp;#34; fn _start() -&amp;gt; ! {
-println!(&amp;#34;Hello World{}&amp;#34;, &amp;#34;!&amp;#34;);
-blog_os::init(); // new
-// invoke a breakpoint exception
-x86_64::instructions::interrupts::int3(); // new
-// as before
-#[cfg(test)]
-test_main();
-println!(&amp;#34;It did not crash!&amp;#34;);
-loop {}
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>使用 &lt;code>cargo run&lt;/code> 命令在QEMU中运行程序：&lt;/p>
-&lt;p>&lt;img src="https://markdown-ngy.oss-cn-beijing.aliyuncs.com/qemu-breakpoint-exception.png" alt="qemu-breakpoint-exception">&lt;/p>
-&lt;p>CPU成功调用了断点异常处理函数，并打印了一些消息，然后返回 &lt;code>_start&lt;/code> 函数继续打印了 &lt;code>It did not crash!&lt;/code> 消息。&lt;/p>
-&lt;p>可以发现，中断栈帧显示了中断发生时的指令和栈指针地址。这有助于调试不该发生的异常。&lt;/p>
-&lt;h3 id="增加test">增加Test&lt;/h3>
-&lt;p>增加一个确认上文中CPU继续工作的测试。首先，让 &lt;code>lib.rs&lt;/code> 的 &lt;code>_start&lt;/code> 函数同样调用 &lt;code>init&lt;/code> 函数：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">// in src/lib.rs
-/// Entry point for `cargo test`
-#[cfg(test)]
-#[no_mangle]
-pub extern &amp;#34;C&amp;#34; fn _start() -&amp;gt; ! {
-init(); // new
-test_main();
-loop {}
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>既然 &lt;code>lib.rs&lt;/code> 中的测试完全独立于 &lt;code>main.rs&lt;/code> ，必须使用命令 &lt;code>cargo test --lib&lt;/code> 来指定运行 &lt;code>lib.rs&lt;/code> 中的 &lt;code>_start&lt;/code> 函数。在&lt;code>lib.rs&lt;/code> 中的测试运行以前，我们需要调用 &lt;code>init&lt;/code> 函数去建立IDT。&lt;/p>
-&lt;p>现在，创建一个 &lt;code>test_breakpoint_exception&lt;/code> 测试：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;span class="lnt">7
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">// in src/interrupts.rs
-#[test_case]
-fn test_breakpoint_exception() {
-// invoke a breakpoint exception
-x86_64::instructions::interrupts::int3();
-}
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个测试调用了 &lt;code>x86_64&lt;/code> 库的 &lt;code>int3&lt;/code> 函数去触发断点异常。通过检查异常处理后程序继续执行，可以验证断点异常处理函数正常工作。&lt;/p>
-&lt;p>使用 &lt;code>cargo test&lt;/code> （所有测试）或 &lt;code>cargo test --lib&lt;/code>（只限于 &lt;code>lib.rs&lt;/code> 和它的子模块中的测试）命令运行新的测试，应当可以看见：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">blog_os::interrupts::test_breakpoint_exception... [ok]
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="过于抽象-too-much-magic">过于抽象?（ Too much Magic?）&lt;/h2>
-&lt;p>&lt;code>x86-interrupt&lt;/code> 调用约定和 &lt;a href="https://docs.rs/x86_64/0.12.1/x86_64/structures/idt/struct.InterruptDescriptorTable.html">&lt;code>InterruptDescriptorTable&lt;/code>&lt;/a> 让异常处理流程变得相当简单愉快。如果你觉得太过抽象或有兴趣学习异常处理更硬核的细节，&lt;a href="https://os.phil-opp.com/first-edition/extra/naked-exceptions/">“Handling Exceptions with Naked Functions”&lt;/a> 系列会告诉你如何在不使用 &lt;code>x86-interrupt&lt;/code> 调用约定的情况下处理异常并建立自己的IDT类型。在 &lt;code>x86-interrupt&lt;/code> 调用约定和 &lt;code>x86_64&lt;/code> 库问世以前，这个系列可以说是最主流的异常处理主体相关的博客。不得不提的是，这些文章基于第一版本的 &lt;a href="https://os.phil-opp.com/first-edition/">Writing an OS in Rust &lt;/a>，所以可能会有些过时。&lt;/p>
-&lt;h2 id="接下来">接下来?&lt;/h2>
-&lt;p>我们成功地触发了第一个异常并从中返回！下一步是确保可以捕获所有异常，因为未被捕获地异常会引发严重的 &lt;a href="https://wiki.osdev.org/Triple_Fault">triple fault&lt;/a> ，继而导致系统复位。下一篇文章解释了如何通过捕获 &lt;a href="https://wiki.osdev.org/Double_Fault#Double_Fault">双重异常 double faults&lt;/a> 来避免这些问题。&lt;/p></description></item><item><title>Go Channel</title><link>https://justice.bj.cn/post/14.language/golang/golang-channel/</link><pubDate>Thu, 07 Mar 2024 11:58:54 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang-channel/</guid><description>&lt;h1 id="go-channel">Go Channel&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>channel&lt;/code>是first-class的，可以被存储到变量中，可以作为参数传递给函数，也可以作为函数的返回值返回;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>channel分为：有缓存channel和无缓冲channel两种；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>close：如果 Channel 是一个空指针或者已经被关闭时，Go 语言运行时都会直接崩溃并抛出异常;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>从一个&lt;code>nil&lt;/code> channel中接收数据会一直被block;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>从一个被closed的channel中接收数据会立即返回；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="定义">定义&lt;/h2>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/01/26-12-35-27-2021-01-26-12-35-23-image.png" alt="">&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="k">struct&lt;/span> &lt;span class="nc">Hchan&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="n">uintgo&lt;/span> &lt;span class="n">qcount&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 队列q中的总数据数量
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uintgo&lt;/span> &lt;span class="n">dataqsiz&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 环形队列q的数据大小
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uint16&lt;/span> &lt;span class="n">elemsize&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">//队列的当前使用量
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="kt">bool&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">uint8&lt;/span> &lt;span class="n">elemalign&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">Alg&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">elemalg&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// interface for element type
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uintgo&lt;/span> &lt;span class="n">sendx&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 发送index
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uintgo&lt;/span> &lt;span class="n">recvx&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 接收index
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">WaitQ&lt;/span> &lt;span class="n">recvq&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 因recv而阻塞的等待队列
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">WaitQ&lt;/span> &lt;span class="n">sendq&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 因send而阻塞的等待队列
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">Lock&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>带缓冲区的chan，则缓冲区数据实际上是紧接着Hchan结构体中分配的&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="n">c&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">Hchan&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="n">runtime&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">mal&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">n&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">hint&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">elem&lt;/span>&lt;span class="o">-&amp;gt;&lt;/span>&lt;span class="n">size&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="k">struct&lt;/span> &lt;span class="n">WaitQ&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="n">SudoG&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">first&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">SudoG&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">last&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="p">};&lt;/span>
-&lt;span class="c1">//
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">struct&lt;/span> &lt;span class="n">SudoG&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="n">G&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">g&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// g and selgen constitute
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">uint32&lt;/span> &lt;span class="n">selgen&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// a weak pointer to g
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="n">SudoG&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">link&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">int64&lt;/span> &lt;span class="n">releasetime&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="n">byte&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">elem&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// data element
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="读写channel操作">读写channel操作&lt;/h2>
-&lt;p>写channel操作，在底层运行时库中对应的是一个runtime.chansend函数。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="c1">//c &amp;lt;- v
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="n">runtime&lt;/span>&lt;span class="err">·&lt;/span>&lt;span class="n">chansend&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">ChanType&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">t&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">Hchan&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">byte&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ep&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">bool&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">pres&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">pc&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="select的实现">select的实现&lt;/h2>
-&lt;p>select-case中的chan操作编译成了if-else。比如：&lt;/p>
-&lt;p>每个select都对应一个Select结构体&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="k">select&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">case&lt;/span> &lt;span class="nx">v&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="o">&amp;lt;-&lt;/span>&lt;span class="nx">c&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">foo&lt;/span>
-&lt;span class="k">default&lt;/span>&lt;span class="p">:&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">bar&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">// 编译如下：
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="k">if&lt;/span> &lt;span class="nf">selectnbrecv&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">v&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">c&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">foo&lt;/span>
-&lt;span class="p">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="o">...&lt;/span>&lt;span class="nx">bar&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>select和case关键字使用了下面的结构体：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kd">struct&lt;/span> &lt;span class="nx">Scase&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="nx">SudoG&lt;/span> &lt;span class="nx">sg&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// must be first member (cast to Scase)
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">Hchan&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="kd">chan&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// chan
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">byte&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="nx">pc&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// return pc
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">uint16&lt;/span> &lt;span class="nx">kind&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;span class="kt">uint16&lt;/span> &lt;span class="nx">so&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// vararg of selected bool
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">bool&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="nx">receivedp&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// pointer to received bool (recv2)
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
-&lt;span class="kd">struct&lt;/span> &lt;span class="nx">Select&lt;/span>
-&lt;span class="p">{&lt;/span>
-&lt;span class="kt">uint16&lt;/span> &lt;span class="nx">tcase&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 总的scase[]数量
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">uint16&lt;/span> &lt;span class="nx">ncase&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// 当前填充了的scase[]数量
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="kt">uint16&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="nx">pollorder&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// case的poll次序
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">Hchan&lt;/span>&lt;span class="o">**&lt;/span> &lt;span class="nx">lockorder&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="c1">// channel的锁住的次序
-&lt;/span>&lt;span class="c1">&lt;/span> &lt;span class="nx">Scase&lt;/span> &lt;span class="nx">scase&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">];&lt;/span> &lt;span class="c1">// 每个case会在结构体里有一个Scase，顺序是按出现的次序
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="p">};&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://www.bookstack.cn/read/go-internals/zh-07.1.md">高级数据结构的实现 - channel - 《深入解析Go》 - 书栈网 · BookStack&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Golang之syscall</title><link>https://justice.bj.cn/post/14.language/golang/golang%E4%B9%8Bsyscall/</link><pubDate>Thu, 07 Mar 2024 11:58:54 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E4%B9%8Bsyscall/</guid><description>&lt;h1 id="golang之syscall">Golang之syscall&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;span class="lnt">33
-&lt;/span>&lt;span class="lnt">34
-&lt;/span>&lt;span class="lnt">35
-&lt;/span>&lt;span class="lnt">36
-&lt;/span>&lt;span class="lnt">37
-&lt;/span>&lt;span class="lnt">38
-&lt;/span>&lt;span class="lnt">39
-&lt;/span>&lt;span class="lnt">40
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ User Mode ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-│
-│ Application syscall library
-program /src/syscall │
-│
-│
-│ ┌───────────────────┐ ┌──────────────────────┐
-│ │ ┌────────────▶│Faccessat { │ │
-│ │ │ │ │ │
-│ │ │ │ runtime·Syscall6 { │ │
-│ │... │ │ │ │
-│syscall.Access( │ │ │ ... │ │
-│ │ path, mode)───┼────────┘ │ SYSCALL ──────────┼────────────────┐
-│... ◀──────────┼──────┐ │ ... ◀──────────┼──────────┼─────┼────────┐
-│ │ │ └───────────────┼─── return; │ │ │
-│ │ │ } │ │ │ │
-│ │ │ │} │ │ │
-└───────────────────┘ └──────────────────────┘ │ │ │
-│ │ │
-─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │ ▲
-│ │
-switch to kernel mode │
-┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ Kernel Mode ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ▼ │
-│ │ │
-│ System call Trap handler │ │
-service routine │ │ │
-│ ┌──────────────────┐ ┌───────────────────────┐ │ │
-│sys_faccessat() ◀─┼───────────┐ │system call: ◀───────┼────────┼─────┘ │
-│ │{ │ │ │ │ │
-│ │ │ │ │ │ │
-│ │ │ │ │ ... │ │
-│ │ │ │ │ │ │
-│ │ ... │ └───────────┼───call sys_call_table │ switch to user mode
-│ │ │ │ │ │
-│ │ │ ┌───────────┼─▶ ... │ │
-│ return error; ──┼───────────┘ │ │ │ │
-│ │} │ │ ───────────────────┼───────────▶───────────┘
-└──────────────────┘ └───────────────────────┘ │
-│
-─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">/syscall/syscall_linux.go
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>可以把系统调用分为三类:&lt;/p>
-&lt;ol>
-&lt;li>阻塞系统调用&lt;/li>
-&lt;li>非阻塞系统调用&lt;/li>
-&lt;li>&lt;code>wrapped&lt;/code> 系统调用&lt;/li>
-&lt;/ol>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;span class="lnt">23
-&lt;/span>&lt;span class="lnt">24
-&lt;/span>&lt;span class="lnt">25
-&lt;/span>&lt;span class="lnt">26
-&lt;/span>&lt;span class="lnt">27
-&lt;/span>&lt;span class="lnt">28
-&lt;/span>&lt;span class="lnt">29
-&lt;/span>&lt;span class="lnt">30
-&lt;/span>&lt;span class="lnt">31
-&lt;/span>&lt;span class="lnt">32
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="c1">//sys Madvise(b []byte, advice int) (err error)
-&lt;/span>&lt;span class="c1">//sysnb EpollCreate(size int) (fd int, err error)
-&lt;/span>&lt;span class="c1">&lt;/span>
-&lt;span class="c1">//mksyscall.pl 脚本 将上面的定义生成如下
-&lt;/span>&lt;span class="c1">//sys
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">func&lt;/span> &lt;span class="nf">Madvise&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">b&lt;/span> &lt;span class="p">[]&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">advice&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">err&lt;/span> &lt;span class="kt">error&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="kd">var&lt;/span> &lt;span class="nx">_p0&lt;/span> &lt;span class="nx">unsafe&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Pointer&lt;/span>
-&lt;span class="k">if&lt;/span> &lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">b&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">&amp;gt;&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">_p0&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">unsafe&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Pointer&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">b&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="p">])&lt;/span>
-&lt;span class="p">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">_p0&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nx">unsafe&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">Pointer&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="nx">_zero&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="nx">_&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">e1&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nf">Syscall&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">SYS_MADVISE&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">uintptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">_p0&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="nb">uintptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nb">len&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">b&lt;/span>&lt;span class="p">)),&lt;/span> &lt;span class="nb">uintptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">advice&lt;/span>&lt;span class="p">))&lt;/span>
-&lt;span class="k">if&lt;/span> &lt;span class="nx">e1&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">err&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nf">errnoErr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">e1&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="k">return&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">//sysnb
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">func&lt;/span> &lt;span class="nf">EpollCreate&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">size&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">fd&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="kt">error&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">r0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">e1&lt;/span> &lt;span class="o">:=&lt;/span> &lt;span class="nf">RawSyscall&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">SYS_EPOLL_CREATE&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nb">uintptr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">size&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="nx">fd&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nb">int&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">r0&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="k">if&lt;/span> &lt;span class="nx">e1&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="mi">0&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="nx">err&lt;/span> &lt;span class="p">=&lt;/span> &lt;span class="nf">errnoErr&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">e1&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="k">return&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;span class="c1">//wrapped
-&lt;/span>&lt;span class="c1">&lt;/span>&lt;span class="kd">func&lt;/span> &lt;span class="nf">Rename&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">oldpath&lt;/span> &lt;span class="kt">string&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newpath&lt;/span> &lt;span class="kt">string&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">err&lt;/span> &lt;span class="kt">error&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;span class="k">return&lt;/span> &lt;span class="nf">Renameat&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">_AT_FDCWD&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">oldpath&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">_AT_FDCWD&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">newpath&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="p">}&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>入口：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-go" data-lang="go">&lt;span class="kd">func&lt;/span> &lt;span class="nf">Syscall&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">trap&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a3&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">r1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">r2&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="nx">syscall&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Errno&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="kd">func&lt;/span> &lt;span class="nf">Syscall6&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">trap&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a4&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a5&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a6&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">r1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">r2&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="nx">syscall&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Errno&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="kd">func&lt;/span> &lt;span class="nf">RawSyscall&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">trap&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a3&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">r1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">r2&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="nx">syscall&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Errno&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;span class="kd">func&lt;/span> &lt;span class="nf">RawSyscall6&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="nx">trap&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a2&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a3&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a4&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a5&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">a6&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="nx">r1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">r2&lt;/span> &lt;span class="kt">uintptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="nx">err&lt;/span> &lt;span class="nx">syscall&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nx">Errno&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这些函数的实现都是汇编，按照 linux 的 syscall 调用规范，我们只要在汇编中把参数依次传入寄存器，并调用 SYSCALL 指令即可进入内核处理逻辑，系统调用执行完毕之后，返回值放在 RAX 中:&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>RDI&lt;/th>
-&lt;th>RSI&lt;/th>
-&lt;th>RDX&lt;/th>
-&lt;th>R10&lt;/th>
-&lt;th>R8&lt;/th>
-&lt;th>R9&lt;/th>
-&lt;th>RAX&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>参数一&lt;/td>
-&lt;td>参数二&lt;/td>
-&lt;td>参数三&lt;/td>
-&lt;td>参数四&lt;/td>
-&lt;td>参数五&lt;/td>
-&lt;td>参数六&lt;/td>
-&lt;td>系统调用编号/返回值&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>Syscall 和 Syscall6 的区别只有传入参数不一样&lt;/p>
-&lt;p>Syscall 和 Syscall6在进入和退出Syscall时，分别调用了&lt;code>runtime·entersyscall(SB)&lt;/code>和&lt;code>runtime·exitsyscall(SB)&lt;/code>;&lt;/p>
-&lt;p>RawSyscall 和 RawSyscall6 在进入和退出Syscall 时候没有调用；&lt;/p>
-&lt;h4 id="新版本抢占式调度中的-rawsyscall-和-syscall">新版本抢占式调度中的 RawSyscall 和 Syscall&lt;/h4>
-&lt;p>由于 &lt;code>RawSyscall&lt;/code> 相较于 &lt;code>Syscall&lt;/code> 缺少了 &lt;code>runtime·entersyscall(SB)&lt;/code> 以及 &lt;code>runtime·exitsyscall(SB)&lt;/code> 的调用，当 &lt;code>g&lt;/code> 执行的是阻塞性质的系统调用的时候，当前 &lt;code>g&lt;/code> 会维持 &lt;code>running&lt;/code> 状态，runtime 系统监控在进行全局调度的时候一旦发现运行超过 10ms 的 &lt;code>g&lt;/code> 就会执行抢占操作（1.14.3 版本, linux_amd64 下为例），通过发送信号量给 &lt;code>g&lt;/code> 对应的线程，而由于线程在初始化的时候进行了信号量的监听以及设置了相应的 &lt;code>sa_flags&lt;/code> 参数，虽然包含诸如&lt;code>SA_RESTART&lt;/code>参数会让系统调用在信号中断后自动恢复，但是不是对所有系统调用都会有效，这将会导致在收到信号量的时候对正在阻塞的系统调用产生中断，&lt;/p>
-&lt;p>提供给用户使用的系统调用，基本都会通知 runtime，以 entersyscall，exitsyscall 的形式来告诉 runtime，在这个 syscall 阻塞的时候，由 runtime 判断是否把 P 腾出来给其它的 M 用。解绑定指的是把 M 和 P 之间解绑，如果绑定被解除，在 syscall 返回时，这个 g 会被放入执行队列 runq 中。&lt;/p>
-&lt;p>同时 runtime 又保留了自己的特权，在执行自己的逻辑的时候，我的 P 不会被调走，这样保证了在 Go 自己“底层”使用的这些 syscall 返回之后都能被立刻处理。&lt;/p>
-&lt;p>所以同样是 epollwait，runtime 用的是不能被别人打断的，你用的 syscall.EpollWait 那显然是没有这种特权的。&lt;/p>
-&lt;h2 id="vsdo">vsdo&lt;/h2>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://github.com/cch123/golang-notes/blob/master/syscall.md">https://github.com/cch123/golang-notes/blob/master/syscall.md&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="http://blog.itpub.net/69908606/viewspace-2642153/">曹春晖：谈一谈 Go 和 Syscall_ITPUB博客&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Golang内存对齐</title><link>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90/</link><pubDate>Thu, 07 Mar 2024 11:58:54 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E5%AF%B9%E9%BD%90/</guid><description>&lt;h1 id="golang内存对齐">Golang内存对齐&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;ul>
-&lt;li>CPU 始终以字长访问内存，&lt;/li>
-&lt;/ul>
-&lt;h2 id="对齐保证align-guarantee">对齐保证(align guarantee)&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>结构体的成员变量，第一个成员变量的偏移量为 0。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>往后的每个成员变量的对齐值必须为&lt;strong>编译器默认对齐长度&lt;/strong>（&lt;code>#pragma pack(n)&lt;/code>）或&lt;strong>当前成员变量类型的长度&lt;/strong>（&lt;code>unsafe.Sizeof&lt;/code>），取&lt;strong>最小值作为当前类型的对齐值&lt;/strong>。其偏移量必须为对齐值的整数倍&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>结构体本身，对齐值必须为&lt;strong>编译器默认对齐长度&lt;/strong>（&lt;code>#pragma pack(n)&lt;/code>）或&lt;strong>结构体的所有成员变量类型中的最大长度&lt;/strong>，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>取&lt;strong>最大数的最小整数倍&lt;/strong>作为对齐值；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>结合以上两点，可得知若&lt;strong>编译器默认对齐长度&lt;/strong>（&lt;code>#pragma pack(n)&lt;/code>）超过结构体内成员变量的类型最大长度时，&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>默认对齐长度是没有任何意义的；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;a href="https://geektutu.com/post/hpg-struct-alignment.html">https://geektutu.com/post/hpg-struct-alignment.html&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="https://eddycjy.gitbook.io/golang/di-1-ke-za-tan/go-memory-align">1.5 在 Go 中恰到好处的内存对齐 - 跟煎鱼学 Go&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;a href="http://blog.newbmiao.com/2020/02/10/dig101-golang-struct-memory-align.html">http://blog.newbmiao.com/2020/02/10/dig101-golang-struct-memory-align.html&lt;/a>&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ol></description></item><item><title>Golang内存管理</title><link>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</link><pubDate>Thu, 07 Mar 2024 11:58:54 +0800</pubDate><guid>https://justice.bj.cn/post/14.language/golang/golang%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/</guid><description>&lt;h1 id="golang内存管理">Golang内存管理&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;p>Golang内存管理采用类似&lt;code>tcmalloc&lt;/code>的分级分配算法，主要由&lt;code>MHeap&lt;/code>、&lt;code>MCentral&lt;/code>、&lt;code>MCache&lt;/code> 3 级组成。&lt;/p>
-&lt;p>按分配对象的大小不同，选择相应的区域进行分配。&lt;/p>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2021/12/28-10-17-33-2021-12-28-10-17-27-image.png" alt="">&lt;/p>
-&lt;h2 id="内存布局">内存布局&lt;/h2>
-&lt;p>golang程序启动时，会根据OS类型向OS申请一大块连续虚拟内存空间如下：&lt;/p>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-34-2020-05-04-09-32-44-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>arena&lt;/code>：&lt;/p>
-&lt;ul>
-&lt;li>由连续的page(8KB)组成，用于具体的对象分配；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>spans&lt;/code>：&lt;/p>
-&lt;ul>
-&lt;li>存放了&lt;code>mspan&lt;/code>的指针(8Byte)，表示arena区中的某一页(page)属于哪个&lt;code>mspan&lt;/code>，用于管理arena；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>bitmap&lt;/code>：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>用于标记&lt;code>arena&lt;/code>(即heap)中的对象, 每个对象使用两个bit进行标记，分别表示gc状态和是否分配；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>高地址部分指向arena区域的低地址部分，地址是由高地址向低地址增长的；&lt;/p>
-&lt;/li>
-&lt;li>&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-42-2020-05-04-09-36-04-image.png" alt="">&lt;/p>
-&lt;h2 id="基本数据结构">基本数据结构&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>MHeap&lt;/strong>:&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>代表了golang的整个堆内存;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>全局唯一的;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>大对象(&amp;gt;32KB)直接在MHeap中分配；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>mheap 包含free，large两个域：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>free: free包含一个256单元的数组&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>large:&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>给MCentral和MCache等下层提供空间；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-48-2020-05-04-09-39-31-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>MCentral&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>集中管理不同类型（67种）的MSpan，对应TCMalloc中的CentralCache；&lt;/li>
-&lt;/ul>
-&lt;ul>
-&lt;li>每个mcentral包含两个mspan列表:
-&lt;ul>
-&lt;li>noempty: 表示已被mcache的mspan list；&lt;/li>
-&lt;li>empty: 表示未被使用(empty)的mspan 链表。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>当某个goroutine中的mcache内存不够时，就会从mcentral的empty链表中分配对应的mspan。&lt;/li>
-&lt;li>如果mcentral内存不够，就会从MHeap中分配；&lt;/li>
-&lt;li>mcentral中有锁，以为多个goroutine分配提供互斥；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-08-2020-05-04-09-38-29-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>MCache&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>是各个goroutine自有的局部内存;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>向&lt;code>mcentral&lt;/code>申请得到的;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>小对象(&amp;lt;=32KB)的分配直接在goroutine内部进行，不用加锁，提高分配速度。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>mcache 内存不够时，会向mcentral重新申请；&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-13-2020-05-04-09-38-54-image.png" alt="">&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;strong>MSpan&lt;/strong>：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>内存管理基本单元，由一片连续的8KB页组成的双向链表，进行内存对象的数据分配;&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>为满足不同大小对象分配的需要，减少内存碎片，同时兼顾内存利用率，golang将span分层不同的大小类型（总共67种）。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>对象分配内存时，根据对象大小，选择最合适的mspan进行分配。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;img src="https://raw.githubusercontent.com/ZhuZhengyi/notebook-images/master/2020/11/22-13-49-19-2020-05-04-09-37-59-image.png" alt="">&lt;/p>
-&lt;h2 id="内存分配">内存分配&lt;/h2>
-&lt;p>Go的内存分配器在分配对象时，根据对象的大小，分成三类：&lt;/p>
-&lt;ul>
-&lt;li>Tiny对象： (0, 16B]，使用mcache的tiny分配器分配，多个tiny对象可组合在一个mspan中&lt;/li>
-&lt;li>Small对象：(16B, 32KB ]，在mcache中选择相应规格大小的mspan进行分配；&lt;/li>
-&lt;li>大对象：&amp;gt;32KB, 直接从MHeap中分配；&lt;/li>
-&lt;/ul>
-&lt;p>golang变量是在栈上分配还是在堆上分配，是由逃逸分析的结果决定的。&lt;/p>
-&lt;p>通常情况下，编译器是倾向于将变量分配到栈上的，因为它的开销小。&lt;/p>
-&lt;p>分配顺序：&lt;/p>
-&lt;ul>
-&lt;li>首先通过计算使用的大小规格&lt;/li>
-&lt;li>然后&lt;code>mcache&lt;/code>中对应大小规格的块分配。&lt;/li>
-&lt;li>如果&lt;code>mcache&lt;/code> free 链表不够分配&lt;/li>
-&lt;li>如果&lt;code>mcentral&lt;/code>中没有可用的块，则向&lt;code>mheap&lt;/code>申请，并根据算法找到最合适的&lt;code>mspan&lt;/code>。&lt;/li>
-&lt;li>如果申请到的&lt;code>mspan&lt;/code> 超出申请大小，将会根据需求进行切分，以返回用户所需的页数。剩余的页构成一个新的 mspan 放回 mheap 的空闲列表。&lt;/li>
-&lt;li>如果 mheap 中没有可用 span，则向操作系统申请一系列新的页（最小 1MB）。&lt;/li>
-&lt;/ul>
-&lt;h2 id="gc流程">GC流程&lt;/h2>
-&lt;h3 id="gc时机">GC时机&lt;/h3>
-&lt;p>golang gc的触发是由gcpercent变量控制的，当新分配的内存占已在使用中的内存的比例超过gcprecent时就会触发。&lt;/p>
-&lt;p>比如，gcpercent=100，当前使用了4M的内存，那么当内存分配到达8M时就会再次gc。&lt;/p>
-&lt;p>如果回收完毕后，内存的使用量为5M，那么下次回收的时机则是内存分配达到10M的时候。&lt;/p>
-&lt;p>也就是说，并不是内存分配越多，垃圾回收频率越高，这个算法使得垃圾回收的频率比较稳定，适合应用的场景。&lt;/p>
-&lt;p>gcpercent的值是通过环境变量GOGC获取的，如果不设置这个环境变量，默认值是100。&lt;/p>
-&lt;p>如果将它设置成off，则是关闭垃圾回收。&lt;/p>
-&lt;h2 id="参考">参考&lt;/h2>
-&lt;ol>
-&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/27807169">https://zhuanlan.zhihu.com/p/27807169&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://www.jianshu.com/p/2904efc7f1a8">图解Golang的内存分配&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/29216091">https://zhuanlan.zhihu.com/p/29216091&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/76802887">https://zhuanlan.zhihu.com/p/76802887&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://yq.aliyun.com/articles/652551">&lt;strong>简单易懂的 Go 内存分配原理解读&lt;/strong>&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://juejin.im/post/5c888a79e51d456ed11955a8">https://juejin.im/post/5c888a79e51d456ed11955a8&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://zhuanlan.zhihu.com/p/225190602">白话Go语言内存管理三部曲（一）内存分配原理&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://segmentfault.com/a/1190000022499402">go怎样做stw&lt;/a>&lt;/li>
-&lt;li>&lt;a href="https://mp.weixin.qq.com/s/3gGbJaeuvx4klqcv34hmmw">https://mp.weixin.qq.com/s/3gGbJaeuvx4klqcv34hmmw&lt;/a>&lt;/li>
 &lt;li>&lt;/li>
 &lt;/ol></description></item></channel></rss>
