@@ -1,218 +1,16 @@
-<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
-<head>
-<meta charset=utf-8>
-<meta http-equiv=x-ua-compatible content="IE=edge">
-<title>从ReentrantLock的实现看AQS的原理及应用 - Justice的小站</title>
-<meta name=renderer content="webkit">
-<meta name=referrer content="no-referrer">
-<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
-<meta name=MobileOptimized content="width">
-<meta name=HandheldFriendly content="true">
-<meta name=applicable-device content="pc,mobile">
-<meta name=theme-color content="#f8f5ec">
-<meta name=msapplication-navbutton-color content="#f8f5ec">
-<meta name=apple-mobile-web-app-capable content="yes">
-<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
-<meta name=mobile-web-app-capable content="yes">
-<meta name=author content="Justice">
-<meta name=description content="从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（Lock、Semaphore、ReentrantLock">
-<meta name=keywords content="tech,it,blog">
-<meta name=generator content="Hugo 0.88.1">
-<link rel=canonical href=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/>
-<link rel=icon href=/favicon.ico>
-<link rel=stylesheet href=/sass/jane.min.59a446ca0f76fe2dfc772a3a0b7512965043b4433e3e0dcf5b8ebeede14fae0c.css integrity="sha256-WaRGyg92/i38dyo6C3USllBDtEM+Pg3PW46+7eFPrgw=" media=screen crossorigin=anonymous>
-<meta property="og:title" content="从ReentrantLock的实现看AQS的原理及应用">
-<meta property="og:description" content="从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（Lock、Semaphore、ReentrantLock">
-<meta property="og:type" content="article">
-<meta property="og:url" content="https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-04-29T21:42:54+08:00">
-<meta property="article:modified_time" content="2022-04-29T21:42:54+08:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content="从ReentrantLock的实现看AQS的原理及应用">
-<meta itemprop=description content="从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（Lock、Semaphore、ReentrantLock"><meta itemprop=datePublished content="2022-04-29T21:42:54+08:00">
-<meta itemprop=dateModified content="2022-04-29T21:42:54+08:00">
-<meta itemprop=wordCount content="12921">
-<meta itemprop=keywords content="language,java,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content="从ReentrantLock的实现看AQS的原理及应用">
-<meta name=twitter:description content="从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（Lock、Semaphore、ReentrantLock"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
-<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
-</head>
-<body>
-<div id=mobile-navbar class=mobile-navbar>
-<div class=mobile-header-logo>
-<a href=/ class=logo>Justice's Blog</a>
-</div>
-<div class=mobile-navbar-icon>
-<span></span>
-<span></span>
-<span></span>
-</div>
-</div>
-<nav id=mobile-menu class="mobile-menu slideout-menu">
-<ul class=mobile-menu-list>
-<li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
-<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
-<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
-<div class=pswp__bg></div>
-<div class=pswp__scroll-wrap>
-<div class=pswp__container>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-</div>
-<div class="pswp__ui pswp__ui--hidden">
-<div class=pswp__top-bar>
-<div class=pswp__counter></div>
-<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-<div class=pswp__preloader>
-<div class=pswp__preloader__icn>
-<div class=pswp__preloader__cut>
-<div class=pswp__preloader__donut></div>
-</div>
-</div>
-</div>
-</div>
-<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-<div class=pswp__share-tooltip></div>
-</div>
-<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-</button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-</button>
-<div class=pswp__caption>
-<div class=pswp__caption__center></div>
-</div>
-</div>
-</div>
-</div>
-<header id=header class="header container">
-<div class=logo-wrapper>
-<a href=/ class=logo>
-Justice's Blog
-</a>
-</div>
-<nav class=site-navbar>
-<ul id=menu class=menu>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-<li class=menu-item>
-<a id=search-btn class="menu-item-link menu-item-search" href=#>
-<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-</header>
-<div id=mobile-panel>
-<main id=main class="main bg-llight">
-<div class=content-wrapper>
-<div id=content class="content container">
-<article class="post bg-white">
-<header class=post-header>
-<h1 class=post-title>从ReentrantLock的实现看AQS的原理及应用</h1>
-<div class=post-meta>
-<time datetime=2022-04-29 class=post-time>
-2022-04-29 21:42:54
-</time>
-<div class=post-category>
-<a href=https://justice.bj.cn/categories/language/> language </a>
-<a href=https://justice.bj.cn/categories/java/> java </a>
-</div>
-<span id=busuanzi_container_page_pv>
-| 阅读 <span id=busuanzi_value_page_pv></span>
-</span>
-</div>
-</header>
-<div class=post-toc id=post-toc>
-<h2 class=post-toc-title>文章目录</h2>
-<div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#前言>前言</a></li>
-<li><a href=#1-reentrantlock>1 ReentrantLock</a>
-<ul>
-<li><a href=#11-reentrantlock特性概览>1.1 ReentrantLock特性概览</a></li>
-<li><a href=#12-reentrantlock与aqs的关联>1.2 ReentrantLock与AQS的关联</a></li>
-</ul>
-</li>
-<li><a href=#2-aqs>2 AQS</a>
-<ul>
-<li><a href=#21-原理概览>2.1 原理概览</a></li>
-</ul>
-</li>
-<li><a href=#22-aqs重要方法与reentrantlock的关联>2.2 AQS重要方法与ReentrantLock的关联</a></li>
-<li><a href=#23-通过reentrantlock理解aqs>2.3 通过ReentrantLock理解AQS</a>
-<ul>
-<li><a href=#231-线程加入等待队列>2.3.1 线程加入等待队列</a></li>
-<li><a href=#232-cancelled状态节点生成>2.3.2 CANCELLED状态节点生成</a></li>
-<li><a href=#233-如何解锁>2.3.3 如何解锁</a></li>
-<li><a href=#234-中断恢复后的执行流程>2.3.4 中断恢复后的执行流程</a></li>
-<li><a href=#235-小结>2.3.5 小结</a></li>
-</ul>
-</li>
-<li><a href=#3-aqs应用>3 AQS应用</a>
-<ul>
-<li><a href=#31-reentrantlock的可重入应用>3.1 ReentrantLock的可重入应用</a></li>
-<li><a href=#32-juc中的应用场景>3.2 JUC中的应用场景</a></li>
-<li><a href=#33-自定义同步工具>3.3 自定义同步工具</a></li>
-</ul>
-</li>
-<li><a href=#参考>参考</a></li>
-</ul>
-</nav>
-</div>
-</div>
-<div class=post-content>
-<h1 id=从reentrantlock的实现看aqs的原理及应用>从ReentrantLock的实现看AQS的原理及应用</h1>
-<h2 id=前言>前言</h2>
-<p>Java中的大部分同步类（Lock、Semaphore、ReentrantLock等）都是基于AbstractQueuedSynchronizer（简称为AQS）实现的。AQS是一种提供了原子式管理同步状态、阻塞和唤醒线程功能以及队列模型的简单框架。本文会从应用层逐渐深入到原理层，并通过ReentrantLock的基本特性和ReentrantLock与AQS的关联，来深入解读AQS相关独占锁的知识点，同时采取问答的模式来帮助大家理解AQS。由于篇幅原因，本篇文章主要阐述AQS中独占锁的逻辑和Sync Queue，不讲述包含共享锁和Condition Queue的部分（本篇文章核心为AQS原理剖析，只是简单介绍了ReentrantLock，感兴趣同学可以阅读一下ReentrantLock的源码）。</p>
-<p>下面列出本篇文章的大纲和思路，以便于大家更好地理解：</p>
-<p><img src=https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png alt></p>
-<h2 id=1-reentrantlock>1 ReentrantLock</h2>
-<h3 id=11-reentrantlock特性概览>1.1 ReentrantLock特性概览</h3>
-<p>ReentrantLock意思为可重入锁，指的是一个线程能够对一个临界资源重复加锁。为了帮助大家更好地理解ReentrantLock的特性，我们先将ReentrantLock跟常用的Synchronized进行比较，其特性如下（蓝色部分为本篇文章主要剖析的点）：</p>
-<p><img src=https://p0.meituan.net/travelcube/412d294ff5535bbcddc0d979b2a339e6102264.png alt></p>
-<p>下面通过伪代码，进行更加直观的比较：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+<!doctype html><html lang=zh-cn><head prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article#"><meta charset=utf-8><meta name=generator content="Hugo 0.88.1"><meta name=theme-color content="#eee"><meta name=color-scheme content="light dark"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=format-detection content="telephone=no, date=no, address=no, email=no"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><title>从ReentrantLock的实现看AQS的原理及应用 | Justice's Site</title><link rel=stylesheet href=/css/meme.min.67f47a7b15ac0d9812c0cb1d9e833f83f178b3b5529591a58246a31918afd5a7.css><script src=/js/meme.min.dd11d9ee391c28c55e7e558480edc7328d764051868779a373ae6f7b959c1e01.js></script>
+<script src=/js/search/fuse-search.js></script>
+<link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" media=print onload="this.media='all'"><noscript><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap"></noscript><meta name=author content="Justice"><meta name=description content="从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（……"><link rel="shortcut icon" href=/favicon.ico type=image/x-icon><link rel=mask-icon href=/icons/safari-pinned-tab.svg color=#2a6df4><link rel=apple-touch-icon sizes=180x180 href=/icons/apple-touch-icon.png><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-title content="Justice's Site"><meta name=apple-mobile-web-app-status-bar-style content="black"><meta name=mobile-web-app-capable content="yes"><meta name=application-name content="Justice's Site"><meta name=msapplication-starturl content="../../../../"><meta name=msapplication-TileColor content="#fff"><meta name=msapplication-TileImage content="../../../../icons/mstile-150x150.png"><link rel=manifest href=/manifest.json><link rel=canonical href=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","datePublished":"2022-04-29T21:42:54+08:00","dateModified":"2024-04-28T06:05:29+00:00","url":"https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/","headline":"从ReentrantLock的实现看AQS的原理及应用","description":"从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（……","inLanguage":"zh-cn","articleSection":"post","wordCount":12921,"image":["https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png","https://p0.meituan.net/travelcube/412d294ff5535bbcddc0d979b2a339e6102264.png","https://p1.meituan.net/travelcube/82077ccf14127a87b77cefd1ccf562d3253591.png","https://p1.meituan.net/travelcube/d2f7f7fffdc30d85d17b44266c3ab05323338.png","https://p0.meituan.net/travelcube/7132e4cef44c26f62835b197b239147b18062.png","https://p1.meituan.net/travelcube/960271cf2b5c8a185eed23e98b72c75538637.png","https://p0.meituan.net/travelcube/27605d483e8935da683a93be015713f331378.png","https://p0.meituan.net/travelcube/3f1e1a44f5b7d77000ba4f9476189b2e32806.png","https://p1.meituan.net/travelcube/b8b53a70984668bc68653efe9531573e78636.png","https://p1.meituan.net/travelcube/7aadb272069d871bdee8bf3a218eed8136919.png","https://p0.meituan.net/travelcube/f30c631c8ebbf820d3e8fcb6eee3c0ef18748.png","https://p0.meituan.net/travelcube/e9e385c3c68f62c67c8d62ab0adb613921117.png","https://p0.meituan.net/travelcube/c124b76dcbefb9bdc778458064703d1135485.png","https://p0.meituan.net/travelcube/9af16e2481ad85f38ca322a225ae737535740.png","https://p1.meituan.net/travelcube/b845211ced57561c24f79d56194949e822049.png","https://p1.meituan.net/travelcube/ab89bfec875846e5028a4f8fead32b7117975.png","https://p0.meituan.net/travelcube/45d0d9e4a6897eddadc4397cf53d6cd522452.png"],"author":{"@type":"Person","description":"Viva La Vida","email":"justice_103@126.com","image":"https://justice.bj.cn/icons/apple-touch-icon.png","url":"https://io-oi.me/","name":"Justice"},"license":"[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)","publisher":{"@type":"Organization","name":"Justice's Site","logo":{"@type":"ImageObject","url":"https://justice.bj.cn/icons/apple-touch-icon.png"},"url":"https://justice.bj.cn"},"mainEntityOfPage":{"@type":"WebSite","@id":"https://justice.bj.cn"}}</script><meta name=twitter:card content="summary_large_image"><meta name=twitter:site content="@reuixiy"><meta name=twitter:creator content="@reuixiy"><meta property="og:title" content="从ReentrantLock的实现看AQS的原理及应用"><meta property="og:description" content="从ReentrantLock的实现看AQS的原理及应用 前言 Java中的大部分同步类（……"><meta property="og:url" content="https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/"><meta property="og:site_name" content="Justice's Site"><meta property="og:locale" content="zh-cn"><meta property="og:image" content="https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png"><meta property="og:type" content="article"><meta property="article:published_time" content="2022-04-29T21:42:54+08:00"><meta property="article:modified_time" content="2024-04-28T06:05:29+00:00"><meta property="article:section" content="post"></head><body><div class=container><header class=header><div class=header-wrapper><div class="header-inner single"><div class=site-brand><a href=/ class=brand>Justice's Site</a></div><nav class=nav><ul class=menu id=menu><li class=menu-item><a href=/><span class=menu-item-name>主页</span></a></li><li class=menu-item><a href=/post/><span class=menu-item-name>点滴</span></a></li><li class=menu-item><a href=/tags/><span class=menu-item-name>标签</span></a></li><li class=menu-item><a href=/categories/><span class=menu-item-name>分类</span></a></li><li class=menu-item><a href=/about><span class=menu-item-name>关于</span></a></li><li class=menu-item><a href=http://passer-by.com/pacman/><span class=menu-item-name>更多</span></a></li><li class=menu-item><a id=theme-switcher href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-light"><path d="M193.2 104.5 242 7a18 18 0 0128 0l48.8 97.5L422.2 70A18 18 0 01442 89.8l-34.5 103.4L505 242a18 18 0 010 28l-97.5 48.8L442 422.2A18 18 0 01422.2 442l-103.4-34.5L270 505a18 18 0 01-28 0l-48.8-97.5L89.8 442A18 18 0 0170 422.2l34.5-103.4-97.5-48.8a18 18 0 010-28l97.5-48.8L70 89.8A18 18 0 0189.8 70zM256 128a128 128 0 10.01.0M256 160a96 96 0 10.01.0"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-dark"><path d="M27 412A256 256 0 10181 5a11.5 11.5.0 00-5 20A201.5 201.5.0 0142 399a11.5 11.5.0 00-15 13"/></svg></a></li><li class="menu-item search-item" data-target=search-modal><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="16" width="16" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg></li></ul></nav></div></div><input type=checkbox id=nav-toggle aria-hidden=true>
+<label for=nav-toggle class=nav-toggle></label>
+<label for=nav-toggle class=nav-curtain></label></header><script>let indexURL="https://justice.bj.cn/index.json",includeSectionsInSearch=["post"],search_no_results="0 results for",search_initial_message=""</script><div class=search-modal aria-hidden=true style=--color-primary:#7f0ec6><div data-target=close-search-modal class=search-modal-overlay></div><div class=search-wrapper data-image=true data-description=true data-tags=true data-categories=true><div class=search-wrapper-header><label for=search-modal-input style=margin-top:-1px><span class=sr-only>search icon</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-reset" data-type="reset"><path fill="currentcolor" d="M256 512A256 256 0 10256 0a256 256 0 100 512zM175 175c9.4-9.4 24.6-9.4 33.9.0l47 47 47-47c9.4-9.4 24.6-9.4 33.9.0s9.4 24.6.0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6.0 33.9s-24.6 9.4-33.9.0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9.0s-9.4-24.6.0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6.0-33.9z"/></svg></label>
+<input id=search-modal-input type=text data-search-input autocomplete=off aria-label=Search placeholder></div><div class=search-wrapper-body><div class=search-result data-search-result></div><span class=search-result-empty></span></div><div class=search-wrapper-footer><span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" viewBox="0 0 16 16"><path d="M3.204 11h9.592L8 5.519 3.204 11zm-.753-.659 4.796-5.48a1 1 0 011.506.0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 01-.753-1.659z"/></svg></kbd><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" style="margin-top:1px" viewBox="0 0 16 16"><path d="M3.204 5h9.592L8 10.481 3.204 5zm-.753.659 4.796 5.48a1 1 0 001.506.0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 00-.753 1.659z"/></svg></kbd>to navigate</span>
+<span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentcolor" style="display:inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M14.5 1.5a.5.5.0 01.5.5v4.8a2.5 2.5.0 01-2.5 2.5H2.707l3.347 3.346a.5.5.0 01-.708.708l-4.2-4.2a.5.5.0 010-.708l4-4a.5.5.0 11.708.708L2.707 8.3H12.5A1.5 1.5.0 0014 6.8V2a.5.5.0 01.5-.5z"/></svg></kbd>to select</span>
+<span class=search-result-info></span>
+<span data-target=close-search-modal><kbd>ESC</kbd> to close</span></div></div></div><main class="main single" id=main><div class=main-inner><article class="content post h-entry" data-align=justify data-type=post data-toc-num=true><h1 class="post-title p-name">从ReentrantLock的实现看AQS的原理及应用</h1><div class=post-meta><time datetime=2022-04-29T21:42:54+08:00 class="post-meta-item published dt-published"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M148 288h-40c-6.6.0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v40c0 6.6-5.4 12-12 12zm108-12v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 96v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm192 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96-260v352c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h48V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h128V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h48c26.5.0 48 21.5 48 48zm-48 346V160H48v298c0 3.3 2.7 6 6 6h340c3.3.0 6-2.7 6-6z"/></svg>&nbsp;2022.4.29</time>
+<time datetime=2024-04-28T06:05:29+00:00 class="post-meta-item modified dt-updated"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M4e2 64h-48V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H160V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H48C21.49 64 0 85.49.0 112v352c0 26.51 21.49 48 48 48h352c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 4e2H54a6 6 0 01-6-6V160h352v298a6 6 0 01-6 6zm-52.849-200.65L198.842 404.519c-4.705 4.667-12.303 4.637-16.971-.068l-75.091-75.699c-4.667-4.705-4.637-12.303.068-16.971l22.719-22.536c4.705-4.667 12.303-4.637 16.97.069l44.104 44.461 111.072-110.181c4.705-4.667 12.303-4.637 16.971.068l22.536 22.718c4.667 4.705 4.636 12.303-.069 16.97z"/></svg>&nbsp;2024.4.28</time>
+<span class="post-meta-item category"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M464 128H272l-54.63-54.63c-6-6-14.14-9.37-22.63-9.37H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V176c0-26.51-21.49-48-48-48zm0 272H48V112h140.12l54.63 54.63c6 6 14.14 9.37 22.63 9.37H464v224z"/></svg>&nbsp;<a href=/post/ class="category-link p-category">滴水穿石</a></span>
+<span class="post-meta-item wordcount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3.0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9.0l60.1 60.1c18.8 18.7 18.8 49.1.0 67.9zM284.2 99.8 21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3.0-17l-111-111c-4.8-4.7-12.4-4.7-17.1.0zM124.1 339.9c-5.5-5.5-5.5-14.3.0-19.8l154-154c5.5-5.5 14.3-5.5 19.8.0s5.5 14.3.0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8.0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"/></svg>&nbsp;12921</span>
+<span class="post-meta-item reading-time"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5.0-2e2-89.5-2e2-2e2S145.5 56 256 56s2e2 89.5 2e2 2e2-89.5 2e2-2e2 2e2zm61.8-104.4-84.9-61.7c-3.1-2.3-4.9-5.9-4.9-9.7V116c0-6.6 5.4-12 12-12h32c6.6.0 12 5.4 12 12v141.7l66.8 48.6c5.4 3.9 6.5 11.4 2.6 16.8L334.6 349c-3.9 5.3-11.4 6.5-16.8 2.6z"/></svg>&nbsp;26&nbsp;分钟</span></div><nav class=contents><h2 id=contents class=contents-title>目录</h2><ol class=toc><li><a id=contents:前言 href=#前言>前言</a></li><li><a id=contents:1-reentrantlock href=#1-reentrantlock>1 ReentrantLock</a><ol><li><a id=contents:11-reentrantlock特性概览 href=#11-reentrantlock特性概览>1.1 ReentrantLock特性概览</a></li><li><a id=contents:12-reentrantlock与aqs的关联 href=#12-reentrantlock与aqs的关联>1.2 ReentrantLock与AQS的关联</a></li></ol></li><li><a id=contents:2-aqs href=#2-aqs>2 AQS</a><ol><li><a id=contents:21-原理概览 href=#21-原理概览>2.1 原理概览</a><ol><li><a id=contents:211-aqs数据结构 href=#211-aqs数据结构>2.1.1 AQS数据结构</a></li><li><a id=contents:212-同步状态state href=#212-同步状态state>2.1.2 同步状态State</a></li></ol></li></ol></li><li><a id=contents:22-aqs重要方法与reentrantlock的关联 href=#22-aqs重要方法与reentrantlock的关联>2.2 AQS重要方法与ReentrantLock的关联</a></li><li><a id=contents:23-通过reentrantlock理解aqs href=#23-通过reentrantlock理解aqs>2.3 通过ReentrantLock理解AQS</a><ol><li><a id=contents:231-线程加入等待队列 href=#231-线程加入等待队列>2.3.1 线程加入等待队列</a><ol><li><a id=contents:2311-加入队列的时机 href=#2311-加入队列的时机>2.3.1.1 加入队列的时机</a></li><li><a id=contents:2312-如何加入队列 href=#2312-如何加入队列>2.3.1.2 如何加入队列</a></li><li><a id=contents:2313-等待队列中线程出队列时机 href=#2313-等待队列中线程出队列时机>2.3.1.3 等待队列中线程出队列时机</a></li></ol></li><li><a id=contents:232-cancelled状态节点生成 href=#232-cancelled状态节点生成>2.3.2 CANCELLED状态节点生成</a></li><li><a id=contents:233-如何解锁 href=#233-如何解锁>2.3.3 如何解锁</a></li><li><a id=contents:234-中断恢复后的执行流程 href=#234-中断恢复后的执行流程>2.3.4 中断恢复后的执行流程</a></li><li><a id=contents:235-小结 href=#235-小结>2.3.5 小结</a></li></ol></li><li><a id=contents:3-aqs应用 href=#3-aqs应用>3 AQS应用</a><ol><li><a id=contents:31-reentrantlock的可重入应用 href=#31-reentrantlock的可重入应用>3.1 ReentrantLock的可重入应用</a></li><li><a id=contents:32-juc中的应用场景 href=#32-juc中的应用场景>3.2 JUC中的应用场景</a></li><li><a id=contents:33-自定义同步工具 href=#33-自定义同步工具>3.3 自定义同步工具</a></li></ol></li><li><a id=contents:参考 href=#参考>参考</a></li></ol></nav><div class="post-body e-content"><h1 id=从reentrantlock的实现看aqs的原理及应用><a href=#从reentrantlock的实现看aqs的原理及应用 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:从reentrantlock的实现看aqs的原理及应用 class=headings>从ReentrantLock的实现看AQS的原理及应用</a></h1><h2 id=前言><a href=#前言 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:前言 class=headings>前言</a></h2><p>Java中的大部分同步类（Lock、Semaphore、ReentrantLock等）都是基于AbstractQueuedSynchronizer（简称为AQS）实现的。AQS是一种提供了原子式管理同步状态、阻塞和唤醒线程功能以及队列模型的简单框架。本文会从应用层逐渐深入到原理层，并通过ReentrantLock的基本特性和ReentrantLock与AQS的关联，来深入解读AQS相关独占锁的知识点，同时采取问答的模式来帮助大家理解AQS。由于篇幅原因，本篇文章主要阐述AQS中独占锁的逻辑和Sync Queue，不讲述包含共享锁和Condition Queue的部分（本篇文章核心为AQS原理剖析，只是简单介绍了ReentrantLock，感兴趣同学可以阅读一下ReentrantLock的源码）。</p><p>下面列出本篇文章的大纲和思路，以便于大家更好地理解：</p><p><img src=https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png alt></p><h2 id=1-reentrantlock><a href=#1-reentrantlock class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:1-reentrantlock class=headings>1 ReentrantLock</a></h2><h3 id=11-reentrantlock特性概览><a href=#11-reentrantlock特性概览 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:11-reentrantlock特性概览 class=headings>1.1 ReentrantLock特性概览</a></h3><p>ReentrantLock意思为可重入锁，指的是一个线程能够对一个临界资源重复加锁。为了帮助大家更好地理解ReentrantLock的特性，我们先将ReentrantLock跟常用的Synchronized进行比较，其特性如下（蓝色部分为本篇文章主要剖析的点）：</p><p><img src=https://p0.meituan.net/travelcube/412d294ff5535bbcddc0d979b2a339e6102264.png alt></p><p>下面通过伪代码，进行更加直观的比较：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -241,9 +39,7 @@ Justice's Blog
 </span><span class=lnt>27
 </span><span class=lnt>28
 </span><span class=lnt>29
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// **************************Synchronized的使用方式**************************
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// **************************Synchronized的使用方式**************************
 // 1.用于代码块
 synchronized (this) {}
 // 2.用于对象
@@ -272,14 +68,7 @@ public void test () throw Exception {
         lock.unlock();
     }
 }
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=12-reentrantlock与aqs的关联>1.2 ReentrantLock与AQS的关联</h3>
-<p>通过上文我们已经了解，ReentrantLock支持公平锁和非公平锁（关于公平锁和非公平锁的原理分析，可参考《<a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=3&sn=5ffa63ad47fe166f2f1a9f604ed10091&chksm=bd12a5778a652c61509d9e718ab086ff27ad8768586ea9b38c3dcf9e017a8e49bcae3df9bcc8&scene=38#wechat_redirect">不可不说的Java“锁”事</a>》），并且ReentrantLock的底层就是由AQS来实现的。那么ReentrantLock是如何通过公平锁和非公平锁与AQS关联起来呢？ 我们着重从这两者的加锁过程来理解一下它们与AQS之间的关系（加锁过程中与AQS的关联比较明显，解锁流程后续会介绍）。</p>
-<p>非公平锁源码中的加锁流程如下：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><h3 id=12-reentrantlock与aqs的关联><a href=#12-reentrantlock与aqs的关联 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:12-reentrantlock与aqs的关联 class=headings>1.2 ReentrantLock与AQS的关联</a></h3><p>通过上文我们已经了解，ReentrantLock支持公平锁和非公平锁（关于公平锁和非公平锁的原理分析，可参考《<a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&mid=2651749434&idx=3&sn=5ffa63ad47fe166f2f1a9f604ed10091&chksm=bd12a5778a652c61509d9e718ab086ff27ad8768586ea9b38c3dcf9e017a8e49bcae3df9bcc8&scene=38#wechat_redirect" target=_blank rel=noopener>不可不说的Java“锁”事</a>》），并且ReentrantLock的底层就是由AQS来实现的。那么ReentrantLock是如何通过公平锁和非公平锁与AQS关联起来呢？ 我们着重从这两者的加锁过程来理解一下它们与AQS之间的关系（加锁过程中与AQS的关联比较明显，解锁流程后续会介绍）。</p><p>非公平锁源码中的加锁流程如下：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -292,9 +81,7 @@ public void test () throw Exception {
 </span><span class=lnt>11
 </span><span class=lnt>12
 </span><span class=lnt>13
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock#NonfairSync
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock#NonfairSync
 
 // 非公平锁
 static final class NonfairSync extends Sync {
@@ -307,38 +94,7 @@ static final class NonfairSync extends Sync {
         }
   ...
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>这块代码的含义为：</p>
-<ul>
-<li>
-<p>若通过CAS设置变量State（同步状态）成功，也就是获取锁成功，则将当前线程设置为独占线程。</p>
-</li>
-<li>
-<p>若通过CAS设置变量State（同步状态）失败，也就是获取锁失败，则进入Acquire方法进行后续处理。</p>
-</li>
-</ul>
-<p>第一步很好理解，但第二步获取锁失败后，后续的处理策略是怎么样的呢？这块可能会有以下思考：</p>
-<ul>
-<li>某个线程获取锁失败的后续流程是什么呢？有以下两种可能：</li>
-</ul>
-<p>(1) 将当前线程获锁结果设置为失败，获取锁流程结束。这种设计会极大降低系统的并发度，并不满足我们实际的需求。所以就需要下面这种流程，也就是AQS框架的处理流程。</p>
-<p>(2) 存在某种排队等候机制，线程继续等待，仍然保留获取锁的可能，获取锁流程仍在继续。</p>
-<ul>
-<li>
-<p>对于问题1的第二种情况，既然说到了排队等候机制，那么就一定会有某种队列形成，这样的队列是什么数据结构呢？</p>
-</li>
-<li>
-<p>处于排队等候机制中的线程，什么时候可以有机会获取锁呢？</p>
-</li>
-<li>
-<p>如果处于排队等候机制中的线程一直无法获取锁，还是需要一直等待吗，还是有别的策略来解决这一问题？</p>
-</li>
-</ul>
-<p>带着非公平锁的这些问题，再看下公平锁源码中获锁的方式：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>这块代码的含义为：</p><ul><li><p>若通过CAS设置变量State（同步状态）成功，也就是获取锁成功，则将当前线程设置为独占线程。</p></li><li><p>若通过CAS设置变量State（同步状态）失败，也就是获取锁失败，则进入Acquire方法进行后续处理。</p></li></ul><p>第一步很好理解，但第二步获取锁失败后，后续的处理策略是怎么样的呢？这块可能会有以下思考：</p><ul><li>某个线程获取锁失败的后续流程是什么呢？有以下两种可能：</li></ul><p>(1) 将当前线程获锁结果设置为失败，获取锁流程结束。这种设计会极大降低系统的并发度，并不满足我们实际的需求。所以就需要下面这种流程，也就是AQS框架的处理流程。</p><p>(2) 存在某种排队等候机制，线程继续等待，仍然保留获取锁的可能，获取锁流程仍在继续。</p><ul><li><p>对于问题1的第二种情况，既然说到了排队等候机制，那么就一定会有某种队列形成，这样的队列是什么数据结构呢？</p></li><li><p>处于排队等候机制中的线程，什么时候可以有机会获取锁呢？</p></li><li><p>如果处于排队等候机制中的线程一直无法获取锁，还是需要一直等待吗，还是有别的策略来解决这一问题？</p></li></ul><p>带着非公平锁的这些问题，再看下公平锁源码中获锁的方式：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -347,9 +103,7 @@ static final class NonfairSync extends Sync {
 </span><span class=lnt>7
 </span><span class=lnt>8
 </span><span class=lnt>9
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock#FairSync
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock#FairSync
 
 static final class FairSync extends Sync {
   ...  
@@ -358,236 +112,13 @@ static final class FairSync extends Sync {
     }
   ...
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>看到这块代码，我们可能会存在这种疑问：Lock函数通过Acquire方法进行加锁，但是具体是如何加锁的呢？</p>
-<p>结合公平锁和非公平锁的加锁流程，虽然流程上有一定的不同，但是都调用了Acquire方法，而Acquire方法是FairSync和UnfairSync的父类AQS中的核心方法。</p>
-<p>对于上边提到的问题，其实在ReentrantLock类源码中都无法解答，而这些问题的答案，都是位于Acquire方法所在的类AbstractQueuedSynchronizer中，也就是本文的核心——AQS。下面我们会对AQS以及ReentrantLock和AQS的关联做详细介绍（相关问题答案会在2.3.5小节中解答）。</p>
-<h2 id=2-aqs>2 AQS</h2>
-<p>首先，我们通过下面的架构图来整体了解一下AQS框架：</p>
-<p><img src=https://p1.meituan.net/travelcube/82077ccf14127a87b77cefd1ccf562d3253591.png alt></p>
-<ul>
-<li>
-<p>上图中有颜色的为Method，无颜色的为Attribution。</p>
-</li>
-<li>
-<p>总的来说，AQS框架共分为五层，自上而下由浅入深，从AQS对外暴露的API到底层基础数据。</p>
-</li>
-<li>
-<p>当有自定义同步器接入时，只需重写第一层所需要的部分方法即可，不需要关注底层具体的实现流程。当自定义同步器进行加锁或者解锁操作时，先经过第一层的API进入AQS内部方法，然后经过第二层进行锁的获取，接着对于获取锁失败的流程，进入第三层和第四层的等待队列处理，而这些处理方式均依赖于第五层的基础数据提供层。</p>
-</li>
-</ul>
-<p>下面我们会从整体到细节，从流程到方法逐一剖析AQS框架，主要分析过程如下：</p>
-<p><img src=https://p1.meituan.net/travelcube/d2f7f7fffdc30d85d17b44266c3ab05323338.png alt></p>
-<h3 id=21-原理概览>2.1 原理概览</h3>
-<p>AQS核心思想是，如果被请求的共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配。这个机制主要用的是CLH队列的变体实现的，将暂时获取不到锁的线程加入到队列中。</p>
-<p>CLH：Craig、Landin and Hagersten队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。</p>
-<p>主要原理图如下：</p>
-<p><img src=https://p0.meituan.net/travelcube/7132e4cef44c26f62835b197b239147b18062.png alt></p>
-<p>AQS使用一个Volatile的int类型的成员变量来表示同步状态，通过内置的FIFO队列来完成资源获取的排队工作，通过CAS完成对State值的修改。</p>
-<h4 id=211-aqs数据结构>2.1.1 AQS数据结构</h4>
-<p>先来看下AQS中最基本的数据结构——Node，Node即为上面CLH变体队列中的节点。</p>
-<p><img src=https://p1.meituan.net/travelcube/960271cf2b5c8a185eed23e98b72c75538637.png alt></p>
-<p>解释一下几个方法和属性值的含义：</p>
-<table>
-<thead>
-<tr>
-<th>方法和属性值</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>waitStatus</td>
-<td>当前节点在队列中的状态</td>
-</tr>
-<tr>
-<td>thread</td>
-<td>表示处于该节点的线程</td>
-</tr>
-<tr>
-<td>prev</td>
-<td>前驱指针</td>
-</tr>
-<tr>
-<td>predecessor</td>
-<td>返回前驱节点，没有的话抛出npe</td>
-</tr>
-<tr>
-<td>nextWaiter</td>
-<td>指向下一个处于CONDITION状态的节点（由于本篇文章不讲述Condition Queue队列，这个指针不多介绍）</td>
-</tr>
-<tr>
-<td>next</td>
-<td>后继指针</td>
-</tr>
-</tbody>
-</table>
-<p>线程两种锁的模式：</p>
-<table>
-<thead>
-<tr>
-<th>模式</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SHARED</td>
-<td>表示线程以共享的模式等待锁</td>
-</tr>
-<tr>
-<td>EXCLUSIVE</td>
-<td>表示线程正在以独占的方式等待锁</td>
-</tr>
-</tbody>
-</table>
-<p>waitStatus有下面几个枚举值：</p>
-<table>
-<thead>
-<tr>
-<th>枚举</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0</td>
-<td>当一个Node被初始化的时候的默认值</td>
-</tr>
-<tr>
-<td>CANCELLED</td>
-<td>为1，表示线程获取锁的请求已经取消了</td>
-</tr>
-<tr>
-<td>CONDITION</td>
-<td>为-2，表示节点在等待队列中，节点线程等待唤醒</td>
-</tr>
-<tr>
-<td>PROPAGATE</td>
-<td>为-3，当前线程处在SHARED情况下，该字段才会使用</td>
-</tr>
-<tr>
-<td>SIGNAL</td>
-<td>为-1，表示线程已经准备好了，就等资源释放了</td>
-</tr>
-</tbody>
-</table>
-<h4 id=212-同步状态state>2.1.2 同步状态State</h4>
-<p>在了解数据结构后，接下来了解一下AQS的同步状态——State。AQS中维护了一个名为state的字段，意为同步状态，是由Volatile修饰的，用于展示当前临界资源的获锁情况。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>看到这块代码，我们可能会存在这种疑问：Lock函数通过Acquire方法进行加锁，但是具体是如何加锁的呢？</p><p>结合公平锁和非公平锁的加锁流程，虽然流程上有一定的不同，但是都调用了Acquire方法，而Acquire方法是FairSync和UnfairSync的父类AQS中的核心方法。</p><p>对于上边提到的问题，其实在ReentrantLock类源码中都无法解答，而这些问题的答案，都是位于Acquire方法所在的类AbstractQueuedSynchronizer中，也就是本文的核心——AQS。下面我们会对AQS以及ReentrantLock和AQS的关联做详细介绍（相关问题答案会在2.3.5小节中解答）。</p><h2 id=2-aqs><a href=#2-aqs class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:2-aqs class=headings>2 AQS</a></h2><p>首先，我们通过下面的架构图来整体了解一下AQS框架：</p><p><img src=https://p1.meituan.net/travelcube/82077ccf14127a87b77cefd1ccf562d3253591.png alt></p><ul><li><p>上图中有颜色的为Method，无颜色的为Attribution。</p></li><li><p>总的来说，AQS框架共分为五层，自上而下由浅入深，从AQS对外暴露的API到底层基础数据。</p></li><li><p>当有自定义同步器接入时，只需重写第一层所需要的部分方法即可，不需要关注底层具体的实现流程。当自定义同步器进行加锁或者解锁操作时，先经过第一层的API进入AQS内部方法，然后经过第二层进行锁的获取，接着对于获取锁失败的流程，进入第三层和第四层的等待队列处理，而这些处理方式均依赖于第五层的基础数据提供层。</p></li></ul><p>下面我们会从整体到细节，从流程到方法逐一剖析AQS框架，主要分析过程如下：</p><p><img src=https://p1.meituan.net/travelcube/d2f7f7fffdc30d85d17b44266c3ab05323338.png alt></p><h3 id=21-原理概览><a href=#21-原理概览 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:21-原理概览 class=headings>2.1 原理概览</a></h3><p>AQS核心思想是，如果被请求的共享资源空闲，那么就将当前请求资源的线程设置为有效的工作线程，将共享资源设置为锁定状态；如果共享资源被占用，就需要一定的阻塞等待唤醒机制来保证锁分配。这个机制主要用的是CLH队列的变体实现的，将暂时获取不到锁的线程加入到队列中。</p><p>CLH：Craig、Landin and Hagersten队列，是单向链表，AQS中的队列是CLH变体的虚拟双向队列（FIFO），AQS是通过将每条请求共享资源的线程封装成一个节点来实现锁的分配。</p><p>主要原理图如下：</p><p><img src=https://p0.meituan.net/travelcube/7132e4cef44c26f62835b197b239147b18062.png alt></p><p>AQS使用一个Volatile的int类型的成员变量来表示同步状态，通过内置的FIFO队列来完成资源获取的排队工作，通过CAS完成对State值的修改。</p><h4 id=211-aqs数据结构><a href=#211-aqs数据结构 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:211-aqs数据结构 class=headings>2.1.1 AQS数据结构</a></h4><p>先来看下AQS中最基本的数据结构——Node，Node即为上面CLH变体队列中的节点。</p><p><img src=https://p1.meituan.net/travelcube/960271cf2b5c8a185eed23e98b72c75538637.png alt></p><p>解释一下几个方法和属性值的含义：</p><div class=table-container><table><thead><tr><th>方法和属性值</th><th>含义</th></tr></thead><tbody><tr><td>waitStatus</td><td>当前节点在队列中的状态</td></tr><tr><td>thread</td><td>表示处于该节点的线程</td></tr><tr><td>prev</td><td>前驱指针</td></tr><tr><td>predecessor</td><td>返回前驱节点，没有的话抛出npe</td></tr><tr><td>nextWaiter</td><td>指向下一个处于CONDITION状态的节点（由于本篇文章不讲述Condition Queue队列，这个指针不多介绍）</td></tr><tr><td>next</td><td>后继指针</td></tr></tbody></table></div><p>线程两种锁的模式：</p><div class=table-container><table><thead><tr><th>模式</th><th>含义</th></tr></thead><tbody><tr><td>SHARED</td><td>表示线程以共享的模式等待锁</td></tr><tr><td>EXCLUSIVE</td><td>表示线程正在以独占的方式等待锁</td></tr></tbody></table></div><p>waitStatus有下面几个枚举值：</p><div class=table-container><table><thead><tr><th>枚举</th><th>含义</th></tr></thead><tbody><tr><td>0</td><td>当一个Node被初始化的时候的默认值</td></tr><tr><td>CANCELLED</td><td>为1，表示线程获取锁的请求已经取消了</td></tr><tr><td>CONDITION</td><td>为-2，表示节点在等待队列中，节点线程等待唤醒</td></tr><tr><td>PROPAGATE</td><td>为-3，当前线程处在SHARED情况下，该字段才会使用</td></tr><tr><td>SIGNAL</td><td>为-1，表示线程已经准备好了，就等资源释放了</td></tr></tbody></table></div><h4 id=212-同步状态state><a href=#212-同步状态state class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:212-同步状态state class=headings>2.1.2 同步状态State</a></h4><p>在了解数据结构后，接下来了解一下AQS的同步状态——State。AQS中维护了一个名为state的字段，意为同步状态，是由Volatile修饰的，用于展示当前临界资源的获锁情况。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private volatile int state;
-</code></pre></td></tr></table>
-</div>
-</div><p>下面提供了几个访问这个字段的方法：</p>
-<table>
-<thead>
-<tr>
-<th>方法名</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>protected final int getState()</td>
-<td>获取State的值</td>
-</tr>
-<tr>
-<td>protected final void setState(int newState)</td>
-<td>设置State的值</td>
-</tr>
-<tr>
-<td>protected final boolean compareAndSetState(int expect, int update)</td>
-<td>使用CAS方式更新State</td>
-</tr>
-</tbody>
-</table>
-<p>这几个方法都是Final修饰的，说明子类中无法重写它们。我们可以通过修改State字段表示的同步状态来实现多线程的独占模式和共享模式（加锁过程）。</p>
-<p><img src=https://p0.meituan.net/travelcube/27605d483e8935da683a93be015713f331378.png alt><img src=https://p0.meituan.net/travelcube/3f1e1a44f5b7d77000ba4f9476189b2e32806.png alt></p>
-<p>对于我们自定义的同步工具，需要自定义获取同步状态和释放状态的方式，也就是AQS架构图中的第一层：API层。</p>
-<h2 id=22-aqs重要方法与reentrantlock的关联>2.2 AQS重要方法与ReentrantLock的关联</h2>
-<p>从架构图中可以得知，AQS提供了大量用于自定义同步器实现的Protected方法。自定义同步器实现的相关方法也只是为了通过修改State字段来实现多线程的独占模式或者共享模式。自定义同步器需要实现以下方法（ReentrantLock需要实现的方法如下，并不是全部）：</p>
-<table>
-<thead>
-<tr>
-<th>方法名</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>protected boolean isHeldExclusively()</td>
-<td>该线程是否正在独占资源。只有用到Condition才需要去实现它。</td>
-</tr>
-<tr>
-<td>protected boolean tryAcquire(int arg)</td>
-<td>独占方式。arg为获取锁的次数，尝试获取资源，成功则返回True，失败则返回False。</td>
-</tr>
-<tr>
-<td>protected boolean tryRelease(int arg)</td>
-<td>独占方式。arg为释放锁的次数，尝试释放资源，成功则返回True，失败则返回False。</td>
-</tr>
-<tr>
-<td>protected int tryAcquireShared(int arg)</td>
-<td>共享方式。arg为获取锁的次数，尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。</td>
-</tr>
-<tr>
-<td>protected boolean tryReleaseShared(int arg)</td>
-<td>共享方式。arg为释放锁的次数，尝试释放资源，如果释放后允许唤醒后续等待结点返回True，否则返回False。</td>
-</tr>
-</tbody>
-</table>
-<p>一般来说，自定义同步器要么是独占方式，要么是共享方式，它们也只需实现tryAcquire-tryRelease、tryAcquireShared-tryReleaseShared中的一种即可。AQS也支持自定义同步器同时实现独占和共享两种方式，如ReentrantReadWriteLock。ReentrantLock是独占锁，所以实现了tryAcquire-tryRelease。</p>
-<p>以非公平锁为例，这里主要阐述一下非公平锁与AQS之间方法的关联之处，具体每一处核心方法的作用会在文章后面详细进行阐述。</p>
-<p><img src=https://p1.meituan.net/travelcube/b8b53a70984668bc68653efe9531573e78636.png alt></p>
-<p>为了帮助大家理解ReentrantLock和AQS之间方法的交互过程，以非公平锁为例，我们将加锁和解锁的交互流程单独拎出来强调一下，以便于对后续内容的理解。</p>
-<p><img src=https://p1.meituan.net/travelcube/7aadb272069d871bdee8bf3a218eed8136919.png alt></p>
-<p>加锁：</p>
-<ul>
-<li>
-<p>通过ReentrantLock的加锁方法Lock进行加锁操作。</p>
-</li>
-<li>
-<p>会调用到内部类Sync的Lock方法，由于Sync#lock是抽象方法，根据ReentrantLock初始化选择的公平锁和非公平锁，执行相关内部类的Lock方法，本质上都会执行AQS的Acquire方法。</p>
-</li>
-<li>
-<p>AQS的Acquire方法会执行tryAcquire方法，但是由于tryAcquire需要自定义同步器实现，因此执行了ReentrantLock中的tryAcquire方法，由于ReentrantLock是通过公平锁和非公平锁内部类实现的tryAcquire方法，因此会根据锁类型不同，执行不同的tryAcquire。</p>
-</li>
-<li>
-<p>tryAcquire是获取锁逻辑，获取失败后，会执行框架AQS的后续逻辑，跟ReentrantLock自定义同步器无关。</p>
-</li>
-</ul>
-<p>解锁：</p>
-<ul>
-<li>
-<p>通过ReentrantLock的解锁方法Unlock进行解锁。</p>
-</li>
-<li>
-<p>Unlock会调用内部类Sync的Release方法，该方法继承于AQS。</p>
-</li>
-<li>
-<p>Release中会调用tryRelease方法，tryRelease需要自定义同步器实现，tryRelease只在ReentrantLock中的Sync实现，因此可以看出，释放锁的过程，并不区分是否为公平锁。</p>
-</li>
-<li>
-<p>释放成功后，所有处理由AQS框架完成，与自定义同步器无关。</p>
-</li>
-</ul>
-<p>通过上面的描述，大概可以总结出ReentrantLock加锁解锁时API层核心方法的映射关系。</p>
-<p><img src=https://p0.meituan.net/travelcube/f30c631c8ebbf820d3e8fcb6eee3c0ef18748.png alt></p>
-<h2 id=23-通过reentrantlock理解aqs>2.3 通过ReentrantLock理解AQS</h2>
-<p>ReentrantLock中公平锁和非公平锁在底层是相同的，这里以非公平锁为例进行分析。</p>
-<p>在非公平锁中，有一段这样的代码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>下面提供了几个访问这个字段的方法：</p><div class=table-container><table><thead><tr><th>方法名</th><th>描述</th></tr></thead><tbody><tr><td>protected final int getState()</td><td>获取State的值</td></tr><tr><td>protected final void setState(int newState)</td><td>设置State的值</td></tr><tr><td>protected final boolean compareAndSetState(int expect, int update)</td><td>使用CAS方式更新State</td></tr></tbody></table></div><p>这几个方法都是Final修饰的，说明子类中无法重写它们。我们可以通过修改State字段表示的同步状态来实现多线程的独占模式和共享模式（加锁过程）。</p><p><img src=https://p0.meituan.net/travelcube/27605d483e8935da683a93be015713f331378.png alt><img src=https://p0.meituan.net/travelcube/3f1e1a44f5b7d77000ba4f9476189b2e32806.png alt></p><p>对于我们自定义的同步工具，需要自定义获取同步状态和释放状态的方式，也就是AQS架构图中的第一层：API层。</p><h2 id=22-aqs重要方法与reentrantlock的关联><a href=#22-aqs重要方法与reentrantlock的关联 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:22-aqs重要方法与reentrantlock的关联 class=headings>2.2 AQS重要方法与ReentrantLock的关联</a></h2><p>从架构图中可以得知，AQS提供了大量用于自定义同步器实现的Protected方法。自定义同步器实现的相关方法也只是为了通过修改State字段来实现多线程的独占模式或者共享模式。自定义同步器需要实现以下方法（ReentrantLock需要实现的方法如下，并不是全部）：</p><div class=table-container><table><thead><tr><th>方法名</th><th>描述</th></tr></thead><tbody><tr><td>protected boolean isHeldExclusively()</td><td>该线程是否正在独占资源。只有用到Condition才需要去实现它。</td></tr><tr><td>protected boolean tryAcquire(int arg)</td><td>独占方式。arg为获取锁的次数，尝试获取资源，成功则返回True，失败则返回False。</td></tr><tr><td>protected boolean tryRelease(int arg)</td><td>独占方式。arg为释放锁的次数，尝试释放资源，成功则返回True，失败则返回False。</td></tr><tr><td>protected int tryAcquireShared(int arg)</td><td>共享方式。arg为获取锁的次数，尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。</td></tr><tr><td>protected boolean tryReleaseShared(int arg)</td><td>共享方式。arg为释放锁的次数，尝试释放资源，如果释放后允许唤醒后续等待结点返回True，否则返回False。</td></tr></tbody></table></div><p>一般来说，自定义同步器要么是独占方式，要么是共享方式，它们也只需实现tryAcquire-tryRelease、tryAcquireShared-tryReleaseShared中的一种即可。AQS也支持自定义同步器同时实现独占和共享两种方式，如ReentrantReadWriteLock。ReentrantLock是独占锁，所以实现了tryAcquire-tryRelease。</p><p>以非公平锁为例，这里主要阐述一下非公平锁与AQS之间方法的关联之处，具体每一处核心方法的作用会在文章后面详细进行阐述。</p><p><img src=https://p1.meituan.net/travelcube/b8b53a70984668bc68653efe9531573e78636.png alt></p><p>为了帮助大家理解ReentrantLock和AQS之间方法的交互过程，以非公平锁为例，我们将加锁和解锁的交互流程单独拎出来强调一下，以便于对后续内容的理解。</p><p><img src=https://p1.meituan.net/travelcube/7aadb272069d871bdee8bf3a218eed8136919.png alt></p><p>加锁：</p><ul><li><p>通过ReentrantLock的加锁方法Lock进行加锁操作。</p></li><li><p>会调用到内部类Sync的Lock方法，由于Sync#lock是抽象方法，根据ReentrantLock初始化选择的公平锁和非公平锁，执行相关内部类的Lock方法，本质上都会执行AQS的Acquire方法。</p></li><li><p>AQS的Acquire方法会执行tryAcquire方法，但是由于tryAcquire需要自定义同步器实现，因此执行了ReentrantLock中的tryAcquire方法，由于ReentrantLock是通过公平锁和非公平锁内部类实现的tryAcquire方法，因此会根据锁类型不同，执行不同的tryAcquire。</p></li><li><p>tryAcquire是获取锁逻辑，获取失败后，会执行框架AQS的后续逻辑，跟ReentrantLock自定义同步器无关。</p></li></ul><p>解锁：</p><ul><li><p>通过ReentrantLock的解锁方法Unlock进行解锁。</p></li><li><p>Unlock会调用内部类Sync的Release方法，该方法继承于AQS。</p></li><li><p>Release中会调用tryRelease方法，tryRelease需要自定义同步器实现，tryRelease只在ReentrantLock中的Sync实现，因此可以看出，释放锁的过程，并不区分是否为公平锁。</p></li><li><p>释放成功后，所有处理由AQS框架完成，与自定义同步器无关。</p></li></ul><p>通过上面的描述，大概可以总结出ReentrantLock加锁解锁时API层核心方法的映射关系。</p><p><img src=https://p0.meituan.net/travelcube/f30c631c8ebbf820d3e8fcb6eee3c0ef18748.png alt></p><h2 id=23-通过reentrantlock理解aqs><a href=#23-通过reentrantlock理解aqs class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:23-通过reentrantlock理解aqs class=headings>2.3 通过ReentrantLock理解AQS</a></h2><p>ReentrantLock中公平锁和非公平锁在底层是相同的，这里以非公平锁为例进行分析。</p><p>在非公平锁中，有一段这样的代码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -599,9 +130,7 @@ private volatile int state;
 </span><span class=lnt>10
 </span><span class=lnt>11
 </span><span class=lnt>12
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock
 
 static final class NonfairSync extends Sync {
     ...
@@ -613,53 +142,29 @@ static final class NonfairSync extends Sync {
     }
   ...
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>看一下这个Acquire是怎么写的：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>看一下这个Acquire是怎么写的：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 public final void acquire(int arg) {
     if (!tryAcquire(arg) &amp;&amp; acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
         selfInterrupt();
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>再看一下tryAcquire方法：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>再看一下tryAcquire方法：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 protected boolean tryAcquire(int arg) {
     throw new UnsupportedOperationException();
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>可以看出，这里只是AQS的简单实现，具体获取锁的实现方法是由各自的公平锁和非公平锁单独实现的（以ReentrantLock为例）。如果该方法返回了True，则说明当前线程获取锁成功，就不用往后执行了；如果获取失败，就需要加入到等待队列中。下面会详细解释线程是何时以及怎样被加入进等待队列中的。</p>
-<h3 id=231-线程加入等待队列>2.3.1 线程加入等待队列</h3>
-<h4 id=2311-加入队列的时机>2.3.1.1 加入队列的时机</h4>
-<p>当执行Acquire(1)时，会通过tryAcquire获取锁。在这种情况下，如果获取锁失败，就会调用addWaiter加入到等待队列中去。</p>
-<h4 id=2312-如何加入队列>2.3.1.2 如何加入队列</h4>
-<p>获取锁失败后，会执行addWaiter(Node.EXCLUSIVE)加入等待队列，具体实现方法如下：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>可以看出，这里只是AQS的简单实现，具体获取锁的实现方法是由各自的公平锁和非公平锁单独实现的（以ReentrantLock为例）。如果该方法返回了True，则说明当前线程获取锁成功，就不用往后执行了；如果获取失败，就需要加入到等待队列中。下面会详细解释线程是何时以及怎样被加入进等待队列中的。</p><h3 id=231-线程加入等待队列><a href=#231-线程加入等待队列 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:231-线程加入等待队列 class=headings>2.3.1 线程加入等待队列</a></h3><h4 id=2311-加入队列的时机><a href=#2311-加入队列的时机 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:2311-加入队列的时机 class=headings>2.3.1.1 加入队列的时机</a></h4><p>当执行Acquire(1)时，会通过tryAcquire获取锁。在这种情况下，如果获取锁失败，就会调用addWaiter加入到等待队列中去。</p><h4 id=2312-如何加入队列><a href=#2312-如何加入队列 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:2312-如何加入队列 class=headings>2.3.1.2 如何加入队列</a></h4><p>获取锁失败后，会执行addWaiter(Node.EXCLUSIVE)加入等待队列，具体实现方法如下：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -678,9 +183,7 @@ protected boolean tryAcquire(int arg) {
 </span><span class=lnt>17
 </span><span class=lnt>18
 </span><span class=lnt>19
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private Node addWaiter(Node mode) {
     Node node = new Node(Thread.currentThread(), mode);
@@ -699,26 +202,7 @@ private Node addWaiter(Node mode) {
 private final boolean compareAndSetTail(Node expect, Node update) {
     return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>主要的流程如下：</p>
-<ul>
-<li>
-<p>通过当前的线程和锁模式新建一个节点。</p>
-</li>
-<li>
-<p>Pred指针指向尾节点Tail。</p>
-</li>
-<li>
-<p>将New中Node的Prev指针指向Pred。</p>
-</li>
-<li>
-<p>通过compareAndSetTail方法，完成尾节点的设置。这个方法主要是对tailOffset和Expect进行比较，如果tailOffset的Node和Expect的Node地址是相同的，那么设置Tail的值为Update的值。</p>
-</li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>主要的流程如下：</p><ul><li><p>通过当前的线程和锁模式新建一个节点。</p></li><li><p>Pred指针指向尾节点Tail。</p></li><li><p>将New中Node的Prev指针指向Pred。</p></li><li><p>通过compareAndSetTail方法，完成尾节点的设置。这个方法主要是对tailOffset和Expect进行比较，如果tailOffset的Node和Expect的Node地址是相同的，那么设置Tail的值为Update的值。</p></li></ul><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -731,9 +215,7 @@ private final boolean compareAndSetTail(Node expect, Node update) {
 </span><span class=lnt>11
 </span><span class=lnt>12
 </span><span class=lnt>13
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 static {
     try {
@@ -746,15 +228,7 @@ static {
     throw new Error(ex); 
   }
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>从AQS的静态代码块可以看出，都是获取一个对象的属性相对于该对象在内存当中的偏移量，这样我们就可以根据这个偏移量在对象内存当中找到这个属性。tailOffset指的是tail对应的偏移量，所以这个时候会将new出来的Node置为当前队列的尾节点。同时，由于是双向链表，也需要将前一个节点指向尾节点。</p>
-<ul>
-<li>如果Pred指针是Null（说明等待队列中没有元素），或者当前Pred指针和Tail指向的位置不同（说明被别的线程已经修改），就需要看一下Enq的方法。</li>
-</ul>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>从AQS的静态代码块可以看出，都是获取一个对象的属性相对于该对象在内存当中的偏移量，这样我们就可以根据这个偏移量在对象内存当中找到这个属性。tailOffset指的是tail对应的偏移量，所以这个时候会将new出来的Node置为当前队列的尾节点。同时，由于是双向链表，也需要将前一个节点指向尾节点。</p><ul><li>如果Pred指针是Null（说明等待队列中没有元素），或者当前Pred指针和Tail指向的位置不同（说明被别的线程已经修改），就需要看一下Enq的方法。</li></ul><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -771,9 +245,7 @@ static {
 </span><span class=lnt>15
 </span><span class=lnt>16
 </span><span class=lnt>17
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private Node enq(final Node node) {
     for (;;) {
@@ -790,26 +262,7 @@ private Node enq(final Node node) {
         }
     }
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>如果没有被初始化，需要进行初始化一个头结点出来。但请注意，初始化的头结点并不是当前线程节点，而是调用了无参构造函数的节点。如果经历了初始化或者并发导致队列中有元素，则与之前的方法相同。其实，addWaiter就是一个在双端链表添加尾节点的操作，需要注意的是，双端链表的头结点是一个无参构造函数的头结点。</p>
-<p>总结一下，线程获取锁的时候，过程大体如下：</p>
-<ol>
-<li>
-<p>当没有线程获取到锁时，线程1获取锁成功。</p>
-</li>
-<li>
-<p>线程2申请锁，但是锁被线程1占有。</p>
-</li>
-</ol>
-<p><img src=https://p0.meituan.net/travelcube/e9e385c3c68f62c67c8d62ab0adb613921117.png alt></p>
-<ol>
-<li>如果再有线程要获取锁，依次在队列中往后排队即可。</li>
-</ol>
-<p>回到上边的代码，hasQueuedPredecessors是公平锁加锁时判断等待队列中是否存在有效节点的方法。如果返回False，说明当前线程可以争取共享资源；如果返回True，说明队列中存在有效节点，当前线程必须加入到等待队列中。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>如果没有被初始化，需要进行初始化一个头结点出来。但请注意，初始化的头结点并不是当前线程节点，而是调用了无参构造函数的节点。如果经历了初始化或者并发导致队列中有元素，则与之前的方法相同。其实，addWaiter就是一个在双端链表添加尾节点的操作，需要注意的是，双端链表的头结点是一个无参构造函数的头结点。</p><p>总结一下，线程获取锁的时候，过程大体如下：</p><ol><li><p>当没有线程获取到锁时，线程1获取锁成功。</p></li><li><p>线程2申请锁，但是锁被线程1占有。</p></li></ol><p><img src=https://p0.meituan.net/travelcube/e9e385c3c68f62c67c8d62ab0adb613921117.png alt></p><ol><li>如果再有线程要获取锁，依次在队列中往后排队即可。</li></ol><p>回到上边的代码，hasQueuedPredecessors是公平锁加锁时判断等待队列中是否存在有效节点的方法。如果返回False，说明当前线程可以争取共享资源；如果返回True，说明队列中存在有效节点，当前线程必须加入到等待队列中。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -820,9 +273,7 @@ private Node enq(final Node node) {
 </span><span class=lnt> 9
 </span><span class=lnt>10
 </span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock
 
 public final boolean hasQueuedPredecessors() {
     // The correctness of this depends on head being initialized
@@ -833,15 +284,7 @@ public final boolean hasQueuedPredecessors() {
     Node s;
     return h != t &amp;&amp; ((s = h.next) == null || s.thread != Thread.currentThread());
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>看到这里，我们理解一下h != t && ((s = h.next) == null || s.thread != Thread.currentThread());为什么要判断的头结点的下一个节点？第一个节点储存的数据是什么？</p>
-<blockquote>
-<p>双向链表中，第一个节点为虚节点，其实并不存储任何信息，只是占位。真正的第一个有数据的节点，是在第二个节点开始的。当h != t时： 如果(s = h.next) == null，等待队列正在有线程进行初始化，但只是进行到了Tail指向Head，没有将Head指向Tail，此时队列中有元素，需要返回True（这块具体见下边代码分析）。 如果(s = h.next) != null，说明此时队列中至少有一个有效节点。如果此时s.thread == Thread.currentThread()，说明等待队列的第一个有效节点中的线程与当前线程相同，那么当前线程是可以获取资源的；如果s.thread != Thread.currentThread()，说明等待队列的第一个有效节点线程与当前线程不同，当前线程必须加入进等待队列。</p>
-</blockquote>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>看到这里，我们理解一下h != t && ((s = h.next) == null || s.thread != Thread.currentThread());为什么要判断的头结点的下一个节点？第一个节点储存的数据是什么？</p><blockquote><p>双向链表中，第一个节点为虚节点，其实并不存储任何信息，只是占位。真正的第一个有数据的节点，是在第二个节点开始的。当h != t时： 如果(s = h.next) == null，等待队列正在有线程进行初始化，但只是进行到了Tail指向Head，没有将Head指向Tail，此时队列中有元素，需要返回True（这块具体见下边代码分析）。 如果(s = h.next) != null，说明此时队列中至少有一个有效节点。如果此时s.thread == Thread.currentThread()，说明等待队列的第一个有效节点中的线程与当前线程相同，那么当前线程是可以获取资源的；如果s.thread != Thread.currentThread()，说明等待队列的第一个有效节点线程与当前线程不同，当前线程必须加入进等待队列。</p></blockquote><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -853,9 +296,7 @@ public final boolean hasQueuedPredecessors() {
 </span><span class=lnt>10
 </span><span class=lnt>11
 </span><span class=lnt>12
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer#enq
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer#enq
 
 if (t == null) { // Must initialize
     if (compareAndSetHead(new Node()))
@@ -867,35 +308,19 @@ if (t == null) { // Must initialize
         return t;
     }
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>节点入队不是原子操作，所以会出现短暂的head != tail，此时Tail指向最后一个节点，而且Tail指向Head。如果Head没有指向Tail（可见5、6、7行），这种情况下也需要将相关线程加入队列中。所以这块代码是为了解决极端情况下的并发问题。</p>
-<h4 id=2313-等待队列中线程出队列时机>2.3.1.3 等待队列中线程出队列时机</h4>
-<p>回到最初的源码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>节点入队不是原子操作，所以会出现短暂的head != tail，此时Tail指向最后一个节点，而且Tail指向Head。如果Head没有指向Tail（可见5、6、7行），这种情况下也需要将相关线程加入队列中。所以这块代码是为了解决极端情况下的并发问题。</p><h4 id=2313-等待队列中线程出队列时机><a href=#2313-等待队列中线程出队列时机 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:2313-等待队列中线程出队列时机 class=headings>2.3.1.3 等待队列中线程出队列时机</a></h4><p>回到最初的源码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 public final void acquire(int arg) {
     if (!tryAcquire(arg) &amp;&amp; acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
         selfInterrupt();
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>上文解释了addWaiter方法，这个方法其实就是把对应的线程以Node的数据结构形式加入到双端队列里，返回的是一个包含该线程的Node。而这个Node会作为参数，进入到acquireQueued方法中。acquireQueued方法可以对排队中的线程进行“获锁”操作。</p>
-<p>总的来说，一个线程获取锁失败了，被放入等待队列，acquireQueued会把放入队列中的线程不断去获取锁，直到获取成功或者不再需要获取（中断）。</p>
-<p>下面我们从“何时出队列？”和“如何出队列？”两个方向来分析一下acquireQueued源码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>上文解释了addWaiter方法，这个方法其实就是把对应的线程以Node的数据结构形式加入到双端队列里，返回的是一个包含该线程的Node。而这个Node会作为参数，进入到acquireQueued方法中。acquireQueued方法可以对排队中的线程进行“获锁”操作。</p><p>总的来说，一个线程获取锁失败了，被放入等待队列，acquireQueued会把放入队列中的线程不断去获取锁，直到获取成功或者不再需要获取（中断）。</p><p>下面我们从“何时出队列？”和“如何出队列？”两个方向来分析一下acquireQueued源码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -924,9 +349,7 @@ public final void acquire(int arg) {
 </span><span class=lnt>27
 </span><span class=lnt>28
 </span><span class=lnt>29
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 final boolean acquireQueued(final Node node, int arg) {
     // 标记是否成功拿到资源
@@ -955,12 +378,7 @@ final boolean acquireQueued(final Node node, int arg) {
             cancelAcquire(node);
     }
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>注：setHead方法是把当前节点置为虚节点，但并没有修改waitStatus，因为它是一直需要用的数据。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>注：setHead方法是把当前节点置为虚节点，但并没有修改waitStatus，因为它是一直需要用的数据。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -990,9 +408,7 @@ final boolean acquireQueued(final Node node, int arg) {
 </span><span class=lnt>28
 </span><span class=lnt>29
 </span><span class=lnt>30
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private void setHead(Node node) {
     head = node;
@@ -1022,45 +438,19 @@ private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
     }
     return false;
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>parkAndCheckInterrupt主要用于挂起当前线程，阻塞调用栈，返回当前线程的中断状态。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>parkAndCheckInterrupt主要用于挂起当前线程，阻塞调用栈，返回当前线程的中断状态。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private final boolean parkAndCheckInterrupt() {
     LockSupport.park(this);
     return Thread.interrupted();
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>上述方法的流程图如下：</p>
-<p><img src=https://p0.meituan.net/travelcube/c124b76dcbefb9bdc778458064703d1135485.png alt></p>
-<p>从上图可以看出，跳出当前循环的条件是当“前置节点是头结点，且当前线程获取锁成功”。为了防止因死循环导致CPU资源被浪费，我们会判断前置节点的状态来决定是否要将当前线程挂起，具体挂起流程用流程图表示如下（shouldParkAfterFailedAcquire流程）：</p>
-<p><img src=https://p0.meituan.net/travelcube/9af16e2481ad85f38ca322a225ae737535740.png alt></p>
-<p>从队列中释放节点的疑虑打消了，那么又有新问题了：</p>
-<ul>
-<li>
-<p>shouldParkAfterFailedAcquire中取消节点是怎么生成的呢？什么时候会把一个节点的waitStatus设置为-1？</p>
-</li>
-<li>
-<p>是在什么时间释放节点通知到被挂起的线程呢？</p>
-</li>
-</ul>
-<h3 id=232-cancelled状态节点生成>2.3.2 CANCELLED状态节点生成</h3>
-<p>acquireQueued方法中的Finally代码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>上述方法的流程图如下：</p><p><img src=https://p0.meituan.net/travelcube/c124b76dcbefb9bdc778458064703d1135485.png alt></p><p>从上图可以看出，跳出当前循环的条件是当“前置节点是头结点，且当前线程获取锁成功”。为了防止因死循环导致CPU资源被浪费，我们会判断前置节点的状态来决定是否要将当前线程挂起，具体挂起流程用流程图表示如下（shouldParkAfterFailedAcquire流程）：</p><p><img src=https://p0.meituan.net/travelcube/9af16e2481ad85f38ca322a225ae737535740.png alt></p><p>从队列中释放节点的疑虑打消了，那么又有新问题了：</p><ul><li><p>shouldParkAfterFailedAcquire中取消节点是怎么生成的呢？什么时候会把一个节点的waitStatus设置为-1？</p></li><li><p>是在什么时间释放节点通知到被挂起的线程呢？</p></li></ul><h3 id=232-cancelled状态节点生成><a href=#232-cancelled状态节点生成 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:232-cancelled状态节点生成 class=headings>2.3.2 CANCELLED状态节点生成</a></h3><p>acquireQueued方法中的Finally代码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1079,9 +469,7 @@ private final boolean parkAndCheckInterrupt() {
 </span><span class=lnt>17
 </span><span class=lnt>18
 </span><span class=lnt>19
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 final boolean acquireQueued(final Node node, int arg) {
     boolean failed = true;
@@ -1100,12 +488,7 @@ final boolean acquireQueued(final Node node, int arg) {
             cancelAcquire(node);
         }
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>通过cancelAcquire方法，将Node的状态标记为CANCELLED。接下来，我们逐行来分析这个方法的原理：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>通过cancelAcquire方法，将Node的状态标记为CANCELLED。接下来，我们逐行来分析这个方法的原理：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1141,9 +524,7 @@ final boolean acquireQueued(final Node node, int arg) {
 </span><span class=lnt>34
 </span><span class=lnt>35
 </span><span class=lnt>36
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private void cancelAcquire(Node node) {
   // 将无效节点过滤
@@ -1179,65 +560,23 @@ private void cancelAcquire(Node node) {
         node.next = node; // help GC
     }
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>当前的流程：</p>
-<ul>
-<li>
-<p>获取当前节点的前驱节点，如果前驱节点的状态是CANCELLED，那就一直往前遍历，找到第一个waitStatus &lt;= 0的节点，将找到的Pred节点和当前Node关联，将当前Node设置为CANCELLED。</p>
-</li>
-<li>
-<p>根据当前节点的位置，考虑以下三种情况：</p>
-</li>
-</ul>
-<p>(1) 当前节点是尾节点。</p>
-<p>(2) 当前节点是Head的后继节点。</p>
-<p>(3) 当前节点不是Head的后继节点，也不是尾节点。</p>
-<p>根据上述第二条，我们来分析每一种情况的流程。</p>
-<p>当前节点是尾节点。</p>
-<p><img src=https://p1.meituan.net/travelcube/b845211ced57561c24f79d56194949e822049.png alt></p>
-<p>当前节点是Head的后继节点。</p>
-<p><img src=https://p1.meituan.net/travelcube/ab89bfec875846e5028a4f8fead32b7117975.png alt></p>
-<p>当前节点不是Head的后继节点，也不是尾节点。</p>
-<p><img src=https://p0.meituan.net/travelcube/45d0d9e4a6897eddadc4397cf53d6cd522452.png alt></p>
-<p>通过上面的流程，我们对于CANCELLED节点状态的产生和变化已经有了大致的了解，但是为什么所有的变化都是对Next指针进行了操作，而没有对Prev指针进行操作呢？什么情况下会对Prev指针进行操作？</p>
-<blockquote>
-<p>执行cancelAcquire的时候，当前节点的前置节点可能已经从队列中出去了（已经执行过Try代码块中的shouldParkAfterFailedAcquire方法了），如果此时修改Prev指针，有可能会导致Prev指向另一个已经移除队列的Node，因此这块变化Prev指针不安全。 shouldParkAfterFailedAcquire方法中，会执行下面的代码，其实就是在处理Prev指针。shouldParkAfterFailedAcquire是获取锁失败的情况下才会执行，进入该方法后，说明共享资源已被获取，当前节点之前的节点都不会出现变化，因此这个时候变更Prev指针比较安全。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>当前的流程：</p><ul><li><p>获取当前节点的前驱节点，如果前驱节点的状态是CANCELLED，那就一直往前遍历，找到第一个waitStatus &lt;= 0的节点，将找到的Pred节点和当前Node关联，将当前Node设置为CANCELLED。</p></li><li><p>根据当前节点的位置，考虑以下三种情况：</p></li></ul><p>(1) 当前节点是尾节点。</p><p>(2) 当前节点是Head的后继节点。</p><p>(3) 当前节点不是Head的后继节点，也不是尾节点。</p><p>根据上述第二条，我们来分析每一种情况的流程。</p><p>当前节点是尾节点。</p><p><img src=https://p1.meituan.net/travelcube/b845211ced57561c24f79d56194949e822049.png alt></p><p>当前节点是Head的后继节点。</p><p><img src=https://p1.meituan.net/travelcube/ab89bfec875846e5028a4f8fead32b7117975.png alt></p><p>当前节点不是Head的后继节点，也不是尾节点。</p><p><img src=https://p0.meituan.net/travelcube/45d0d9e4a6897eddadc4397cf53d6cd522452.png alt></p><p>通过上面的流程，我们对于CANCELLED节点状态的产生和变化已经有了大致的了解，但是为什么所有的变化都是对Next指针进行了操作，而没有对Prev指针进行操作呢？什么情况下会对Prev指针进行操作？</p><blockquote><p>执行cancelAcquire的时候，当前节点的前置节点可能已经从队列中出去了（已经执行过Try代码块中的shouldParkAfterFailedAcquire方法了），如果此时修改Prev指针，有可能会导致Prev指向另一个已经移除队列的Node，因此这块变化Prev指针不安全。 shouldParkAfterFailedAcquire方法中，会执行下面的代码，其实就是在处理Prev指针。shouldParkAfterFailedAcquire是获取锁失败的情况下才会执行，进入该方法后，说明共享资源已被获取，当前节点之前的节点都不会出现变化，因此这个时候变更Prev指针比较安全。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>do {
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>do {
     node.prev = pred = pred.prev;
 } while (pred.waitStatus &gt; 0);
-</code></pre></td></tr></table>
-</div>
-</div></blockquote>
-<h3 id=233-如何解锁>2.3.3 如何解锁</h3>
-<p>我们已经剖析了加锁过程中的基本流程，接下来再对解锁的基本流程进行分析。由于ReentrantLock在解锁的时候，并不区分公平锁和非公平锁，所以我们直接看解锁的源码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div></blockquote><h3 id=233-如何解锁><a href=#233-如何解锁 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:233-如何解锁 class=headings>2.3.3 如何解锁</a></h3><p>我们已经剖析了加锁过程中的基本流程，接下来再对解锁的基本流程进行分析。由于ReentrantLock在解锁的时候，并不区分公平锁和非公平锁，所以我们直接看解锁的源码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock
 
 public void unlock() {
     sync.release(1);
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>可以看到，本质释放锁的地方，是通过框架来完成的。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>可以看到，本质释放锁的地方，是通过框架来完成的。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1248,9 +587,7 @@ public void unlock() {
 </span><span class=lnt> 9
 </span><span class=lnt>10
 </span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 public final boolean release(int arg) {
     if (tryRelease(arg)) {
@@ -1261,12 +598,7 @@ public final boolean release(int arg) {
     }
     return false;
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>在ReentrantLock里面的公平锁和非公平锁的父类Sync定义了可重入锁的释放锁机制。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>在ReentrantLock里面的公平锁和非公平锁的父类Sync定义了可重入锁的释放锁机制。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1284,9 +616,7 @@ public final boolean release(int arg) {
 </span><span class=lnt>16
 </span><span class=lnt>17
 </span><span class=lnt>18
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock.Sync
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.ReentrantLock.Sync
 
 // 方法返回当前锁是不是没有被线程持有
 protected final boolean tryRelease(int releases) {
@@ -1304,12 +634,7 @@ protected final boolean tryRelease(int releases) {
     setState(c);
     return free;
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>我们来解释下述源码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>我们来解释下述源码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1323,9 +648,7 @@ protected final boolean tryRelease(int releases) {
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 public final boolean release(int arg) {
     // 上边自定义的tryRelease如果返回true，说明该锁没有被任何线程持有
@@ -1339,18 +662,7 @@ public final boolean release(int arg) {
     }
     return false;
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>这里的判断条件为什么是h != null && h.waitStatus != 0？</p>
-<blockquote>
-<p>h == null Head还没初始化。初始情况下，head == null，第一个节点入队，Head会被初始化一个虚拟节点。所以说，这里如果还没来得及入队，就会出现head == null 的情况。</p>
-<p>h != null && waitStatus == 0 表明后继节点对应的线程仍在运行中，不需要唤醒。</p>
-<p>h != null && waitStatus &lt; 0 表明后继节点可能被阻塞了，需要唤醒。</p>
-</blockquote>
-<p>再看一下unparkSuccessor方法：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>这里的判断条件为什么是h != null && h.waitStatus != 0？</p><blockquote><p>h == null Head还没初始化。初始情况下，head == null，第一个节点入队，Head会被初始化一个虚拟节点。所以说，这里如果还没来得及入队，就会出现head == null 的情况。</p><p>h != null && waitStatus == 0 表明后继节点对应的线程仍在运行中，不需要唤醒。</p><p>h != null && waitStatus &lt; 0 表明后继节点可能被阻塞了，需要唤醒。</p></blockquote><p>再看一下unparkSuccessor方法：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1371,9 +683,7 @@ public final boolean release(int arg) {
 </span><span class=lnt>19
 </span><span class=lnt>20
 </span><span class=lnt>21
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private void unparkSuccessor(Node node) {
     // 获取头结点waitStatus
@@ -1394,13 +704,7 @@ private void unparkSuccessor(Node node) {
     if (s != null)
         LockSupport.unpark(s.thread);
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>为什么要从后往前找第一个非Cancelled的节点呢？原因如下。</p>
-<p>之前的addWaiter方法：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>为什么要从后往前找第一个非Cancelled的节点呢？原因如下。</p><p>之前的addWaiter方法：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1416,9 +720,7 @@ private void unparkSuccessor(Node node) {
 </span><span class=lnt>14
 </span><span class=lnt>15
 </span><span class=lnt>16
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 
 private Node addWaiter(Node mode) {
     Node node = new Node(Thread.currentThread(), mode);
@@ -1434,34 +736,19 @@ private Node addWaiter(Node mode) {
     enq(node);
     return node;
 }
-</code></pre></td></tr></table>
-</div>
-</div><p>我们从这里可以看到，节点入队并不是原子操作，也就是说，node.prev = pred; compareAndSetTail(pred, node) 这两个地方可以看作Tail入队的原子操作，但是此时pred.next = node;还没执行，如果这个时候执行了unparkSuccessor方法，就没办法从前往后找了，所以需要从后往前找。还有一点原因，在产生CANCELLED状态节点的时候，先断开的是Next指针，Prev指针并未断开，因此也是必须要从后往前遍历才能够遍历完全部的Node。</p>
-<p>综上所述，如果是从前往后找，由于极端情况下入队的非原子操作和CANCELLED节点产生过程中断开Next指针的操作，可能会导致无法遍历所有的节点。所以，唤醒对应的线程后，对应的线程就会继续往下执行。继续执行acquireQueued方法以后，中断如何处理？</p>
-<h3 id=234-中断恢复后的执行流程>2.3.4 中断恢复后的执行流程</h3>
-<p>唤醒后，会执行return Thread.interrupted();，这个函数返回的是当前执行线程的中断状态，并清除。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>我们从这里可以看到，节点入队并不是原子操作，也就是说，node.prev = pred; compareAndSetTail(pred, node) 这两个地方可以看作Tail入队的原子操作，但是此时pred.next = node;还没执行，如果这个时候执行了unparkSuccessor方法，就没办法从前往后找了，所以需要从后往前找。还有一点原因，在产生CANCELLED状态节点的时候，先断开的是Next指针，Prev指针并未断开，因此也是必须要从后往前遍历才能够遍历完全部的Node。</p><p>综上所述，如果是从前往后找，由于极端情况下入队的非原子操作和CANCELLED节点产生过程中断开Next指针的操作，可能会导致无法遍历所有的节点。所以，唤醒对应的线程后，对应的线程就会继续往下执行。继续执行acquireQueued方法以后，中断如何处理？</p><h3 id=234-中断恢复后的执行流程><a href=#234-中断恢复后的执行流程 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:234-中断恢复后的执行流程 class=headings>2.3.4 中断恢复后的执行流程</a></h3><p>唤醒后，会执行return Thread.interrupted();，这个函数返回的是当前执行线程的中断状态，并清除。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 </span><span class=c1></span>
 <span class=kd>private</span> <span class=kd>final</span> <span class=kt>boolean</span> <span class=nf>parkAndCheckInterrupt</span><span class=o>()</span> <span class=o>{</span>
     <span class=n>LockSupport</span><span class=o>.</span><span class=na>park</span><span class=o>(</span><span class=k>this</span><span class=o>);</span>
     <span class=k>return</span> <span class=n>Thread</span><span class=o>.</span><span class=na>interrupted</span><span class=o>();</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>再回到acquireQueued代码，当parkAndCheckInterrupt返回True或者False的时候，interrupted的值不同，但都会执行下次循环。如果这个时候获取锁成功，就会把当前interrupted返回。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>再回到acquireQueued代码，当parkAndCheckInterrupt返回True或者False的时候，interrupted的值不同，但都会执行下次循环。如果这个时候获取锁成功，就会把当前interrupted返回。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1483,9 +770,7 @@ private Node addWaiter(Node mode) {
 </span><span class=lnt>20
 </span><span class=lnt>21
 </span><span class=lnt>22
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 </span><span class=c1></span>
 <span class=kd>final</span> <span class=kt>boolean</span> <span class=nf>acquireQueued</span><span class=o>(</span><span class=kd>final</span> <span class=n>Node</span> <span class=n>node</span><span class=o>,</span> <span class=kt>int</span> <span class=n>arg</span><span class=o>)</span> <span class=o>{</span>
     <span class=kt>boolean</span> <span class=n>failed</span> <span class=o>=</span> <span class=kc>true</span><span class=o>;</span>
@@ -1507,56 +792,17 @@ private Node addWaiter(Node mode) {
             <span class=n>cancelAcquire</span><span class=o>(</span><span class=n>node</span><span class=o>);</span>
     <span class=o>}</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>如果acquireQueued为True，就会执行selfInterrupt方法。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>如果acquireQueued为True，就会执行selfInterrupt方法。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 </span><span class=c1></span>
 <span class=kd>static</span> <span class=kt>void</span> <span class=nf>selfInterrupt</span><span class=o>()</span> <span class=o>{</span>
     <span class=n>Thread</span><span class=o>.</span><span class=na>currentThread</span><span class=o>().</span><span class=na>interrupt</span><span class=o>();</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>该方法其实是为了中断线程。但为什么获取了锁以后还要中断线程呢？这部分属于Java提供的协作式中断知识内容，感兴趣同学可以查阅一下。这里简单介绍一下：</p>
-<ol>
-<li>
-<p>当中断线程被唤醒时，并不知道被唤醒的原因，可能是当前线程在等待中被中断，也可能是释放了锁以后被唤醒。因此我们通过Thread.interrupted()方法检查中断标记（该方法返回了当前线程的中断状态，并将当前线程的中断标识设置为False），并记录下来，如果发现该线程被中断过，就再中断一次。</p>
-</li>
-<li>
-<p>线程在等待资源的过程中被唤醒，唤醒后还是会不断地去尝试获取锁，直到抢到锁为止。也就是说，在整个流程中，并不响应中断，只是记录中断记录。最后抢到锁返回了，那么如果被中断过的话，就需要补充一次中断。</p>
-</li>
-</ol>
-<p>这里的处理方式主要是运用线程池中基本运作单元Worder中的runWorker，通过Thread.interrupted()进行额外的判断处理，感兴趣的同学可以看下ThreadPoolExecutor源码。</p>
-<h3 id=235-小结>2.3.5 小结</h3>
-<p>我们在1.3小节中提出了一些问题，现在来回答一下。</p>
-<blockquote>
-<p>Q：某个线程获取锁失败的后续流程是什么呢？</p>
-<p>A：存在某种排队等候机制，线程继续等待，仍然保留获取锁的可能，获取锁流程仍在继续。</p>
-<p>Q：既然说到了排队等候机制，那么就一定会有某种队列形成，这样的队列是什么数据结构呢？</p>
-<p>A：是CLH变体的FIFO双端队列。</p>
-<p>Q：处于排队等候机制中的线程，什么时候可以有机会获取锁呢？</p>
-<p>A：可以详细看下2.3.1.3小节。</p>
-<p>Q：如果处于排队等候机制中的线程一直无法获取锁，需要一直等待么？还是有别的策略来解决这一问题？</p>
-<p>A：线程所在节点的状态会变成取消状态，取消状态的节点会从队列中释放，具体可见2.3.2小节。</p>
-<p>Q：Lock函数通过Acquire方法进行加锁，但是具体是如何加锁的呢？</p>
-<p>A：AQS的Acquire会调用tryAcquire方法，tryAcquire由各个自定义同步器实现，通过tryAcquire完成加锁过程。</p>
-</blockquote>
-<h2 id=3-aqs应用>3 AQS应用</h2>
-<h3 id=31-reentrantlock的可重入应用>3.1 ReentrantLock的可重入应用</h3>
-<p>ReentrantLock的可重入性是AQS很好的应用之一，在了解完上述知识点以后，我们很容易得知ReentrantLock实现可重入的方法。在ReentrantLock里面，不管是公平锁还是非公平锁，都有一段逻辑。</p>
-<p>公平锁：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>该方法其实是为了中断线程。但为什么获取了锁以后还要中断线程呢？这部分属于Java提供的协作式中断知识内容，感兴趣同学可以查阅一下。这里简单介绍一下：</p><ol><li><p>当中断线程被唤醒时，并不知道被唤醒的原因，可能是当前线程在等待中被中断，也可能是释放了锁以后被唤醒。因此我们通过Thread.interrupted()方法检查中断标记（该方法返回了当前线程的中断状态，并将当前线程的中断标识设置为False），并记录下来，如果发现该线程被中断过，就再中断一次。</p></li><li><p>线程在等待资源的过程中被唤醒，唤醒后还是会不断地去尝试获取锁，直到抢到锁为止。也就是说，在整个流程中，并不响应中断，只是记录中断记录。最后抢到锁返回了，那么如果被中断过的话，就需要补充一次中断。</p></li></ol><p>这里的处理方式主要是运用线程池中基本运作单元Worder中的runWorker，通过Thread.interrupted()进行额外的判断处理，感兴趣的同学可以看下ThreadPoolExecutor源码。</p><h3 id=235-小结><a href=#235-小结 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:235-小结 class=headings>2.3.5 小结</a></h3><p>我们在1.3小节中提出了一些问题，现在来回答一下。</p><blockquote><p>Q：某个线程获取锁失败的后续流程是什么呢？</p><p>A：存在某种排队等候机制，线程继续等待，仍然保留获取锁的可能，获取锁流程仍在继续。</p><p>Q：既然说到了排队等候机制，那么就一定会有某种队列形成，这样的队列是什么数据结构呢？</p><p>A：是CLH变体的FIFO双端队列。</p><p>Q：处于排队等候机制中的线程，什么时候可以有机会获取锁呢？</p><p>A：可以详细看下2.3.1.3小节。</p><p>Q：如果处于排队等候机制中的线程一直无法获取锁，需要一直等待么？还是有别的策略来解决这一问题？</p><p>A：线程所在节点的状态会变成取消状态，取消状态的节点会从队列中释放，具体可见2.3.2小节。</p><p>Q：Lock函数通过Acquire方法进行加锁，但是具体是如何加锁的呢？</p><p>A：AQS的Acquire会调用tryAcquire方法，tryAcquire由各个自定义同步器实现，通过tryAcquire完成加锁过程。</p></blockquote><h2 id=3-aqs应用><a href=#3-aqs应用 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:3-aqs应用 class=headings>3 AQS应用</a></h2><h3 id=31-reentrantlock的可重入应用><a href=#31-reentrantlock的可重入应用 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:31-reentrantlock的可重入应用 class=headings>3.1 ReentrantLock的可重入应用</a></h3><p>ReentrantLock的可重入性是AQS很好的应用之一，在了解完上述知识点以后，我们很容易得知ReentrantLock实现可重入的方法。在ReentrantLock里面，不管是公平锁还是非公平锁，都有一段逻辑。</p><p>公平锁：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1571,9 +817,7 @@ private Node addWaiter(Node mode) {
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.ReentrantLock.FairSync#tryAcquire
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.ReentrantLock.FairSync#tryAcquire
 </span><span class=c1></span>
 <span class=k>if</span> <span class=o>(</span><span class=n>c</span> <span class=o>==</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
     <span class=k>if</span> <span class=o>(!</span><span class=n>hasQueuedPredecessors</span><span class=o>()</span> <span class=o>&amp;&amp;</span> <span class=n>compareAndSetState</span><span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>acquires</span><span class=o>))</span> <span class=o>{</span>
@@ -1588,12 +832,7 @@ private Node addWaiter(Node mode) {
     <span class=n>setState</span><span class=o>(</span><span class=n>nextc</span><span class=o>);</span>
     <span class=k>return</span> <span class=kc>true</span><span class=o>;</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>非公平锁：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>非公平锁：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1608,9 +847,7 @@ private Node addWaiter(Node mode) {
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.ReentrantLock.Sync#nonfairTryAcquire
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.ReentrantLock.Sync#nonfairTryAcquire
 </span><span class=c1></span>
 <span class=k>if</span> <span class=o>(</span><span class=n>c</span> <span class=o>==</span> <span class=n>0</span><span class=o>)</span> <span class=o>{</span>
     <span class=k>if</span> <span class=o>(</span><span class=n>compareAndSetState</span><span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>acquires</span><span class=o>)){</span>
@@ -1625,70 +862,13 @@ private Node addWaiter(Node mode) {
     <span class=n>setState</span><span class=o>(</span><span class=n>nextc</span><span class=o>);</span>
     <span class=k>return</span> <span class=kc>true</span><span class=o>;</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>从上面这两段都可以看到，有一个同步状态State来控制整体可重入的情况。State是Volatile修饰的，用于保证一定的可见性和有序性。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>从上面这两段都可以看到，有一个同步状态State来控制整体可重入的情况。State是Volatile修饰的，用于保证一定的可见性和有序性。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=c1>// java.util.concurrent.locks.AbstractQueuedSynchronizer
 </span><span class=c1></span>
 <span class=kd>private</span> <span class=kd>volatile</span> <span class=kt>int</span> <span class=n>state</span><span class=o>;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>接下来看State这个字段主要的过程：</p>
-<ol>
-<li>
-<p>State初始化的时候为0，表示没有任何线程持有锁。</p>
-</li>
-<li>
-<p>当有线程持有该锁时，值就会在原来的基础上+1，同一个线程多次获得锁是，就会多次+1，这里就是可重入的概念。</p>
-</li>
-<li>
-<p>解锁也是对这个字段-1，一直到0，此线程对锁释放。</p>
-</li>
-</ol>
-<h3 id=32-juc中的应用场景>3.2 JUC中的应用场景</h3>
-<p>除了上边ReentrantLock的可重入性的应用，AQS作为并发编程的框架，为很多其他同步工具提供了良好的解决方案。下面列出了JUC中的几种同步工具，大体介绍一下AQS的应用场景：</p>
-<table>
-<thead>
-<tr>
-<th>同步工具</th>
-<th>同步工具与AQS的关联</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ReentrantLock</td>
-<td>使用AQS保存锁重复持有的次数。当一个线程获取锁时，ReentrantLock记录当前获得锁的线程标识，用于检测是否重复获取，以及错误线程试图解锁操作时异常情况的处理。</td>
-</tr>
-<tr>
-<td>Semaphore</td>
-<td>使用AQS同步状态来保存信号量的当前计数。tryRelease会增加计数，acquireShared会减少计数。</td>
-</tr>
-<tr>
-<td>CountDownLatch</td>
-<td>使用AQS同步状态来表示计数。计数为0时，所有的Acquire操作（CountDownLatch的await方法）才可以通过。</td>
-</tr>
-<tr>
-<td>ReentrantReadWriteLock</td>
-<td>使用AQS同步状态中的16位保存写锁持有的次数，剩下的16位用于保存读锁的持有次数。</td>
-</tr>
-<tr>
-<td>ThreadPoolExecutor</td>
-<td>Worker利用AQS同步状态实现对独占线程变量的设置（tryAcquire和tryRelease）。</td>
-</tr>
-</tbody>
-</table>
-<h3 id=33-自定义同步工具>3.3 自定义同步工具</h3>
-<p>了解AQS基本原理以后，按照上面所说的AQS知识点，自己实现一个同步工具。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>接下来看State这个字段主要的过程：</p><ol><li><p>State初始化的时候为0，表示没有任何线程持有锁。</p></li><li><p>当有线程持有该锁时，值就会在原来的基础上+1，同一个线程多次获得锁是，就会多次+1，这里就是可重入的概念。</p></li><li><p>解锁也是对这个字段-1，一直到0，此线程对锁释放。</p></li></ol><h3 id=32-juc中的应用场景><a href=#32-juc中的应用场景 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:32-juc中的应用场景 class=headings>3.2 JUC中的应用场景</a></h3><p>除了上边ReentrantLock的可重入性的应用，AQS作为并发编程的框架，为很多其他同步工具提供了良好的解决方案。下面列出了JUC中的几种同步工具，大体介绍一下AQS的应用场景：</p><div class=table-container><table><thead><tr><th>同步工具</th><th>同步工具与AQS的关联</th></tr></thead><tbody><tr><td>ReentrantLock</td><td>使用AQS保存锁重复持有的次数。当一个线程获取锁时，ReentrantLock记录当前获得锁的线程标识，用于检测是否重复获取，以及错误线程试图解锁操作时异常情况的处理。</td></tr><tr><td>Semaphore</td><td>使用AQS同步状态来保存信号量的当前计数。tryRelease会增加计数，acquireShared会减少计数。</td></tr><tr><td>CountDownLatch</td><td>使用AQS同步状态来表示计数。计数为0时，所有的Acquire操作（CountDownLatch的await方法）才可以通过。</td></tr><tr><td>ReentrantReadWriteLock</td><td>使用AQS同步状态中的16位保存写锁持有的次数，剩下的16位用于保存读锁的持有次数。</td></tr><tr><td>ThreadPoolExecutor</td><td>Worker利用AQS同步状态实现对独占线程变量的设置（tryAcquire和tryRelease）。</td></tr></tbody></table></div><h3 id=33-自定义同步工具><a href=#33-自定义同步工具 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:33-自定义同步工具 class=headings>3.3 自定义同步工具</a></h3><p>了解AQS基本原理以后，按照上面所说的AQS知识点，自己实现一个同步工具。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1718,9 +898,7 @@ private Node addWaiter(Node mode) {
 </span><span class=lnt>28
 </span><span class=lnt>29
 </span><span class=lnt>30
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>LeeLock</span>  <span class=o>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>LeeLock</span>  <span class=o>{</span>
 
     <span class=kd>private</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>Sync</span> <span class=kd>extends</span> <span class=n>AbstractQueuedSynchronizer</span> <span class=o>{</span>
         <span class=nd>@Override</span>
@@ -1750,12 +928,7 @@ private Node addWaiter(Node mode) {
         <span class=n>sync</span><span class=o>.</span><span class=na>release</span><span class=o>(</span><span class=n>1</span><span class=o>);</span>
     <span class=o>}</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>通过我们自己定义的Lock完成一定的同步功能。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>通过我们自己定义的Lock完成一定的同步功能。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1786,9 +959,7 @@ private Node addWaiter(Node mode) {
 </span><span class=lnt>29
 </span><span class=lnt>30
 </span><span class=lnt>31
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>LeeMain</span> <span class=o>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>LeeMain</span> <span class=o>{</span>
 
     <span class=kd>static</span> <span class=kt>int</span> <span class=n>count</span> <span class=o>=</span> <span class=n>0</span><span class=o>;</span>
     <span class=kd>static</span> <span class=n>LeeLock</span> <span class=n>leeLock</span> <span class=o>=</span> <span class=k>new</span> <span class=n>LeeLock</span><span class=o>();</span>
@@ -1819,143 +990,8 @@ private Node addWaiter(Node mode) {
         <span class=n>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>count</span><span class=o>);</span>
     <span class=o>}</span>
 <span class=o>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>上述代码每次运行结果都会是20000。通过简单的几行代码就能实现同步功能，这就是AQS的强大之处。</p>
-<h2 id=参考>参考</h2>
-<ul>
-<li>
-<p>Lea D. The java. util. concurrent synchronizer framework[J]. Science of Computer Programming, 2005, 58(3): 293-309.</p>
-</li>
-<li>
-<p>《Java并发编程实战》</p>
-</li>
-<li>
-<p><a href=https://tech.meituan.com/2018/11/15/java-lock.html>不可不说的Java“锁”事</a></p>
-</li>
-</ul>
-</div>
-<div class=post-copyright>
-<p class=copyright-item>
-<span class=item-title>文章作者</span>
-<span class=item-content>Justice</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>上次更新</span>
-<span class=item-content>
-2022-04-29 21:42:54
-</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>许可协议</span>
-<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
-</p>
-</div>
-<div class=post-reward>
-<input type=checkbox name=reward id=reward hidden>
-<label class=reward-button for=reward>赞赏支持</label>
-<div class=qr-code>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/wx_reward_qrcode.png>
-<span>微信打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/alipay_reward_qrcode.png>
-<span>支付宝打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/bitcoin_reward_qrcode.png>
-<span>比特币打赏</span>
-</label>
-</div>
-</div>
-<footer class=post-footer>
-<div class=post-tags>
-<a href=https://justice.bj.cn/tags/language/>language</a>
-<a href=https://justice.bj.cn/tags/java/>java</a>
-</div>
-<nav class=post-nav>
-<a class=prev href=/post/14.language/java/java%E5%B8%B8%E7%94%A8%E6%A6%82%E5%BF%B5/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">Java常用概念</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/14.language/java/guavacache/>
-<span class="next-text nav-default">集中式缓存GuavaCache</span>
-<span class="prev-text nav-mobile">下一篇</span>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
-</i>
-</a>
-</nav>
-</footer>
-</article>
-<div class="post bg-white">
-<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
-</div>
-</div>
-</div>
-<div class=modal-dialog>
-<div class=modal-content>
-<div id=closeSearch title=Close class=close>X</div>
-<div id=fastSearch>
-<input id=searchInput tabindex=0>
-<ul id=searchResults>
-</ul>
-</div>
-</div>
-</div>
-</main>
-<footer id=footer class=footer>
-<div class=icon-links>
-<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
-</a>
-<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
-</a>
-</div>
-<div class=copyright>
-<span class=power-by>
-Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
-</span>
-<span class=division>|</span>
-<span class=theme-info>
-Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
-</span>
-<span class=copyright-year>
-&copy;
-2000 -
-2024
-<span class=heart>
-<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
-</i>
-</span><span class=author>
-Justice
-</span></span>
-<span id=busuanzi_container>
-访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
-</span>
-</div>
-</footer>
-<div class=back-to-top id=back-to-top>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
-</i>
-</div>
-</div>
-<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
-<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
-<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
-<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
-<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
-<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
-<script type=text/javascript src=/js/load-photoswipe.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
-<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
-<script>$("#search-btn").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #search-btn").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
-<script src=/js/fuse.min.js></script>
-<script src=/js/fastsearch.js></script>
-</body>
-</html>
+</code></pre></td></tr></table></div></div></div><p>上述代码每次运行结果都会是20000。通过简单的几行代码就能实现同步功能，这就是AQS的强大之处。</p><h2 id=参考><a href=#参考 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:参考 class=headings>参考</a></h2><ul><li><p>Lea D. The java. util. concurrent synchronizer framework[J]. Science of Computer Programming, 2005, 58(3): 293-309.</p></li><li><p>《Java并发编程实战》</p></li><li><p><a href=https://tech.meituan.com/2018/11/15/java-lock.html target=_blank rel=noopener>不可不说的Java“锁”事</a></p></li></ul></div><ul class=post-copyright><li class="copyright-item author"><span class=copyright-item-text>作者</span>：<a href=https://io-oi.me/ class="p-author h-card" target=_blank rel=noopener>Justice</a></li><li class="copyright-item link"><span class=copyright-item-text>链接</span>：<a href=/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/ target=_blank rel=noopener>https://justice.bj.cn/post/14.language/java/java可重入锁/</a></li><li class="copyright-item license"><span class=copyright-item-text>许可</span>：<a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></li></ul></article><div class=updated-badge-container><span title="Updated @ 2024-04-28 06:05:29 UTC" style=cursor:help><svg xmlns="http://www.w3.org/2000/svg" width="130" height="20" class="updated-badge"><linearGradient id="b" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="a"><rect width="130" height="20" rx="3" fill="#fff"/></clipPath><g clip-path="url(#a)"><path class="updated-badge-left" d="M0 0h55v20H0z"/><path class="updated-badge-right" d="M55 0h75v20H55z"/><path fill="url(#b)" d="M0 0h130v20H0z"/></g><g fill="#fff" text-anchor="middle" font-size="110"><text x="285" y="150" fill="#010101" fill-opacity=".3" textLength="450" transform="scale(.1)">updated</text><text x="285" y="140" textLength="450" transform="scale(.1)">updated</text><text x="915" y="150" fill="#010101" fill-opacity=".3" textLength="650" transform="scale(.1)">2024-04-28</text><text x="915" y="140" textLength="650" transform="scale(.1)">2024-04-28</text></g></svg></span></div><div class=post-share><div class=share-items><div class="share-item facebook"><a href="https://www.facebook.com/sharer/sharer.php?u=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&hashtag=%23language" title=分享到「Facebook」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon facebook-icon"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14.0 55.52 4.84 55.52 4.84v61h-31.28c-30.8.0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z"/></svg></a></div><div class="share-item mastodon"><a href="/fedishare.html#title=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&description=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/" title=分享到「Mastodon」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon mastodon-icon"><path d="M433 179.11c0-97.2-63.71-125.7-63.71-125.7-62.52-28.7-228.56-28.4-290.48.0.0.0-63.72 28.5-63.72 125.7.0 115.7-6.6 259.4 105.63 289.1 40.51 10.7 75.32 13 103.33 11.4 50.81-2.8 79.32-18.1 79.32-18.1l-1.7-36.9s-36.31 11.4-77.12 10.1c-40.41-1.4-83-4.4-89.63-54a102.54 102.54.0 01-.9-13.9c85.63 20.9 158.65 9.1 178.75 6.7 56.12-6.7 105-41.3 111.23-72.9 9.8-49.8 9-121.5 9-121.5zm-75.12 125.2h-46.63v-114.2c0-49.7-64-51.6-64 6.9v62.5h-46.33V197c0-58.5-64-56.6-64-6.9v114.2H90.19c0-122.1-5.2-147.9 18.41-175 25.9-28.9 79.82-30.8 103.83 6.1l11.6 19.5 11.6-19.5c24.11-37.1 78.12-34.8 103.83-6.1 23.71 27.3 18.4 53 18.4 175z"/></svg></a></div><div class="share-item fediverse"><a href="/fedishare.html#title=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&description=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/" title=分享到「Fediverse」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="64 163 873 873" class="icon fediverse-icon"><defs><linearGradient id="fediverse-gradient"><stop offset="0" stop-color="#ff0101"/><stop offset="10%" stop-color="#9501ff"/><stop offset="50%" stop-color="#ffca01"/><stop offset="75%" stop-color="#01a3ff"/><stop offset="100%" stop-color="#65ff01"/></linearGradient></defs><path d="M539 176q-32 0-55 22t-25 55 20.5 58 56 27 58.5-20.5 27-56-20.5-59T544 176h-5zm-87 95-232 118q20 20 25 48l231-118q-19-20-24-48zm167 27q-13 25-38 38l183 184q13-25 39-38zM477 320 342 585l40 40 143-280q-28-5-48-25zm104 16q-22 11-46 10l-8-1 21 132 56 9zM155 370q-32 0-55 22.5t-25 55 20.5 58 56.5 27 59-21 26.5-56-21-58.5-55.5-27h-6zm90 68q1 9 1 18-1 19-10 35l132 21 26-50zm225 36-26 51 311 49q-1-8-1-17 1-19 10-36zm372 6q-32 1-55 23t-24.5 55 21 58 56 27 58.5-20.5 27-56.5-20.5-59-56.5-27h-6zM236 493q-13 25-39 38l210 210 51-25zm-40 38q-21 11-44 10l-9-1 40 256q21-10 45-9l8 1zm364 22 48 311q21-10 44-9l10 1-46-294zm195 23-118 60 8 56 135-68q-20-20-25-48zm26 49-119 231q28 5 48 25l119-231q-28-5-48-25zM306 654l-68 134q28 5 48 25l60-119zm262 17-281 143q19 20 24 48l265-135zM513 771l-51 25 106 107q13-25 39-38zM222 795q-32 0-55.5 22.5t-25 55 21 57.5 56 27 58.5-20.5 27-56-20.5-58.5-56.5-27h-5zm89 68q2 9 1 18-1 19-9 35l256 41q-1-9-1-18 1-18 10-35zm335 0q-32 0-55 22.5t-24.5 55 20.5 58 56 27 59-21 27-56-20.5-58.5-56.5-27h-6z"/></svg></a></div><div class="share-item twitter"><a href="https://twitter.com/share?url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&text=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&hashtags=language,java,&via=reuixiy" title=分享到「Twitter」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon twitter-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></div><div class="share-item linkedin"><a href="https://www.linkedin.com/shareArticle?mini=true&url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&title=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&summary=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6&source=Justice%27s%20Site" title=分享到「LinkedIn」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon linkedin-icon"><path d="M416 32H31.9C14.3 32 0 46.5.0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6.0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3.0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2.0 38.5 17.3 38.5 38.5.0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6.0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2.0 79.7 44.3 79.7 101.9V416z"/></svg></a></div><div class="share-item telegram"><a href="https://t.me/share/url?url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&text=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8" title=分享到「Telegram」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon telegram-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></div><div class="share-item weibo"><a href="https://service.weibo.com/share/share.php?&url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&title=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&pic=https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png&searchPic=false" title=分享到「新浪微博」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon weibo-icon"><path d="M407 177.6c7.6-24-13.4-46.8-37.4-41.7-22 4.8-28.8-28.1-7.1-32.8 50.1-10.9 92.3 37.1 76.5 84.8-6.8 21.2-38.8 10.8-32-10.3zM214.8 446.7C108.5 446.7.0 395.3.0 310.4c0-44.3 28-95.4 76.3-143.7C176 67 279.5 65.8 249.9 161c-4 13.1 12.3 5.7 12.3 6 79.5-33.6 140.5-16.8 114 51.4-3.7 9.4 1.1 10.9 8.3 13.1 135.7 42.3 34.8 215.2-169.7 215.2zm143.7-146.3c-5.4-55.7-78.5-94-163.4-85.7-84.8 8.6-148.8 60.3-143.4 116s78.5 94 163.4 85.7c84.8-8.6 148.8-60.3 143.4-116zM347.9 35.1c-25.9 5.6-16.8 43.7 8.3 38.3 72.3-15.2 134.8 52.8 111.7 124-7.4 24.2 29.1 37 37.4 12 31.9-99.8-55.1-195.9-157.4-174.3zm-78.5 311c-17.1 38.8-66.8 60-109.1 46.3-40.8-13.1-58-53.4-40.3-89.7 17.7-35.4 63.1-55.4 103.4-45.1 42 10.8 63.1 50.2 46 88.5zm-86.3-30c-12.9-5.4-30 .3-38 12.9-8.3 12.9-4.3 28 8.6 34 13.1 6 30.8.3 39.1-12.9 8-13.1 3.7-28.3-9.7-34zm32.6-13.4c-5.1-1.7-11.4.6-14.3 5.4-2.9 5.1-1.4 10.6 3.7 12.9 5.1 2 11.7-.3 14.6-5.4 2.8-5.2 1.1-10.9-4-12.9z"/></svg></a></div><div class="share-item douban"><a href="https://www.douban.com/share/service?href=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&name=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&text=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6" title=分享到「豆瓣」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon douban-icon"><path d="M.643.92v2.412h22.714V.92H.643zm1.974 4.926v9.42h18.764v-9.42H2.617zm2.72 2.408H18.69v4.605H5.338V8.254zm1.657 7.412-2.512.938c1.037 1.461 1.87 2.825 2.512 4.091H0v2.385h24v-2.385h-6.678c.818-1.176 1.589-2.543 2.303-4.091l-2.73-.938a29.952 29.952.0 01-2.479 5.03h-4.75c-.786-1.962-1.677-3.641-2.672-5.03z"/></svg></a></div><div class="share-item qq"><a href="https://connect.qq.com/widget/shareqq/index.html?url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&title=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&summary=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6&pics=https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png&site=Justice%27s%20Site" title=分享到「QQ」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qq-icon"><path d="M433.754 420.445c-11.526 1.393-44.86-52.741-44.86-52.741.0 31.345-16.136 72.247-51.051 101.786 16.842 5.192 54.843 19.167 45.803 34.421-7.316 12.343-125.51 7.881-159.632 4.037-34.122 3.844-152.316 8.306-159.632-4.037-9.045-15.25 28.918-29.214 45.783-34.415-34.92-29.539-51.059-70.445-51.059-101.792.0.0-33.334 54.134-44.859 52.741-5.37-.65-12.424-29.644 9.347-99.704 10.261-33.024 21.995-60.478 40.144-105.779C60.683 98.063 108.982.006 224 0c113.737.006 163.156 96.133 160.264 214.963 18.118 45.223 29.912 72.85 40.144 105.778 21.768 70.06 14.716 99.053 9.346 99.704z"/></svg></a></div><div class="share-item qzone"><a href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&title=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&summary=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6&pics=https://p1.meituan.net/travelcube/9d182d944e0889c304ef529ba50a4fcd205214.png&site=Justice%27s%20Site" title="分享到「QQ 空间」" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon qzone-icon"><path d="M23.985 9.202c-.032-.099-.127-.223-.334-.258-.207-.036-7.351-1.406-7.351-1.406s-.105-.022-.198-.07c-.092-.047-.127-.167-.127-.167S12.447.956 12.349.77C12.25.583 12.104.532 12 .532s-.251.051-.349.238c-.098.186-3.626 6.531-3.626 6.531s-.035.12-.128.167c-.092.047-.197.07-.197.07S.556 8.908.348 8.943c-.208.036-.302.16-.333.258a.477.477.0 00.125.449l5.362 5.49s.072.08.119.172c.016.104.005.21.005.21s-1.189 7.242-1.22 7.45.075.369.159.43c.083.062.233.106.421.013.189-.093 6.812-3.261 6.812-3.261s.098-.044.201-.061.201.061.201.061 6.623 3.168 6.812 3.261c.188.094.338.049.421-.013a.463.463.0 00.159-.43c-.021-.14-.93-5.677-.93-5.677.876-.54 1.425-1.039 1.849-1.747-2.594.969-6.006 1.717-9.415 1.866-.915.041-2.41.097-3.473-.015-.678-.071-1.17-.144-1.243-.438-.053-.215.054-.46.545-.831a2640.5 2640.5.0 012.861-2.155c1.285-.968 3.559-2.47 3.559-2.731.0-.285-2.144-.781-4.037-.781-1.945.0-2.275.132-2.811.168-.488.034-.769.005-.804-.138-.06-.248.183-.389.588-.568.709-.314 1.86-.594 1.984-.626.194-.052 3.082-.805 5.618-.535 1.318.14 3.244.668 3.244 1.276.0.342-1.721 1.494-3.225 2.597-1.149.843-2.217 1.561-2.217 1.688.0.342 3.533 1.241 6.689 1.01l.003-.022c.048-.092.119-.172.119-.172l5.362-5.49a.477.477.0 00.127-.449z"/></svg></a></div><div class="share-item pocket"><a href="https://getpocket.com/edit.php?url=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/" title=分享到「Pocket」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon pocket-icon"><path d="M407.6 64h-367C18.5 64 0 82.5.0 104.6v135.2C0 364.5 99.7 464 224.2 464c124 0 223.8-99.5 223.8-224.2V104.6c0-22.4-17.7-40.6-40.4-40.6zm-162 268.5c-12.4 11.8-31.4 11.1-42.4.0C89.5 223.6 88.3 227.4 88.3 209.3c0-16.9 13.8-30.7 30.7-30.7 17 0 16.1 3.8 105.2 89.3 90.6-86.9 88.6-89.3 105.5-89.3 16.9.0 30.7 13.8 30.7 30.7.0 17.8-2.9 15.7-114.8 123.2z"/></svg></a></div><div class="share-item hackernews"><a href="https://news.ycombinator.com/submitlink?u=https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/&t=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8" title="分享到Hacker News" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon hackernews-icon"><path d="M0 32v448h448V32H0zm21.2 197.2H21c.1-.1.2-.3.3-.4.0.1.0.3-.1.4zm218 53.9V384h-31.4V281.3L128 128h37.3c52.5 98.3 49.2 101.2 59.3 125.6 12.3-27 5.8-24.4 60.6-125.6H320l-80.8 155.1z"/></svg></a></div><div class="share-item qrcode"><div class=qrcode-container title=通过「二维码」><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qrcode-icon"><path d="M0 224h192V32H0v192zM64 96h64v64H64V96zm192-64v192h192V32H256zm128 128h-64V96h64v64zM0 480h192V288H0v192zm64-128h64v64H64v-64zm352-64h32v128h-96v-32h-32v96h-64V288h96v32h64v-32zm0 160h32v32h-32v-32zm-64 0h32v32h-32v-32z"/></svg><div id=qrcode-img></div></div><script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js></script>
+<script>const typeNumber=0,errorCorrectionLevel='L',qr=qrcode(typeNumber,errorCorrectionLevel);qr.addData('https://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/'),qr.make(),document.getElementById('qrcode-img').innerHTML=qr.createImgTag()</script></div><div class="share-item email"><a href="mailto:?subject=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8&body=%e4%bb%8eReentrantLock%e7%9a%84%e5%ae%9e%e7%8e%b0%e7%9c%8bAQS%e7%9a%84%e5%8e%9f%e7%90%86%e5%8f%8a%e5%ba%94%e7%94%a8%20%e5%89%8d%e8%a8%80%20Java%e4%b8%ad%e7%9a%84%e5%a4%a7%e9%83%a8%e5%88%86%e5%90%8c%e6%ad%a5%e7%b1%bb%ef%bc%88%e2%80%a6%e2%80%a6%0Ahttps://justice.bj.cn/post/14.language/java/java%E5%8F%AF%E9%87%8D%E5%85%A5%E9%94%81/" title=通过「电子邮件」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon email-icon"><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V4e2c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5.0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg></a></div></div></div><div class=related-posts><h2 class=related-title>相关文章：<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon related-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm144 276c0 6.6-5.4 12-12 12h-92v92c0 6.6-5.4 12-12 12h-56c-6.6.0-12-5.4-12-12v-92h-92c-6.6.0-12-5.4-12-12v-56c0-6.6 5.4-12 12-12h92v-92c0-6.6 5.4-12 12-12h56c6.6.0 12 5.4 12 12v92h92c6.6.0 12 5.4 12 12v56z"/></svg></h2><ul class=related-list><li class=related-item><a href=/post/14.language/java/java%E8%B0%83%E8%AF%95/ class=related-link>java调试</a></li><li class=related-item><a href=/post/14.language/java/java%E7%BA%BF%E7%A8%8B%E6%B1%A0/ class=related-link>Java线程池</a></li><li class=related-item><a href=/post/14.language/java/spring%E6%B3%A8%E8%A7%A3/ class=related-link>Spring的注解</a></li><li class=related-item><a href=/post/14.language/java/java%E5%9F%BA%E7%A1%80/ class=related-link>JAVA基础</a></li><li class=related-item><a href=/post/14.language/java/concurrenthashmap/ class=related-link>ConcurrentHashMap 原理分析</a></li></ul></div><div class=post-tags><a href=/tags/language/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>language</a>
+<a href=/tags/java/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>java</a></div><ul class=post-nav><li class=post-nav-prev><a href=/post/14.language/java/java%E5%B8%B8%E7%94%A8%E6%A6%82%E5%BF%B5/ rel=prev>&lt; Java常用概念</a></li><li class=post-nav-next><a href=/post/14.language/java/guavacache/ rel=next>集中式缓存GuavaCache ></a></li></ul><div id=utterances></div></div></main><div id=back-to-top class=back-to-top><a href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon arrow-up"><path d="M34.9 289.5l-22.2-22.2c-9.4-9.4-9.4-24.6.0-33.9L207 39c9.4-9.4 24.6-9.4 33.9.0l194.3 194.3c9.4 9.4 9.4 24.6.0 33.9L413 289.4c-9.5 9.5-25 9.3-34.3-.4L264 168.6V456c0 13.3-10.7 24-24 24h-32c-13.3.0-24-10.7-24-24V168.6L69.2 289.1c-9.3 9.8-24.8 10-34.3.4z"/></svg></a></div><footer id=footer class=footer><div class=footer-inner><div class=site-info>©&nbsp;1969–2024&nbsp;<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon footer-icon"><path d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3.0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/></svg>&nbsp;Justice</div><div class=powered-by>Powered by <a href=https://github.com/gohugoio/hugo target=_blank rel=noopener>Hugo</a> | Theme is <a href=https://github.com/reuixiy/hugo-theme-meme target=_blank rel=noopener>MemE</a></div><div class=site-copyright><a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></div><ul class=socials><li class=socials-item><a href=/rss.xml target=_blank rel="external noopener" title=RSS><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M19.199 24C19.199 13.467 10.533 4.8.0 4.8V0c13.165.0 24 10.835 24 24h-4.801zM3.291 17.415c1.814.0 3.293 1.479 3.293 3.295.0 1.813-1.485 3.29-3.301 3.29C1.47 24 0 22.526.0 20.71s1.475-3.294 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727.0 15.909 7.184 15.909 15.91z"/></svg></a></li><li class=socials-item><a href=mailto:reuixiy@gmail.com target=_blank rel="external noopener" title=Email><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M464 64H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm0 48v40.805c-22.422 18.259-58.168 46.651-134.587 106.49-16.841 13.247-50.201 45.072-73.413 44.701-23.208.375-56.579-31.459-73.413-44.701C106.18 199.465 70.425 171.067 48 152.805V112h416zM48 4e2V214.398c22.914 18.251 55.409 43.862 104.938 82.646 21.857 17.205 60.134 55.186 103.062 54.955 42.717.231 80.509-37.199 103.053-54.947 49.528-38.783 82.032-64.401 104.947-82.653V4e2H48z"/></svg></a></li><li class=socials-item><a href=https://github.com/reuixiy target=_blank rel="external noopener" title=GitHub><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M12 .297c-6.63.0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577.0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93.0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176.0.0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22.0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22.0 1.606-.015 2.896-.015 3.286.0.315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a></li><li class=socials-item><a href=https://twitter.com/reuixiy target=_blank rel="external noopener" title=Twitter><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></li><li class=socials-item><a href=https://t.me/yixiuer target=_blank rel="external noopener" title=Telegram><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon social-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></li></ul></div></footer></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.css><script>if(typeof renderMathInElement=='undefined'){const a=b=>{const a=document.createElement('script');a.defer=!0,a.crossOrigin='anonymous',Object.keys(b).forEach(c=>{a[c]=b[c]}),document.body.appendChild(a)};a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/mhchem.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/auto-render.min.js',onload:()=>{renderKaTex()}})}})}})}else renderKaTex();function renderKaTex(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"\\[",right:"\\]",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1}]})}</script><script>typeof MathJax=='undefined'?(window.MathJax={loader:{load:['[tex]/mhchem']},tex:{inlineMath:{'[+]':[['$','$']]},tags:'ams',packages:{'[+]':['mhchem']}}},function(){const a=document.createElement('script');a.src='https://cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js',a.defer=!0,document.head.appendChild(a)}()):(MathJax.texReset(),MathJax.typeset())</script><script src=https://cdn.jsdelivr.net/npm/mermaid@8.8.3/dist/mermaid.min.js></script>
+<script>Array.from(document.getElementsByClassName("language-mermaid")).forEach(a=>{a.parentElement.outerHTML=`<div class="mermaid">${a.innerText}</div>`});const mermaidConfig={startOnLoad:!0,flowchart:{useMaxWidth:!1,htmlLabels:!0},theme:'default'};mermaid.initialize(mermaidConfig)</script><script>function loadComments(){(function(){const b=document.getElementById("utterances");if(!b)return;const a=document.createElement('script');a.src='https://utteranc.es/client.js',a.async=!0,a.crossOrigin='anonymous',a.setAttribute('repo','ZhuZhengyi/gh_comment'),a.setAttribute('issue-term','pathname');const c=getCurrentTheme()==='dark';c?a.setAttribute('theme','photon-dark'):a.setAttribute('theme','github-light'),b.appendChild(a)})()}</script><script src=https://cdn.jsdelivr.net/npm/medium-zoom@latest/dist/medium-zoom.min.js></script>
+<script>let imgNodes=document.querySelectorAll('div.post-body img');imgNodes=Array.from(imgNodes).filter(a=>a.parentNode.tagName!=="A"),mediumZoom(imgNodes,{background:'hsla(var(--color-bg-h), var(--color-bg-s), var(--color-bg-l), 0.95)'})</script><script src=https://cdn.jsdelivr.net/npm/instant.page@5.1.0/instantpage.min.js type=module defer></script></body></html>

@@ -1,218 +1,16 @@
-<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
-<head>
-<meta charset=utf-8>
-<meta http-equiv=x-ua-compatible content="IE=edge">
-<title>k8s Volume实现原理 - Justice的小站</title>
-<meta name=renderer content="webkit">
-<meta name=referrer content="no-referrer">
-<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
-<meta name=MobileOptimized content="width">
-<meta name=HandheldFriendly content="true">
-<meta name=applicable-device content="pc,mobile">
-<meta name=theme-color content="#f8f5ec">
-<meta name=msapplication-navbutton-color content="#f8f5ec">
-<meta name=apple-mobile-web-app-capable content="yes">
-<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
-<meta name=mobile-web-app-capable content="yes">
-<meta name=author content="Justice">
-<meta name=description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消">
-<meta name=keywords content="tech,it,blog">
-<meta name=generator content="Hugo 0.88.1">
-<link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/>
-<link rel=icon href=/favicon.ico>
-<link rel=stylesheet href=/sass/jane.min.59a446ca0f76fe2dfc772a3a0b7512965043b4433e3e0dcf5b8ebeede14fae0c.css integrity="sha256-WaRGyg92/i38dyo6C3USllBDtEM+Pg3PW46+7eFPrgw=" media=screen crossorigin=anonymous>
-<meta property="og:title" content="k8s Volume实现原理">
-<meta property="og:description" content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消">
-<meta property="og:type" content="article">
-<meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2022-04-30T09:23:49+08:00">
-<meta property="article:modified_time" content="2022-04-30T09:23:49+08:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content="k8s Volume实现原理">
-<meta itemprop=description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消"><meta itemprop=datePublished content="2022-04-30T09:23:49+08:00">
-<meta itemprop=dateModified content="2022-04-30T09:23:49+08:00">
-<meta itemprop=wordCount content="8255">
-<meta itemprop=keywords content="cloudnative,k8s,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content="k8s Volume实现原理">
-<meta name=twitter:description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
-<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
-</head>
-<body>
-<div id=mobile-navbar class=mobile-navbar>
-<div class=mobile-header-logo>
-<a href=/ class=logo>Justice's Blog</a>
-</div>
-<div class=mobile-navbar-icon>
-<span></span>
-<span></span>
-<span></span>
-</div>
-</div>
-<nav id=mobile-menu class="mobile-menu slideout-menu">
-<ul class=mobile-menu-list>
-<li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
-<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
-<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
-<div class=pswp__bg></div>
-<div class=pswp__scroll-wrap>
-<div class=pswp__container>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-</div>
-<div class="pswp__ui pswp__ui--hidden">
-<div class=pswp__top-bar>
-<div class=pswp__counter></div>
-<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-<div class=pswp__preloader>
-<div class=pswp__preloader__icn>
-<div class=pswp__preloader__cut>
-<div class=pswp__preloader__donut></div>
-</div>
-</div>
-</div>
-</div>
-<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-<div class=pswp__share-tooltip></div>
-</div>
-<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-</button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-</button>
-<div class=pswp__caption>
-<div class=pswp__caption__center></div>
-</div>
-</div>
-</div>
-</div>
-<header id=header class="header container">
-<div class=logo-wrapper>
-<a href=/ class=logo>
-Justice's Blog
-</a>
-</div>
-<nav class=site-navbar>
-<ul id=menu class=menu>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-<li class=menu-item>
-<a id=search-btn class="menu-item-link menu-item-search" href=#>
-<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-</header>
-<div id=mobile-panel>
-<main id=main class="main bg-llight">
-<div class=content-wrapper>
-<div id=content class="content container">
-<article class="post bg-white">
-<header class=post-header>
-<h1 class=post-title>k8s Volume实现原理</h1>
-<div class=post-meta>
-<time datetime=2022-04-30 class=post-time>
-2022-04-30 09:23:49
-</time>
-<div class=post-category>
-<a href=https://justice.bj.cn/categories/cloudnative/> cloudnative </a>
-<a href=https://justice.bj.cn/categories/k8s/> k8s </a>
-</div>
-<span id=busuanzi_container_page_pv>
-| 阅读 <span id=busuanzi_value_page_pv></span>
-</span>
-</div>
-</header>
-<div class=post-toc id=post-toc>
-<h2 class=post-toc-title>文章目录</h2>
-<div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#概述>概述</a>
-<ul>
-<li><a href=#卷>卷</a></li>
-<li><a href=#持久卷>持久卷</a></li>
-</ul>
-</li>
-<li><a href=#管理>管理</a>
-<ul>
-<li><a href=#kubelet>kubelet</a></li>
-<li><a href=#卷管理器>卷管理器</a></li>
-<li><a href=#附着分离控制器>附着分离控制器</a></li>
-<li><a href=#持久卷控制器>持久卷控制器</a></li>
-</ul>
-</li>
-<li><a href=#插件>插件</a>
-<ul>
-<li><a href=#emptydir>EmptyDir</a></li>
-<li><a href=#configmap-和-secret>ConfigMap 和 Secret</a></li>
-<li><a href=#gcepersistentdisk>GCEPersistentDisk</a></li>
-</ul>
-</li>
-<li><a href=#总结>总结</a></li>
-<li><a href=#相关文章>相关文章</a></li>
-<li><a href=#referenece>Referenece</a></li>
-</ul>
-</nav>
-</div>
-</div>
-<div class=post-content>
-<h1 id=k8s-volume实现原理>k8s Volume实现原理</h1>
-<p>在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消息队列等等。</p>
-<p>然而 Kuberentes 中的每一个容器随时都可能因为某些原因而被删除和重启，容器中的文件也会随着它的删除而丢失，所以我们需要对集群中的某些文件和数据进行『持久化』；除此之外，由于同一个 Pod 中的多个 Container 可能也会有共享文件的需求，比如通过共享文件目录的方式为 nginx 生成需要代理的静态文件，所以我们需要一种方式来解决这两个问题。</p>
-<p>作为 Kubernetes 集群中除了 Pod 和 Service 之外最常见的基本对象，Volume 不仅能够解决 Container 中文件的临时性问题，也能够让同一个 Pod 中的多个 Container 共享文件。</p>
-<blockquote>
-<p>这篇文章并不会介绍 Kubernetes 中 Volume 的使用方法和 API，而是会着重介绍 Volume 的工作原理，包含其创建过程、多种 Volume 实现的异同以及如何与云服务提供商进行适配。</p>
-</blockquote>
-<h2 id=概述>概述</h2>
-<p>Kubernetes 中的 Volume 种类非常多，它不仅要支持临时的、易失的磁盘文件，还需要解决持久存储的问题；第一个问题往往都比较容易解决，后者作为持久存储在很多时候都需要与云服务商提供的存储方案打交道，如果是 Kubernetes 中已经支持的存储类型倒是还好，遇到不支持的类型还是比较麻烦的。</p>
-<p><img src=https://img.draveness.me/2019-01-14-kubernetes-storage.png alt=kubernetes-storage></p>
-<p>除了卷和持久卷之外，Kubernetes 还有另外一种更加复杂的概念 - 动态存储供应，它能够允许存储卷按需进行创建，不再需要集群的管理员手动调用云服务商提供的接口或者界面创建新的存储卷。</p>
-<p>集群中的每一个卷在被 Pod 使用时都会经历四个操作，也就是附着（Attach）、挂载（Mount）、卸载（Unmount）和分离（Detach）。</p>
-<p>如果 Pod 中使用的是 EmptyDir、HostPath 这种类型的卷，那么这些卷并不会经历附着和分离的操作，它们只会被挂载和卸载到某一个的 Pod 中，不过如果使用的云服务商提供的存储服务，这些持久卷只有附着到某一个节点之后才可以被挂在到相应的目录下，不过在其他节点使用这些卷时，该存储资源也需要先与当前的节点分离。</p>
-<p>如果 pod</p>
-<h3 id=卷>卷</h3>
-<p>在这一节中提到的卷（Volume）其实是一个比较特定的概念，它并不是一个持久化存储，可能会随着 Pod 的删除而删除，常见的卷就包括 EmptyDir、HostPath、ConfigMap 和 Secret，这些卷与所属的 Pod 具有相同的生命周期，它们可以通过如下的方式挂载到 Pod 下面的某一个目录中：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+<!doctype html><html lang=zh-cn><head prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article#"><meta charset=utf-8><meta name=generator content="Hugo 0.88.1"><meta name=theme-color content="#eee"><meta name=color-scheme content="light dark"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=format-detection content="telephone=no, date=no, address=no, email=no"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><title>k8s Volume实现原理 | Justice's Site</title><link rel=stylesheet href=/css/meme.min.67f47a7b15ac0d9812c0cb1d9e833f83f178b3b5529591a58246a31918afd5a7.css><script src=/js/meme.min.dd11d9ee391c28c55e7e558480edc7328d764051868779a373ae6f7b959c1e01.js></script>
+<script src=/js/search/fuse-search.js></script>
+<link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" media=print onload="this.media='all'"><noscript><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap"></noscript><meta name=author content="Justice"><meta name=description content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会……"><link rel="shortcut icon" href=/favicon.ico type=image/x-icon><link rel=mask-icon href=/icons/safari-pinned-tab.svg color=#2a6df4><link rel=apple-touch-icon sizes=180x180 href=/icons/apple-touch-icon.png><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-title content="Justice's Site"><meta name=apple-mobile-web-app-status-bar-style content="black"><meta name=mobile-web-app-capable content="yes"><meta name=application-name content="Justice's Site"><meta name=msapplication-starturl content="../../../../"><meta name=msapplication-TileColor content="#fff"><meta name=msapplication-TileImage content="../../../../icons/mstile-150x150.png"><link rel=manifest href=/manifest.json><link rel=canonical href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","datePublished":"2022-04-30T09:23:49+08:00","dateModified":"2024-04-28T06:05:30+00:00","url":"https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/","headline":"k8s Volume实现原理","description":"k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会……","inLanguage":"zh-cn","articleSection":"post","wordCount":8255,"image":["https://img.draveness.me/2019-01-14-kubernetes-storage.png","https://img.draveness.me/2019-01-14-kubernetes-pv-and-pvc.png","https://img.draveness.me/2019-01-14-kubernetes-pv-reclaiming-strategy.png"],"author":{"@type":"Person","description":"Viva La Vida","email":"justice_103@126.com","image":"https://justice.bj.cn/icons/apple-touch-icon.png","url":"https://io-oi.me/","name":"Justice"},"license":"[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)","publisher":{"@type":"Organization","name":"Justice's Site","logo":{"@type":"ImageObject","url":"https://justice.bj.cn/icons/apple-touch-icon.png"},"url":"https://justice.bj.cn"},"mainEntityOfPage":{"@type":"WebSite","@id":"https://justice.bj.cn"}}</script><meta name=twitter:card content="summary_large_image"><meta name=twitter:site content="@reuixiy"><meta name=twitter:creator content="@reuixiy"><meta property="og:title" content="k8s Volume实现原理"><meta property="og:description" content="k8s Volume实现原理 在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会……"><meta property="og:url" content="https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/"><meta property="og:site_name" content="Justice's Site"><meta property="og:locale" content="zh-cn"><meta property="og:image" content="https://img.draveness.me/2019-01-14-kubernetes-storage.png"><meta property="og:type" content="article"><meta property="article:published_time" content="2022-04-30T09:23:49+08:00"><meta property="article:modified_time" content="2024-04-28T06:05:30+00:00"><meta property="article:section" content="post"></head><body><div class=container><header class=header><div class=header-wrapper><div class="header-inner single"><div class=site-brand><a href=/ class=brand>Justice's Site</a></div><nav class=nav><ul class=menu id=menu><li class=menu-item><a href=/><span class=menu-item-name>主页</span></a></li><li class=menu-item><a href=/post/><span class=menu-item-name>点滴</span></a></li><li class=menu-item><a href=/tags/><span class=menu-item-name>标签</span></a></li><li class=menu-item><a href=/categories/><span class=menu-item-name>分类</span></a></li><li class=menu-item><a href=/about><span class=menu-item-name>关于</span></a></li><li class=menu-item><a href=http://passer-by.com/pacman/><span class=menu-item-name>更多</span></a></li><li class=menu-item><a id=theme-switcher href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-light"><path d="M193.2 104.5 242 7a18 18 0 0128 0l48.8 97.5L422.2 70A18 18 0 01442 89.8l-34.5 103.4L505 242a18 18 0 010 28l-97.5 48.8L442 422.2A18 18 0 01422.2 442l-103.4-34.5L270 505a18 18 0 01-28 0l-48.8-97.5L89.8 442A18 18 0 0170 422.2l34.5-103.4-97.5-48.8a18 18 0 010-28l97.5-48.8L70 89.8A18 18 0 0189.8 70zM256 128a128 128 0 10.01.0M256 160a96 96 0 10.01.0"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-dark"><path d="M27 412A256 256 0 10181 5a11.5 11.5.0 00-5 20A201.5 201.5.0 0142 399a11.5 11.5.0 00-15 13"/></svg></a></li><li class="menu-item search-item" data-target=search-modal><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="16" width="16" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg></li></ul></nav></div></div><input type=checkbox id=nav-toggle aria-hidden=true>
+<label for=nav-toggle class=nav-toggle></label>
+<label for=nav-toggle class=nav-curtain></label></header><script>let indexURL="https://justice.bj.cn/index.json",includeSectionsInSearch=["post"],search_no_results="0 results for",search_initial_message=""</script><div class=search-modal aria-hidden=true style=--color-primary:#7f0ec6><div data-target=close-search-modal class=search-modal-overlay></div><div class=search-wrapper data-image=true data-description=true data-tags=true data-categories=true><div class=search-wrapper-header><label for=search-modal-input style=margin-top:-1px><span class=sr-only>search icon</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-reset" data-type="reset"><path fill="currentcolor" d="M256 512A256 256 0 10256 0a256 256 0 100 512zM175 175c9.4-9.4 24.6-9.4 33.9.0l47 47 47-47c9.4-9.4 24.6-9.4 33.9.0s9.4 24.6.0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6.0 33.9s-24.6 9.4-33.9.0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9.0s-9.4-24.6.0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6.0-33.9z"/></svg></label>
+<input id=search-modal-input type=text data-search-input autocomplete=off aria-label=Search placeholder></div><div class=search-wrapper-body><div class=search-result data-search-result></div><span class=search-result-empty></span></div><div class=search-wrapper-footer><span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" viewBox="0 0 16 16"><path d="M3.204 11h9.592L8 5.519 3.204 11zm-.753-.659 4.796-5.48a1 1 0 011.506.0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 01-.753-1.659z"/></svg></kbd><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" style="margin-top:1px" viewBox="0 0 16 16"><path d="M3.204 5h9.592L8 10.481 3.204 5zm-.753.659 4.796 5.48a1 1 0 001.506.0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 00-.753 1.659z"/></svg></kbd>to navigate</span>
+<span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentcolor" style="display:inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M14.5 1.5a.5.5.0 01.5.5v4.8a2.5 2.5.0 01-2.5 2.5H2.707l3.347 3.346a.5.5.0 01-.708.708l-4.2-4.2a.5.5.0 010-.708l4-4a.5.5.0 11.708.708L2.707 8.3H12.5A1.5 1.5.0 0014 6.8V2a.5.5.0 01.5-.5z"/></svg></kbd>to select</span>
+<span class=search-result-info></span>
+<span data-target=close-search-modal><kbd>ESC</kbd> to close</span></div></div></div><main class="main single" id=main><div class=main-inner><article class="content post h-entry" data-align=justify data-type=post data-toc-num=true><h1 class="post-title p-name">k8s Volume实现原理</h1><div class=post-meta><time datetime=2022-04-30T09:23:49+08:00 class="post-meta-item published dt-published"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M148 288h-40c-6.6.0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v40c0 6.6-5.4 12-12 12zm108-12v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 96v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm192 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96-260v352c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h48V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h128V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h48c26.5.0 48 21.5 48 48zm-48 346V160H48v298c0 3.3 2.7 6 6 6h340c3.3.0 6-2.7 6-6z"/></svg>&nbsp;2022.4.30</time>
+<time datetime=2024-04-28T06:05:30+00:00 class="post-meta-item modified dt-updated"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M4e2 64h-48V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H160V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H48C21.49 64 0 85.49.0 112v352c0 26.51 21.49 48 48 48h352c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 4e2H54a6 6 0 01-6-6V160h352v298a6 6 0 01-6 6zm-52.849-200.65L198.842 404.519c-4.705 4.667-12.303 4.637-16.971-.068l-75.091-75.699c-4.667-4.705-4.637-12.303.068-16.971l22.719-22.536c4.705-4.667 12.303-4.637 16.97.069l44.104 44.461 111.072-110.181c4.705-4.667 12.303-4.637 16.971.068l22.536 22.718c4.667 4.705 4.636 12.303-.069 16.97z"/></svg>&nbsp;2024.4.28</time>
+<span class="post-meta-item category"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M464 128H272l-54.63-54.63c-6-6-14.14-9.37-22.63-9.37H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V176c0-26.51-21.49-48-48-48zm0 272H48V112h140.12l54.63 54.63c6 6 14.14 9.37 22.63 9.37H464v224z"/></svg>&nbsp;<a href=/post/ class="category-link p-category">滴水穿石</a></span>
+<span class="post-meta-item wordcount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3.0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9.0l60.1 60.1c18.8 18.7 18.8 49.1.0 67.9zM284.2 99.8 21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3.0-17l-111-111c-4.8-4.7-12.4-4.7-17.1.0zM124.1 339.9c-5.5-5.5-5.5-14.3.0-19.8l154-154c5.5-5.5 14.3-5.5 19.8.0s5.5 14.3.0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8.0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"/></svg>&nbsp;8255</span>
+<span class="post-meta-item reading-time"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5.0-2e2-89.5-2e2-2e2S145.5 56 256 56s2e2 89.5 2e2 2e2-89.5 2e2-2e2 2e2zm61.8-104.4-84.9-61.7c-3.1-2.3-4.9-5.9-4.9-9.7V116c0-6.6 5.4-12 12-12h32c6.6.0 12 5.4 12 12v141.7l66.8 48.6c5.4 3.9 6.5 11.4 2.6 16.8L334.6 349c-3.9 5.3-11.4 6.5-16.8 2.6z"/></svg>&nbsp;17&nbsp;分钟</span></div><nav class=contents><h2 id=contents class=contents-title>目录</h2><ol class=toc><li><a id=contents:概述 href=#概述>概述</a><ol><li><a id=contents:卷 href=#卷>卷</a></li><li><a id=contents:持久卷 href=#持久卷>持久卷</a><ol><li><a id=contents:访问模式 href=#访问模式>访问模式</a></li><li><a id=contents:回收策略 href=#回收策略>回收策略</a></li><li><a id=contents:存储供应 href=#存储供应>存储供应</a></li></ol></li></ol></li><li><a id=contents:管理 href=#管理>管理</a><ol><li><a id=contents:kubelet href=#kubelet>kubelet</a></li><li><a id=contents:卷管理器 href=#卷管理器>卷管理器</a><ol><li><a id=contents:desiredstateofworldpopulator href=#desiredstateofworldpopulator>DesiredStateOfWorldPopulator</a></li><li><a id=contents:reconciler href=#reconciler>Reconciler</a></li></ol></li><li><a id=contents:附着分离控制器 href=#附着分离控制器>附着分离控制器</a><ol><li><a id=contents:desiredstateofworldpopulator-1 href=#desiredstateofworldpopulator-1>DesiredStateOfWorldPopulator</a></li><li><a id=contents:reconciler-1 href=#reconciler-1>Reconciler</a></li></ol></li><li><a id=contents:持久卷控制器 href=#持久卷控制器>持久卷控制器</a><ol><li><a id=contents:volumeworker href=#volumeworker>VolumeWorker</a></li><li><a id=contents:claimworker href=#claimworker>ClaimWorker</a></li><li><a id=contents:小结 href=#小结>小结</a></li></ol></li></ol></li><li><a id=contents:插件 href=#插件>插件</a><ol><li><a id=contents:emptydir href=#emptydir>EmptyDir</a></li><li><a id=contents:configmap-和-secret href=#configmap-和-secret>ConfigMap 和 Secret</a></li><li><a id=contents:gcepersistentdisk href=#gcepersistentdisk>GCEPersistentDisk</a></li></ol></li><li><a id=contents:总结 href=#总结>总结</a></li><li><a id=contents:相关文章 href=#相关文章>相关文章</a></li><li><a id=contents:referenece href=#referenece>Referenece</a></li></ol></nav><div class="post-body e-content"><h1 id=k8s-volume实现原理><a href=#k8s-volume实现原理 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:k8s-volume实现原理 class=headings>k8s Volume实现原理</a></h1><p>在 Kubernetes 集群中，虽然无状态的服务非常常见，但是在实际的生产中仍然会需要在集群中部署一些有状态的节点，比如一些存储中间件、消息队列等等。</p><p>然而 Kuberentes 中的每一个容器随时都可能因为某些原因而被删除和重启，容器中的文件也会随着它的删除而丢失，所以我们需要对集群中的某些文件和数据进行『持久化』；除此之外，由于同一个 Pod 中的多个 Container 可能也会有共享文件的需求，比如通过共享文件目录的方式为 nginx 生成需要代理的静态文件，所以我们需要一种方式来解决这两个问题。</p><p>作为 Kubernetes 集群中除了 Pod 和 Service 之外最常见的基本对象，Volume 不仅能够解决 Container 中文件的临时性问题，也能够让同一个 Pod 中的多个 Container 共享文件。</p><blockquote><p>这篇文章并不会介绍 Kubernetes 中 Volume 的使用方法和 API，而是会着重介绍 Volume 的工作原理，包含其创建过程、多种 Volume 实现的异同以及如何与云服务提供商进行适配。</p></blockquote><h2 id=概述><a href=#概述 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:概述 class=headings>概述</a></h2><p>Kubernetes 中的 Volume 种类非常多，它不仅要支持临时的、易失的磁盘文件，还需要解决持久存储的问题；第一个问题往往都比较容易解决，后者作为持久存储在很多时候都需要与云服务商提供的存储方案打交道，如果是 Kubernetes 中已经支持的存储类型倒是还好，遇到不支持的类型还是比较麻烦的。</p><p><img src=https://img.draveness.me/2019-01-14-kubernetes-storage.png alt=kubernetes-storage></p><p>除了卷和持久卷之外，Kubernetes 还有另外一种更加复杂的概念 - 动态存储供应，它能够允许存储卷按需进行创建，不再需要集群的管理员手动调用云服务商提供的接口或者界面创建新的存储卷。</p><p>集群中的每一个卷在被 Pod 使用时都会经历四个操作，也就是附着（Attach）、挂载（Mount）、卸载（Unmount）和分离（Detach）。</p><p>如果 Pod 中使用的是 EmptyDir、HostPath 这种类型的卷，那么这些卷并不会经历附着和分离的操作，它们只会被挂载和卸载到某一个的 Pod 中，不过如果使用的云服务商提供的存储服务，这些持久卷只有附着到某一个节点之后才可以被挂在到相应的目录下，不过在其他节点使用这些卷时，该存储资源也需要先与当前的节点分离。</p><p>如果 pod</p><h3 id=卷><a href=#卷 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:卷 class=headings>卷</a></h3><p>在这一节中提到的卷（Volume）其实是一个比较特定的概念，它并不是一个持久化存储，可能会随着 Pod 的删除而删除，常见的卷就包括 EmptyDir、HostPath、ConfigMap 和 Secret，这些卷与所属的 Pod 具有相同的生命周期，它们可以通过如下的方式挂载到 Pod 下面的某一个目录中：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -242,9 +40,7 @@ Justice's Blog
 </span><span class=lnt>28
 </span><span class=lnt>29
 </span><span class=lnt>30
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
 </span><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
 </span><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
 </span><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test-pod</span><span class=w>
@@ -274,75 +70,29 @@ Justice's Blog
 </span><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>secret-volume</span><span class=w>
 </span><span class=w>      </span><span class=nt>secret</span><span class=p>:</span><span class=w>
 </span><span class=w>        </span><span class=nt>secretName</span><span class=p>:</span><span class=w> </span><span class=l>secret-config</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>需要注意的是，当我们将 ConfigMap 或者 Secret 『包装』成卷并挂载到某个目录时，我们其实创建了一些新的 Volume，这些 Volume 并不是 Kubernetes 中的对象，它们只存在于当前 Pod 中，随着 Pod 的删除而删除，但是需要注意的是这些『临时卷』的删除并不会导致相关  <code>ConfigMap</code>  或者  <code>Secret</code>  对象的删除。</p>
-<p>从上面我们其实可以看出 Volume 没有办法脱离 Pod 而生存，它与 Pod 拥有完全相同的生命周期，而且它们也不是 Kubernetes 对象，所以 Volume 的主要作用还是用于跨节点或者容器对数据进行同步和共享。</p>
-<h3 id=持久卷>持久卷</h3>
-<p>临时的卷没有办法解决数据持久存储的问题，想要让数据能够持久化，首先就需要将 Pod 和卷的声明周期分离，这也就是引入持久卷  <code>PersistentVolume(PV)</code>  的原因。我们可以将  <code>PersistentVolume</code>  理解为集群中资源的一种，它与集群中的节点 Node 有些相似，PV 为 Kubernete 集群提供了一个如何提供并且使用存储的抽象，与它一起被引入的另一个对象就是  <code>PersistentVolumeClaim(PVC)</code>，这两个对象之间的关系与节点和 Pod 之间的关系差不多：</p>
-<p><img src=https://img.draveness.me/2019-01-14-kubernetes-pv-and-pvc.png alt=kubernetes-pv-and-pvc></p>
-<p><code>PersistentVolume</code>  是集群中的一种被管理员分配的存储资源，而  <code>PersistentVolumeClaim</code>  表示用户对存储资源的申请，它与 Pod 非常相似，PVC 消耗了持久卷资源，而 Pod 消耗了节点上的 CPU 和内存等物理资源。</p>
-<p>因为 PVC 允许用户消耗抽象的存储资源，所以用户需要不同类型、属性和性能的 PV 就是一个比较常见的需求了，在这时我们可以通过  <code>StorageClass</code>  来提供不同种类的 PV 资源，上层用户就可以直接使用系统管理员提供好的存储类型。</p>
-<h4 id=访问模式>访问模式</h4>
-<p>Kubernetes 中的 PV 提供三种不同的访问模式，分别是  <code>ReadWriteOnce</code>、<code>ReadOnlyMany</code>  和  <code>ReadWriteMany</code>，这三种模式的含义和用法我们可以通过它们的名字推测出来：</p>
-<ul>
-<li><code>ReadWriteOnce</code>  表示当前卷可以被一个节点使用读写模式挂载；</li>
-<li><code>ReadOnlyMany</code>  表示当前卷可以被多个节点使用只读模式挂载；</li>
-<li><code>ReadWriteMany</code>  表示当前卷可以被多个节点使用读写模式挂载；</li>
-</ul>
-<p>不同的卷插件对于访问模式其实有着不同的支持，AWS 上的  <code>AWSElasticBlockStore</code>  和 GCP 上的  <code>GCEPersistentDisk</code>  就只支持  <code>ReadWriteOnce</code>  方式的挂载，不能同时挂载到多个节点上，但是  <code>CephFS</code>  就同时支持这三种访问模式。</p>
-<h4 id=回收策略>回收策略</h4>
-<p>当某个服务使用完某一个卷之后，它们会从 apiserver 中删除 PVC 对象，这时 Kubernetes 就需要对卷进行回收（Reclaim），持久卷也同样包含三种不同的回收策略，这三种回收策略会指导 Kubernetes 选择不同的方式对使用过的卷进行处理。</p>
-<p><img src=https://img.draveness.me/2019-01-14-kubernetes-pv-reclaiming-strategy.png alt=kubernetes-pv-reclaiming-strategy></p>
-<p>第一种回收策略就是保留（Retain）PV 中的数据，如果希望 PV 能够被重新使用，系统管理员需要删除被使用的  <code>PersistentVolume</code>  对象并手动清除存储和相关存储上的数据。</p>
-<p>另一种常见的回收策略就是删除（Delete），当 PVC 被使用者删除之后，如果当前卷支持删除的回收策略，那么 PV 和相关的存储会被自动删除，如果当前 PV 上的数据确实不再需要，那么将回收策略设置成 Delete 能够节省手动处理的时间并快速释放无用的资源。</p>
-<h4 id=存储供应>存储供应</h4>
-<p>Kubernetes 集群中包含了很多的 PV 资源，而 PV 资源有两种供应的方式，一种是静态的，另一种是动态的，静态存储供应要求集群的管理员预先创建一定数量的 PV，然后使用者通过 PVC 的方式对 PV 资源的使用进行声明和申请；但是当系统管理员创建的 PV 对象不能满足使用者的需求时，就会进入动态存储供应的逻辑，供应的方式是基于集群中的  <code>StorageClass</code>  对象，当然这种动态供应的方式也可以通过配置进行关闭。</p>
-<h2 id=管理>管理</h2>
-<p>Volume 的创建和管理在 Kubernetes 中主要由卷管理器  <code>VolumeManager</code>  和  <code>AttachDetachController</code>  和  <code>PVController</code>  三个组件负责。其中卷管理器会负责卷的创建和管理的大部分工作，而  <code>AttachDetachController</code>  主要负责对集群中的卷进行 Attach 和 Detach，<code>PVController</code>  负责处理持久卷的变更，</p>
-<p>文章接下来的内容会详细介绍这几部分之间的关系、工作原理以及它们是如何协作的。</p>
-<h3 id=kubelet>kubelet</h3>
-<p>作者在  <a href=https://draveness.me/kubernetes-pod>详解 Kubernetes Pod 的实现原理</a>  一文中曾简单介绍过 kubelet 和 Pod 的关系，</p>
-<p>前者会负责后者的创建和管理，kubelet 中与 Pod 相关的信息都是从 apiserver 中获取的：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>需要注意的是，当我们将 ConfigMap 或者 Secret 『包装』成卷并挂载到某个目录时，我们其实创建了一些新的 Volume，这些 Volume 并不是 Kubernetes 中的对象，它们只存在于当前 Pod 中，随着 Pod 的删除而删除，但是需要注意的是这些『临时卷』的删除并不会导致相关  <code>ConfigMap</code>  或者  <code>Secret</code>  对象的删除。</p><p>从上面我们其实可以看出 Volume 没有办法脱离 Pod 而生存，它与 Pod 拥有完全相同的生命周期，而且它们也不是 Kubernetes 对象，所以 Volume 的主要作用还是用于跨节点或者容器对数据进行同步和共享。</p><h3 id=持久卷><a href=#持久卷 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:持久卷 class=headings>持久卷</a></h3><p>临时的卷没有办法解决数据持久存储的问题，想要让数据能够持久化，首先就需要将 Pod 和卷的声明周期分离，这也就是引入持久卷  <code>PersistentVolume(PV)</code>  的原因。我们可以将  <code>PersistentVolume</code>  理解为集群中资源的一种，它与集群中的节点 Node 有些相似，PV 为 Kubernete 集群提供了一个如何提供并且使用存储的抽象，与它一起被引入的另一个对象就是  <code>PersistentVolumeClaim(PVC)</code>，这两个对象之间的关系与节点和 Pod 之间的关系差不多：</p><p><img src=https://img.draveness.me/2019-01-14-kubernetes-pv-and-pvc.png alt=kubernetes-pv-and-pvc></p><p><code>PersistentVolume</code>  是集群中的一种被管理员分配的存储资源，而  <code>PersistentVolumeClaim</code>  表示用户对存储资源的申请，它与 Pod 非常相似，PVC 消耗了持久卷资源，而 Pod 消耗了节点上的 CPU 和内存等物理资源。</p><p>因为 PVC 允许用户消耗抽象的存储资源，所以用户需要不同类型、属性和性能的 PV 就是一个比较常见的需求了，在这时我们可以通过  <code>StorageClass</code>  来提供不同种类的 PV 资源，上层用户就可以直接使用系统管理员提供好的存储类型。</p><h4 id=访问模式><a href=#访问模式 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:访问模式 class=headings>访问模式</a></h4><p>Kubernetes 中的 PV 提供三种不同的访问模式，分别是  <code>ReadWriteOnce</code>、<code>ReadOnlyMany</code>  和  <code>ReadWriteMany</code>，这三种模式的含义和用法我们可以通过它们的名字推测出来：</p><ul><li><code>ReadWriteOnce</code>  表示当前卷可以被一个节点使用读写模式挂载；</li><li><code>ReadOnlyMany</code>  表示当前卷可以被多个节点使用只读模式挂载；</li><li><code>ReadWriteMany</code>  表示当前卷可以被多个节点使用读写模式挂载；</li></ul><p>不同的卷插件对于访问模式其实有着不同的支持，AWS 上的  <code>AWSElasticBlockStore</code>  和 GCP 上的  <code>GCEPersistentDisk</code>  就只支持  <code>ReadWriteOnce</code>  方式的挂载，不能同时挂载到多个节点上，但是  <code>CephFS</code>  就同时支持这三种访问模式。</p><h4 id=回收策略><a href=#回收策略 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:回收策略 class=headings>回收策略</a></h4><p>当某个服务使用完某一个卷之后，它们会从 apiserver 中删除 PVC 对象，这时 Kubernetes 就需要对卷进行回收（Reclaim），持久卷也同样包含三种不同的回收策略，这三种回收策略会指导 Kubernetes 选择不同的方式对使用过的卷进行处理。</p><p><img src=https://img.draveness.me/2019-01-14-kubernetes-pv-reclaiming-strategy.png alt=kubernetes-pv-reclaiming-strategy></p><p>第一种回收策略就是保留（Retain）PV 中的数据，如果希望 PV 能够被重新使用，系统管理员需要删除被使用的  <code>PersistentVolume</code>  对象并手动清除存储和相关存储上的数据。</p><p>另一种常见的回收策略就是删除（Delete），当 PVC 被使用者删除之后，如果当前卷支持删除的回收策略，那么 PV 和相关的存储会被自动删除，如果当前 PV 上的数据确实不再需要，那么将回收策略设置成 Delete 能够节省手动处理的时间并快速释放无用的资源。</p><h4 id=存储供应><a href=#存储供应 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:存储供应 class=headings>存储供应</a></h4><p>Kubernetes 集群中包含了很多的 PV 资源，而 PV 资源有两种供应的方式，一种是静态的，另一种是动态的，静态存储供应要求集群的管理员预先创建一定数量的 PV，然后使用者通过 PVC 的方式对 PV 资源的使用进行声明和申请；但是当系统管理员创建的 PV 对象不能满足使用者的需求时，就会进入动态存储供应的逻辑，供应的方式是基于集群中的  <code>StorageClass</code>  对象，当然这种动态供应的方式也可以通过配置进行关闭。</p><h2 id=管理><a href=#管理 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:管理 class=headings>管理</a></h2><p>Volume 的创建和管理在 Kubernetes 中主要由卷管理器  <code>VolumeManager</code>  和  <code>AttachDetachController</code>  和  <code>PVController</code>  三个组件负责。其中卷管理器会负责卷的创建和管理的大部分工作，而  <code>AttachDetachController</code>  主要负责对集群中的卷进行 Attach 和 Detach，<code>PVController</code>  负责处理持久卷的变更，</p><p>文章接下来的内容会详细介绍这几部分之间的关系、工作原理以及它们是如何协作的。</p><h3 id=kubelet><a href=#kubelet class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:kubelet class=headings>kubelet</a></h3><p>作者在  <a href=https://draveness.me/kubernetes-pod target=_blank rel=noopener>详解 Kubernetes Pod 的实现原理</a>  一文中曾简单介绍过 kubelet 和 Pod 的关系，</p><p>前者会负责后者的创建和管理，kubelet 中与 Pod 相关的信息都是从 apiserver 中获取的：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
 </span><span class=lnt>7
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
     apiserver-.-&gt;u
     u((updates))-.-&gt;kubelet
     kubelet-.-&gt;podWorkers
     podWorkers-.-&gt;worker1
     podWorkers-.-&gt;worker2
     style u fill:#fffede,stroke:#ebebb7
-</code></pre></td></tr></table>
-</div>
-</div><p>两者的通信会使用一个  <code>kubetypes.PodUpdate</code>  类型的 Channel，kubelet 从 apiserver 中获取 Pod 时也会通过字段过滤器  <code>fields.OneTermEqualSelector(api.PodHostField, string(nodeName))</code>  仅选择被调度到 kubelet 所在节点上的 Pod：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>两者的通信会使用一个  <code>kubetypes.PodUpdate</code>  类型的 Channel，kubelet 从 apiserver 中获取 Pod 时也会通过字段过滤器  <code>fields.OneTermEqualSelector(api.PodHostField, string(nodeName))</code>  仅选择被调度到 kubelet 所在节点上的 Pod：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>NewSourceApiserver</span><span class=p>(</span><span class=nx>c</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>nodeName</span> <span class=nx>types</span><span class=p>.</span><span class=nx>NodeName</span><span class=p>,</span> <span class=nx>updates</span> <span class=kd>chan</span><span class=o>&lt;-</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=nf>NewSourceApiserver</span><span class=p>(</span><span class=nx>c</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>nodeName</span> <span class=nx>types</span><span class=p>.</span><span class=nx>NodeName</span><span class=p>,</span> <span class=nx>updates</span> <span class=kd>chan</span><span class=o>&lt;-</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
     <span class=nx>lw</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>NewListWatchFromClient</span><span class=p>(</span><span class=nx>c</span><span class=p>.</span><span class=nf>CoreV1</span><span class=p>().</span><span class=nf>RESTClient</span><span class=p>(),</span> <span class=s>&#34;pods&#34;</span><span class=p>,</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>NamespaceAll</span><span class=p>,</span> <span class=nx>fields</span><span class=p>.</span><span class=nf>OneTermEqualSelector</span><span class=p>(</span><span class=nx>api</span><span class=p>.</span><span class=nx>PodHostField</span><span class=p>,</span> <span class=nb>string</span><span class=p>(</span><span class=nx>nodeName</span><span class=p>)))</span>
     <span class=nf>newSourceApiserverFromLW</span><span class=p>(</span><span class=nx>lw</span><span class=p>,</span> <span class=nx>updates</span><span class=p>)</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>所有对 Pod 的变更最终都会通知给具体的 PodWorker，这些 Worker 协程会调用 kubelet <code>syncPod</code>  函数完成对 Pod 的同步：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>所有对 Pod 的变更最终都会通知给具体的 PodWorker，这些 Worker 协程会调用 kubelet <code>syncPod</code>  函数完成对 Pod 的同步：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -357,9 +107,7 @@ Justice's Blog
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
     participant PW as PodWorker
     participant K as Kubelet
     participant VL as VolumeManager
@@ -374,12 +122,7 @@ Justice's Blog
     end
     VL--&gt;&gt;-K: Attached/Timeout
     K--&gt;&gt;-PW: return
-</code></pre></td></tr></table>
-</div>
-</div><p>在一个 100 多行的  <code>syncPod</code>  方法中，kubelet 会调用  <code>WaitForAttachAndMount</code>  方法，等待某一个 Pod 中的全部卷已经被成功地挂载：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>在一个 100 多行的  <code>syncPod</code>  方法中，kubelet 会调用  <code>WaitForAttachAndMount</code>  方法，等待某一个 Pod 中的全部卷已经被成功地挂载：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -390,9 +133,7 @@ Justice's Blog
 </span><span class=lnt> 9
 </span><span class=lnt>10
 </span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>kl</span> <span class=o>*</span><span class=nx>Kubelet</span><span class=p>)</span> <span class=nf>syncPod</span><span class=p>(</span><span class=nx>o</span> <span class=nx>syncPodOptions</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>kl</span> <span class=o>*</span><span class=nx>Kubelet</span><span class=p>)</span> <span class=nf>syncPod</span><span class=p>(</span><span class=nx>o</span> <span class=nx>syncPodOptions</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=nx>pod</span> <span class=o>:=</span> <span class=nx>o</span><span class=p>.</span><span class=nx>pod</span>
 
     <span class=c1>// ...
@@ -403,33 +144,19 @@ Justice's Blog
 </span><span class=c1></span>
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>这个方法会将当前的 Pod 加入需要重新处理卷挂载的队列并在循环中持续调用  <code>verifyVolumesMounted</code>  方法来比较期望挂载的卷和实际挂载卷的区别，这个循环会等待两者变得完全相同或者超时后才会返回，当前方法的返回一般也意味着 Pod 中的全部卷已经挂载成功了。</p>
-<h3 id=卷管理器>卷管理器</h3>
-<p>当前节点卷的管理就都是由  <code>VolumeManager</code>  来负责了，在 Kubernetes 集群中的每一个节点（Node）上的 kubelet 启动时都会运行一个  <code>VolumeManager</code> Goroutine，它会负责在当前节点上的 Pod 和 Volume 发生变动时对 Volume 进行挂载和卸载等操作。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>这个方法会将当前的 Pod 加入需要重新处理卷挂载的队列并在循环中持续调用  <code>verifyVolumesMounted</code>  方法来比较期望挂载的卷和实际挂载卷的区别，这个循环会等待两者变得完全相同或者超时后才会返回，当前方法的返回一般也意味着 Pod 中的全部卷已经挂载成功了。</p><h3 id=卷管理器><a href=#卷管理器 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:卷管理器 class=headings>卷管理器</a></h3><p>当前节点卷的管理就都是由  <code>VolumeManager</code>  来负责了，在 Kubernetes 集群中的每一个节点（Node）上的 kubelet 启动时都会运行一个  <code>VolumeManager</code> Goroutine，它会负责在当前节点上的 Pod 和 Volume 发生变动时对 Volume 进行挂载和卸载等操作。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph TD
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph TD
     subgraph Node
         VolumeManager-.-&gt;Kubelet
         DesiredStateOfWorldPopulator-.-&gt;VolumeManager
         Reconciler-.-&gt;VolumeManager
     end
-</code></pre></td></tr></table>
-</div>
-</div><p>这个组件会在运行时启动两个 Goroutine 来管理节点中的卷，其中一个是  <code>DesiredStateOfWorldPopulator</code>，另一个是  <code>Reconciler</code>：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>这个组件会在运行时启动两个 Goroutine 来管理节点中的卷，其中一个是  <code>DesiredStateOfWorldPopulator</code>，另一个是  <code>Reconciler</code>：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -439,9 +166,7 @@ Justice's Blog
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
     VM(VolumeManager)-. run .-&gt;R(Reconciler)
     VM-. run .-&gt;DSWP(DesiredStateOfWorldPopulator)
     DSWP-. update .-&gt;DSW[DesiredStateOfWorld]
@@ -451,15 +176,7 @@ Justice's Blog
     DSWP-. getpods .-&gt;PodManager
     style ASW fill:#fffede,stroke:#ebebb7
     style DSW fill:#fffede,stroke:#ebebb7
-</code></pre></td></tr></table>
-</div>
-</div><p>如上图所示，这里的  <code>DesiredStateOfWorldPopulator</code>  和  <code>Reconciler</code>  两个 Goroutine 会通过图中两个的  <code>XXXStateOfWorld</code>  状态进行通信，<code>DesiredStateOfWorldPopulator</code>  主要负责从 Kubernetes 节点中获取新的 Pod 对象并更新  <code>DesiredStateOfWorld</code>  结构；而后者会根据实际状态和当前状态的区别对当前节点的状态进行迁移，也就是通过  <code>DesiredStateOfWorld</code>  中状态的变更更新  <code>ActualStateOfWorld</code>  中的内容。</p>
-<p>卷管理器中的两个 Goroutine，一个根据工程师的需求更新节点的期望状态  <code>DesiredStateOfWorld</code>，另一个 Goroutine 保证节点向期望状态『迁移』，也就是说  <code>DesiredStateOfWorldPopulator</code>  是卷管理器中的生产者，而  <code>Reconciler</code>  是消费者，接下来我们会分别介绍这两个 Goroutine 的工作和实现。</p>
-<h4 id=desiredstateofworldpopulator>DesiredStateOfWorldPopulator</h4>
-<p>作为卷管理器中的消费者，<code>DesiredStateOfWorldPopulator</code>  会根据工程师的请求不断修改当前节点的期望状态，我们可以通过以下的时序图来了解它到底做了哪些工作：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>如上图所示，这里的  <code>DesiredStateOfWorldPopulator</code>  和  <code>Reconciler</code>  两个 Goroutine 会通过图中两个的  <code>XXXStateOfWorld</code>  状态进行通信，<code>DesiredStateOfWorldPopulator</code>  主要负责从 Kubernetes 节点中获取新的 Pod 对象并更新  <code>DesiredStateOfWorld</code>  结构；而后者会根据实际状态和当前状态的区别对当前节点的状态进行迁移，也就是通过  <code>DesiredStateOfWorld</code>  中状态的变更更新  <code>ActualStateOfWorld</code>  中的内容。</p><p>卷管理器中的两个 Goroutine，一个根据工程师的需求更新节点的期望状态  <code>DesiredStateOfWorld</code>，另一个 Goroutine 保证节点向期望状态『迁移』，也就是说  <code>DesiredStateOfWorldPopulator</code>  是卷管理器中的生产者，而  <code>Reconciler</code>  是消费者，接下来我们会分别介绍这两个 Goroutine 的工作和实现。</p><h4 id=desiredstateofworldpopulator><a href=#desiredstateofworldpopulator class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:desiredstateofworldpopulator class=headings>DesiredStateOfWorldPopulator</a></h4><p>作为卷管理器中的消费者，<code>DesiredStateOfWorldPopulator</code>  会根据工程师的请求不断修改当前节点的期望状态，我们可以通过以下的时序图来了解它到底做了哪些工作：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -489,9 +206,7 @@ Justice's Blog
 </span><span class=lnt>28
 </span><span class=lnt>29
 </span><span class=lnt>30
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
     participant DSOWP as DesiredStateOfWorldPopulator
     participant ASOW as ActualStateOfWorld
     participant DSOW as DesiredStateOfWorld
@@ -521,12 +236,7 @@ Justice's Blog
         end
         deactivate DSOWP
     end
-</code></pre></td></tr></table>
-</div>
-</div><p>整个  <code>DesiredStateOfWorldPopulator</code>  运行在一个大的循环  <code>populatorLoop</code>  中，当前循环会通过两个方法  <code>findAndAddNewPods</code>  和  <code>findAndRemoveDeletedPods</code>  分别获取节点中被添加的新 Pod 或者已经被删除的老 Pod，获取到 Pod 之后会根据当前的状态修改期望状态：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>整个  <code>DesiredStateOfWorldPopulator</code>  运行在一个大的循环  <code>populatorLoop</code>  中，当前循环会通过两个方法  <code>findAndAddNewPods</code>  和  <code>findAndRemoveDeletedPods</code>  分别获取节点中被添加的新 Pod 或者已经被删除的老 Pod，获取到 Pod 之后会根据当前的状态修改期望状态：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -537,9 +247,7 @@ Justice's Blog
 </span><span class=lnt> 9
 </span><span class=lnt>10
 </span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>dswp</span> <span class=o>*</span><span class=nx>desiredStateOfWorldPopulator</span><span class=p>)</span> <span class=nf>findAndAddNewPods</span><span class=p>()</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>dswp</span> <span class=o>*</span><span class=nx>desiredStateOfWorldPopulator</span><span class=p>)</span> <span class=nf>findAndAddNewPods</span><span class=p>()</span> <span class=p>{</span>
     <span class=nx>mountedVolumesForPod</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>map</span><span class=p>[</span><span class=nx>volumetypes</span><span class=p>.</span><span class=nx>UniquePodName</span><span class=p>]</span><span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>cache</span><span class=p>.</span><span class=nx>MountedVolume</span><span class=p>)</span>
 
     <span class=nx>processedVolumesForFSResize</span> <span class=o>:=</span> <span class=nx>sets</span><span class=p>.</span><span class=nf>NewString</span><span class=p>()</span>
@@ -550,12 +258,7 @@ Justice's Blog
         <span class=nx>dswp</span><span class=p>.</span><span class=nf>processPodVolumes</span><span class=p>(</span><span class=nx>pod</span><span class=p>,</span> <span class=nx>mountedVolumesForPod</span><span class=p>,</span> <span class=nx>processedVolumesForFSResize</span><span class=p>)</span>
     <span class=p>}</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>就像时序图和代码中所描述的，<code>DesiredStateOfWorldPopulator</code>  会从  <code>PodManager</code>  中获取当前节点中的 Pod，随后调用  <code>processPodVolumes</code>  方法为将所有的 Pod 对象加入  <code>DesiredStateOfWorld</code>  结构中：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>就像时序图和代码中所描述的，<code>DesiredStateOfWorldPopulator</code>  会从  <code>PodManager</code>  中获取当前节点中的 Pod，随后调用  <code>processPodVolumes</code>  方法为将所有的 Pod 对象加入  <code>DesiredStateOfWorld</code>  结构中：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -571,9 +274,7 @@ Justice's Blog
 </span><span class=lnt>14
 </span><span class=lnt>15
 </span><span class=lnt>16
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>dswp</span> <span class=o>*</span><span class=nx>desiredStateOfWorldPopulator</span><span class=p>)</span> <span class=nf>processPodVolumes</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>mountedVolumesForPod</span> <span class=kd>map</span><span class=p>[</span><span class=nx>volumetypes</span><span class=p>.</span><span class=nx>UniquePodName</span><span class=p>]</span><span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>cache</span><span class=p>.</span><span class=nx>MountedVolume</span><span class=p>,</span> <span class=nx>processedVolumesForFSResize</span> <span class=nx>sets</span><span class=p>.</span><span class=nx>String</span><span class=p>)</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>dswp</span> <span class=o>*</span><span class=nx>desiredStateOfWorldPopulator</span><span class=p>)</span> <span class=nf>processPodVolumes</span><span class=p>(</span><span class=nx>pod</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Pod</span><span class=p>,</span> <span class=nx>mountedVolumesForPod</span> <span class=kd>map</span><span class=p>[</span><span class=nx>volumetypes</span><span class=p>.</span><span class=nx>UniquePodName</span><span class=p>]</span><span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>cache</span><span class=p>.</span><span class=nx>MountedVolume</span><span class=p>,</span> <span class=nx>processedVolumesForFSResize</span> <span class=nx>sets</span><span class=p>.</span><span class=nx>String</span><span class=p>)</span> <span class=p>{</span>
     <span class=nx>uniquePodName</span> <span class=o>:=</span> <span class=nx>util</span><span class=p>.</span><span class=nf>GetUniquePodName</span><span class=p>(</span><span class=nx>pod</span><span class=p>)</span>
     <span class=k>if</span> <span class=nx>dswp</span><span class=p>.</span><span class=nf>podPreviouslyProcessed</span><span class=p>(</span><span class=nx>uniquePodName</span><span class=p>)</span> <span class=p>{</span>
         <span class=k>return</span>
@@ -589,14 +290,7 @@ Justice's Blog
     <span class=nx>dswp</span><span class=p>.</span><span class=nf>markPodProcessed</span><span class=p>(</span><span class=nx>uniquePodName</span><span class=p>)</span>
     <span class=nx>dswp</span><span class=p>.</span><span class=nx>actualStateOfWorld</span><span class=p>.</span><span class=nf>MarkRemountRequired</span><span class=p>(</span><span class=nx>uniquePodName</span><span class=p>)</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>findAndAddNewPods</code>  方法做的主要就是将节点中加入的新 Pod 添加到  <code>DesiredStateOfWorld</code>  中，而另一个方法  <code>findAndRemoveDeletedPods</code>  其实也做着类似的事情，它会将已经被删除的节点从  <code>DesiredStateOfWorld</code>  中剔除，总而言之  <code>DesiredStateOfWorldPopulator</code>  就是将当前节点的期望状态同步到  <code>DesiredStateOfWorld</code>  中，等待消费者的处理。</p>
-<h4 id=reconciler>Reconciler</h4>
-<p><code>VolumeManager</code>  持有的另一个 Goroutine <code>Reconciler</code>  会负责对当前节点上的 Volume 进行管理，它在正常运行时会启动  <code>reconcile</code>  循环，在这个方法中会分三次对当前状态和期望状态不匹配的卷进行卸载、挂载等操作：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p><code>findAndAddNewPods</code>  方法做的主要就是将节点中加入的新 Pod 添加到  <code>DesiredStateOfWorld</code>  中，而另一个方法  <code>findAndRemoveDeletedPods</code>  其实也做着类似的事情，它会将已经被删除的节点从  <code>DesiredStateOfWorld</code>  中剔除，总而言之  <code>DesiredStateOfWorldPopulator</code>  就是将当前节点的期望状态同步到  <code>DesiredStateOfWorld</code>  中，等待消费者的处理。</p><h4 id=reconciler><a href=#reconciler class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:reconciler class=headings>Reconciler</a></h4><p><code>VolumeManager</code>  持有的另一个 Goroutine <code>Reconciler</code>  会负责对当前节点上的 Volume 进行管理，它在正常运行时会启动  <code>reconcile</code>  循环，在这个方法中会分三次对当前状态和期望状态不匹配的卷进行卸载、挂载等操作：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -622,9 +316,7 @@ Justice's Blog
 </span><span class=lnt>24
 </span><span class=lnt>25
 </span><span class=lnt>26
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
     participant R as Reconciler
     participant ASOW as ActualStateOfWorld
     participant DSOW as DesiredStateOfWorld
@@ -650,31 +342,7 @@ Justice's Blog
         R-&gt;&gt;OE: UnmountDevice/DetachVolume
         deactivate R
     end
-</code></pre></td></tr></table>
-</div>
-</div><p>在当前的循环中首先会保证应该被卸载但是仍然在节点中存在的卷被卸载，然后将应该挂载的卷挂载到合适的位置，最后将设备与节点分离或者卸载，所有挂载和卸载的操作都是通过  <code>OperationExecutor</code>  完成的，这个结构体负责调用相应的插件执行操作，我们会在文章的后面展开进行介绍。</p>
-<h3 id=附着分离控制器>附着分离控制器</h3>
-<p>除了  <code>VolumeManager</code>  之外，另一个负责管理 Kubernetes 卷的组件就是  <code>AttachDetachController</code>  了，引入这个组件的目的主要是：</p>
-<ol>
-<li>让卷的挂载和卸载能够与节点的可用性脱离；
-<ul>
-<li>一旦节点或者 kubelet 宕机，附着（Attach）在当前节点上的卷应该能够被分离（Detach），分离之后的卷就能够再次附着到其他节点上；</li>
-</ul>
-</li>
-<li>保证云服务商秘钥的安全；
-<ul>
-<li>如果每一个 kubelet 都需要触发卷的附着和分离逻辑，那么每一个节点都应该有操作卷的权限，但是这些权限应该只由主节点掌握，这样能够降低秘钥泄露的风险；</li>
-</ul>
-</li>
-<li>提高卷附着和分离部分代码的稳定性；</li>
-</ol>
-<blockquote>
-<p>这些内容都是在 Kubernetes 官方项目的 GitHub issue <a href=https://github.com/kubernetes/kubernetes/issues/20262>Detailed Design for Volume Attach/Detach Controller #20262</a>  中讨论的，想要了解  <code>AttachDetachController</code>  出现的原因可以阅读相关的内容。</p>
-</blockquote>
-<p>每一个  <code>AttachDetachController</code>  其实也包含  <code>Reconciler</code>  和  <code>DesiredStateOfWorldPopulator</code>  两个组件，这两个组件虽然与  <code>VolumeManager</code>  中的两个组件重名，实现的功能也非常类似，与  <code>VolumeManager</code>  具有几乎相同的数据流向，但是这两个 Goroutine 是跑在 Kubernetes 主节点中的，所以实现上可能一些差异：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>在当前的循环中首先会保证应该被卸载但是仍然在节点中存在的卷被卸载，然后将应该挂载的卷挂载到合适的位置，最后将设备与节点分离或者卸载，所有挂载和卸载的操作都是通过  <code>OperationExecutor</code>  完成的，这个结构体负责调用相应的插件执行操作，我们会在文章的后面展开进行介绍。</p><h3 id=附着分离控制器><a href=#附着分离控制器 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:附着分离控制器 class=headings>附着分离控制器</a></h3><p>除了  <code>VolumeManager</code>  之外，另一个负责管理 Kubernetes 卷的组件就是  <code>AttachDetachController</code>  了，引入这个组件的目的主要是：</p><ol><li>让卷的挂载和卸载能够与节点的可用性脱离；<ul><li>一旦节点或者 kubelet 宕机，附着（Attach）在当前节点上的卷应该能够被分离（Detach），分离之后的卷就能够再次附着到其他节点上；</li></ul></li><li>保证云服务商秘钥的安全；<ul><li>如果每一个 kubelet 都需要触发卷的附着和分离逻辑，那么每一个节点都应该有操作卷的权限，但是这些权限应该只由主节点掌握，这样能够降低秘钥泄露的风险；</li></ul></li><li>提高卷附着和分离部分代码的稳定性；</li></ol><blockquote><p>这些内容都是在 Kubernetes 官方项目的 GitHub issue <a href=https://github.com/kubernetes/kubernetes/issues/20262 target=_blank rel=noopener>Detailed Design for Volume Attach/Detach Controller #20262</a>  中讨论的，想要了解  <code>AttachDetachController</code>  出现的原因可以阅读相关的内容。</p></blockquote><p>每一个  <code>AttachDetachController</code>  其实也包含  <code>Reconciler</code>  和  <code>DesiredStateOfWorldPopulator</code>  两个组件，这两个组件虽然与  <code>VolumeManager</code>  中的两个组件重名，实现的功能也非常类似，与  <code>VolumeManager</code>  具有几乎相同的数据流向，但是这两个 Goroutine 是跑在 Kubernetes 主节点中的，所以实现上可能一些差异：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -684,9 +352,7 @@ Justice's Blog
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
     ADC(AttachDetachController)-. run .-&gt;R(Reconciler)
     ADC-. run .-&gt;DSWP(DesiredStateOfWorldPopulator)
     DSWP-. update .-&gt;DSW[DesiredStateOfWorld]
@@ -696,14 +362,7 @@ Justice's Blog
     DSWP-. getpods .-&gt;PodManager
     style ASW fill:#fffede,stroke:#ebebb7
     style DSW fill:#fffede,stroke:#ebebb7
-</code></pre></td></tr></table>
-</div>
-</div><p>首先，无论是  <code>Reconciler</code>  还是  <code>DesiredStateOfWorldPopulator</code>，它们同步的就不再只是某个节点上 Pod 的信息了，它们需要对整个集群中的 Pod 对象负责，相关数据也不再是通过 apiserver 拉取了，而是使用  <code>podInformer</code>  在 Pod 对象发生变更时调用相应的方法。</p>
-<h4 id=desiredstateofworldpopulator-1>DesiredStateOfWorldPopulator</h4>
-<p>作为  <code>AttachDetachController</code>  启动的 Goroutine，<code>DesiredStateOfWorldPopulator</code>  的主要作用是从当前集群的状态中获取 Pod 对象并修改  <code>DesiredStateOfWorld</code>  结构，与  <code>VolumeManager</code>  中的同名 Goroutine 起到相同的作用，作为整个链路的生产者，它们只是在实现上由于处理 Pod 范围的不同有一些区别：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>首先，无论是  <code>Reconciler</code>  还是  <code>DesiredStateOfWorldPopulator</code>，它们同步的就不再只是某个节点上 Pod 的信息了，它们需要对整个集群中的 Pod 对象负责，相关数据也不再是通过 apiserver 拉取了，而是使用  <code>podInformer</code>  在 Pod 对象发生变更时调用相应的方法。</p><h4 id=desiredstateofworldpopulator-1><a href=#desiredstateofworldpopulator-1 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:desiredstateofworldpopulator-1 class=headings>DesiredStateOfWorldPopulator</a></h4><p>作为  <code>AttachDetachController</code>  启动的 Goroutine，<code>DesiredStateOfWorldPopulator</code>  的主要作用是从当前集群的状态中获取 Pod 对象并修改  <code>DesiredStateOfWorld</code>  结构，与  <code>VolumeManager</code>  中的同名 Goroutine 起到相同的作用，作为整个链路的生产者，它们只是在实现上由于处理 Pod 范围的不同有一些区别：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -735,9 +394,7 @@ Justice's Blog
 </span><span class=lnt>30
 </span><span class=lnt>31
 </span><span class=lnt>32
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
     participant DSOWP as DesiredStateOfWorldPopulator
     participant ASOW as ActualStateOfWorld
     participant DSOW as DesiredStateOfWorld
@@ -769,14 +426,7 @@ Justice's Blog
         end
         deactivate DSOWP
    end
-</code></pre></td></tr></table>
-</div>
-</div><p><code>AttachDetachController</code>  中的  <code>DesiredStateOfWorldPopulator</code>  协程就主要会先处理 Pod 的删除逻辑，添加 Pod 的逻辑都是根据  <code>listPodsRetryDuration</code>  的设置周期性被触发的，所以从这里我们就能看到  <code>AttachDetachController</code>  其实主要还是处理被删除 Pod 中 Volume 的分离工作，当节点或者 kubelet 宕机时能够将节点中的卷进行分离，保证 Pod 在其他节点重启时不会出现问题。</p>
-<h4 id=reconciler-1>Reconciler</h4>
-<p>另一个用于调节当前状态与期望状态的 Goroutine 在执行它内部的循环时，也会优先处理分离卷的逻辑，后处理附着卷的工作，整个时序图与  <code>VolumeManager</code>  中的  <code>Reconciler</code>  非常相似：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p><code>AttachDetachController</code>  中的  <code>DesiredStateOfWorldPopulator</code>  协程就主要会先处理 Pod 的删除逻辑，添加 Pod 的逻辑都是根据  <code>listPodsRetryDuration</code>  的设置周期性被触发的，所以从这里我们就能看到  <code>AttachDetachController</code>  其实主要还是处理被删除 Pod 中 Volume 的分离工作，当节点或者 kubelet 宕机时能够将节点中的卷进行分离，保证 Pod 在其他节点重启时不会出现问题。</p><h4 id=reconciler-1><a href=#reconciler-1 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:reconciler-1 class=headings>Reconciler</a></h4><p>另一个用于调节当前状态与期望状态的 Goroutine 在执行它内部的循环时，也会优先处理分离卷的逻辑，后处理附着卷的工作，整个时序图与  <code>VolumeManager</code>  中的  <code>Reconciler</code>  非常相似：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -804,9 +454,7 @@ Justice's Blog
 </span><span class=lnt>26
 </span><span class=lnt>27
 </span><span class=lnt>28
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
     participant R as Reconciler
     participant ASOW as ActualStateOfWorld
     participant DSOW as DesiredStateOfWorld
@@ -834,14 +482,7 @@ Justice's Blog
         end
         deactivate R
     end
-</code></pre></td></tr></table>
-</div>
-</div><p>这里处理的工作其实相对更少一些，<code>Reconciler</code>  会将期望状态中的卷与实际状态进行比较，然后分离需要分离的卷、附着需要附着的卷，逻辑非常的清晰和简单。</p>
-<h3 id=持久卷控制器>持久卷控制器</h3>
-<p>作为集群中与 PV 和 PVC 打交道的控制器，持久卷控制器同时运行着三个 Goroutine 用于处理相应的逻辑，其中  <code>Resync</code>  协程负责从 Kubernetes 集群中同步 PV 和 PVC 的信息，而另外两个工作协程主要负消费队列中的任务：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>这里处理的工作其实相对更少一些，<code>Reconciler</code>  会将期望状态中的卷与实际状态进行比较，然后分离需要分离的卷、附着需要附着的卷，逻辑非常的清晰和简单。</p><h3 id=持久卷控制器><a href=#持久卷控制器 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:持久卷控制器 class=headings>持久卷控制器</a></h3><p>作为集群中与 PV 和 PVC 打交道的控制器，持久卷控制器同时运行着三个 Goroutine 用于处理相应的逻辑，其中  <code>Resync</code>  协程负责从 Kubernetes 集群中同步 PV 和 PVC 的信息，而另外两个工作协程主要负消费队列中的任务：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -851,9 +492,7 @@ Justice's Blog
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
     PVC(PVController)-.-&gt;R(Resync)
     PVC-.-&gt;VW(VolumeWorker)
     R-. enqueue .-&gt;VQ(VolumeQueue)
@@ -863,14 +502,7 @@ Justice's Blog
     PVC-.-&gt;CW(ClaimWorker)
     style VQ fill:#fffede,stroke:#ebebb7
     style CQ fill:#fffede,stroke:#ebebb7
-</code></pre></td></tr></table>
-</div>
-</div><p>这两个工作协程主要负责对需要绑定或者解绑的 PV 和 PVC 进行处理，例如，当用户创建了新的 PVC 对象时，从集群中查找该 PVC 选择的 PV 并绑定到当前的 PVC 上。</p>
-<h4 id=volumeworker>VolumeWorker</h4>
-<p><code>VolumeWorker</code>  协程中执行的最重要的方法其实就是  <code>syncVolume</code>，在这个方法中会根据当前 PV 对象的规格对 PV 和 PVC 进行绑定或者解绑：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>这两个工作协程主要负责对需要绑定或者解绑的 PV 和 PVC 进行处理，例如，当用户创建了新的 PVC 对象时，从集群中查找该 PVC 选择的 PV 并绑定到当前的 PVC 上。</p><h4 id=volumeworker><a href=#volumeworker class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:volumeworker class=headings>VolumeWorker</a></h4><p><code>VolumeWorker</code>  协程中执行的最重要的方法其实就是  <code>syncVolume</code>，在这个方法中会根据当前 PV 对象的规格对 PV 和 PVC 进行绑定或者解绑：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -901,9 +533,7 @@ Justice's Blog
 </span><span class=lnt>29
 </span><span class=lnt>30
 </span><span class=lnt>31
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncVolume</span><span class=p>(</span><span class=nx>volume</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolume</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncVolume</span><span class=p>(</span><span class=nx>volume</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolume</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=k>if</span> <span class=nx>volume</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>ClaimRef</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
         <span class=k>return</span> <span class=kc>nil</span>
     <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
@@ -934,35 +564,21 @@ Justice's Blog
     <span class=p>}</span>
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>如果当前 PV 没有绑定的 PVC 对象，那么这里的  <code>reclaimVolume</code>  可能会将当前的 PV 对象根据回收策略将其放回资源池等待重用、回收或者保留；而  <code>unbindVolume</code>  会删除 PV 与 PVC 之间的关系并更新 apiserver 中保存的 Kubernetes 对象数据。</p>
-<h4 id=claimworker>ClaimWorker</h4>
-<p><code>ClaimWorker</code>  就是控制器用来决定如何处理一个 PVC 对象的方法了，它会在一个 PVC 对象被创建、更新或者同步时被触发，<code>syncClaim</code>  会根据当前对象中的注解决定调用  <code>syncUnboundClaim</code>  或者  <code>syncBoundClaim</code>  方法来处理相应的逻辑：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>如果当前 PV 没有绑定的 PVC 对象，那么这里的  <code>reclaimVolume</code>  可能会将当前的 PV 对象根据回收策略将其放回资源池等待重用、回收或者保留；而  <code>unbindVolume</code>  会删除 PV 与 PVC 之间的关系并更新 apiserver 中保存的 Kubernetes 对象数据。</p><h4 id=claimworker><a href=#claimworker class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:claimworker class=headings>ClaimWorker</a></h4><p><code>ClaimWorker</code>  就是控制器用来决定如何处理一个 PVC 对象的方法了，它会在一个 PVC 对象被创建、更新或者同步时被触发，<code>syncClaim</code>  会根据当前对象中的注解决定调用  <code>syncUnboundClaim</code>  或者  <code>syncBoundClaim</code>  方法来处理相应的逻辑：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
 </span><span class=lnt>7
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncClaim</span><span class=p>(</span><span class=nx>claim</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolumeClaim</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncClaim</span><span class=p>(</span><span class=nx>claim</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolumeClaim</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=k>if</span> <span class=p>!</span><span class=nx>metav1</span><span class=p>.</span><span class=nf>HasAnnotation</span><span class=p>(</span><span class=nx>claim</span><span class=p>.</span><span class=nx>ObjectMeta</span><span class=p>,</span> <span class=nx>annBindCompleted</span><span class=p>)</span> <span class=p>{</span>
         <span class=k>return</span> <span class=nx>ctrl</span><span class=p>.</span><span class=nf>syncUnboundClaim</span><span class=p>(</span><span class=nx>claim</span><span class=p>)</span>
     <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
         <span class=k>return</span> <span class=nx>ctrl</span><span class=p>.</span><span class=nf>syncBoundClaim</span><span class=p>(</span><span class=nx>claim</span><span class=p>)</span>
     <span class=p>}</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>syncUnboundClaim</code>  会处理绑定没有结束的 PVC 对象，如果当前 PVC 对象没有对应合适的 PV 存在，那么就会调用  <code>provisionClaim</code>  尝试从集群中获取新的 PV 供应，如果能够找到 PV 对象，就会通过  <code>bind</code>  方法将两者绑定：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p><code>syncUnboundClaim</code>  会处理绑定没有结束的 PVC 对象，如果当前 PVC 对象没有对应合适的 PV 存在，那么就会调用  <code>provisionClaim</code>  尝试从集群中获取新的 PV 供应，如果能够找到 PV 对象，就会通过  <code>bind</code>  方法将两者绑定：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -989,9 +605,7 @@ Justice's Blog
 </span><span class=lnt>25
 </span><span class=lnt>26
 </span><span class=lnt>27
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncUnboundClaim</span><span class=p>(</span><span class=nx>claim</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolumeClaim</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncUnboundClaim</span><span class=p>(</span><span class=nx>claim</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolumeClaim</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=k>if</span> <span class=nx>claim</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>VolumeName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
         <span class=nx>delayBinding</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>ctrl</span><span class=p>.</span><span class=nf>shouldDelayBinding</span><span class=p>(</span><span class=nx>claim</span><span class=p>)</span>
 
@@ -1018,13 +632,7 @@ Justice's Blog
     <span class=p>}</span>
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>绑定的过程其实就是将 PV 和 PVC 之间建立起新的关系，更新 Spec 中的数据让两者能够通过引用 Ref 找到另一个对象并将更新后的 Kubernetes 对象存储到 apiserver 中。</p>
-<p>另一个用于绑定 PV 和 PVC 对象的方法就是  <code>syncBoundClaim</code>  了，相比于  <code>syncUnboundClaim</code>  方法，该方法的实现更为简单，直接从缓存中尝试获取对应的 PV 对象：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>绑定的过程其实就是将 PV 和 PVC 之间建立起新的关系，更新 Spec 中的数据让两者能够通过引用 Ref 找到另一个对象并将更新后的 Kubernetes 对象存储到 apiserver 中。</p><p>另一个用于绑定 PV 和 PVC 对象的方法就是  <code>syncBoundClaim</code>  了，相比于  <code>syncUnboundClaim</code>  方法，该方法的实现更为简单，直接从缓存中尝试获取对应的 PV 对象：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1039,9 +647,7 @@ Justice's Blog
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncBoundClaim</span><span class=p>(</span><span class=nx>claim</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolumeClaim</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ctrl</span> <span class=o>*</span><span class=nx>PersistentVolumeController</span><span class=p>)</span> <span class=nf>syncBoundClaim</span><span class=p>(</span><span class=nx>claim</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>PersistentVolumeClaim</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=k>if</span> <span class=nx>claim</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>VolumeName</span> <span class=o>==</span> <span class=s>&#34;&#34;</span> <span class=p>{</span>
         <span class=k>return</span> <span class=kc>nil</span>
     <span class=p>}</span>
@@ -1056,37 +662,21 @@ Justice's Blog
     <span class=p>}</span>
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>如果找到了 PV 对象并且该对象没有绑定的 PVC 或者当前 PV 和 PVC 已经存在了引用就会调用  <code>bind</code>  方法对两者进行绑定。</p>
-<h4 id=小结>小结</h4>
-<p>无论是  <code>VolumeWorker</code>  还是  <code>ClaimWorker</code>  最终都可能会通过 apiserver 更新集群中 etcd 的数据，当然它们也会调用一些底层的插件获取新的存储供应、删除或者重用一些持久卷，我们会在下面介绍插件的工作原理。</p>
-<h2 id=插件>插件</h2>
-<p>Kubernetes 中的所有对卷的操作最终基本都是通过  <code>OperationExecutor</code>  来完成的，这个组件包含了用于附着、挂载、卸载和分离几个常见的操作以及对设备进行操作的一些方法：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>如果找到了 PV 对象并且该对象没有绑定的 PVC 或者当前 PV 和 PVC 已经存在了引用就会调用  <code>bind</code>  方法对两者进行绑定。</p><h4 id=小结><a href=#小结 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:小结 class=headings>小结</a></h4><p>无论是  <code>VolumeWorker</code>  还是  <code>ClaimWorker</code>  最终都可能会通过 apiserver 更新集群中 etcd 的数据，当然它们也会调用一些底层的插件获取新的存储供应、删除或者重用一些持久卷，我们会在下面介绍插件的工作原理。</p><h2 id=插件><a href=#插件 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:插件 class=headings>插件</a></h2><p>Kubernetes 中的所有对卷的操作最终基本都是通过  <code>OperationExecutor</code>  来完成的，这个组件包含了用于附着、挂载、卸载和分离几个常见的操作以及对设备进行操作的一些方法：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
 </span><span class=lnt>7
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>OperationExecutor</span> <span class=kd>interface</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>OperationExecutor</span> <span class=kd>interface</span> <span class=p>{</span>
     <span class=nf>AttachVolume</span><span class=p>(</span><span class=nx>volumeToAttach</span> <span class=nx>VolumeToAttach</span><span class=p>,</span> <span class=nx>actualStateOfWorld</span> <span class=nx>ActualStateOfWorldAttacherUpdater</span><span class=p>)</span> <span class=kt>error</span>
     <span class=nf>DetachVolume</span><span class=p>(</span><span class=nx>volumeToDetach</span> <span class=nx>AttachedVolume</span><span class=p>,</span> <span class=nx>verifySafeToDetach</span> <span class=kt>bool</span><span class=p>,</span> <span class=nx>actualStateOfWorld</span> <span class=nx>ActualStateOfWorldAttacherUpdater</span><span class=p>)</span> <span class=kt>error</span>
     <span class=nf>MountVolume</span><span class=p>(</span><span class=nx>waitForAttachTimeout</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Duration</span><span class=p>,</span> <span class=nx>volumeToMount</span> <span class=nx>VolumeToMount</span><span class=p>,</span> <span class=nx>actualStateOfWorld</span> <span class=nx>ActualStateOfWorldMounterUpdater</span><span class=p>,</span> <span class=nx>isRemount</span> <span class=kt>bool</span><span class=p>)</span> <span class=kt>error</span>
     <span class=nf>UnmountVolume</span><span class=p>(</span><span class=nx>volumeToUnmount</span> <span class=nx>MountedVolume</span><span class=p>,</span> <span class=nx>actualStateOfWorld</span> <span class=nx>ActualStateOfWorldMounterUpdater</span><span class=p>,</span> <span class=nx>podsDir</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span>
     <span class=c1>// ...
 </span><span class=c1></span><span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>实现  <code>OperationExecutor</code>  接口的私有结构体会通过  <code>OperatorGenerator</code>  来生成一个用于挂载和卸载卷的方法，并将这个方法包装在一个  <code>GeneratedOperations</code>  结构中，在这之后操作执行器会启动一个新的 Goroutine 用于执行生成好的方法：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>实现  <code>OperationExecutor</code>  接口的私有结构体会通过  <code>OperatorGenerator</code>  来生成一个用于挂载和卸载卷的方法，并将这个方法包装在一个  <code>GeneratedOperations</code>  结构中，在这之后操作执行器会启动一个新的 Goroutine 用于执行生成好的方法：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -1094,9 +684,7 @@ Justice's Blog
 </span><span class=lnt>6
 </span><span class=lnt>7
 </span><span class=lnt>8
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>graph LR
     OE(OperationExexutor)-. 1. 获取相关方法 .-&gt;OG(OperationGenerator)
     OG-. 2. 根据 Spec 获取插件 .-&gt;VM(VolumePluginManager)
     VM-. 3. 返回 VolumePlugin .-&gt;OG
@@ -1104,13 +692,7 @@ Justice's Blog
     OG-. 5. 生成一个 Operation 结构 .-&gt;OE
     OE-. 6. 运行 Operation .-&gt;NPO(NestedPendingOperations)
     NPO-. 7. 启动 Goroutine 运行生成的方法 .-&gt;Goroutine
-</code></pre></td></tr></table>
-</div>
-</div><p><code>VolumePluginManager</code>  和  <code>VolumePlugin</code>  这两个组件在整个流程中帮我们屏蔽了底层不同类型卷的实现差异，我们能直接在上层调用完全相同的接口，剩下的逻辑都由底层的插件来负责。</p>
-<p>Kubernetes 提供了插件的概念，通过  <code>Volume</code>  和  <code>Mounter</code>  两个接口支持卷类型的扩展，作为存储提供商或者不同类型的文件系统，我们都可以通过实现以上的两个接口成为 Kubernetes 存储系统中一个新的存储类型：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p><code>VolumePluginManager</code>  和  <code>VolumePlugin</code>  这两个组件在整个流程中帮我们屏蔽了底层不同类型卷的实现差异，我们能直接在上层调用完全相同的接口，剩下的逻辑都由底层的插件来负责。</p><p>Kubernetes 提供了插件的概念，通过  <code>Volume</code>  和  <code>Mounter</code>  两个接口支持卷类型的扩展，作为存储提供商或者不同类型的文件系统，我们都可以通过实现以上的两个接口成为 Kubernetes 存储系统中一个新的存储类型：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1125,9 +707,7 @@ Justice's Blog
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>VolumePlugin</span> <span class=kd>interface</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>type</span> <span class=nx>VolumePlugin</span> <span class=kd>interface</span> <span class=p>{</span>
     <span class=nf>Init</span><span class=p>(</span><span class=nx>host</span> <span class=nx>VolumeHost</span><span class=p>)</span> <span class=kt>error</span>
     <span class=nf>GetPluginName</span><span class=p>()</span> <span class=kt>string</span>
     <span class=nf>GetVolumeName</span><span class=p>(</span><span class=nx>spec</span> <span class=o>*</span><span class=nx>Spec</span><span class=p>)</span> <span class=p>(</span><span class=kt>string</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span>
@@ -1142,14 +722,7 @@ Justice's Blog
     <span class=nf>SetUpAt</span><span class=p>(</span><span class=nx>dir</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>fsGroup</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=kt>error</span>
     <span class=nf>GetAttributes</span><span class=p>()</span> <span class=nx>Attributes</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>在这一节中我们将介绍几种不同卷插件的实现，包括最常见的 EmptyDir、ConfigMap、Secret 和 Google 云上的 GCEPersistentDisk，这一节会简单介绍不同卷插件的实现方式，想要了解详细实现的读者可以阅读相关的源代码。</p>
-<h3 id=emptydir>EmptyDir</h3>
-<p>EmptyDir 是 Kubernetes 中最简单的卷了，当我们为一个 Pod 设置一个 EmptyDir 类型的卷时，其实就是在当前 Pod 对应的目录创建了一个空的文件夹，这个文件夹会随着 Pod 的删除而删除。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>在这一节中我们将介绍几种不同卷插件的实现，包括最常见的 EmptyDir、ConfigMap、Secret 和 Google 云上的 GCEPersistentDisk，这一节会简单介绍不同卷插件的实现方式，想要了解详细实现的读者可以阅读相关的源代码。</p><h3 id=emptydir><a href=#emptydir class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:emptydir class=headings>EmptyDir</a></h3><p>EmptyDir 是 Kubernetes 中最简单的卷了，当我们为一个 Pod 设置一个 EmptyDir 类型的卷时，其实就是在当前 Pod 对应的目录创建了一个空的文件夹，这个文件夹会随着 Pod 的删除而删除。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1166,9 +739,7 @@ Justice's Blog
 </span><span class=lnt>15
 </span><span class=lnt>16
 </span><span class=lnt>17
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ed</span> <span class=o>*</span><span class=nx>emptyDir</span><span class=p>)</span> <span class=nf>SetUpAt</span><span class=p>(</span><span class=nx>dir</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>fsGroup</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>ed</span> <span class=o>*</span><span class=nx>emptyDir</span><span class=p>)</span> <span class=nf>SetUpAt</span><span class=p>(</span><span class=nx>dir</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>fsGroup</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=nx>ed</span><span class=p>.</span><span class=nf>setupDir</span><span class=p>(</span><span class=nx>dir</span><span class=p>)</span>
     <span class=nx>volume</span><span class=p>.</span><span class=nf>SetVolumeOwnership</span><span class=p>(</span><span class=nx>ed</span><span class=p>,</span> <span class=nx>fsGroup</span><span class=p>)</span>
     <span class=nx>volumeutil</span><span class=p>.</span><span class=nf>SetReady</span><span class=p>(</span><span class=nx>ed</span><span class=p>.</span><span class=nf>getMetaDir</span><span class=p>())</span>
@@ -1185,12 +756,7 @@ Justice's Blog
 </span><span class=c1></span>
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>SetUpAt</code>  方法其实就实现了对这种类型卷的创建工作，每当 Pod 被分配到了某个节点上，对应的文件目录就会通过  <code>MkdirAl</code>  方法创建，如果使用者配置了 medium 字段，也会选择使用相应的文件系统挂载到当前目录上，例如：tmpfs、nodev 等。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p><code>SetUpAt</code>  方法其实就实现了对这种类型卷的创建工作，每当 Pod 被分配到了某个节点上，对应的文件目录就会通过  <code>MkdirAl</code>  方法创建，如果使用者配置了 medium 字段，也会选择使用相应的文件系统挂载到当前目录上，例如：tmpfs、nodev 等。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1204,9 +770,7 @@ Justice's Blog
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
 </span><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
 </span><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
 </span><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test-pd</span><span class=w>
@@ -1220,31 +784,17 @@ Justice's Blog
 </span><span class=w>  </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
 </span><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cache-volume</span><span class=w>
 </span><span class=w>      </span><span class=nt>emptyDir</span><span class=p>:</span><span class=w> </span>{}<span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>我们经常会使用 EmptyDir 类型的卷在多个容器之间共享文件、充当缓存或者保留一些临时的日志，总而言之，这是一种经常被使用的卷类型。</p>
-<h3 id=configmap-和-secret>ConfigMap 和 Secret</h3>
-<p>另一种比较常见的卷就是 ConfigMap 了，首先，ConfigMap 本身就是 Kubernetes 中常见的对象了，其中的  <code>data</code>  就是一个存储了从文件名到文件内容的字段，这里的 ConfigMap 对象被挂载到文件目录时就会创建一个名为  <code>redis-config</code>  的文件，然后将文件内容写入该文件：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>我们经常会使用 EmptyDir 类型的卷在多个容器之间共享文件、充当缓存或者保留一些临时的日志，总而言之，这是一种经常被使用的卷类型。</p><h3 id=configmap-和-secret><a href=#configmap-和-secret class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:configmap-和-secret class=headings>ConfigMap 和 Secret</a></h3><p>另一种比较常见的卷就是 ConfigMap 了，首先，ConfigMap 本身就是 Kubernetes 中常见的对象了，其中的  <code>data</code>  就是一个存储了从文件名到文件内容的字段，这里的 ConfigMap 对象被挂载到文件目录时就会创建一个名为  <code>redis-config</code>  的文件，然后将文件内容写入该文件：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
 </span><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
 </span><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
 </span><span class=w>  </span><span class=nt>redis-config</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
 </span><span class=sd>    </span><span class=w>    </span><span class=l>maxmemory 2mb    maxmemory-policy allkeys-lru</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>在对 ConfigMap 类型的卷进行挂载时，总共需要完成三部分工作，首先从 apiserver 中获取当前 ConfigMap 对象，然后根据当前的 ConfigMap 生成一个从文件名到文件内容的键值对，最后构造一个 Writer 并执行  <code>Write</code>  方法写入内容：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>在对 ConfigMap 类型的卷进行挂载时，总共需要完成三部分工作，首先从 apiserver 中获取当前 ConfigMap 对象，然后根据当前的 ConfigMap 生成一个从文件名到文件内容的键值对，最后构造一个 Writer 并执行  <code>Write</code>  方法写入内容：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1256,9 +806,7 @@ Justice's Blog
 </span><span class=lnt>10
 </span><span class=lnt>11
 </span><span class=lnt>12
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>b</span> <span class=o>*</span><span class=nx>configMapVolumeMounter</span><span class=p>)</span> <span class=nf>SetUpAt</span><span class=p>(</span><span class=nx>dir</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>fsGroup</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>b</span> <span class=o>*</span><span class=nx>configMapVolumeMounter</span><span class=p>)</span> <span class=nf>SetUpAt</span><span class=p>(</span><span class=nx>dir</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>fsGroup</span> <span class=o>*</span><span class=kt>int64</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=nx>configMap</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>b</span><span class=p>.</span><span class=nf>getConfigMap</span><span class=p>(</span><span class=nx>b</span><span class=p>.</span><span class=nx>pod</span><span class=p>.</span><span class=nx>Namespace</span><span class=p>,</span> <span class=nx>b</span><span class=p>.</span><span class=nx>source</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
 
     <span class=nx>totalBytes</span> <span class=o>:=</span> <span class=nf>totalBytes</span><span class=p>(</span><span class=nx>configMap</span><span class=p>)</span>
@@ -1270,12 +818,7 @@ Justice's Blog
 
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>在涉及挂载的函数几个中，作者想要着重介绍的也就是在底层直接与文件系统打交道的  <code>writePayloadToDir</code>  方法：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>在涉及挂载的函数几个中，作者想要着重介绍的也就是在底层直接与文件系统打交道的  <code>writePayloadToDir</code>  方法：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1289,9 +832,7 @@ Justice's Blog
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>w</span> <span class=o>*</span><span class=nx>AtomicWriter</span><span class=p>)</span> <span class=nf>writePayloadToDir</span><span class=p>(</span><span class=nx>payload</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>FileProjection</span><span class=p>,</span> <span class=nx>dir</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=kd>func</span> <span class=p>(</span><span class=nx>w</span> <span class=o>*</span><span class=nx>AtomicWriter</span><span class=p>)</span> <span class=nf>writePayloadToDir</span><span class=p>(</span><span class=nx>payload</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>FileProjection</span><span class=p>,</span> <span class=nx>dir</span> <span class=kt>string</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
     <span class=k>for</span> <span class=nx>userVisiblePath</span><span class=p>,</span> <span class=nx>fileProjection</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>payload</span> <span class=p>{</span>
         <span class=nx>content</span> <span class=o>:=</span> <span class=nx>fileProjection</span><span class=p>.</span><span class=nx>Data</span>
         <span class=nx>mode</span> <span class=o>:=</span> <span class=nx>os</span><span class=p>.</span><span class=nf>FileMode</span><span class=p>(</span><span class=nx>fileProjection</span><span class=p>.</span><span class=nx>Mode</span><span class=p>)</span>
@@ -1305,15 +846,7 @@ Justice's Blog
 
     <span class=k>return</span> <span class=kc>nil</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>这个方法使用了  <code>os</code>  包提供的接口完成了拼接文件名、创建相应文件目录、写入文件并且修改文件模式的工作，将 ConfigMap <code>data</code>  中的数据映射到了一个文件夹中，达到了让 Pod 中的容器可以直接通过文件系统获取内容的目的。</p>
-<p>对于另一个非常常见的卷类型 Secret，Kubernetes 其实也做了几乎完全相同的工作，也是先获取 Secret 对象，然后构建最终写入到文件的键值对，最后初始化一个 Writer 并调用它的  <code>Write</code>  方法，从这里我们也能看出在卷插件这一层对于 ConfigMap 和 Secret 的处理几乎完全相同，并没有出现需要对 Secret 对象中的内容进行解密的工作。</p>
-<h3 id=gcepersistentdisk>GCEPersistentDisk</h3>
-<p>最后一个要介绍的卷与上面的几种都非常的不同，它在底层使用的是云服务商提供的网络磁盘，想要在一个节点上使用云磁盘其实总共需要两个步骤，首先是要将云磁盘附着到当前的节点上，这部分的工作其实就是由  <code>gcePersistentDiskAttacher</code>  完成的，每当调用  <code>AttachDisk</code>  方法时，最终都会执行云服务商提供的接口，将磁盘附着到相应的节点实例上：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>这个方法使用了  <code>os</code>  包提供的接口完成了拼接文件名、创建相应文件目录、写入文件并且修改文件模式的工作，将 ConfigMap <code>data</code>  中的数据映射到了一个文件夹中，达到了让 Pod 中的容器可以直接通过文件系统获取内容的目的。</p><p>对于另一个非常常见的卷类型 Secret，Kubernetes 其实也做了几乎完全相同的工作，也是先获取 Secret 对象，然后构建最终写入到文件的键值对，最后初始化一个 Writer 并调用它的  <code>Write</code>  方法，从这里我们也能看出在卷插件这一层对于 ConfigMap 和 Secret 的处理几乎完全相同，并没有出现需要对 Secret 对象中的内容进行解密的工作。</p><h3 id=gcepersistentdisk><a href=#gcepersistentdisk class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:gcepersistentdisk class=headings>GCEPersistentDisk</a></h3><p>最后一个要介绍的卷与上面的几种都非常的不同，它在底层使用的是云服务商提供的网络磁盘，想要在一个节点上使用云磁盘其实总共需要两个步骤，首先是要将云磁盘附着到当前的节点上，这部分的工作其实就是由  <code>gcePersistentDiskAttacher</code>  完成的，每当调用  <code>AttachDisk</code>  方法时，最终都会执行云服务商提供的接口，将磁盘附着到相应的节点实例上：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1329,9 +862,7 @@ Justice's Blog
 </span><span class=lnt>14
 </span><span class=lnt>15
 </span><span class=lnt>16
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback>sequenceDiagram
     participant GPDA as gcePersistentDiskAttacher
     participant C as Cloud
     participant GCESM as gceServiceManager
@@ -1347,145 +878,8 @@ Justice's Blog
         C--&gt;&gt;-GPDA: return
     else
     end
-</code></pre></td></tr></table>
-</div>
-</div><p>在方法的的最后会将该请求包装成一个 HTTP 的方法调用向  <code>https://www.googleapis.com/compute/v1/projects/{project}/zones/{zone}/instances/{resourceId}/attachDisk</code>  链接发出一个 POST 请求，这个请求会将某个 GCE 上的磁盘附着到目标实例上，详细的内容可以阅读  <a href=https://cloud.google.com/compute/docs/reference/rest/v1/instances/attachDisk>相关文档</a>。</p>
-<p>一旦当前的磁盘被附着到了当前节点上，我们就能跟使用其他的插件一样，把磁盘挂载到某个目录上，完成从附着到挂载的全部操作。</p>
-<h2 id=总结>总结</h2>
-<p>Volume 和存储系统是 Kubernetes 非常重要的一部分，它能够帮助我们在多个容器之间共享文件，同时也能够为集群提供持久存储的功能，假如 Kubernetes 没有用于持久存储的对象，我们也很难在集群中运行有状态的服务，例如：消息队列、分布式存储等。</p>
-<p>对于刚刚使用 Kubernetes 的开发者来说，Volume、PV 和 PVC 确实是比较难以理解的概念，但是这却是深入使用 Kubernetes 必须要了解和掌握的，希望这篇文章能够帮助各位读者更好地理解存储系统底层的实现原理。</p>
-<h2 id=相关文章>相关文章</h2>
-<p>{% include related/distributed-system.md %}</p>
-<h2 id=referenece>Referenece</h2>
-<ul>
-<li><a href=https://kubernetes.io/docs/concepts/storage/volumes/>Volumes · Kubernetes</a></li>
-<li><a href=https://github.com/kubernetes/kubernetes/issues/20262>Detailed Design for Volume Attach/Detach Controller #20262</a></li>
-<li><a href=https://github.com/kubernetes/kubernetes/issues/21931>Detailed Design for Volume Mount/Unmount Redesign #21931</a></li>
-<li><a href=https://github.com/kubernetes/kubernetes/issues/18333>Kubernetes Volume System Redesign Proposal #18333</a></li>
-<li><a href=https://github.com/container-storage-interface/spec/blob/master/spec.md>Container Storage Interface (CSI)</a></li>
-</ul>
-</div>
-<div class=post-copyright>
-<p class=copyright-item>
-<span class=item-title>文章作者</span>
-<span class=item-content>Justice</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>上次更新</span>
-<span class=item-content>
-2022-04-30 09:23:49
-</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>许可协议</span>
-<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
-</p>
-</div>
-<div class=post-reward>
-<input type=checkbox name=reward id=reward hidden>
-<label class=reward-button for=reward>赞赏支持</label>
-<div class=qr-code>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/wx_reward_qrcode.png>
-<span>微信打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/alipay_reward_qrcode.png>
-<span>支付宝打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/bitcoin_reward_qrcode.png>
-<span>比特币打赏</span>
-</label>
-</div>
-</div>
-<footer class=post-footer>
-<div class=post-tags>
-<a href=https://justice.bj.cn/tags/cloudnative/>cloudnative</a>
-<a href=https://justice.bj.cn/tags/k8s/>k8s</a>
-</div>
-<nav class=post-nav>
-<a class=prev href=/post/12.data_struct/31.roaringbitmap/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">RoaringBitmap</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/32.cloudnative/k8s/k8s%E4%B9%8Bcsi%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/>
-<span class="next-text nav-default">k8s之CSI实现原理</span>
-<span class="prev-text nav-mobile">下一篇</span>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
-</i>
-</a>
-</nav>
-</footer>
-</article>
-<div class="post bg-white">
-<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
-</div>
-</div>
-</div>
-<div class=modal-dialog>
-<div class=modal-content>
-<div id=closeSearch title=Close class=close>X</div>
-<div id=fastSearch>
-<input id=searchInput tabindex=0>
-<ul id=searchResults>
-</ul>
-</div>
-</div>
-</div>
-</main>
-<footer id=footer class=footer>
-<div class=icon-links>
-<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
-</a>
-<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
-</a>
-</div>
-<div class=copyright>
-<span class=power-by>
-Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
-</span>
-<span class=division>|</span>
-<span class=theme-info>
-Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
-</span>
-<span class=copyright-year>
-&copy;
-2000 -
-2024
-<span class=heart>
-<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
-</i>
-</span><span class=author>
-Justice
-</span></span>
-<span id=busuanzi_container>
-访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
-</span>
-</div>
-</footer>
-<div class=back-to-top id=back-to-top>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
-</i>
-</div>
-</div>
-<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
-<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
-<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
-<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
-<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
-<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
-<script type=text/javascript src=/js/load-photoswipe.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
-<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
-<script>$("#search-btn").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #search-btn").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
-<script src=/js/fuse.min.js></script>
-<script src=/js/fastsearch.js></script>
-</body>
-</html>
+</code></pre></td></tr></table></div></div></div><p>在方法的的最后会将该请求包装成一个 HTTP 的方法调用向  <code>https://www.googleapis.com/compute/v1/projects/{project}/zones/{zone}/instances/{resourceId}/attachDisk</code>  链接发出一个 POST 请求，这个请求会将某个 GCE 上的磁盘附着到目标实例上，详细的内容可以阅读  <a href=https://cloud.google.com/compute/docs/reference/rest/v1/instances/attachDisk target=_blank rel=noopener>相关文档</a>。</p><p>一旦当前的磁盘被附着到了当前节点上，我们就能跟使用其他的插件一样，把磁盘挂载到某个目录上，完成从附着到挂载的全部操作。</p><h2 id=总结><a href=#总结 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:总结 class=headings>总结</a></h2><p>Volume 和存储系统是 Kubernetes 非常重要的一部分，它能够帮助我们在多个容器之间共享文件，同时也能够为集群提供持久存储的功能，假如 Kubernetes 没有用于持久存储的对象，我们也很难在集群中运行有状态的服务，例如：消息队列、分布式存储等。</p><p>对于刚刚使用 Kubernetes 的开发者来说，Volume、PV 和 PVC 确实是比较难以理解的概念，但是这却是深入使用 Kubernetes 必须要了解和掌握的，希望这篇文章能够帮助各位读者更好地理解存储系统底层的实现原理。</p><h2 id=相关文章><a href=#相关文章 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:相关文章 class=headings>相关文章</a></h2><p>{% include related/distributed-system.md %}</p><h2 id=referenece><a href=#referenece class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:referenece class=headings>Referenece</a></h2><ul><li><a href=https://kubernetes.io/docs/concepts/storage/volumes/ target=_blank rel=noopener>Volumes · Kubernetes</a></li><li><a href=https://github.com/kubernetes/kubernetes/issues/20262 target=_blank rel=noopener>Detailed Design for Volume Attach/Detach Controller #20262</a></li><li><a href=https://github.com/kubernetes/kubernetes/issues/21931 target=_blank rel=noopener>Detailed Design for Volume Mount/Unmount Redesign #21931</a></li><li><a href=https://github.com/kubernetes/kubernetes/issues/18333 target=_blank rel=noopener>Kubernetes Volume System Redesign Proposal #18333</a></li><li><a href=https://github.com/container-storage-interface/spec/blob/master/spec.md target=_blank rel=noopener>Container Storage Interface (CSI)</a></li></ul></div><ul class=post-copyright><li class="copyright-item author"><span class=copyright-item-text>作者</span>：<a href=https://io-oi.me/ class="p-author h-card" target=_blank rel=noopener>Justice</a></li><li class="copyright-item link"><span class=copyright-item-text>链接</span>：<a href=/post/32.cloudnative/k8s/k8s-volume/ target=_blank rel=noopener>https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/</a></li><li class="copyright-item license"><span class=copyright-item-text>许可</span>：<a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></li></ul></article><div class=updated-badge-container><span title="Updated @ 2024-04-28 06:05:30 UTC" style=cursor:help><svg xmlns="http://www.w3.org/2000/svg" width="130" height="20" class="updated-badge"><linearGradient id="b" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="a"><rect width="130" height="20" rx="3" fill="#fff"/></clipPath><g clip-path="url(#a)"><path class="updated-badge-left" d="M0 0h55v20H0z"/><path class="updated-badge-right" d="M55 0h75v20H55z"/><path fill="url(#b)" d="M0 0h130v20H0z"/></g><g fill="#fff" text-anchor="middle" font-size="110"><text x="285" y="150" fill="#010101" fill-opacity=".3" textLength="450" transform="scale(.1)">updated</text><text x="285" y="140" textLength="450" transform="scale(.1)">updated</text><text x="915" y="150" fill="#010101" fill-opacity=".3" textLength="650" transform="scale(.1)">2024-04-28</text><text x="915" y="140" textLength="650" transform="scale(.1)">2024-04-28</text></g></svg></span></div><div class=post-share><div class=share-items><div class="share-item facebook"><a href="https://www.facebook.com/sharer/sharer.php?u=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&hashtag=%23cloudnative" title=分享到「Facebook」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon facebook-icon"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14.0 55.52 4.84 55.52 4.84v61h-31.28c-30.8.0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z"/></svg></a></div><div class="share-item mastodon"><a href="/fedishare.html#title=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&description=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/" title=分享到「Mastodon」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon mastodon-icon"><path d="M433 179.11c0-97.2-63.71-125.7-63.71-125.7-62.52-28.7-228.56-28.4-290.48.0.0.0-63.72 28.5-63.72 125.7.0 115.7-6.6 259.4 105.63 289.1 40.51 10.7 75.32 13 103.33 11.4 50.81-2.8 79.32-18.1 79.32-18.1l-1.7-36.9s-36.31 11.4-77.12 10.1c-40.41-1.4-83-4.4-89.63-54a102.54 102.54.0 01-.9-13.9c85.63 20.9 158.65 9.1 178.75 6.7 56.12-6.7 105-41.3 111.23-72.9 9.8-49.8 9-121.5 9-121.5zm-75.12 125.2h-46.63v-114.2c0-49.7-64-51.6-64 6.9v62.5h-46.33V197c0-58.5-64-56.6-64-6.9v114.2H90.19c0-122.1-5.2-147.9 18.41-175 25.9-28.9 79.82-30.8 103.83 6.1l11.6 19.5 11.6-19.5c24.11-37.1 78.12-34.8 103.83-6.1 23.71 27.3 18.4 53 18.4 175z"/></svg></a></div><div class="share-item fediverse"><a href="/fedishare.html#title=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&description=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/" title=分享到「Fediverse」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="64 163 873 873" class="icon fediverse-icon"><defs><linearGradient id="fediverse-gradient"><stop offset="0" stop-color="#ff0101"/><stop offset="10%" stop-color="#9501ff"/><stop offset="50%" stop-color="#ffca01"/><stop offset="75%" stop-color="#01a3ff"/><stop offset="100%" stop-color="#65ff01"/></linearGradient></defs><path d="M539 176q-32 0-55 22t-25 55 20.5 58 56 27 58.5-20.5 27-56-20.5-59T544 176h-5zm-87 95-232 118q20 20 25 48l231-118q-19-20-24-48zm167 27q-13 25-38 38l183 184q13-25 39-38zM477 320 342 585l40 40 143-280q-28-5-48-25zm104 16q-22 11-46 10l-8-1 21 132 56 9zM155 370q-32 0-55 22.5t-25 55 20.5 58 56.5 27 59-21 26.5-56-21-58.5-55.5-27h-6zm90 68q1 9 1 18-1 19-10 35l132 21 26-50zm225 36-26 51 311 49q-1-8-1-17 1-19 10-36zm372 6q-32 1-55 23t-24.5 55 21 58 56 27 58.5-20.5 27-56.5-20.5-59-56.5-27h-6zM236 493q-13 25-39 38l210 210 51-25zm-40 38q-21 11-44 10l-9-1 40 256q21-10 45-9l8 1zm364 22 48 311q21-10 44-9l10 1-46-294zm195 23-118 60 8 56 135-68q-20-20-25-48zm26 49-119 231q28 5 48 25l119-231q-28-5-48-25zM306 654l-68 134q28 5 48 25l60-119zm262 17-281 143q19 20 24 48l265-135zM513 771l-51 25 106 107q13-25 39-38zM222 795q-32 0-55.5 22.5t-25 55 21 57.5 56 27 58.5-20.5 27-56-20.5-58.5-56.5-27h-5zm89 68q2 9 1 18-1 19-9 35l256 41q-1-9-1-18 1-18 10-35zm335 0q-32 0-55 22.5t-24.5 55 20.5 58 56 27 59-21 27-56-20.5-58.5-56.5-27h-6z"/></svg></a></div><div class="share-item twitter"><a href="https://twitter.com/share?url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&text=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&hashtags=cloudnative,k8s,&via=reuixiy" title=分享到「Twitter」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon twitter-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></div><div class="share-item linkedin"><a href="https://www.linkedin.com/shareArticle?mini=true&url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&title=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&summary=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6&source=Justice%27s%20Site" title=分享到「LinkedIn」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon linkedin-icon"><path d="M416 32H31.9C14.3 32 0 46.5.0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6.0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3.0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2.0 38.5 17.3 38.5 38.5.0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6.0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2.0 79.7 44.3 79.7 101.9V416z"/></svg></a></div><div class="share-item telegram"><a href="https://t.me/share/url?url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&text=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86" title=分享到「Telegram」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon telegram-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></div><div class="share-item weibo"><a href="https://service.weibo.com/share/share.php?&url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&title=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&pic=https://img.draveness.me/2019-01-14-kubernetes-storage.png&searchPic=false" title=分享到「新浪微博」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon weibo-icon"><path d="M407 177.6c7.6-24-13.4-46.8-37.4-41.7-22 4.8-28.8-28.1-7.1-32.8 50.1-10.9 92.3 37.1 76.5 84.8-6.8 21.2-38.8 10.8-32-10.3zM214.8 446.7C108.5 446.7.0 395.3.0 310.4c0-44.3 28-95.4 76.3-143.7C176 67 279.5 65.8 249.9 161c-4 13.1 12.3 5.7 12.3 6 79.5-33.6 140.5-16.8 114 51.4-3.7 9.4 1.1 10.9 8.3 13.1 135.7 42.3 34.8 215.2-169.7 215.2zm143.7-146.3c-5.4-55.7-78.5-94-163.4-85.7-84.8 8.6-148.8 60.3-143.4 116s78.5 94 163.4 85.7c84.8-8.6 148.8-60.3 143.4-116zM347.9 35.1c-25.9 5.6-16.8 43.7 8.3 38.3 72.3-15.2 134.8 52.8 111.7 124-7.4 24.2 29.1 37 37.4 12 31.9-99.8-55.1-195.9-157.4-174.3zm-78.5 311c-17.1 38.8-66.8 60-109.1 46.3-40.8-13.1-58-53.4-40.3-89.7 17.7-35.4 63.1-55.4 103.4-45.1 42 10.8 63.1 50.2 46 88.5zm-86.3-30c-12.9-5.4-30 .3-38 12.9-8.3 12.9-4.3 28 8.6 34 13.1 6 30.8.3 39.1-12.9 8-13.1 3.7-28.3-9.7-34zm32.6-13.4c-5.1-1.7-11.4.6-14.3 5.4-2.9 5.1-1.4 10.6 3.7 12.9 5.1 2 11.7-.3 14.6-5.4 2.8-5.2 1.1-10.9-4-12.9z"/></svg></a></div><div class="share-item douban"><a href="https://www.douban.com/share/service?href=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&name=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&text=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6" title=分享到「豆瓣」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon douban-icon"><path d="M.643.92v2.412h22.714V.92H.643zm1.974 4.926v9.42h18.764v-9.42H2.617zm2.72 2.408H18.69v4.605H5.338V8.254zm1.657 7.412-2.512.938c1.037 1.461 1.87 2.825 2.512 4.091H0v2.385h24v-2.385h-6.678c.818-1.176 1.589-2.543 2.303-4.091l-2.73-.938a29.952 29.952.0 01-2.479 5.03h-4.75c-.786-1.962-1.677-3.641-2.672-5.03z"/></svg></a></div><div class="share-item qq"><a href="https://connect.qq.com/widget/shareqq/index.html?url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&title=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&summary=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6&pics=https://img.draveness.me/2019-01-14-kubernetes-storage.png&site=Justice%27s%20Site" title=分享到「QQ」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qq-icon"><path d="M433.754 420.445c-11.526 1.393-44.86-52.741-44.86-52.741.0 31.345-16.136 72.247-51.051 101.786 16.842 5.192 54.843 19.167 45.803 34.421-7.316 12.343-125.51 7.881-159.632 4.037-34.122 3.844-152.316 8.306-159.632-4.037-9.045-15.25 28.918-29.214 45.783-34.415-34.92-29.539-51.059-70.445-51.059-101.792.0.0-33.334 54.134-44.859 52.741-5.37-.65-12.424-29.644 9.347-99.704 10.261-33.024 21.995-60.478 40.144-105.779C60.683 98.063 108.982.006 224 0c113.737.006 163.156 96.133 160.264 214.963 18.118 45.223 29.912 72.85 40.144 105.778 21.768 70.06 14.716 99.053 9.346 99.704z"/></svg></a></div><div class="share-item qzone"><a href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&title=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&summary=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6&pics=https://img.draveness.me/2019-01-14-kubernetes-storage.png&site=Justice%27s%20Site" title="分享到「QQ 空间」" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon qzone-icon"><path d="M23.985 9.202c-.032-.099-.127-.223-.334-.258-.207-.036-7.351-1.406-7.351-1.406s-.105-.022-.198-.07c-.092-.047-.127-.167-.127-.167S12.447.956 12.349.77C12.25.583 12.104.532 12 .532s-.251.051-.349.238c-.098.186-3.626 6.531-3.626 6.531s-.035.12-.128.167c-.092.047-.197.07-.197.07S.556 8.908.348 8.943c-.208.036-.302.16-.333.258a.477.477.0 00.125.449l5.362 5.49s.072.08.119.172c.016.104.005.21.005.21s-1.189 7.242-1.22 7.45.075.369.159.43c.083.062.233.106.421.013.189-.093 6.812-3.261 6.812-3.261s.098-.044.201-.061.201.061.201.061 6.623 3.168 6.812 3.261c.188.094.338.049.421-.013a.463.463.0 00.159-.43c-.021-.14-.93-5.677-.93-5.677.876-.54 1.425-1.039 1.849-1.747-2.594.969-6.006 1.717-9.415 1.866-.915.041-2.41.097-3.473-.015-.678-.071-1.17-.144-1.243-.438-.053-.215.054-.46.545-.831a2640.5 2640.5.0 012.861-2.155c1.285-.968 3.559-2.47 3.559-2.731.0-.285-2.144-.781-4.037-.781-1.945.0-2.275.132-2.811.168-.488.034-.769.005-.804-.138-.06-.248.183-.389.588-.568.709-.314 1.86-.594 1.984-.626.194-.052 3.082-.805 5.618-.535 1.318.14 3.244.668 3.244 1.276.0.342-1.721 1.494-3.225 2.597-1.149.843-2.217 1.561-2.217 1.688.0.342 3.533 1.241 6.689 1.01l.003-.022c.048-.092.119-.172.119-.172l5.362-5.49a.477.477.0 00.127-.449z"/></svg></a></div><div class="share-item pocket"><a href="https://getpocket.com/edit.php?url=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/" title=分享到「Pocket」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon pocket-icon"><path d="M407.6 64h-367C18.5 64 0 82.5.0 104.6v135.2C0 364.5 99.7 464 224.2 464c124 0 223.8-99.5 223.8-224.2V104.6c0-22.4-17.7-40.6-40.4-40.6zm-162 268.5c-12.4 11.8-31.4 11.1-42.4.0C89.5 223.6 88.3 227.4 88.3 209.3c0-16.9 13.8-30.7 30.7-30.7 17 0 16.1 3.8 105.2 89.3 90.6-86.9 88.6-89.3 105.5-89.3 16.9.0 30.7 13.8 30.7 30.7.0 17.8-2.9 15.7-114.8 123.2z"/></svg></a></div><div class="share-item hackernews"><a href="https://news.ycombinator.com/submitlink?u=https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/&t=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86" title="分享到Hacker News" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon hackernews-icon"><path d="M0 32v448h448V32H0zm21.2 197.2H21c.1-.1.2-.3.3-.4.0.1.0.3-.1.4zm218 53.9V384h-31.4V281.3L128 128h37.3c52.5 98.3 49.2 101.2 59.3 125.6 12.3-27 5.8-24.4 60.6-125.6H320l-80.8 155.1z"/></svg></a></div><div class="share-item qrcode"><div class=qrcode-container title=通过「二维码」><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qrcode-icon"><path d="M0 224h192V32H0v192zM64 96h64v64H64V96zm192-64v192h192V32H256zm128 128h-64V96h64v64zM0 480h192V288H0v192zm64-128h64v64H64v-64zm352-64h32v128h-96v-32h-32v96h-64V288h96v32h64v-32zm0 160h32v32h-32v-32zm-64 0h32v32h-32v-32z"/></svg><div id=qrcode-img></div></div><script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js></script>
+<script>const typeNumber=0,errorCorrectionLevel='L',qr=qrcode(typeNumber,errorCorrectionLevel);qr.addData('https://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/'),qr.make(),document.getElementById('qrcode-img').innerHTML=qr.createImgTag()</script></div><div class="share-item email"><a href="mailto:?subject=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86&body=k8s%20Volume%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86%20%e5%9c%a8%20Kubernetes%20%e9%9b%86%e7%be%a4%e4%b8%ad%ef%bc%8c%e8%99%bd%e7%84%b6%e6%97%a0%e7%8a%b6%e6%80%81%e7%9a%84%e6%9c%8d%e5%8a%a1%e9%9d%9e%e5%b8%b8%e5%b8%b8%e8%a7%81%ef%bc%8c%e4%bd%86%e6%98%af%e5%9c%a8%e5%ae%9e%e9%99%85%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%ad%e4%bb%8d%e7%84%b6%e4%bc%9a%e2%80%a6%e2%80%a6%0Ahttps://justice.bj.cn/post/32.cloudnative/k8s/k8s-volume/" title=通过「电子邮件」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon email-icon"><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V4e2c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5.0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg></a></div></div></div><div class=related-posts><h2 class=related-title>相关文章：<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon related-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm144 276c0 6.6-5.4 12-12 12h-92v92c0 6.6-5.4 12-12 12h-56c-6.6.0-12-5.4-12-12v-92h-92c-6.6.0-12-5.4-12-12v-56c0-6.6 5.4-12 12-12h92v-92c0-6.6 5.4-12 12-12h56c6.6.0 12 5.4 12 12v92h92c6.6.0 12 5.4 12 12v56z"/></svg></h2><ul class=related-list><li class=related-item><a href=/post/32.cloudnative/k8s/knative/ class=related-link>Knative</a></li><li class=related-item><a href=/post/32.cloudnative/k8s/k8s%E5%9F%BA%E7%A1%80/ class=related-link>k8s基础</a></li><li class=related-item><a href=/post/32.cloudnative/k8s/k8s%E4%B9%8Binformer%E6%9C%BA%E5%88%B6/ class=related-link>k8s中informer机制</a></li><li class=related-item><a href=/post/32.cloudnative/k8s/k8s%E6%89%8B%E5%8A%A8%E9%83%A8%E7%BD%B2/ class=related-link>k8s手动部署</a></li><li class=related-item><a href=/post/32.cloudnative/k8s/k8s%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9E%8B/ class=related-link>k8s网络模型</a></li></ul></div><div class=post-tags><a href=/tags/cloudnative/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>cloudnative</a>
+<a href=/tags/k8s/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>k8s</a></div><ul class=post-nav><li class=post-nav-prev><a href=/post/12.data_struct/31.roaringbitmap/ rel=prev>&lt; RoaringBitmap</a></li><li class=post-nav-next><a href=/post/32.cloudnative/k8s/k8s%E4%B9%8Bcsi%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/ rel=next>k8s之CSI实现原理 ></a></li></ul><div id=utterances></div></div></main><div id=back-to-top class=back-to-top><a href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon arrow-up"><path d="M34.9 289.5l-22.2-22.2c-9.4-9.4-9.4-24.6.0-33.9L207 39c9.4-9.4 24.6-9.4 33.9.0l194.3 194.3c9.4 9.4 9.4 24.6.0 33.9L413 289.4c-9.5 9.5-25 9.3-34.3-.4L264 168.6V456c0 13.3-10.7 24-24 24h-32c-13.3.0-24-10.7-24-24V168.6L69.2 289.1c-9.3 9.8-24.8 10-34.3.4z"/></svg></a></div><footer id=footer class=footer><div class=footer-inner><div class=site-info>©&nbsp;1969–2024&nbsp;<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon footer-icon"><path d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3.0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/></svg>&nbsp;Justice</div><div class=powered-by>Powered by <a href=https://github.com/gohugoio/hugo target=_blank rel=noopener>Hugo</a> | Theme is <a href=https://github.com/reuixiy/hugo-theme-meme target=_blank rel=noopener>MemE</a></div><div class=site-copyright><a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></div><ul class=socials><li class=socials-item><a href=/rss.xml target=_blank rel="external noopener" title=RSS><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M19.199 24C19.199 13.467 10.533 4.8.0 4.8V0c13.165.0 24 10.835 24 24h-4.801zM3.291 17.415c1.814.0 3.293 1.479 3.293 3.295.0 1.813-1.485 3.29-3.301 3.29C1.47 24 0 22.526.0 20.71s1.475-3.294 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727.0 15.909 7.184 15.909 15.91z"/></svg></a></li><li class=socials-item><a href=mailto:reuixiy@gmail.com target=_blank rel="external noopener" title=Email><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M464 64H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm0 48v40.805c-22.422 18.259-58.168 46.651-134.587 106.49-16.841 13.247-50.201 45.072-73.413 44.701-23.208.375-56.579-31.459-73.413-44.701C106.18 199.465 70.425 171.067 48 152.805V112h416zM48 4e2V214.398c22.914 18.251 55.409 43.862 104.938 82.646 21.857 17.205 60.134 55.186 103.062 54.955 42.717.231 80.509-37.199 103.053-54.947 49.528-38.783 82.032-64.401 104.947-82.653V4e2H48z"/></svg></a></li><li class=socials-item><a href=https://github.com/reuixiy target=_blank rel="external noopener" title=GitHub><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M12 .297c-6.63.0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577.0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93.0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176.0.0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22.0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22.0 1.606-.015 2.896-.015 3.286.0.315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a></li><li class=socials-item><a href=https://twitter.com/reuixiy target=_blank rel="external noopener" title=Twitter><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></li><li class=socials-item><a href=https://t.me/yixiuer target=_blank rel="external noopener" title=Telegram><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon social-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></li></ul></div></footer></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.css><script>if(typeof renderMathInElement=='undefined'){const a=b=>{const a=document.createElement('script');a.defer=!0,a.crossOrigin='anonymous',Object.keys(b).forEach(c=>{a[c]=b[c]}),document.body.appendChild(a)};a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/mhchem.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/auto-render.min.js',onload:()=>{renderKaTex()}})}})}})}else renderKaTex();function renderKaTex(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"\\[",right:"\\]",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1}]})}</script><script>typeof MathJax=='undefined'?(window.MathJax={loader:{load:['[tex]/mhchem']},tex:{inlineMath:{'[+]':[['$','$']]},tags:'ams',packages:{'[+]':['mhchem']}}},function(){const a=document.createElement('script');a.src='https://cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js',a.defer=!0,document.head.appendChild(a)}()):(MathJax.texReset(),MathJax.typeset())</script><script src=https://cdn.jsdelivr.net/npm/mermaid@8.8.3/dist/mermaid.min.js></script>
+<script>Array.from(document.getElementsByClassName("language-mermaid")).forEach(a=>{a.parentElement.outerHTML=`<div class="mermaid">${a.innerText}</div>`});const mermaidConfig={startOnLoad:!0,flowchart:{useMaxWidth:!1,htmlLabels:!0},theme:'default'};mermaid.initialize(mermaidConfig)</script><script>function loadComments(){(function(){const b=document.getElementById("utterances");if(!b)return;const a=document.createElement('script');a.src='https://utteranc.es/client.js',a.async=!0,a.crossOrigin='anonymous',a.setAttribute('repo','ZhuZhengyi/gh_comment'),a.setAttribute('issue-term','pathname');const c=getCurrentTheme()==='dark';c?a.setAttribute('theme','photon-dark'):a.setAttribute('theme','github-light'),b.appendChild(a)})()}</script><script src=https://cdn.jsdelivr.net/npm/medium-zoom@latest/dist/medium-zoom.min.js></script>
+<script>let imgNodes=document.querySelectorAll('div.post-body img');imgNodes=Array.from(imgNodes).filter(a=>a.parentNode.tagName!=="A"),mediumZoom(imgNodes,{background:'hsla(var(--color-bg-h), var(--color-bg-s), var(--color-bg-l), 0.95)'})</script><script src=https://cdn.jsdelivr.net/npm/instant.page@5.1.0/instantpage.min.js type=module defer></script></body></html>

@@ -1,235 +1,16 @@
-<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
-<head>
-<meta charset=utf-8>
-<meta http-equiv=x-ua-compatible content="IE=edge">
-<title>使用Rust编写操作系统（二）：最小化内核 - Justice的小站</title>
-<meta name=renderer content="webkit">
-<meta name=referrer content="no-referrer">
-<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
-<meta name=MobileOptimized content="width">
-<meta name=HandheldFriendly content="true">
-<meta name=applicable-device content="pc,mobile">
-<meta name=theme-color content="#f8f5ec">
-<meta name=msapplication-navbutton-color content="#f8f5ec">
-<meta name=apple-mobile-web-app-capable content="yes">
-<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
-<meta name=mobile-web-app-capable content="yes">
-<meta name=author content="Justice">
-<meta name=description content="使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 architecture）；我们是试着使用Rust语言，编写一个">
-<meta name=keywords content="tech,it,blog">
-<meta name=generator content="Hugo 0.88.1">
-<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/>
-<link rel=icon href=/favicon.ico>
-<link rel=stylesheet href=/sass/jane.min.59a446ca0f76fe2dfc772a3a0b7512965043b4433e3e0dcf5b8ebeede14fae0c.css integrity="sha256-WaRGyg92/i38dyo6C3USllBDtEM+Pg3PW46+7eFPrgw=" media=screen crossorigin=anonymous>
-<meta property="og:title" content="使用Rust编写操作系统（二）：最小化内核">
-<meta property="og:description" content="使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 architecture）；我们是试着使用Rust语言，编写一个">
-<meta property="og:type" content="article">
-<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-03-07T11:58:54+08:00">
-<meta property="article:modified_time" content="2024-03-07T11:58:54+08:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content="使用Rust编写操作系统（二）：最小化内核">
-<meta itemprop=description content="使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 architecture）；我们是试着使用Rust语言，编写一个"><meta itemprop=datePublished content="2024-03-07T11:58:54+08:00">
-<meta itemprop=dateModified content="2024-03-07T11:58:54+08:00">
-<meta itemprop=wordCount content="9751">
-<meta itemprop=keywords content="pub,writing-an-os-in-rust,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content="使用Rust编写操作系统（二）：最小化内核">
-<meta name=twitter:description content="使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 architecture）；我们是试着使用Rust语言，编写一个"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
-<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
-</head>
-<body>
-<div id=mobile-navbar class=mobile-navbar>
-<div class=mobile-header-logo>
-<a href=/ class=logo>Justice's Blog</a>
-</div>
-<div class=mobile-navbar-icon>
-<span></span>
-<span></span>
-<span></span>
-</div>
-</div>
-<nav id=mobile-menu class="mobile-menu slideout-menu">
-<ul class=mobile-menu-list>
-<li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
-<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
-<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
-<div class=pswp__bg></div>
-<div class=pswp__scroll-wrap>
-<div class=pswp__container>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-</div>
-<div class="pswp__ui pswp__ui--hidden">
-<div class=pswp__top-bar>
-<div class=pswp__counter></div>
-<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-<div class=pswp__preloader>
-<div class=pswp__preloader__icn>
-<div class=pswp__preloader__cut>
-<div class=pswp__preloader__donut></div>
-</div>
-</div>
-</div>
-</div>
-<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-<div class=pswp__share-tooltip></div>
-</div>
-<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-</button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-</button>
-<div class=pswp__caption>
-<div class=pswp__caption__center></div>
-</div>
-</div>
-</div>
-</div>
-<header id=header class="header container">
-<div class=logo-wrapper>
-<a href=/ class=logo>
-Justice's Blog
-</a>
-</div>
-<nav class=site-navbar>
-<ul id=menu class=menu>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-<li class=menu-item>
-<a id=search-btn class="menu-item-link menu-item-search" href=#>
-<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-</header>
-<div id=mobile-panel>
-<main id=main class="main bg-llight">
-<div class=content-wrapper>
-<div id=content class="content container">
-<article class="post bg-white">
-<header class=post-header>
-<h1 class=post-title>使用Rust编写操作系统（二）：最小化内核</h1>
-<div class=post-meta>
-<time datetime=2024-03-07 class=post-time>
-2024-03-07 11:58:54
-</time>
-<div class=post-category>
-<a href=https://justice.bj.cn/categories/pub/> pub </a>
-<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
-</div>
-<span id=busuanzi_container_page_pv>
-| 阅读 <span id=busuanzi_value_page_pv></span>
-</span>
-</div>
-</header>
-<div class=post-toc id=post-toc>
-<h2 class=post-toc-title>文章目录</h2>
-<div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#引导启动>引导启动</a>
-<ul>
-<li><a href=#bios启动>BIOS启动</a></li>
-<li><a href=#multiboot标准>Multiboot标准</a></li>
-</ul>
-</li>
-<li><a href=#最小化内核>最小化内核</a></li>
-<li><a href=#安装-nightly-rust>安装 Nightly Rust</a>
-<ul>
-<li><a href=#目标配置清单>目标配置清单</a></li>
-<li><a href=#编译内核>编译内核</a></li>
-<li><a href=#cargo-xbuild>Cargo xbuild</a></li>
-<li><a href=#设置默认目标>设置默认目标</a></li>
-<li><a href=#向屏幕打印字符>向屏幕打印字符</a></li>
-</ul>
-</li>
-<li><a href=#启动内核>启动内核</a>
-<ul>
-<li><a href=#创建引导映像>创建引导映像</a></li>
-<li><a href=#在qemu中启动内核>在QEMU中启动内核</a></li>
-<li><a href=#在真机上运行内核>在真机上运行内核</a></li>
-<li><a href=#使用cargo-run>使用<code>cargo run</code></a></li>
-</ul>
-</li>
-<li><a href=#下篇预告>下篇预告</a></li>
-</ul>
-</nav>
-</div>
-</div>
-<div class=post-content>
-<h1 id=使用rust编写操作系统二最小化内核>使用Rust编写操作系统（二）：最小化内核</h1>
-<p>这篇文章将基于<strong>x86架构</strong>（the x86 architecture）；我们是试着使用Rust语言，编写一个最小化内核。我们将从独立式可执行程序开始，构建自己的内核。我们将向显示器打印字符串，最终打包内核为能引导启动的<strong>磁盘映像</strong>（disk image）。</p>
-<h2 id=引导启动>引导启动</h2>
-<p>当我们启动电脑时，主板<a href=https://en.wikipedia.org/wiki/Read-only_memory>ROM</a>内存储的<strong>固件</strong>（firmware）将会运行：它将负责电脑的<strong>上电自检</strong>（<a href=https://en.wikipedia.org/wiki/Power-on_self-test>power-on self test</a>），<strong>可用内存</strong>（available RAM）的检测，以及CPU和其它硬件的预加载。这之后，它将寻找一个<strong>可引导的存储介质</strong>（bootable disk），并开始引导启动其中的<strong>内核</strong>（kernel）。</p>
-<p>x86架构支持两种固件标准：<strong>BIOS</strong>（<a href=https://en.wikipedia.org/wiki/BIOS>Basic Input/Output System</a>）和<strong>UEFI</strong>（<a href=https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface>Unified Extensible Firmware Interface</a>）。其中，BIOS标准显得陈旧而过时，但实现简单，并为1980年代后的所有x86设备所支持；相反地，UEFI更现代化，功能也更全面，但开发和构建更复杂（至少从我的角度看是如此）。</p>
-<p>在这篇文章中，我们暂时只提供BIOS固件的引导启动方式。</p>
-<h3 id=bios启动>BIOS启动</h3>
-<p>几乎所有的x86硬件系统都支持BIOS启动，这也包含新式的、基于UEFI、用<strong>模拟BIOS</strong>（emulated BIOS）的方式向后兼容的硬件系统。这可以说是一件好事情，因为无论是上世纪还是现在的硬件系统，你都只需编写同样的引导启动逻辑；但这种兼容性有时也是BIOS引导启动最大的缺点，因为这意味着在系统启动前，你的CPU必须先进入一个16位系统兼容的<strong>实模式</strong>（<a href=https://en.wikipedia.org/wiki/Real_mode>real mode</a>），这样1980年代古老的引导固件才能够继续使用。</p>
-<p>让我们从头开始，理解一遍BIOS启动的过程。</p>
-<p>当电脑启动时，主板上特殊的闪存中存储的BIOS固件将被加载。BIOS固件将会上电自检、初始化硬件，然后它将寻找一个可引导的存储介质。如果找到了，那电脑的控制权将被转交给<strong>引导程序</strong>（bootloader）：一段存储在存储介质的开头的、512字节长度的程序片段。大多数的引导程序长度都大于512字节——所以通常情况下，引导程序都被切分为一段优先启动、长度不超过512字节、存储在介质开头的<strong>第一阶段引导程序</strong>（first stage bootloader），和一段随后由其加载的、长度可能较长、存储在其它位置的<strong>第二阶段引导程序</strong>（second stage bootloader）。</p>
-<p>引导程序必须决定内核的位置，并将内核加载到内存。引导程序还需要将CPU从16位的实模式，先切换到32位的<strong>保护模式</strong>（<a href=https://en.wikipedia.org/wiki/Protected_mode>protected mode</a>），最终切换到64位的<strong>长模式</strong>（<a href=https://en.wikipedia.org/wiki/Long_mode>long mode</a>）：此时，所有的64位寄存器和整个<strong>主内存</strong>（main memory）才能被访问。引导程序的第三个作用，是从BIOS查询特定的信息，并将其传递到内核；如查询和传递<strong>内存映射表</strong>（memory map）。</p>
-<p>编写一个引导程序并不是一个简单的任务，因为这需要使用汇编语言，而且必须经过许多意图并不明显的步骤——比如，把一些<strong>魔术数字</strong>（magic number）写入某个寄存器。因此，我们不会讲解如何编写自己的引导程序，而是推荐<a href=https://github.com/rust-osdev/bootimage>bootimage工具</a>——它能够自动而方便地为你的内核准备一个引导程序。</p>
-<h3 id=multiboot标准>Multiboot标准</h3>
-<p>每个操作系统都实现自己的引导程序，而这只对单个操作系统有效。为了避免这样的僵局，1995年，<strong>自由软件基金会</strong>（<a href=https://en.wikipedia.org/wiki/Free_Software_Foundation>Free Software Foundation</a>）颁布了一个开源的引导程序标准——<a href=https://wiki.osdev.org/Multiboot>Multiboot</a>。这个标准定义了引导程序和操作系统间的统一接口，所以任何适配Multiboot的引导程序，都能用来加载任何同样适配了Multiboot的操作系统。<a href=https://en.wikipedia.org/wiki/GNU_GRUB>GNU GRUB</a>是一个可供参考的Multiboot实现，它也是最热门的Linux系统引导程序之一。</p>
-<p>要编写一款适配Multiboot的内核，我们只需要在内核文件开头，插入被称作<strong>Multiboot头</strong>（<a href=https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#OS-image-format>Multiboot header</a>）的数据片段。这让GRUB很容易引导任何操作系统，但是，GRUB和Multiboot标准也有一些可预知的问题：</p>
-<ol>
-<li>它们只支持32位的保护模式。这意味着，在引导之后，你依然需要配置你的CPU，让它切换到64位的长模式；</li>
-<li>它们被设计为精简引导程序，而不是精简内核。举个栗子，内核需要以调整过的<strong>默认页长度</strong>（<a href=https://wiki.osdev.org/Multiboot#Multiboot_2>default page size</a>）被链接，否则GRUB将无法找到内核的Multiboot头。另一个例子是<strong>引导信息</strong>（<a href=https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Boot-information-format>boot information</a>），这个包含着大量与架构有关的数据，会在引导启动时，被直接传到操作系统，而不会经过一层清晰的抽象；</li>
-<li>GRUB和Multiboot标准并没有被详细地注释，阅读相关文档需要一定经验；</li>
-<li>为了创建一个能够被引导的磁盘映像，我们在开发时必须安装GRUB：这加大了基于Windows或macOS开发内核的难度。</li>
-</ol>
-<p>出于这些考虑，我们决定不使用GRUB或者Multiboot标准。然而，Multiboot支持功能也在bootimage工具的开发计划之中，所以从原理上讲，如果选用bootimage工具，在未来使用GRUB引导你的系统内核是可能的。</p>
-<h2 id=最小化内核>最小化内核</h2>
-<p>现在我们已经明白电脑是如何启动的，那也是时候编写我们自己的内核了。我们的小目标是，创建一个内核的磁盘映像，它能够在启动时，向屏幕输出一行“Hello World!”；我们的工作将基于上一章构建的独立式可执行程序。</p>
-<p>如果读者还有印象的话，在上一章，我们使用<code>cargo</code>构建了一个独立的二进制程序；但这个程序依然基于特定的操作系统平台：因平台而异，我们需要定义不同名称的函数，且使用不同的编译指令。这是因为在默认情况下，<code>cargo</code>会为特定的<strong>宿主系统</strong>（host system）构建源码，比如为你正在运行的系统构建源码。这并不是我们想要的，因为我们的内核不应该基于另一个操作系统——我们想要编写的，就是这个操作系统。确切地说，我们想要的是，编译为一个特定的<strong>目标系统</strong>（target system）。</p>
-<h2 id=安装-nightly-rust>安装 Nightly Rust</h2>
-<p>Rust语言有三个<strong>发行频道</strong>（release channel），分别是stable、beta和nightly。《Rust程序设计语言》中对这三个频道的区别解释得很详细，可以前往<a href=https://doc.rust-lang.org/book/appendix-07-nightly-rust.html>这里</a>看一看。为了搭建一个操作系统，我们需要一些只有nightly会提供的实验性功能，所以我们需要安装一个nightly版本的Rust。</p>
-<p>要管理安装好的Rust，我强烈建议使用<a href=https://www.rustup.rs/>rustup</a>：它允许你同时安装nightly、beta和stable版本的编译器，而且让更新Rust变得容易。你可以输入<code>rustup override add nightly</code>来选择在当前目录使用nightly版本的Rust。或者，你也可以在项目根目录添加一个名称为<code>rust-toolchain</code>、内容为<code>nightly</code>的文件。要检查你是否已经安装了一个nightly，你可以运行<code>rustc --version</code>：返回的版本号末尾应该包含<code>-nightly</code>。</p>
-<p>Nightly版本的编译器允许我们在源码的开头插入<strong>特性标签</strong>（feature flag），来自由选择并使用大量实验性的功能。举个栗子，要使用实验性的<a href=https://doc.rust-lang.org/nightly/unstable-book/language-features/asm.html>内联汇编（asm!宏）</a>，我们可以在<code>main.rs</code>的顶部添加<code>#![feature(asm)]</code>。要注意的是，这样的实验性功能<strong>不稳定</strong>（unstable），意味着未来的Rust版本可能会修改或移除这些功能，而不会有预先的警告过渡。因此我们只有在绝对必要的时候，才应该使用这些特性。</p>
-<h3 id=目标配置清单>目标配置清单</h3>
-<p>通过<code>--target</code>参数，<code>cargo</code>支持不同的目标系统。这个目标系统可以使用一个<strong>目标三元组</strong>（<a href=https://clang.llvm.org/docs/CrossCompilation.html#target-triple>target triple</a>）来描述，它描述了CPU架构、平台供应者、操作系统和<strong>应用程序二进制接口</strong>（<a href=https://stackoverflow.com/a/2456882>Application Binary Interface, ABI</a>）。比方说，目标三元组<code>x86_64-unknown-linux-gnu</code>描述一个基于<code>x86_64</code>架构CPU的、没有明确的平台供应者的linux系统，它遵循GNU风格的ABI。Rust支持<a href=https://forge.rust-lang.org/platform-support.html>许多不同的目标三元组</a>，包括安卓系统对应的<code>arm-linux-androideabi</code>和<a href=https://www.hellorust.com/setup/wasm-target/>WebAssembly使用的wasm32-unknown-unknown</a>。</p>
-<p>为了编写我们的目标系统，鉴于我们需要做一些特殊的配置（比如没有依赖的底层操作系统），<a href=https://forge.rust-lang.org/platform-support.html>已经支持的目标三元组</a>都不能满足我们的要求。幸运的是，只需使用一个JSON文件，Rust便允许我们定义自己的目标系统；这个文件常被称作<strong>目标配置清单</strong>（target specification）。比如，一个描述<code>x86_64-unknown-linux-gnu</code>目标系统的配置清单大概长这样：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+<!doctype html><html lang=zh-cn><head prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article#"><meta charset=utf-8><meta name=generator content="Hugo 0.88.1"><meta name=theme-color content="#eee"><meta name=color-scheme content="light dark"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=format-detection content="telephone=no, date=no, address=no, email=no"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><title>使用Rust编写操作系统（二）：最小化内核 | Justice's Site</title><link rel=stylesheet href=/css/meme.min.67f47a7b15ac0d9812c0cb1d9e833f83f178b3b5529591a58246a31918afd5a7.css><script src=/js/meme.min.dd11d9ee391c28c55e7e558480edc7328d764051868779a373ae6f7b959c1e01.js></script>
+<script src=/js/search/fuse-search.js></script>
+<link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" media=print onload="this.media='all'"><noscript><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap"></noscript><meta name=author content="Justice"><meta name=description content="使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 arch……"><link rel="shortcut icon" href=/favicon.ico type=image/x-icon><link rel=mask-icon href=/icons/safari-pinned-tab.svg color=#2a6df4><link rel=apple-touch-icon sizes=180x180 href=/icons/apple-touch-icon.png><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-title content="Justice's Site"><meta name=apple-mobile-web-app-status-bar-style content="black"><meta name=mobile-web-app-capable content="yes"><meta name=application-name content="Justice's Site"><meta name=msapplication-starturl content="../../../../"><meta name=msapplication-TileColor content="#fff"><meta name=msapplication-TileImage content="../../../../icons/mstile-150x150.png"><link rel=manifest href=/manifest.json><link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","datePublished":"2024-03-07T11:58:54+08:00","dateModified":"2024-04-28T06:05:43+00:00","url":"https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/","headline":"使用Rust编写操作系统（二）：最小化内核","description":"使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 arch……","inLanguage":"zh-cn","articleSection":"post","wordCount":9751,"image":["https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png","https://os.phil-opp.com/minimal-rust-kernel/qemu.png"],"author":{"@type":"Person","description":"Viva La Vida","email":"justice_103@126.com","image":"https://justice.bj.cn/icons/apple-touch-icon.png","url":"https://io-oi.me/","name":"Justice"},"license":"[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)","publisher":{"@type":"Organization","name":"Justice's Site","logo":{"@type":"ImageObject","url":"https://justice.bj.cn/icons/apple-touch-icon.png"},"url":"https://justice.bj.cn"},"mainEntityOfPage":{"@type":"WebSite","@id":"https://justice.bj.cn"}}</script><meta name=twitter:card content="summary_large_image"><meta name=twitter:site content="@reuixiy"><meta name=twitter:creator content="@reuixiy"><meta property="og:title" content="使用Rust编写操作系统（二）：最小化内核"><meta property="og:description" content="使用Rust编写操作系统（二）：最小化内核 这篇文章将基于x86架构（the x86 arch……"><meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/"><meta property="og:site_name" content="Justice's Site"><meta property="og:locale" content="zh-cn"><meta property="og:image" content="https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png"><meta property="og:type" content="article"><meta property="article:published_time" content="2024-03-07T11:58:54+08:00"><meta property="article:modified_time" content="2024-04-28T06:05:43+00:00"><meta property="article:section" content="post"></head><body><div class=container><header class=header><div class=header-wrapper><div class="header-inner single"><div class=site-brand><a href=/ class=brand>Justice's Site</a></div><nav class=nav><ul class=menu id=menu><li class=menu-item><a href=/><span class=menu-item-name>主页</span></a></li><li class=menu-item><a href=/post/><span class=menu-item-name>点滴</span></a></li><li class=menu-item><a href=/tags/><span class=menu-item-name>标签</span></a></li><li class=menu-item><a href=/categories/><span class=menu-item-name>分类</span></a></li><li class=menu-item><a href=/about><span class=menu-item-name>关于</span></a></li><li class=menu-item><a href=http://passer-by.com/pacman/><span class=menu-item-name>更多</span></a></li><li class=menu-item><a id=theme-switcher href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-light"><path d="M193.2 104.5 242 7a18 18 0 0128 0l48.8 97.5L422.2 70A18 18 0 01442 89.8l-34.5 103.4L505 242a18 18 0 010 28l-97.5 48.8L442 422.2A18 18 0 01422.2 442l-103.4-34.5L270 505a18 18 0 01-28 0l-48.8-97.5L89.8 442A18 18 0 0170 422.2l34.5-103.4-97.5-48.8a18 18 0 010-28l97.5-48.8L70 89.8A18 18 0 0189.8 70zM256 128a128 128 0 10.01.0M256 160a96 96 0 10.01.0"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-dark"><path d="M27 412A256 256 0 10181 5a11.5 11.5.0 00-5 20A201.5 201.5.0 0142 399a11.5 11.5.0 00-15 13"/></svg></a></li><li class="menu-item search-item" data-target=search-modal><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="16" width="16" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg></li></ul></nav></div></div><input type=checkbox id=nav-toggle aria-hidden=true>
+<label for=nav-toggle class=nav-toggle></label>
+<label for=nav-toggle class=nav-curtain></label></header><script>let indexURL="https://justice.bj.cn/index.json",includeSectionsInSearch=["post"],search_no_results="0 results for",search_initial_message=""</script><div class=search-modal aria-hidden=true style=--color-primary:#7f0ec6><div data-target=close-search-modal class=search-modal-overlay></div><div class=search-wrapper data-image=true data-description=true data-tags=true data-categories=true><div class=search-wrapper-header><label for=search-modal-input style=margin-top:-1px><span class=sr-only>search icon</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-reset" data-type="reset"><path fill="currentcolor" d="M256 512A256 256 0 10256 0a256 256 0 100 512zM175 175c9.4-9.4 24.6-9.4 33.9.0l47 47 47-47c9.4-9.4 24.6-9.4 33.9.0s9.4 24.6.0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6.0 33.9s-24.6 9.4-33.9.0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9.0s-9.4-24.6.0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6.0-33.9z"/></svg></label>
+<input id=search-modal-input type=text data-search-input autocomplete=off aria-label=Search placeholder></div><div class=search-wrapper-body><div class=search-result data-search-result></div><span class=search-result-empty></span></div><div class=search-wrapper-footer><span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" viewBox="0 0 16 16"><path d="M3.204 11h9.592L8 5.519 3.204 11zm-.753-.659 4.796-5.48a1 1 0 011.506.0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 01-.753-1.659z"/></svg></kbd><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" style="margin-top:1px" viewBox="0 0 16 16"><path d="M3.204 5h9.592L8 10.481 3.204 5zm-.753.659 4.796 5.48a1 1 0 001.506.0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 00-.753 1.659z"/></svg></kbd>to navigate</span>
+<span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentcolor" style="display:inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M14.5 1.5a.5.5.0 01.5.5v4.8a2.5 2.5.0 01-2.5 2.5H2.707l3.347 3.346a.5.5.0 01-.708.708l-4.2-4.2a.5.5.0 010-.708l4-4a.5.5.0 11.708.708L2.707 8.3H12.5A1.5 1.5.0 0014 6.8V2a.5.5.0 01.5-.5z"/></svg></kbd>to select</span>
+<span class=search-result-info></span>
+<span data-target=close-search-modal><kbd>ESC</kbd> to close</span></div></div></div><main class="main single" id=main><div class=main-inner><article class="content post h-entry" data-align=justify data-type=post data-toc-num=true><h1 class="post-title p-name">使用Rust编写操作系统（二）：最小化内核</h1><div class=post-meta><time datetime=2024-03-07T11:58:54+08:00 class="post-meta-item published dt-published"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M148 288h-40c-6.6.0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v40c0 6.6-5.4 12-12 12zm108-12v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 96v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm192 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96-260v352c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h48V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h128V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h48c26.5.0 48 21.5 48 48zm-48 346V160H48v298c0 3.3 2.7 6 6 6h340c3.3.0 6-2.7 6-6z"/></svg>&nbsp;2024.3.7</time>
+<time datetime=2024-04-28T06:05:43+00:00 class="post-meta-item modified dt-updated"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M4e2 64h-48V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H160V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H48C21.49 64 0 85.49.0 112v352c0 26.51 21.49 48 48 48h352c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 4e2H54a6 6 0 01-6-6V160h352v298a6 6 0 01-6 6zm-52.849-200.65L198.842 404.519c-4.705 4.667-12.303 4.637-16.971-.068l-75.091-75.699c-4.667-4.705-4.637-12.303.068-16.971l22.719-22.536c4.705-4.667 12.303-4.637 16.97.069l44.104 44.461 111.072-110.181c4.705-4.667 12.303-4.637 16.971.068l22.536 22.718c4.667 4.705 4.636 12.303-.069 16.97z"/></svg>&nbsp;2024.4.28</time>
+<span class="post-meta-item category"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M464 128H272l-54.63-54.63c-6-6-14.14-9.37-22.63-9.37H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V176c0-26.51-21.49-48-48-48zm0 272H48V112h140.12l54.63 54.63c6 6 14.14 9.37 22.63 9.37H464v224z"/></svg>&nbsp;<a href=/post/ class="category-link p-category">滴水穿石</a></span>
+<span class="post-meta-item wordcount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3.0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9.0l60.1 60.1c18.8 18.7 18.8 49.1.0 67.9zM284.2 99.8 21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3.0-17l-111-111c-4.8-4.7-12.4-4.7-17.1.0zM124.1 339.9c-5.5-5.5-5.5-14.3.0-19.8l154-154c5.5-5.5 14.3-5.5 19.8.0s5.5 14.3.0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8.0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"/></svg>&nbsp;9751</span>
+<span class="post-meta-item reading-time"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5.0-2e2-89.5-2e2-2e2S145.5 56 256 56s2e2 89.5 2e2 2e2-89.5 2e2-2e2 2e2zm61.8-104.4-84.9-61.7c-3.1-2.3-4.9-5.9-4.9-9.7V116c0-6.6 5.4-12 12-12h32c6.6.0 12 5.4 12 12v141.7l66.8 48.6c5.4 3.9 6.5 11.4 2.6 16.8L334.6 349c-3.9 5.3-11.4 6.5-16.8 2.6z"/></svg>&nbsp;20&nbsp;分钟</span></div><nav class=contents><h2 id=contents class=contents-title>目录</h2><ol class=toc><li><a id=contents:引导启动 href=#引导启动>引导启动</a><ol><li><a id=contents:bios启动 href=#bios启动>BIOS启动</a></li><li><a id=contents:multiboot标准 href=#multiboot标准>Multiboot标准</a></li></ol></li><li><a id=contents:最小化内核 href=#最小化内核>最小化内核</a></li><li><a id=contents:安装-nightly-rust href=#安装-nightly-rust>安装 Nightly Rust</a><ol><li><a id=contents:目标配置清单 href=#目标配置清单>目标配置清单</a></li><li><a id=contents:编译内核 href=#编译内核>编译内核</a></li><li><a id=contents:cargo-xbuild href=#cargo-xbuild>Cargo xbuild</a></li><li><a id=contents:设置默认目标 href=#设置默认目标>设置默认目标</a></li><li><a id=contents:向屏幕打印字符 href=#向屏幕打印字符>向屏幕打印字符</a></li></ol></li><li><a id=contents:启动内核 href=#启动内核>启动内核</a><ol><li><a id=contents:创建引导映像 href=#创建引导映像>创建引导映像</a></li><li><a id=contents:在qemu中启动内核 href=#在qemu中启动内核>在QEMU中启动内核</a></li><li><a id=contents:在真机上运行内核 href=#在真机上运行内核>在真机上运行内核</a></li><li><a id=contents:使用cargo-run href=#使用cargo-run>使用<code>cargo run</code></a></li></ol></li><li><a id=contents:下篇预告 href=#下篇预告>下篇预告</a></li></ol></nav><div class="post-body e-content"><h1 id=使用rust编写操作系统二最小化内核><a href=#使用rust编写操作系统二最小化内核 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:使用rust编写操作系统二最小化内核 class=headings>使用Rust编写操作系统（二）：最小化内核</a></h1><p>这篇文章将基于<strong>x86架构</strong>（the x86 architecture）；我们是试着使用Rust语言，编写一个最小化内核。我们将从独立式可执行程序开始，构建自己的内核。我们将向显示器打印字符串，最终打包内核为能引导启动的<strong>磁盘映像</strong>（disk image）。</p><h2 id=引导启动><a href=#引导启动 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:引导启动 class=headings>引导启动</a></h2><p>当我们启动电脑时，主板<a href=https://en.wikipedia.org/wiki/Read-only_memory target=_blank rel=noopener>ROM</a>内存储的<strong>固件</strong>（firmware）将会运行：它将负责电脑的<strong>上电自检</strong>（<a href=https://en.wikipedia.org/wiki/Power-on_self-test target=_blank rel=noopener>power-on self test</a>），<strong>可用内存</strong>（available RAM）的检测，以及CPU和其它硬件的预加载。这之后，它将寻找一个<strong>可引导的存储介质</strong>（bootable disk），并开始引导启动其中的<strong>内核</strong>（kernel）。</p><p>x86架构支持两种固件标准：<strong>BIOS</strong>（<a href=https://en.wikipedia.org/wiki/BIOS target=_blank rel=noopener>Basic Input/Output System</a>）和<strong>UEFI</strong>（<a href=https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface target=_blank rel=noopener>Unified Extensible Firmware Interface</a>）。其中，BIOS标准显得陈旧而过时，但实现简单，并为1980年代后的所有x86设备所支持；相反地，UEFI更现代化，功能也更全面，但开发和构建更复杂（至少从我的角度看是如此）。</p><p>在这篇文章中，我们暂时只提供BIOS固件的引导启动方式。</p><h3 id=bios启动><a href=#bios启动 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:bios启动 class=headings>BIOS启动</a></h3><p>几乎所有的x86硬件系统都支持BIOS启动，这也包含新式的、基于UEFI、用<strong>模拟BIOS</strong>（emulated BIOS）的方式向后兼容的硬件系统。这可以说是一件好事情，因为无论是上世纪还是现在的硬件系统，你都只需编写同样的引导启动逻辑；但这种兼容性有时也是BIOS引导启动最大的缺点，因为这意味着在系统启动前，你的CPU必须先进入一个16位系统兼容的<strong>实模式</strong>（<a href=https://en.wikipedia.org/wiki/Real_mode target=_blank rel=noopener>real mode</a>），这样1980年代古老的引导固件才能够继续使用。</p><p>让我们从头开始，理解一遍BIOS启动的过程。</p><p>当电脑启动时，主板上特殊的闪存中存储的BIOS固件将被加载。BIOS固件将会上电自检、初始化硬件，然后它将寻找一个可引导的存储介质。如果找到了，那电脑的控制权将被转交给<strong>引导程序</strong>（bootloader）：一段存储在存储介质的开头的、512字节长度的程序片段。大多数的引导程序长度都大于512字节——所以通常情况下，引导程序都被切分为一段优先启动、长度不超过512字节、存储在介质开头的<strong>第一阶段引导程序</strong>（first stage bootloader），和一段随后由其加载的、长度可能较长、存储在其它位置的<strong>第二阶段引导程序</strong>（second stage bootloader）。</p><p>引导程序必须决定内核的位置，并将内核加载到内存。引导程序还需要将CPU从16位的实模式，先切换到32位的<strong>保护模式</strong>（<a href=https://en.wikipedia.org/wiki/Protected_mode target=_blank rel=noopener>protected mode</a>），最终切换到64位的<strong>长模式</strong>（<a href=https://en.wikipedia.org/wiki/Long_mode target=_blank rel=noopener>long mode</a>）：此时，所有的64位寄存器和整个<strong>主内存</strong>（main memory）才能被访问。引导程序的第三个作用，是从BIOS查询特定的信息，并将其传递到内核；如查询和传递<strong>内存映射表</strong>（memory map）。</p><p>编写一个引导程序并不是一个简单的任务，因为这需要使用汇编语言，而且必须经过许多意图并不明显的步骤——比如，把一些<strong>魔术数字</strong>（magic number）写入某个寄存器。因此，我们不会讲解如何编写自己的引导程序，而是推荐<a href=https://github.com/rust-osdev/bootimage target=_blank rel=noopener>bootimage工具</a>——它能够自动而方便地为你的内核准备一个引导程序。</p><h3 id=multiboot标准><a href=#multiboot标准 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:multiboot标准 class=headings>Multiboot标准</a></h3><p>每个操作系统都实现自己的引导程序，而这只对单个操作系统有效。为了避免这样的僵局，1995年，<strong>自由软件基金会</strong>（<a href=https://en.wikipedia.org/wiki/Free_Software_Foundation target=_blank rel=noopener>Free Software Foundation</a>）颁布了一个开源的引导程序标准——<a href=https://wiki.osdev.org/Multiboot target=_blank rel=noopener>Multiboot</a>。这个标准定义了引导程序和操作系统间的统一接口，所以任何适配Multiboot的引导程序，都能用来加载任何同样适配了Multiboot的操作系统。<a href=https://en.wikipedia.org/wiki/GNU_GRUB target=_blank rel=noopener>GNU GRUB</a>是一个可供参考的Multiboot实现，它也是最热门的Linux系统引导程序之一。</p><p>要编写一款适配Multiboot的内核，我们只需要在内核文件开头，插入被称作<strong>Multiboot头</strong>（<a href=https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#OS-image-format target=_blank rel=noopener>Multiboot header</a>）的数据片段。这让GRUB很容易引导任何操作系统，但是，GRUB和Multiboot标准也有一些可预知的问题：</p><ol><li>它们只支持32位的保护模式。这意味着，在引导之后，你依然需要配置你的CPU，让它切换到64位的长模式；</li><li>它们被设计为精简引导程序，而不是精简内核。举个栗子，内核需要以调整过的<strong>默认页长度</strong>（<a href=https://wiki.osdev.org/Multiboot#Multiboot_2 target=_blank rel=noopener>default page size</a>）被链接，否则GRUB将无法找到内核的Multiboot头。另一个例子是<strong>引导信息</strong>（<a href=https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#Boot-information-format target=_blank rel=noopener>boot information</a>），这个包含着大量与架构有关的数据，会在引导启动时，被直接传到操作系统，而不会经过一层清晰的抽象；</li><li>GRUB和Multiboot标准并没有被详细地注释，阅读相关文档需要一定经验；</li><li>为了创建一个能够被引导的磁盘映像，我们在开发时必须安装GRUB：这加大了基于Windows或macOS开发内核的难度。</li></ol><p>出于这些考虑，我们决定不使用GRUB或者Multiboot标准。然而，Multiboot支持功能也在bootimage工具的开发计划之中，所以从原理上讲，如果选用bootimage工具，在未来使用GRUB引导你的系统内核是可能的。</p><h2 id=最小化内核><a href=#最小化内核 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:最小化内核 class=headings>最小化内核</a></h2><p>现在我们已经明白电脑是如何启动的，那也是时候编写我们自己的内核了。我们的小目标是，创建一个内核的磁盘映像，它能够在启动时，向屏幕输出一行“Hello World!”；我们的工作将基于上一章构建的独立式可执行程序。</p><p>如果读者还有印象的话，在上一章，我们使用<code>cargo</code>构建了一个独立的二进制程序；但这个程序依然基于特定的操作系统平台：因平台而异，我们需要定义不同名称的函数，且使用不同的编译指令。这是因为在默认情况下，<code>cargo</code>会为特定的<strong>宿主系统</strong>（host system）构建源码，比如为你正在运行的系统构建源码。这并不是我们想要的，因为我们的内核不应该基于另一个操作系统——我们想要编写的，就是这个操作系统。确切地说，我们想要的是，编译为一个特定的<strong>目标系统</strong>（target system）。</p><h2 id=安装-nightly-rust><a href=#安装-nightly-rust class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:安装-nightly-rust class=headings>安装 Nightly Rust</a></h2><p>Rust语言有三个<strong>发行频道</strong>（release channel），分别是stable、beta和nightly。《Rust程序设计语言》中对这三个频道的区别解释得很详细，可以前往<a href=https://doc.rust-lang.org/book/appendix-07-nightly-rust.html target=_blank rel=noopener>这里</a>看一看。为了搭建一个操作系统，我们需要一些只有nightly会提供的实验性功能，所以我们需要安装一个nightly版本的Rust。</p><p>要管理安装好的Rust，我强烈建议使用<a href=https://www.rustup.rs/ target=_blank rel=noopener>rustup</a>：它允许你同时安装nightly、beta和stable版本的编译器，而且让更新Rust变得容易。你可以输入<code>rustup override add nightly</code>来选择在当前目录使用nightly版本的Rust。或者，你也可以在项目根目录添加一个名称为<code>rust-toolchain</code>、内容为<code>nightly</code>的文件。要检查你是否已经安装了一个nightly，你可以运行<code>rustc --version</code>：返回的版本号末尾应该包含<code>-nightly</code>。</p><p>Nightly版本的编译器允许我们在源码的开头插入<strong>特性标签</strong>（feature flag），来自由选择并使用大量实验性的功能。举个栗子，要使用实验性的<a href=https://doc.rust-lang.org/nightly/unstable-book/language-features/asm.html target=_blank rel=noopener>内联汇编（asm!宏）</a>，我们可以在<code>main.rs</code>的顶部添加<code>#![feature(asm)]</code>。要注意的是，这样的实验性功能<strong>不稳定</strong>（unstable），意味着未来的Rust版本可能会修改或移除这些功能，而不会有预先的警告过渡。因此我们只有在绝对必要的时候，才应该使用这些特性。</p><h3 id=目标配置清单><a href=#目标配置清单 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:目标配置清单 class=headings>目标配置清单</a></h3><p>通过<code>--target</code>参数，<code>cargo</code>支持不同的目标系统。这个目标系统可以使用一个<strong>目标三元组</strong>（<a href=https://clang.llvm.org/docs/CrossCompilation.html#target-triple target=_blank rel=noopener>target triple</a>）来描述，它描述了CPU架构、平台供应者、操作系统和<strong>应用程序二进制接口</strong>（<a href=https://stackoverflow.com/a/2456882 target=_blank rel=noopener>Application Binary Interface, ABI</a>）。比方说，目标三元组<code>x86_64-unknown-linux-gnu</code>描述一个基于<code>x86_64</code>架构CPU的、没有明确的平台供应者的linux系统，它遵循GNU风格的ABI。Rust支持<a href=https://forge.rust-lang.org/platform-support.html target=_blank rel=noopener>许多不同的目标三元组</a>，包括安卓系统对应的<code>arm-linux-androideabi</code>和<a href=https://www.hellorust.com/setup/wasm-target/ target=_blank rel=noopener>WebAssembly使用的wasm32-unknown-unknown</a>。</p><p>为了编写我们的目标系统，鉴于我们需要做一些特殊的配置（比如没有依赖的底层操作系统），<a href=https://forge.rust-lang.org/platform-support.html target=_blank rel=noopener>已经支持的目标三元组</a>都不能满足我们的要求。幸运的是，只需使用一个JSON文件，Rust便允许我们定义自己的目标系统；这个文件常被称作<strong>目标配置清单</strong>（target specification）。比如，一个描述<code>x86_64-unknown-linux-gnu</code>目标系统的配置清单大概长这样：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -242,9 +23,7 @@ Justice's Blog
 </span><span class=lnt>11
 </span><span class=lnt>12
 </span><span class=lnt>13
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span>
     <span class=nt>&#34;llvm-target&#34;</span><span class=p>:</span> <span class=s2>&#34;x86_64-unknown-linux-gnu&#34;</span><span class=p>,</span>
     <span class=nt>&#34;data-layout&#34;</span><span class=p>:</span> <span class=s2>&#34;e-m:e-i64:64-f80:128-n8:16:32:64-S128&#34;</span><span class=p>,</span>
     <span class=nt>&#34;arch&#34;</span><span class=p>:</span> <span class=s2>&#34;x86_64&#34;</span><span class=p>,</span>
@@ -257,13 +36,7 @@ Justice's Blog
     <span class=nt>&#34;pre-link-args&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;-m64&#34;</span><span class=p>],</span>
     <span class=nt>&#34;morestack&#34;</span><span class=p>:</span> <span class=kc>false</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>一个配置清单中包含多个<strong>配置项</strong>（field）。大多数的配置项都是LLVM需求的，它们将配置为特定平台生成的代码。打个比方，<code>data-layout</code>配置项定义了不同的整数、浮点数、指针类型的长度；另外，还有一些Rust是用作条件变编译的配置项，如<code>target-pointer-width</code>。还有一些类型的配置项，定义了这个包该如何被编译，例如，<code>pre-link-args</code>配置项指定了该向<strong>链接器</strong>（<a href=https://en.wikipedia.org/wiki/Linker_(computing)>linker</a>）传入的参数。</p>
-<p>我们将把我们的内核编译到<code>x86_64</code>架构，所以我们的配置清单将和上面的例子相似。现在，我们来创建一个名为<code>x86_64-blog_os.json</code>的文件——当然也可以选用自己喜欢的文件名——里面包含这样的内容：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>一个配置清单中包含多个<strong>配置项</strong>（field）。大多数的配置项都是LLVM需求的，它们将配置为特定平台生成的代码。打个比方，<code>data-layout</code>配置项定义了不同的整数、浮点数、指针类型的长度；另外，还有一些Rust是用作条件变编译的配置项，如<code>target-pointer-width</code>。还有一些类型的配置项，定义了这个包该如何被编译，例如，<code>pre-link-args</code>配置项指定了该向<strong>链接器</strong>（<a href=https://en.wikipedia.org/wiki/Linker_(computing) target=_blank rel=noopener>linker</a>）传入的参数。</p><p>我们将把我们的内核编译到<code>x86_64</code>架构，所以我们的配置清单将和上面的例子相似。现在，我们来创建一个名为<code>x86_64-blog_os.json</code>的文件——当然也可以选用自己喜欢的文件名——里面包含这样的内容：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -273,9 +46,7 @@ Justice's Blog
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span>
     <span class=nt>&#34;llvm-target&#34;</span><span class=p>:</span> <span class=s2>&#34;x86_64-unknown-none&#34;</span><span class=p>,</span>
     <span class=nt>&#34;data-layout&#34;</span><span class=p>:</span> <span class=s2>&#34;e-m:e-i64:64-f80:128-n8:16:32:64-S128&#34;</span><span class=p>,</span>
     <span class=nt>&#34;arch&#34;</span><span class=p>:</span> <span class=s2>&#34;x86_64&#34;</span><span class=p>,</span>
@@ -285,55 +56,17 @@ Justice's Blog
     <span class=nt>&#34;os&#34;</span><span class=p>:</span> <span class=s2>&#34;none&#34;</span><span class=p>,</span>
     <span class=nt>&#34;executables&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>需要注意的是，因为我们要在<strong>裸机</strong>（bare metal）上运行内核，我们已经修改了<code>llvm-target</code>的内容，并将<code>os</code>配置项的值改为<code>none</code>。</p>
-<p>我们还需要添加下面与编译相关的配置项：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>需要注意的是，因为我们要在<strong>裸机</strong>（bare metal）上运行内核，我们已经修改了<code>llvm-target</code>的内容，并将<code>os</code>配置项的值改为<code>none</code>。</p><p>我们还需要添加下面与编译相关的配置项：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;linker-flavor&#34;</span><span class=err>:</span> <span class=s2>&#34;ld.lld&#34;</span><span class=err>,</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;linker-flavor&#34;</span><span class=err>:</span> <span class=s2>&#34;ld.lld&#34;</span><span class=err>,</span>
 <span class=s2>&#34;linker&#34;</span><span class=err>:</span> <span class=s2>&#34;rust-lld&#34;</span><span class=err>,</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>在这里，我们不使用平台默认提供的链接器，因为它可能不支持Linux目标系统。为了链接我们的内核，我们使用跨平台的<strong>LLD链接器</strong>（<a href=https://lld.llvm.org/>LLD linker</a>），它是和Rust打包发布的。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;panic-strategy&#34;</span><span class=err>:</span> <span class=s2>&#34;abort&#34;</span><span class=err>,</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>这个配置项的意思是，我们的编译目标不支持panic时的<strong>栈展开</strong>（<a href=http://www.bogotobogo.com/cplusplus/stackunwinding.php>stack unwinding</a>），所以我们选择直接<strong>在panic时中止</strong>（abort on panic）。这和在<code>Cargo.toml</code>文件中添加<code>panic = "abort"</code>选项的作用是相同的，所以我们可以不在这里的配置清单中填写这一项。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;disable-redzone&#34;</span><span class=err>:</span> <span class=kc>true</span><span class=err>,</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>我们正在编写一个内核，所以我们应该同时处理中断。要安全地实现这一点，我们必须禁用一个与<strong>红区</strong>（redzone）有关的栈指针优化：因为此时，这个优化可能会导致栈被破坏。我们撰写了一篇专门的短文，来更详细地解释红区及与其相关的优化。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;features&#34;</span><span class=err>:</span> <span class=s2>&#34;-mmx,-sse,+soft-float&#34;</span><span class=err>,</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>features</code>配置项被用来启用或禁用某个目标<strong>CPU特征</strong>（CPU feature）。通过在它们前面添加<code>-</code>号，我们将<code>mmx</code>和<code>sse</code>特征禁用；添加前缀<code>+</code>号，我们启用了<code>soft-float</code>特征。</p>
-<p><code>mmx</code>和<code>sse</code>特征决定了是否支持<strong>单指令多数据流</strong>（<a href=https://en.wikipedia.org/wiki/SIMD>Single Instruction Multiple Data，SIMD</a>）相关指令，这些指令常常能显著地提高程序层面的性能。然而，在内核中使用庞大的SIMD寄存器，可能会造成较大的性能影响：因为每次程序中断时，内核不得不储存整个庞大的SIMD寄存器以备恢复——这意味着，对每个硬件中断或系统调用，完整的SIMD状态必须存到主存中。由于SIMD状态可能相当大（512~1600个字节），而中断可能时常发生，这些额外的存储与恢复操作可能显著地影响效率。为解决这个问题，我们对内核禁用SIMD（但这不意味着禁用内核之上的应用程序的SIMD支持）。</p>
-<p>禁用SIMD产生的一个问题是，<code>x86_64</code>架构的浮点数指针运算默认依赖于SIMD寄存器。我们的解决方法是，启用<code>soft-float</code>特征，它将使用基于整数的软件功能，模拟浮点数指针运算。</p>
-<p>为了让读者的印象更清晰，我们撰写了一篇关于禁用SIMD的短文。</p>
-<p>现在，我们将各个配置项整合在一起。我们的目标配置清单应该长这样：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>在这里，我们不使用平台默认提供的链接器，因为它可能不支持Linux目标系统。为了链接我们的内核，我们使用跨平台的<strong>LLD链接器</strong>（<a href=https://lld.llvm.org/ target=_blank rel=noopener>LLD linker</a>），它是和Rust打包发布的。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;panic-strategy&#34;</span><span class=err>:</span> <span class=s2>&#34;abort&#34;</span><span class=err>,</span>
+</code></pre></td></tr></table></div></div></div><p>这个配置项的意思是，我们的编译目标不支持panic时的<strong>栈展开</strong>（<a href=http://www.bogotobogo.com/cplusplus/stackunwinding.php target=_blank rel=noopener>stack unwinding</a>），所以我们选择直接<strong>在panic时中止</strong>（abort on panic）。这和在<code>Cargo.toml</code>文件中添加<code>panic = "abort"</code>选项的作用是相同的，所以我们可以不在这里的配置清单中填写这一项。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;disable-redzone&#34;</span><span class=err>:</span> <span class=kc>true</span><span class=err>,</span>
+</code></pre></td></tr></table></div></div></div><p>我们正在编写一个内核，所以我们应该同时处理中断。要安全地实现这一点，我们必须禁用一个与<strong>红区</strong>（redzone）有关的栈指针优化：因为此时，这个优化可能会导致栈被破坏。我们撰写了一篇专门的短文，来更详细地解释红区及与其相关的优化。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=s2>&#34;features&#34;</span><span class=err>:</span> <span class=s2>&#34;-mmx,-sse,+soft-float&#34;</span><span class=err>,</span>
+</code></pre></td></tr></table></div></div></div><p><code>features</code>配置项被用来启用或禁用某个目标<strong>CPU特征</strong>（CPU feature）。通过在它们前面添加<code>-</code>号，我们将<code>mmx</code>和<code>sse</code>特征禁用；添加前缀<code>+</code>号，我们启用了<code>soft-float</code>特征。</p><p><code>mmx</code>和<code>sse</code>特征决定了是否支持<strong>单指令多数据流</strong>（<a href=https://en.wikipedia.org/wiki/SIMD target=_blank rel=noopener>Single Instruction Multiple Data，SIMD</a>）相关指令，这些指令常常能显著地提高程序层面的性能。然而，在内核中使用庞大的SIMD寄存器，可能会造成较大的性能影响：因为每次程序中断时，内核不得不储存整个庞大的SIMD寄存器以备恢复——这意味着，对每个硬件中断或系统调用，完整的SIMD状态必须存到主存中。由于SIMD状态可能相当大（512~1600个字节），而中断可能时常发生，这些额外的存储与恢复操作可能显著地影响效率。为解决这个问题，我们对内核禁用SIMD（但这不意味着禁用内核之上的应用程序的SIMD支持）。</p><p>禁用SIMD产生的一个问题是，<code>x86_64</code>架构的浮点数指针运算默认依赖于SIMD寄存器。我们的解决方法是，启用<code>soft-float</code>特征，它将使用基于整数的软件功能，模拟浮点数指针运算。</p><p>为了让读者的印象更清晰，我们撰写了一篇关于禁用SIMD的短文。</p><p>现在，我们将各个配置项整合在一起。我们的目标配置清单应该长这样：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -348,9 +81,7 @@ Justice's Blog
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=p>{</span>
   <span class=nt>&#34;llvm-target&#34;</span><span class=p>:</span> <span class=s2>&#34;x86_64-unknown-none&#34;</span><span class=p>,</span>
   <span class=nt>&#34;data-layout&#34;</span><span class=p>:</span> <span class=s2>&#34;e-m:e-i64:64-f80:128-n8:16:32:64-S128&#34;</span><span class=p>,</span>
   <span class=nt>&#34;arch&#34;</span><span class=p>:</span> <span class=s2>&#34;x86_64&#34;</span><span class=p>,</span>
@@ -365,13 +96,7 @@ Justice's Blog
   <span class=nt>&#34;disable-redzone&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
   <span class=nt>&#34;features&#34;</span><span class=p>:</span> <span class=s2>&#34;-mmx,-sse,+soft-float&#34;</span>
 <span class=p>}</span>
-</code></pre></td></tr></table>
-</div>
-</div><h3 id=编译内核>编译内核</h3>
-<p>要编译我们的内核，我们将使用Linux系统的编写风格（这可能是LLVM的默认风格）。这意味着，我们需要把前一篇文章中编写的入口点重命名为<code>_start</code>：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><h3 id=编译内核><a href=#编译内核 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:编译内核 class=headings>编译内核</a></h3><p>要编译我们的内核，我们将使用Linux系统的编写风格（这可能是LLVM的默认风格）。这意味着，我们需要把前一篇文章中编写的入口点重命名为<code>_start</code>：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -390,9 +115,7 @@ Justice's Blog
 </span><span class=lnt>17
 </span><span class=lnt>18
 </span><span class=lnt>19
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![no_std]</span><span class=w> </span><span class=c1>// 不链接Rust标准库
 </span><span class=c1></span><span class=cp>#![no_main]</span><span class=w> </span><span class=c1>// 禁用所有Rust层级的入口点
@@ -411,43 +134,19 @@ Justice's Blog
 </span><span class=c1></span><span class=w>    </span><span class=c1>// 默认命名为`_start`
 </span><span class=c1></span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>注意的是，无论你开发使用的是哪类操作系统，你都需要将入口点命名为<code>_start</code>。前一篇文章中编写的Windows系统和macOS对应的入口点不应该被保留。</p>
-<p>通过把JSON文件名传入<code>--target</code>选项，我们现在可以开始编译我们的内核。让我们试试看：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>注意的是，无论你开发使用的是哪类操作系统，你都需要将入口点命名为<code>_start</code>。前一篇文章中编写的Windows系统和macOS对应的入口点不应该被保留。</p><p>通过把JSON文件名传入<code>--target</code>选项，我们现在可以开始编译我们的内核。让我们试试看：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo build --target x86_64-blog_os.json
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo build --target x86_64-blog_os.json
 
 error[E0463]: can&#39;t find crate for `core`
 （或者是下面的错误）
 error[E0463]: can&#39;t find crate for `compiler_builtins`
-</code></pre></td></tr></table>
-</div>
-</div><p>哇哦，编译失败了！输出的错误告诉我们，Rust编译器找不到<code>core</code>或者<code>compiler_builtins</code>包；而所有<code>no_std</code>上下文都隐式地链接到这两个包。<a href=https://doc.rust-lang.org/nightly/core/index.html><code>core</code>包</a>包含基础的Rust类型，如<code>Result</code>、<code>Option</code>和迭代器等；<a href=https://github.com/rust-lang-nursery/compiler-builtins><code>compiler_builtins</code>包</a>提供LLVM需要的许多底层操作，比如<code>memcpy</code>。</p>
-<p>通常状况下，<code>core</code>库以<strong>预编译库</strong>（precompiled library）的形式与Rust编译器一同发布——这时，<code>core</code>库只对支持的宿主系统有效，而我们自定义的目标系统无效。如果我们想为其它系统编译代码，我们需要为这些系统重新编译整个<code>core</code>库。</p>
-<h3 id=cargo-xbuild>Cargo xbuild</h3>
-<p>这就是为什么我们需要<a href=https://github.com/rust-osdev/cargo-xbuild>cargo xbuild工具</a>。这个工具封装了<code>cargo build</code>；但不同的是，它将自动交叉编译<code>core</code>库和一些<strong>编译器内建库</strong>（compiler built-in libraries）。我们可以用下面的命令安装它：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>cargo install cargo-xbuild
-</code></pre></td></tr></table>
-</div>
-</div><p>这个工具依赖于Rust的源代码；我们可以使用<code>rustup component add rust-src</code>来安装源代码。</p>
-<p>现在我们可以使用<code>xbuild</code>代替<code>build</code>重新编译：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>哇哦，编译失败了！输出的错误告诉我们，Rust编译器找不到<code>core</code>或者<code>compiler_builtins</code>包；而所有<code>no_std</code>上下文都隐式地链接到这两个包。<a href=https://doc.rust-lang.org/nightly/core/index.html target=_blank rel=noopener><code>core</code>包</a>包含基础的Rust类型，如<code>Result</code>、<code>Option</code>和迭代器等；<a href=https://github.com/rust-lang-nursery/compiler-builtins target=_blank rel=noopener><code>compiler_builtins</code>包</a>提供LLVM需要的许多底层操作，比如<code>memcpy</code>。</p><p>通常状况下，<code>core</code>库以<strong>预编译库</strong>（precompiled library）的形式与Rust编译器一同发布——这时，<code>core</code>库只对支持的宿主系统有效，而我们自定义的目标系统无效。如果我们想为其它系统编译代码，我们需要为这些系统重新编译整个<code>core</code>库。</p><h3 id=cargo-xbuild><a href=#cargo-xbuild class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:cargo-xbuild class=headings>Cargo xbuild</a></h3><p>这就是为什么我们需要<a href=https://github.com/rust-osdev/cargo-xbuild target=_blank rel=noopener>cargo xbuild工具</a>。这个工具封装了<code>cargo build</code>；但不同的是，它将自动交叉编译<code>core</code>库和一些<strong>编译器内建库</strong>（compiler built-in libraries）。我们可以用下面的命令安装它：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>cargo install cargo-xbuild
+</code></pre></td></tr></table></div></div></div><p>这个工具依赖于Rust的源代码；我们可以使用<code>rustup component add rust-src</code>来安装源代码。</p><p>现在我们可以使用<code>xbuild</code>代替<code>build</code>重新编译：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -455,9 +154,7 @@ error[E0463]: can&#39;t find crate for `compiler_builtins`
 </span><span class=lnt>6
 </span><span class=lnt>7
 </span><span class=lnt>8
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; cargo xbuild --target x86_64-blog_os.json
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; cargo xbuild --target x86_64-blog_os.json
    Compiling core v0.0.0 <span class=o>(</span>/…/rust/src/libcore<span class=o>)</span>
    Compiling compiler_builtins v0.1.5
    Compiling rustc-std-workspace-core v1.0.0 <span class=o>(</span>/…/rust/src/tools/rustc-std-workspace-core<span class=o>)</span>
@@ -465,44 +162,17 @@ error[E0463]: can&#39;t find crate for `compiler_builtins`
     Finished release <span class=o>[</span>optimized + debuginfo<span class=o>]</span> target<span class=o>(</span>s<span class=o>)</span> in 45.18s
    Compiling blog_os v0.1.0 <span class=o>(</span>file:///…/blog_os<span class=o>)</span>
     Finished dev <span class=o>[</span>unoptimized + debuginfo<span class=o>]</span> target<span class=o>(</span>s<span class=o>)</span> in 0.29 secs
-</code></pre></td></tr></table>
-</div>
-</div><p>我们能看到，<code>cargo xbuild</code>为我们自定义的目标交叉编译了<code>core</code>、<code>compiler_builtin</code>和<code>alloc</code>三个部件。这些部件使用了大量的<strong>不稳定特性</strong>（unstable features），所以只能在<a href=https://os.phil-opp.com/freestanding-rust-binary/#installing-rust-nightly>nightly版本的Rust编译器</a>中工作。这之后，<code>cargo xbuild</code>成功地编译了我们的<code>blog_os</code>包。</p>
-<p>现在我们可以为裸机编译内核了；但是，我们提供给引导程序的入口点<code>_start</code>函数还是空的。我们可以添加一些东西进去，不过我们可以先做一些优化工作。</p>
-<h3 id=设置默认目标>设置默认目标</h3>
-<p>为了避免每次使用<code>cargo xbuild</code>时传递<code>--target</code>参数，我们可以覆写默认的编译目标。我们创建一个名为<code>.cargo/config</code>的<a href=https://doc.rust-lang.org/cargo/reference/config.html>cargo配置文件</a>，添加下面的内容：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>我们能看到，<code>cargo xbuild</code>为我们自定义的目标交叉编译了<code>core</code>、<code>compiler_builtin</code>和<code>alloc</code>三个部件。这些部件使用了大量的<strong>不稳定特性</strong>（unstable features），所以只能在<a href=https://os.phil-opp.com/freestanding-rust-binary/#installing-rust-nightly target=_blank rel=noopener>nightly版本的Rust编译器</a>中工作。这之后，<code>cargo xbuild</code>成功地编译了我们的<code>blog_os</code>包。</p><p>现在我们可以为裸机编译内核了；但是，我们提供给引导程序的入口点<code>_start</code>函数还是空的。我们可以添加一些东西进去，不过我们可以先做一些优化工作。</p><h3 id=设置默认目标><a href=#设置默认目标 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:设置默认目标 class=headings>设置默认目标</a></h3><p>为了避免每次使用<code>cargo xbuild</code>时传递<code>--target</code>参数，我们可以覆写默认的编译目标。我们创建一个名为<code>.cargo/config</code>的<a href=https://doc.rust-lang.org/cargo/reference/config.html target=_blank rel=noopener>cargo配置文件</a>，添加下面的内容：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in .cargo/config</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in .cargo/config</span>
 
 <span class=p>[</span><span class=nx>build</span><span class=p>]</span>
 <span class=nx>target</span> <span class=p>=</span> <span class=s2>&#34;x86_64-blog_os.json&#34;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>这里的配置告诉<code>cargo</code>在没有显式声明目标的情况下，使用我们提供的<code>x86_64-blog_os.json</code>作为目标配置。这意味着保存后，我们可以直接使用：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-text data-lang=text>cargo xbuild
-</code></pre></td></tr></table>
-</div>
-</div><p>来编译我们的内核。<a href=https://doc.rust-lang.org/cargo/reference/config.html>官方提供的一份文档</a>中有对cargo配置文件更详细的说明。</p>
-<h3 id=向屏幕打印字符>向屏幕打印字符</h3>
-<p>要做到这一步，最简单的方式是写入<strong>VGA字符缓冲区</strong>（<a href=https://en.wikipedia.org/wiki/VGA-compatible_text_mode>VGA text buffer</a>）：这是一段映射到VGA硬件的特殊内存片段，包含着显示在屏幕上的内容。通常情况下，它能够存储25行、80列共2000个<strong>字符单元</strong>（character cell）；每个字符单元能够显示一个ASCII字符，也能设置这个字符的<strong>前景色</strong>（foreground color）和<strong>背景色</strong>（background color）。输出到屏幕的字符大概长这样：</p>
-<p><img src=https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png alt=字符></p>
-<p>我们将在下篇文章中详细讨论VGA字符缓冲区的内存布局；目前我们只需要知道，这段缓冲区的地址是<code>0xb8000</code>，且每个字符单元包含一个ASCII码字节和一个颜色字节。</p>
-<p>我们的实现就像这样：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>这里的配置告诉<code>cargo</code>在没有显式声明目标的情况下，使用我们提供的<code>x86_64-blog_os.json</code>作为目标配置。这意味着保存后，我们可以直接使用：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text>cargo xbuild
+</code></pre></td></tr></table></div></div></div><p>来编译我们的内核。<a href=https://doc.rust-lang.org/cargo/reference/config.html target=_blank rel=noopener>官方提供的一份文档</a>中有对cargo配置文件更详细的说明。</p><h3 id=向屏幕打印字符><a href=#向屏幕打印字符 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:向屏幕打印字符 class=headings>向屏幕打印字符</a></h3><p>要做到这一步，最简单的方式是写入<strong>VGA字符缓冲区</strong>（<a href=https://en.wikipedia.org/wiki/VGA-compatible_text_mode target=_blank rel=noopener>VGA text buffer</a>）：这是一段映射到VGA硬件的特殊内存片段，包含着显示在屏幕上的内容。通常情况下，它能够存储25行、80列共2000个<strong>字符单元</strong>（character cell）；每个字符单元能够显示一个ASCII字符，也能设置这个字符的<strong>前景色</strong>（foreground color）和<strong>背景色</strong>（background color）。输出到屏幕的字符大概长这样：</p><p><img src=https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png alt=字符></p><p>我们将在下篇文章中详细讨论VGA字符缓冲区的内存布局；目前我们只需要知道，这段缓冲区的地址是<code>0xb8000</code>，且每个字符单元包含一个ASCII码字节和一个颜色字节。</p><p>我们的实现就像这样：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -517,9 +187,7 @@ error[E0463]: can&#39;t find crate for `compiler_builtins`
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>static</span><span class=w> </span><span class=n>HELLO</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=kt>u8</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s>b&#34;Hello World!&#34;</span><span class=p>;</span><span class=w>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>static</span><span class=w> </span><span class=n>HELLO</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=kt>u8</span><span class=p>]</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s>b&#34;Hello World!&#34;</span><span class=p>;</span><span class=w>
 </span><span class=w>
 </span><span class=w></span><span class=cp>#[no_mangle]</span><span class=w>
 </span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>extern</span><span class=w> </span><span class=s>&#34;C&#34;</span><span class=w> </span><span class=k>fn</span> <span class=nf>_start</span><span class=p>()</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
@@ -534,228 +202,32 @@ error[E0463]: can&#39;t find crate for `compiler_builtins`
 </span><span class=w>
 </span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>在这段代码中，我们预先定义了一个<strong>字节串</strong>（byte string）类型的<strong>静态变量</strong>（static variable），名为<code>HELLO</code>。我们首先将整数<code>0xb8000</code><strong>转换</strong>（cast）为一个<strong>裸指针</strong>（<a href=https://doc.rust-lang.org/stable/book/second-edition/ch19-01-unsafe-rust.html#dereferencing-a-raw-pointer>raw pointer</a>）。这之后，我们迭代<code>HELLO</code>的每个字节，使用<a href=https://doc.rust-lang.org/core/iter/trait.Iterator.html#method.enumerate>enumerate</a>获得一个额外的序号变量<code>i</code>。在<code>for</code>语句的循环体中，我们使用<a href=https://doc.rust-lang.org/std/primitive.pointer.html#method.offset>offset</a>偏移裸指针，解引用它，来将字符串的每个字节和对应的颜色字节——<code>0xb</code>代表淡青色——写入内存位置。</p>
-<p>要注意的是，所有的裸指针内存操作都被一个<strong>unsafe语句块</strong>（<a href=https://doc.rust-lang.org/stable/book/second-edition/ch19-01-unsafe-rust.html>unsafe block</a>）包围。这是因为，此时编译器不能确保我们创建的裸指针是有效的；一个裸指针可能指向任何一个你内存位置；直接解引用并写入它，也许会损坏正常的数据。使用<code>unsafe</code>语句块时，程序员其实在告诉编译器，自己保证语句块内的操作是有效的。事实上，<code>unsafe</code>语句块并不会关闭Rust的安全检查机制；它允许你多做的事情<a href=https://doc.rust-lang.org/stable/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers>只有四件</a>。</p>
-<p>使用<code>unsafe</code>语句块要求程序员有足够的自信，所以必须强调的一点是，<strong>肆意使用unsafe语句块并不是Rust编程的一贯方式</strong>。在缺乏足够经验的前提下，直接在<code>unsafe</code>语句块内操作裸指针，非常容易把事情弄得很糟糕；比如，在不注意的情况下，我们很可能会意外地操作缓冲区以外的内存。</p>
-<p>在这样的前提下，我们希望最小化<code>unsafe</code>语句块的使用。使用Rust语言，我们能够将不安全操作将包装为一个安全的抽象模块。举个栗子，我们可以创建一个VGA缓冲区类型，把所有的不安全语句封装起来，来确保从类型外部操作时，无法写出不安全的代码：通过这种方式，我们只需要最少的<code>unsafe</code>语句块来确保我们不破坏<strong>内存安全</strong>（<a href=https://en.wikipedia.org/wiki/Memory_safety>memory safety</a>）。在下一篇文章中，我们将会创建这样的VGA缓冲区封装。</p>
-<h2 id=启动内核>启动内核</h2>
-<p>既然我们已经有了一个能够打印字符的可执行程序，是时候把它运行起来试试看了。首先，我们将编译完毕的内核与引导程序链接，来创建一个引导映像；这之后，我们可以在QEMU虚拟机中运行它，或者通过U盘在真机上运行。</p>
-<h3 id=创建引导映像>创建引导映像</h3>
-<p>要将可执行程序转换为<strong>可引导的映像</strong>（bootable disk image），我们需要把它和引导程序链接。这里，引导程序将负责初始化CPU并加载我们的内核。</p>
-<p>编写引导程序并不容易，所以我们不编写自己的引导程序，而是使用已有的<a href=https://crates.io/crates/bootloader>bootloader</a>包；无需依赖于C语言，这个包基于Rust代码和内联汇编，实现了一个五脏俱全的BIOS引导程序。为了用它启动我们的内核，我们需要将它添加为一个依赖项，在<code>Cargo.toml</code>中添加下面的代码：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>在这段代码中，我们预先定义了一个<strong>字节串</strong>（byte string）类型的<strong>静态变量</strong>（static variable），名为<code>HELLO</code>。我们首先将整数<code>0xb8000</code><strong>转换</strong>（cast）为一个<strong>裸指针</strong>（<a href=https://doc.rust-lang.org/stable/book/second-edition/ch19-01-unsafe-rust.html#dereferencing-a-raw-pointer target=_blank rel=noopener>raw pointer</a>）。这之后，我们迭代<code>HELLO</code>的每个字节，使用<a href=https://doc.rust-lang.org/core/iter/trait.Iterator.html#method.enumerate target=_blank rel=noopener>enumerate</a>获得一个额外的序号变量<code>i</code>。在<code>for</code>语句的循环体中，我们使用<a href=https://doc.rust-lang.org/std/primitive.pointer.html#method.offset target=_blank rel=noopener>offset</a>偏移裸指针，解引用它，来将字符串的每个字节和对应的颜色字节——<code>0xb</code>代表淡青色——写入内存位置。</p><p>要注意的是，所有的裸指针内存操作都被一个<strong>unsafe语句块</strong>（<a href=https://doc.rust-lang.org/stable/book/second-edition/ch19-01-unsafe-rust.html target=_blank rel=noopener>unsafe block</a>）包围。这是因为，此时编译器不能确保我们创建的裸指针是有效的；一个裸指针可能指向任何一个你内存位置；直接解引用并写入它，也许会损坏正常的数据。使用<code>unsafe</code>语句块时，程序员其实在告诉编译器，自己保证语句块内的操作是有效的。事实上，<code>unsafe</code>语句块并不会关闭Rust的安全检查机制；它允许你多做的事情<a href=https://doc.rust-lang.org/stable/book/second-edition/ch19-01-unsafe-rust.html#unsafe-superpowers target=_blank rel=noopener>只有四件</a>。</p><p>使用<code>unsafe</code>语句块要求程序员有足够的自信，所以必须强调的一点是，<strong>肆意使用unsafe语句块并不是Rust编程的一贯方式</strong>。在缺乏足够经验的前提下，直接在<code>unsafe</code>语句块内操作裸指针，非常容易把事情弄得很糟糕；比如，在不注意的情况下，我们很可能会意外地操作缓冲区以外的内存。</p><p>在这样的前提下，我们希望最小化<code>unsafe</code>语句块的使用。使用Rust语言，我们能够将不安全操作将包装为一个安全的抽象模块。举个栗子，我们可以创建一个VGA缓冲区类型，把所有的不安全语句封装起来，来确保从类型外部操作时，无法写出不安全的代码：通过这种方式，我们只需要最少的<code>unsafe</code>语句块来确保我们不破坏<strong>内存安全</strong>（<a href=https://en.wikipedia.org/wiki/Memory_safety target=_blank rel=noopener>memory safety</a>）。在下一篇文章中，我们将会创建这样的VGA缓冲区封装。</p><h2 id=启动内核><a href=#启动内核 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:启动内核 class=headings>启动内核</a></h2><p>既然我们已经有了一个能够打印字符的可执行程序，是时候把它运行起来试试看了。首先，我们将编译完毕的内核与引导程序链接，来创建一个引导映像；这之后，我们可以在QEMU虚拟机中运行它，或者通过U盘在真机上运行。</p><h3 id=创建引导映像><a href=#创建引导映像 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:创建引导映像 class=headings>创建引导映像</a></h3><p>要将可执行程序转换为<strong>可引导的映像</strong>（bootable disk image），我们需要把它和引导程序链接。这里，引导程序将负责初始化CPU并加载我们的内核。</p><p>编写引导程序并不容易，所以我们不编写自己的引导程序，而是使用已有的<a href=https://crates.io/crates/bootloader target=_blank rel=noopener>bootloader</a>包；无需依赖于C语言，这个包基于Rust代码和内联汇编，实现了一个五脏俱全的BIOS引导程序。为了用它启动我们的内核，我们需要将它添加为一个依赖项，在<code>Cargo.toml</code>中添加下面的代码：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
 <span class=nx>bootloader</span> <span class=p>=</span> <span class=s2>&#34;0.6.0&#34;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>只添加引导程序为依赖项，并不足以创建一个可引导的磁盘映像；我们还需要内核编译完成之后，将内核和引导程序组合在一起。然而，截至目前，原生的cargo并不支持在编译完成后添加其它步骤（详见<a href=https://github.com/rust-lang/cargo/issues/545>这个issue</a>）。</p>
-<p>为了解决这个问题，我们建议使用<code>bootimage</code>工具——它将会在内核编译完毕后，将它和引导程序组合在一起，最终创建一个能够引导的磁盘映像。我们可以使用下面的命令来安装这款工具：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>cargo install bootimage --version <span class=s2>&#34;^0.7.3&#34;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>参数<code>^0.7.3</code>是一个<strong>脱字号条件</strong>（<a href=https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements>caret requirement</a>），它的意义是“0.7.3版本或一个兼容0.7.3的新版本”。这意味着，如果这款工具发布了修复bug的版本<code>0.7.4</code>或<code>0.7.5</code>，cargo将会自动选择最新的版本，因为它依然兼容<code>0.7.x</code>；但cargo不会选择<code>0.8.0</code>，因为这个版本被认为并不和<code>0.7.x</code>系列版本兼容。需要注意的是，<code>Cargo.toml</code>中定义的依赖包版本都默认是脱字号条件：刚才我们指定<code>bootloader</code>包的版本时，遵循的就是这个原则。</p>
-<p>为了运行<code>bootimage</code>以及编译引导程序，我们需要安装rustup模块<code>llvm-tools-preview</code>——我们可以使用<code>rustup component add llvm-tools-preview</code>来安装这个工具。</p>
-<p>成功安装<code>bootimage</code>后，创建一个可引导的磁盘映像就变得相当容易。我们来输入下面的命令：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; cargo bootimage
-</code></pre></td></tr></table>
-</div>
-</div><p>可以看到的是，<code>bootimage</code>工具开始使用<code>cargo xbuild</code>编译你的内核，所以它将增量编译我们修改后的源码。在这之后，它会编译内核的引导程序，这可能将花费一定的时间；但和所有其它依赖包相似的是，在首次编译后，产生的二进制文件将被缓存下来——这将显著地加速后续的编译过程。最终，<code>bootimage</code>将把内核和引导程序组合为一个可引导的磁盘映像。</p>
-<p>运行这行命令之后，我们应该能在<code>target/x86_64-blog_os/debug</code>目录内找到我们的映像文件<code>bootimage-blog_os.bin</code>。我们可以在虚拟机内启动它，也可以刻录到U盘上以便在真机上启动。（需要注意的是，因为文件格式不同，这里的bin文件并不是一个光驱映像，所以将它刻录到光盘不会起作用。）</p>
-<p>事实上，在这行命令背后，<code>bootimage</code>工具执行了三个步骤：</p>
-<ol>
-<li>编译我们的内核为一个<strong>ELF</strong>（<a href=https://en.wikipedia.org/wiki/Executable_and_Linkable_Format>Executable and Linkable Format</a>）文件；</li>
-<li>编译引导程序为独立的可执行文件；</li>
-<li>将内核ELF文件<strong>按字节拼接</strong>（append by bytes）到引导程序的末端。</li>
-</ol>
-<p>当机器启动时，引导程序将会读取并解析拼接在其后的ELF文件。这之后，它将把程序片段映射到<strong>分页表</strong>（page table）中的<strong>虚拟地址</strong>（virtual address），清零<strong>BSS段</strong>（BSS segment），还将创建一个栈。最终它将读取<strong>入口点地址</strong>（entry point address）——我们程序中<code>_start</code>函数的位置——并跳转到这个位置。</p>
-<h3 id=在qemu中启动内核>在QEMU中启动内核</h3>
-<p>现在我们可以在虚拟机中启动内核了。为了在<a href=https://www.qemu.org/>QEMU</a>中启动内核，我们使用下面的命令：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; qemu-system-x86_64 -drive <span class=nv>format</span><span class=o>=</span>raw,file<span class=o>=</span>bootimage-blog_os.bin
-</code></pre></td></tr></table>
-</div>
-</div><p><img src=https://os.phil-opp.com/minimal-rust-kernel/qemu.png alt=qemu的显示内容></p>
-<p>我们可以看到，屏幕窗口已经显示出“Hello World!”字符串。祝贺你！</p>
-<h3 id=在真机上运行内核>在真机上运行内核</h3>
-<p>我们也可以使用dd工具把内核写入U盘，以便在真机上启动。可以输入下面的命令：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; dd <span class=k>if</span><span class=o>=</span>target/x86_64-blog_os/debug/bootimage-blog_os.bin <span class=nv>of</span><span class=o>=</span>/dev/sdX <span class=o>&amp;&amp;</span> sync
-</code></pre></td></tr></table>
-</div>
-</div><p>在这里，<code>sdX</code>是U盘的<strong>设备名</strong>（<a href=https://en.wikipedia.org/wiki/Device_file>device name</a>）。请注意，<strong>在选择设备名的时候一定要极其小心，因为目标设备上已有的数据将全部被擦除</strong>。</p>
-<p>写入到U盘之后，你可以在真机上通过引导启动你的系统。视情况而定，你可能需要在BIOS中打开特殊的启动菜单，或者调整启动顺序。需要注意的是，<code>bootloader</code>包暂时不支持UEFI，所以我们并不能在UEFI机器上启动。</p>
-<h3 id=使用cargo-run>使用<code>cargo run</code></h3>
-<p>要让在QEMU中运行内核更轻松，我们可以设置在cargo配置文件中设置<code>runner</code>配置项：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>只添加引导程序为依赖项，并不足以创建一个可引导的磁盘映像；我们还需要内核编译完成之后，将内核和引导程序组合在一起。然而，截至目前，原生的cargo并不支持在编译完成后添加其它步骤（详见<a href=https://github.com/rust-lang/cargo/issues/545 target=_blank rel=noopener>这个issue</a>）。</p><p>为了解决这个问题，我们建议使用<code>bootimage</code>工具——它将会在内核编译完毕后，将它和引导程序组合在一起，最终创建一个能够引导的磁盘映像。我们可以使用下面的命令来安装这款工具：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>cargo install bootimage --version <span class=s2>&#34;^0.7.3&#34;</span>
+</code></pre></td></tr></table></div></div></div><p>参数<code>^0.7.3</code>是一个<strong>脱字号条件</strong>（<a href=https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#caret-requirements target=_blank rel=noopener>caret requirement</a>），它的意义是“0.7.3版本或一个兼容0.7.3的新版本”。这意味着，如果这款工具发布了修复bug的版本<code>0.7.4</code>或<code>0.7.5</code>，cargo将会自动选择最新的版本，因为它依然兼容<code>0.7.x</code>；但cargo不会选择<code>0.8.0</code>，因为这个版本被认为并不和<code>0.7.x</code>系列版本兼容。需要注意的是，<code>Cargo.toml</code>中定义的依赖包版本都默认是脱字号条件：刚才我们指定<code>bootloader</code>包的版本时，遵循的就是这个原则。</p><p>为了运行<code>bootimage</code>以及编译引导程序，我们需要安装rustup模块<code>llvm-tools-preview</code>——我们可以使用<code>rustup component add llvm-tools-preview</code>来安装这个工具。</p><p>成功安装<code>bootimage</code>后，创建一个可引导的磁盘映像就变得相当容易。我们来输入下面的命令：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; cargo bootimage
+</code></pre></td></tr></table></div></div></div><p>可以看到的是，<code>bootimage</code>工具开始使用<code>cargo xbuild</code>编译你的内核，所以它将增量编译我们修改后的源码。在这之后，它会编译内核的引导程序，这可能将花费一定的时间；但和所有其它依赖包相似的是，在首次编译后，产生的二进制文件将被缓存下来——这将显著地加速后续的编译过程。最终，<code>bootimage</code>将把内核和引导程序组合为一个可引导的磁盘映像。</p><p>运行这行命令之后，我们应该能在<code>target/x86_64-blog_os/debug</code>目录内找到我们的映像文件<code>bootimage-blog_os.bin</code>。我们可以在虚拟机内启动它，也可以刻录到U盘上以便在真机上启动。（需要注意的是，因为文件格式不同，这里的bin文件并不是一个光驱映像，所以将它刻录到光盘不会起作用。）</p><p>事实上，在这行命令背后，<code>bootimage</code>工具执行了三个步骤：</p><ol><li>编译我们的内核为一个<strong>ELF</strong>（<a href=https://en.wikipedia.org/wiki/Executable_and_Linkable_Format target=_blank rel=noopener>Executable and Linkable Format</a>）文件；</li><li>编译引导程序为独立的可执行文件；</li><li>将内核ELF文件<strong>按字节拼接</strong>（append by bytes）到引导程序的末端。</li></ol><p>当机器启动时，引导程序将会读取并解析拼接在其后的ELF文件。这之后，它将把程序片段映射到<strong>分页表</strong>（page table）中的<strong>虚拟地址</strong>（virtual address），清零<strong>BSS段</strong>（BSS segment），还将创建一个栈。最终它将读取<strong>入口点地址</strong>（entry point address）——我们程序中<code>_start</code>函数的位置——并跳转到这个位置。</p><h3 id=在qemu中启动内核><a href=#在qemu中启动内核 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:在qemu中启动内核 class=headings>在QEMU中启动内核</a></h3><p>现在我们可以在虚拟机中启动内核了。为了在<a href=https://www.qemu.org/ target=_blank rel=noopener>QEMU</a>中启动内核，我们使用下面的命令：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; qemu-system-x86_64 -drive <span class=nv>format</span><span class=o>=</span>raw,file<span class=o>=</span>bootimage-blog_os.bin
+</code></pre></td></tr></table></div></div></div><p><img src=https://os.phil-opp.com/minimal-rust-kernel/qemu.png alt=qemu的显示内容></p><p>我们可以看到，屏幕窗口已经显示出“Hello World!”字符串。祝贺你！</p><h3 id=在真机上运行内核><a href=#在真机上运行内核 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:在真机上运行内核 class=headings>在真机上运行内核</a></h3><p>我们也可以使用dd工具把内核写入U盘，以便在真机上启动。可以输入下面的命令：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash>&gt; dd <span class=k>if</span><span class=o>=</span>target/x86_64-blog_os/debug/bootimage-blog_os.bin <span class=nv>of</span><span class=o>=</span>/dev/sdX <span class=o>&amp;&amp;</span> sync
+</code></pre></td></tr></table></div></div></div><p>在这里，<code>sdX</code>是U盘的<strong>设备名</strong>（<a href=https://en.wikipedia.org/wiki/Device_file target=_blank rel=noopener>device name</a>）。请注意，<strong>在选择设备名的时候一定要极其小心，因为目标设备上已有的数据将全部被擦除</strong>。</p><p>写入到U盘之后，你可以在真机上通过引导启动你的系统。视情况而定，你可能需要在BIOS中打开特殊的启动菜单，或者调整启动顺序。需要注意的是，<code>bootloader</code>包暂时不支持UEFI，所以我们并不能在UEFI机器上启动。</p><h3 id=使用cargo-run><a href=#使用cargo-run class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:使用cargo-run class=headings>使用<code>cargo run</code></a></h3><p>要让在QEMU中运行内核更轻松，我们可以设置在cargo配置文件中设置<code>runner</code>配置项：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in .cargo/config</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in .cargo/config</span>
 
 <span class=p>[</span><span class=nx>target</span><span class=p>.</span><span class=s1>&#39;cfg(target_os = &#34;none&#34;)&#39;</span><span class=p>]</span>
 <span class=nx>runner</span> <span class=p>=</span> <span class=s2>&#34;bootimage runner&#34;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>在这里，<code>target.'cfg(target_os = "none")'</code>筛选了三元组中宿主系统设置为<code>"none"</code>的所有编译目标——这将包含我们的<code>x86_64-blog_os.json</code>目标。另外，<code>runner</code>的值规定了运行<code>cargo run</code>使用的命令；这个命令将在成功编译后执行，而且会传递可执行文件的路径为第一个参数。<a href=https://doc.rust-lang.org/cargo/reference/config.html>官方提供的cargo文档</a>讲述了更多的细节。</p>
-<p>命令<code>bootimage runner</code>由<code>bootimage</code>包提供，参数格式经过特殊设计，可以用于<code>runner</code>命令。它将给定的可执行文件与项目的引导程序依赖项链接，然后在QEMU中启动它。<code>bootimage</code>包的<a href=https://github.com/rust-osdev/bootimage>README文档</a>提供了更多细节和可以传入的配置参数。</p>
-<p>现在我们可以使用<code>cargo xrun</code>来编译内核并在QEMU中启动了。和<code>xbuild</code>类似，<code>xrun</code>子命令将在调用cargo命令前编译内核所需的包。这个子命令也由<code>cargo-xbuild</code>工具提供，所以你不需要安装额外的工具。</p>
-<h2 id=下篇预告>下篇预告</h2>
-<p>在下篇文章中，我们将细致地探索VGA字符缓冲区，并包装它为一个安全的接口。我们还将基于它实现<code>println!</code>宏。</p>
-</div>
-<div class=post-copyright>
-<p class=copyright-item>
-<span class=item-title>文章作者</span>
-<span class=item-content>Justice</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>上次更新</span>
-<span class=item-content>
-2024-03-07 11:58:54
-</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>许可协议</span>
-<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
-</p>
-</div>
-<div class=post-reward>
-<input type=checkbox name=reward id=reward hidden>
-<label class=reward-button for=reward>赞赏支持</label>
-<div class=qr-code>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/wx_reward_qrcode.png>
-<span>微信打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/alipay_reward_qrcode.png>
-<span>支付宝打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/bitcoin_reward_qrcode.png>
-<span>比特币打赏</span>
-</label>
-</div>
-</div>
-<footer class=post-footer>
-<div class=post-tags>
-<a href=https://justice.bj.cn/tags/pub/>pub</a>
-<a href=https://justice.bj.cn/tags/writing-an-os-in-rust/>writing-an-os-in-rust</a>
-</div>
-<nav class=post-nav>
-<a class=prev href=/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">使用Rust编写操作系统（三）：VGA字符模式</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/09.pub/writing-an-os-in-rust/04-testing/>
-<span class="next-text nav-default">使用Rust编写操作系统（四）：内核测试</span>
-<span class="prev-text nav-mobile">下一篇</span>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
-</i>
-</a>
-</nav>
-</footer>
-</article>
-<div class="post bg-white">
-<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
-</div>
-</div>
-</div>
-<div class=modal-dialog>
-<div class=modal-content>
-<div id=closeSearch title=Close class=close>X</div>
-<div id=fastSearch>
-<input id=searchInput tabindex=0>
-<ul id=searchResults>
-</ul>
-</div>
-</div>
-</div>
-</main>
-<footer id=footer class=footer>
-<div class=icon-links>
-<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
-</a>
-<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
-</a>
-</div>
-<div class=copyright>
-<span class=power-by>
-Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
-</span>
-<span class=division>|</span>
-<span class=theme-info>
-Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
-</span>
-<span class=copyright-year>
-&copy;
-2000 -
-2024
-<span class=heart>
-<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
-</i>
-</span><span class=author>
-Justice
-</span></span>
-<span id=busuanzi_container>
-访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
-</span>
-</div>
-</footer>
-<div class=back-to-top id=back-to-top>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
-</i>
-</div>
-</div>
-<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
-<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
-<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
-<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
-<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
-<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
-<script type=text/javascript src=/js/load-photoswipe.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
-<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
-<script>$("#search-btn").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #search-btn").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
-<script src=/js/fuse.min.js></script>
-<script src=/js/fastsearch.js></script>
-</body>
-</html>
+</code></pre></td></tr></table></div></div></div><p>在这里，<code>target.'cfg(target_os = "none")'</code>筛选了三元组中宿主系统设置为<code>"none"</code>的所有编译目标——这将包含我们的<code>x86_64-blog_os.json</code>目标。另外，<code>runner</code>的值规定了运行<code>cargo run</code>使用的命令；这个命令将在成功编译后执行，而且会传递可执行文件的路径为第一个参数。<a href=https://doc.rust-lang.org/cargo/reference/config.html target=_blank rel=noopener>官方提供的cargo文档</a>讲述了更多的细节。</p><p>命令<code>bootimage runner</code>由<code>bootimage</code>包提供，参数格式经过特殊设计，可以用于<code>runner</code>命令。它将给定的可执行文件与项目的引导程序依赖项链接，然后在QEMU中启动它。<code>bootimage</code>包的<a href=https://github.com/rust-osdev/bootimage target=_blank rel=noopener>README文档</a>提供了更多细节和可以传入的配置参数。</p><p>现在我们可以使用<code>cargo xrun</code>来编译内核并在QEMU中启动了。和<code>xbuild</code>类似，<code>xrun</code>子命令将在调用cargo命令前编译内核所需的包。这个子命令也由<code>cargo-xbuild</code>工具提供，所以你不需要安装额外的工具。</p><h2 id=下篇预告><a href=#下篇预告 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:下篇预告 class=headings>下篇预告</a></h2><p>在下篇文章中，我们将细致地探索VGA字符缓冲区，并包装它为一个安全的接口。我们还将基于它实现<code>println!</code>宏。</p></div><ul class=post-copyright><li class="copyright-item author"><span class=copyright-item-text>作者</span>：<a href=https://io-oi.me/ class="p-author h-card" target=_blank rel=noopener>Justice</a></li><li class="copyright-item link"><span class=copyright-item-text>链接</span>：<a href=/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/ target=_blank rel=noopener>https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/</a></li><li class="copyright-item license"><span class=copyright-item-text>许可</span>：<a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></li></ul></article><div class=updated-badge-container><span title="Updated @ 2024-04-28 06:05:43 UTC" style=cursor:help><svg xmlns="http://www.w3.org/2000/svg" width="130" height="20" class="updated-badge"><linearGradient id="b" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="a"><rect width="130" height="20" rx="3" fill="#fff"/></clipPath><g clip-path="url(#a)"><path class="updated-badge-left" d="M0 0h55v20H0z"/><path class="updated-badge-right" d="M55 0h75v20H55z"/><path fill="url(#b)" d="M0 0h130v20H0z"/></g><g fill="#fff" text-anchor="middle" font-size="110"><text x="285" y="150" fill="#010101" fill-opacity=".3" textLength="450" transform="scale(.1)">updated</text><text x="285" y="140" textLength="450" transform="scale(.1)">updated</text><text x="915" y="150" fill="#010101" fill-opacity=".3" textLength="650" transform="scale(.1)">2024-04-28</text><text x="915" y="140" textLength="650" transform="scale(.1)">2024-04-28</text></g></svg></span></div><div class=post-share><div class=share-items><div class="share-item facebook"><a href="https://www.facebook.com/sharer/sharer.php?u=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&hashtag=%23pub" title=分享到「Facebook」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon facebook-icon"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14.0 55.52 4.84 55.52 4.84v61h-31.28c-30.8.0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z"/></svg></a></div><div class="share-item mastodon"><a href="/fedishare.html#title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&description=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/" title=分享到「Mastodon」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon mastodon-icon"><path d="M433 179.11c0-97.2-63.71-125.7-63.71-125.7-62.52-28.7-228.56-28.4-290.48.0.0.0-63.72 28.5-63.72 125.7.0 115.7-6.6 259.4 105.63 289.1 40.51 10.7 75.32 13 103.33 11.4 50.81-2.8 79.32-18.1 79.32-18.1l-1.7-36.9s-36.31 11.4-77.12 10.1c-40.41-1.4-83-4.4-89.63-54a102.54 102.54.0 01-.9-13.9c85.63 20.9 158.65 9.1 178.75 6.7 56.12-6.7 105-41.3 111.23-72.9 9.8-49.8 9-121.5 9-121.5zm-75.12 125.2h-46.63v-114.2c0-49.7-64-51.6-64 6.9v62.5h-46.33V197c0-58.5-64-56.6-64-6.9v114.2H90.19c0-122.1-5.2-147.9 18.41-175 25.9-28.9 79.82-30.8 103.83 6.1l11.6 19.5 11.6-19.5c24.11-37.1 78.12-34.8 103.83-6.1 23.71 27.3 18.4 53 18.4 175z"/></svg></a></div><div class="share-item fediverse"><a href="/fedishare.html#title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&description=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/" title=分享到「Fediverse」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="64 163 873 873" class="icon fediverse-icon"><defs><linearGradient id="fediverse-gradient"><stop offset="0" stop-color="#ff0101"/><stop offset="10%" stop-color="#9501ff"/><stop offset="50%" stop-color="#ffca01"/><stop offset="75%" stop-color="#01a3ff"/><stop offset="100%" stop-color="#65ff01"/></linearGradient></defs><path d="M539 176q-32 0-55 22t-25 55 20.5 58 56 27 58.5-20.5 27-56-20.5-59T544 176h-5zm-87 95-232 118q20 20 25 48l231-118q-19-20-24-48zm167 27q-13 25-38 38l183 184q13-25 39-38zM477 320 342 585l40 40 143-280q-28-5-48-25zm104 16q-22 11-46 10l-8-1 21 132 56 9zM155 370q-32 0-55 22.5t-25 55 20.5 58 56.5 27 59-21 26.5-56-21-58.5-55.5-27h-6zm90 68q1 9 1 18-1 19-10 35l132 21 26-50zm225 36-26 51 311 49q-1-8-1-17 1-19 10-36zm372 6q-32 1-55 23t-24.5 55 21 58 56 27 58.5-20.5 27-56.5-20.5-59-56.5-27h-6zM236 493q-13 25-39 38l210 210 51-25zm-40 38q-21 11-44 10l-9-1 40 256q21-10 45-9l8 1zm364 22 48 311q21-10 44-9l10 1-46-294zm195 23-118 60 8 56 135-68q-20-20-25-48zm26 49-119 231q28 5 48 25l119-231q-28-5-48-25zM306 654l-68 134q28 5 48 25l60-119zm262 17-281 143q19 20 24 48l265-135zM513 771l-51 25 106 107q13-25 39-38zM222 795q-32 0-55.5 22.5t-25 55 21 57.5 56 27 58.5-20.5 27-56-20.5-58.5-56.5-27h-5zm89 68q2 9 1 18-1 19-9 35l256 41q-1-9-1-18 1-18 10-35zm335 0q-32 0-55 22.5t-24.5 55 20.5 58 56 27 59-21 27-56-20.5-58.5-56.5-27h-6z"/></svg></a></div><div class="share-item twitter"><a href="https://twitter.com/share?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&text=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&hashtags=pub,writing-an-os-in-rust,&via=reuixiy" title=分享到「Twitter」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon twitter-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></div><div class="share-item linkedin"><a href="https://www.linkedin.com/shareArticle?mini=true&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&summary=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6&source=Justice%27s%20Site" title=分享到「LinkedIn」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon linkedin-icon"><path d="M416 32H31.9C14.3 32 0 46.5.0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6.0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3.0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2.0 38.5 17.3 38.5 38.5.0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6.0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2.0 79.7 44.3 79.7 101.9V416z"/></svg></a></div><div class="share-item telegram"><a href="https://t.me/share/url?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&text=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8" title=分享到「Telegram」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon telegram-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></div><div class="share-item weibo"><a href="https://service.weibo.com/share/share.php?&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&pic=https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png&searchPic=false" title=分享到「新浪微博」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon weibo-icon"><path d="M407 177.6c7.6-24-13.4-46.8-37.4-41.7-22 4.8-28.8-28.1-7.1-32.8 50.1-10.9 92.3 37.1 76.5 84.8-6.8 21.2-38.8 10.8-32-10.3zM214.8 446.7C108.5 446.7.0 395.3.0 310.4c0-44.3 28-95.4 76.3-143.7C176 67 279.5 65.8 249.9 161c-4 13.1 12.3 5.7 12.3 6 79.5-33.6 140.5-16.8 114 51.4-3.7 9.4 1.1 10.9 8.3 13.1 135.7 42.3 34.8 215.2-169.7 215.2zm143.7-146.3c-5.4-55.7-78.5-94-163.4-85.7-84.8 8.6-148.8 60.3-143.4 116s78.5 94 163.4 85.7c84.8-8.6 148.8-60.3 143.4-116zM347.9 35.1c-25.9 5.6-16.8 43.7 8.3 38.3 72.3-15.2 134.8 52.8 111.7 124-7.4 24.2 29.1 37 37.4 12 31.9-99.8-55.1-195.9-157.4-174.3zm-78.5 311c-17.1 38.8-66.8 60-109.1 46.3-40.8-13.1-58-53.4-40.3-89.7 17.7-35.4 63.1-55.4 103.4-45.1 42 10.8 63.1 50.2 46 88.5zm-86.3-30c-12.9-5.4-30 .3-38 12.9-8.3 12.9-4.3 28 8.6 34 13.1 6 30.8.3 39.1-12.9 8-13.1 3.7-28.3-9.7-34zm32.6-13.4c-5.1-1.7-11.4.6-14.3 5.4-2.9 5.1-1.4 10.6 3.7 12.9 5.1 2 11.7-.3 14.6-5.4 2.8-5.2 1.1-10.9-4-12.9z"/></svg></a></div><div class="share-item douban"><a href="https://www.douban.com/share/service?href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&name=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&text=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6" title=分享到「豆瓣」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon douban-icon"><path d="M.643.92v2.412h22.714V.92H.643zm1.974 4.926v9.42h18.764v-9.42H2.617zm2.72 2.408H18.69v4.605H5.338V8.254zm1.657 7.412-2.512.938c1.037 1.461 1.87 2.825 2.512 4.091H0v2.385h24v-2.385h-6.678c.818-1.176 1.589-2.543 2.303-4.091l-2.73-.938a29.952 29.952.0 01-2.479 5.03h-4.75c-.786-1.962-1.677-3.641-2.672-5.03z"/></svg></a></div><div class="share-item qq"><a href="https://connect.qq.com/widget/shareqq/index.html?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&summary=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6&pics=https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png&site=Justice%27s%20Site" title=分享到「QQ」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qq-icon"><path d="M433.754 420.445c-11.526 1.393-44.86-52.741-44.86-52.741.0 31.345-16.136 72.247-51.051 101.786 16.842 5.192 54.843 19.167 45.803 34.421-7.316 12.343-125.51 7.881-159.632 4.037-34.122 3.844-152.316 8.306-159.632-4.037-9.045-15.25 28.918-29.214 45.783-34.415-34.92-29.539-51.059-70.445-51.059-101.792.0.0-33.334 54.134-44.859 52.741-5.37-.65-12.424-29.644 9.347-99.704 10.261-33.024 21.995-60.478 40.144-105.779C60.683 98.063 108.982.006 224 0c113.737.006 163.156 96.133 160.264 214.963 18.118 45.223 29.912 72.85 40.144 105.778 21.768 70.06 14.716 99.053 9.346 99.704z"/></svg></a></div><div class="share-item qzone"><a href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&summary=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6&pics=https://upload.wikimedia.org/wikipedia/commons/6/6d/Codepage-737.png&site=Justice%27s%20Site" title="分享到「QQ 空间」" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon qzone-icon"><path d="M23.985 9.202c-.032-.099-.127-.223-.334-.258-.207-.036-7.351-1.406-7.351-1.406s-.105-.022-.198-.07c-.092-.047-.127-.167-.127-.167S12.447.956 12.349.77C12.25.583 12.104.532 12 .532s-.251.051-.349.238c-.098.186-3.626 6.531-3.626 6.531s-.035.12-.128.167c-.092.047-.197.07-.197.07S.556 8.908.348 8.943c-.208.036-.302.16-.333.258a.477.477.0 00.125.449l5.362 5.49s.072.08.119.172c.016.104.005.21.005.21s-1.189 7.242-1.22 7.45.075.369.159.43c.083.062.233.106.421.013.189-.093 6.812-3.261 6.812-3.261s.098-.044.201-.061.201.061.201.061 6.623 3.168 6.812 3.261c.188.094.338.049.421-.013a.463.463.0 00.159-.43c-.021-.14-.93-5.677-.93-5.677.876-.54 1.425-1.039 1.849-1.747-2.594.969-6.006 1.717-9.415 1.866-.915.041-2.41.097-3.473-.015-.678-.071-1.17-.144-1.243-.438-.053-.215.054-.46.545-.831a2640.5 2640.5.0 012.861-2.155c1.285-.968 3.559-2.47 3.559-2.731.0-.285-2.144-.781-4.037-.781-1.945.0-2.275.132-2.811.168-.488.034-.769.005-.804-.138-.06-.248.183-.389.588-.568.709-.314 1.86-.594 1.984-.626.194-.052 3.082-.805 5.618-.535 1.318.14 3.244.668 3.244 1.276.0.342-1.721 1.494-3.225 2.597-1.149.843-2.217 1.561-2.217 1.688.0.342 3.533 1.241 6.689 1.01l.003-.022c.048-.092.119-.172.119-.172l5.362-5.49a.477.477.0 00.127-.449z"/></svg></a></div><div class="share-item pocket"><a href="https://getpocket.com/edit.php?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/" title=分享到「Pocket」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon pocket-icon"><path d="M407.6 64h-367C18.5 64 0 82.5.0 104.6v135.2C0 364.5 99.7 464 224.2 464c124 0 223.8-99.5 223.8-224.2V104.6c0-22.4-17.7-40.6-40.4-40.6zm-162 268.5c-12.4 11.8-31.4 11.1-42.4.0C89.5 223.6 88.3 227.4 88.3 209.3c0-16.9 13.8-30.7 30.7-30.7 17 0 16.1 3.8 105.2 89.3 90.6-86.9 88.6-89.3 105.5-89.3 16.9.0 30.7 13.8 30.7 30.7.0 17.8-2.9 15.7-114.8 123.2z"/></svg></a></div><div class="share-item hackernews"><a href="https://news.ycombinator.com/submitlink?u=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/&t=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8" title="分享到Hacker News" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon hackernews-icon"><path d="M0 32v448h448V32H0zm21.2 197.2H21c.1-.1.2-.3.3-.4.0.1.0.3-.1.4zm218 53.9V384h-31.4V281.3L128 128h37.3c52.5 98.3 49.2 101.2 59.3 125.6 12.3-27 5.8-24.4 60.6-125.6H320l-80.8 155.1z"/></svg></a></div><div class="share-item qrcode"><div class=qrcode-container title=通过「二维码」><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qrcode-icon"><path d="M0 224h192V32H0v192zM64 96h64v64H64V96zm192-64v192h192V32H256zm128 128h-64V96h64v64zM0 480h192V288H0v192zm64-128h64v64H64v-64zm352-64h32v128h-96v-32h-32v96h-64V288h96v32h64v-32zm0 160h32v32h-32v-32zm-64 0h32v32h-32v-32z"/></svg><div id=qrcode-img></div></div><script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js></script>
+<script>const typeNumber=0,errorCorrectionLevel='L',qr=qrcode(typeNumber,errorCorrectionLevel);qr.addData('https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/'),qr.make(),document.getElementById('qrcode-img').innerHTML=qr.createImgTag()</script></div><div class="share-item email"><a href="mailto:?subject=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8&body=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e4%ba%8c%ef%bc%89%ef%bc%9a%e6%9c%80%e5%b0%8f%e5%8c%96%e5%86%85%e6%a0%b8%20%e8%bf%99%e7%af%87%e6%96%87%e7%ab%a0%e5%b0%86%e5%9f%ba%e4%ba%8ex86%e6%9e%b6%e6%9e%84%ef%bc%88the%20x86%20arch%e2%80%a6%e2%80%a6%0Ahttps://justice.bj.cn/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/" title=通过「电子邮件」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon email-icon"><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V4e2c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5.0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg></a></div></div></div><div class=related-posts><h2 class=related-title>相关文章：<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon related-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm144 276c0 6.6-5.4 12-12 12h-92v92c0 6.6-5.4 12-12 12h-56c-6.6.0-12-5.4-12-12v-92h-92c-6.6.0-12-5.4-12-12v-56c0-6.6 5.4-12 12-12h92v-92c0-6.6 5.4-12 12-12h56c6.6.0 12 5.4 12 12v92h92c6.6.0 12 5.4 12 12v56z"/></svg></h2><ul class=related-list><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/ class=related-link>使用Rust编写操作系统（三）：VGA字符模式</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/appendix-c-disable-simd/ class=related-link>使用Rust编写操作系统（附录三）：禁用SIMD</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/07-hardware-interrupts/ class=related-link>使用Rust编写操作系统（七）：硬件中断</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/06-double-fault-exceptions/ class=related-link>双重异常</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/05-cpu-exceptions/ class=related-link>CPU异常</a></li></ul></div><div class=post-tags><a href=/tags/pub/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>pub</a>
+<a href=/tags/writing-an-os-in-rust/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>writing-an-os-in-rust</a></div><ul class=post-nav><li class=post-nav-prev><a href=/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/ rel=prev>&lt; 使用Rust编写操作系统（三）：VGA字符模式</a></li><li class=post-nav-next><a href=/post/09.pub/writing-an-os-in-rust/04-testing/ rel=next>使用Rust编写操作系统（四）：内核测试 ></a></li></ul><div id=utterances></div></div></main><div id=back-to-top class=back-to-top><a href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon arrow-up"><path d="M34.9 289.5l-22.2-22.2c-9.4-9.4-9.4-24.6.0-33.9L207 39c9.4-9.4 24.6-9.4 33.9.0l194.3 194.3c9.4 9.4 9.4 24.6.0 33.9L413 289.4c-9.5 9.5-25 9.3-34.3-.4L264 168.6V456c0 13.3-10.7 24-24 24h-32c-13.3.0-24-10.7-24-24V168.6L69.2 289.1c-9.3 9.8-24.8 10-34.3.4z"/></svg></a></div><footer id=footer class=footer><div class=footer-inner><div class=site-info>©&nbsp;1969–2024&nbsp;<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon footer-icon"><path d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3.0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/></svg>&nbsp;Justice</div><div class=powered-by>Powered by <a href=https://github.com/gohugoio/hugo target=_blank rel=noopener>Hugo</a> | Theme is <a href=https://github.com/reuixiy/hugo-theme-meme target=_blank rel=noopener>MemE</a></div><div class=site-copyright><a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></div><ul class=socials><li class=socials-item><a href=/rss.xml target=_blank rel="external noopener" title=RSS><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M19.199 24C19.199 13.467 10.533 4.8.0 4.8V0c13.165.0 24 10.835 24 24h-4.801zM3.291 17.415c1.814.0 3.293 1.479 3.293 3.295.0 1.813-1.485 3.29-3.301 3.29C1.47 24 0 22.526.0 20.71s1.475-3.294 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727.0 15.909 7.184 15.909 15.91z"/></svg></a></li><li class=socials-item><a href=mailto:reuixiy@gmail.com target=_blank rel="external noopener" title=Email><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M464 64H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm0 48v40.805c-22.422 18.259-58.168 46.651-134.587 106.49-16.841 13.247-50.201 45.072-73.413 44.701-23.208.375-56.579-31.459-73.413-44.701C106.18 199.465 70.425 171.067 48 152.805V112h416zM48 4e2V214.398c22.914 18.251 55.409 43.862 104.938 82.646 21.857 17.205 60.134 55.186 103.062 54.955 42.717.231 80.509-37.199 103.053-54.947 49.528-38.783 82.032-64.401 104.947-82.653V4e2H48z"/></svg></a></li><li class=socials-item><a href=https://github.com/reuixiy target=_blank rel="external noopener" title=GitHub><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M12 .297c-6.63.0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577.0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93.0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176.0.0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22.0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22.0 1.606-.015 2.896-.015 3.286.0.315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a></li><li class=socials-item><a href=https://twitter.com/reuixiy target=_blank rel="external noopener" title=Twitter><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></li><li class=socials-item><a href=https://t.me/yixiuer target=_blank rel="external noopener" title=Telegram><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon social-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></li></ul></div></footer></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.css><script>if(typeof renderMathInElement=='undefined'){const a=b=>{const a=document.createElement('script');a.defer=!0,a.crossOrigin='anonymous',Object.keys(b).forEach(c=>{a[c]=b[c]}),document.body.appendChild(a)};a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/mhchem.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/auto-render.min.js',onload:()=>{renderKaTex()}})}})}})}else renderKaTex();function renderKaTex(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"\\[",right:"\\]",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1}]})}</script><script>typeof MathJax=='undefined'?(window.MathJax={loader:{load:['[tex]/mhchem']},tex:{inlineMath:{'[+]':[['$','$']]},tags:'ams',packages:{'[+]':['mhchem']}}},function(){const a=document.createElement('script');a.src='https://cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js',a.defer=!0,document.head.appendChild(a)}()):(MathJax.texReset(),MathJax.typeset())</script><script src=https://cdn.jsdelivr.net/npm/mermaid@8.8.3/dist/mermaid.min.js></script>
+<script>Array.from(document.getElementsByClassName("language-mermaid")).forEach(a=>{a.parentElement.outerHTML=`<div class="mermaid">${a.innerText}</div>`});const mermaidConfig={startOnLoad:!0,flowchart:{useMaxWidth:!1,htmlLabels:!0},theme:'default'};mermaid.initialize(mermaidConfig)</script><script>function loadComments(){(function(){const b=document.getElementById("utterances");if(!b)return;const a=document.createElement('script');a.src='https://utteranc.es/client.js',a.async=!0,a.crossOrigin='anonymous',a.setAttribute('repo','ZhuZhengyi/gh_comment'),a.setAttribute('issue-term','pathname');const c=getCurrentTheme()==='dark';c?a.setAttribute('theme','photon-dark'):a.setAttribute('theme','github-light'),b.appendChild(a)})()}</script><script src=https://cdn.jsdelivr.net/npm/medium-zoom@latest/dist/medium-zoom.min.js></script>
+<script>let imgNodes=document.querySelectorAll('div.post-body img');imgNodes=Array.from(imgNodes).filter(a=>a.parentNode.tagName!=="A"),mediumZoom(imgNodes,{background:'hsla(var(--color-bg-h), var(--color-bg-s), var(--color-bg-l), 0.95)'})</script><script src=https://cdn.jsdelivr.net/npm/instant.page@5.1.0/instantpage.min.js type=module defer></script></body></html>

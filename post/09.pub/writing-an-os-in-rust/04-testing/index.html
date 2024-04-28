@@ -1,238 +1,22 @@
-<!doctype html><html lang=zh-cn itemscope itemtype=http://schema.org/WebPage>
-<head>
-<meta charset=utf-8>
-<meta http-equiv=x-ua-compatible content="IE=edge">
-<title>使用Rust编写操作系统（四）：内核测试 - Justice的小站</title>
-<meta name=renderer content="webkit">
-<meta name=referrer content="no-referrer">
-<meta name=viewport content="width=device-width,initial-scale=1,user-scalable=yes">
-<meta name=MobileOptimized content="width">
-<meta name=HandheldFriendly content="true">
-<meta name=applicable-device content="pc,mobile">
-<meta name=theme-color content="#f8f5ec">
-<meta name=msapplication-navbutton-color content="#f8f5ec">
-<meta name=apple-mobile-web-app-capable content="yes">
-<meta name=apple-mobile-web-app-status-bar-style content="#f8f5ec">
-<meta name=mobile-web-app-capable content="yes">
-<meta name=author content="Justice">
-<meta name=description content="使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测试和集成测试的方法。我们将通过Rust的自定义测试框架来">
-<meta name=keywords content="tech,it,blog">
-<meta name=generator content="Hugo 0.88.1">
-<link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/>
-<link rel=icon href=/favicon.ico>
-<link rel=stylesheet href=/sass/jane.min.59a446ca0f76fe2dfc772a3a0b7512965043b4433e3e0dcf5b8ebeede14fae0c.css integrity="sha256-WaRGyg92/i38dyo6C3USllBDtEM+Pg3PW46+7eFPrgw=" media=screen crossorigin=anonymous>
-<meta property="og:title" content="使用Rust编写操作系统（四）：内核测试">
-<meta property="og:description" content="使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测试和集成测试的方法。我们将通过Rust的自定义测试框架来">
-<meta property="og:type" content="article">
-<meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/"><meta property="article:section" content="post">
-<meta property="article:published_time" content="2024-03-07T11:58:54+08:00">
-<meta property="article:modified_time" content="2024-03-07T11:58:54+08:00"><meta property="og:site_name" content="Justice的小站">
-<meta itemprop=name content="使用Rust编写操作系统（四）：内核测试">
-<meta itemprop=description content="使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测试和集成测试的方法。我们将通过Rust的自定义测试框架来"><meta itemprop=datePublished content="2024-03-07T11:58:54+08:00">
-<meta itemprop=dateModified content="2024-03-07T11:58:54+08:00">
-<meta itemprop=wordCount content="13201">
-<meta itemprop=keywords content="pub,writing-an-os-in-rust,"><meta name=twitter:card content="summary">
-<meta name=twitter:title content="使用Rust编写操作系统（四）：内核测试">
-<meta name=twitter:description content="使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测试和集成测试的方法。我们将通过Rust的自定义测试框架来"><!--[if lte IE 9]><script src=https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js></script><![endif]--><!--[if lt IE 9]><script src=https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js></script>
-<script src=https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js></script><![endif]-->
-</head>
-<body>
-<div id=mobile-navbar class=mobile-navbar>
-<div class=mobile-header-logo>
-<a href=/ class=logo>Justice's Blog</a>
-</div>
-<div class=mobile-navbar-icon>
-<span></span>
-<span></span>
-<span></span>
-</div>
-</div>
-<nav id=mobile-menu class="mobile-menu slideout-menu">
-<ul class=mobile-menu-list>
-<li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li><li class=mobile-menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-<link rel=stylesheet href=/lib/photoswipe/photoswipe.min.css>
-<link rel=stylesheet href=/lib/photoswipe/default-skin/default-skin.min.css>
-<div class=pswp tabindex=-1 role=dialog aria-hidden=true>
-<div class=pswp__bg></div>
-<div class=pswp__scroll-wrap>
-<div class=pswp__container>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-<div class=pswp__item></div>
-</div>
-<div class="pswp__ui pswp__ui--hidden">
-<div class=pswp__top-bar>
-<div class=pswp__counter></div>
-<button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-<div class=pswp__preloader>
-<div class=pswp__preloader__icn>
-<div class=pswp__preloader__cut>
-<div class=pswp__preloader__donut></div>
-</div>
-</div>
-</div>
-</div>
-<div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-<div class=pswp__share-tooltip></div>
-</div>
-<button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-</button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-</button>
-<div class=pswp__caption>
-<div class=pswp__caption__center></div>
-</div>
-</div>
-</div>
-</div>
-<header id=header class="header container">
-<div class=logo-wrapper>
-<a href=/ class=logo>
-Justice's Blog
-</a>
-</div>
-<nav class=site-navbar>
-<ul id=menu class=menu>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/>主页</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/post/>点滴</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/tags/>标签</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=https://justice.bj.cn/categories/>分类</a>
-</li>
-<li class=menu-item>
-<a class=menu-item-link href=http://passer-by.com/pacman/ rel=noopener target=_blank>
-更多
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M623.36 272.96 473.216 423.04C467.2 429.056 467.072 438.656 472.896 444.416c0 0-6.72-6.656 1.6 1.6 21.568 21.632 54.144 54.208 54.144 54.208C534.464 506.048 544 505.856 550.016 499.904l150.08-150.144 67.328 66.432c9.024 8.96 27.456 4.544 30.4-8.96 19.968-92.608 46.656-227.52 46.656-227.52 6.848-34.496-16.192-56.704-49.92-49.92.0.0-134.656 26.816-227.328 46.784C560.32 178.048 556.352 182.272 554.752 187.136c-3.2 6.208-3.008 14.208 3.776 20.992L623.36 272.96z"/><path d="M841.152 457.152c-30.528.0-54.784 24.512-54.784 54.656V786.56H237.696V237.696h206.016c6.656.0 10.752.0 13.248.0 30.72.0 55.04-24.512 55.04-54.848C512 152.32 487.36 128 456.96 128H183.04C153.216 128 128 152.576 128 182.848c0 3.136.256 6.272.768 9.28C128.256 195.136 128 198.272 128 201.408v639.488c0 .064.0.192.0.256.0.128.0.192.0.32.0 30.528 24.512 54.784 54.784 54.784H829.76c6.592.0 9.728.0 11.712.0 28.736.0 52.928-22.976 54.464-51.968C896 843.264 896 842.304 896 841.344v-20.352V561.408v-49.28C896 481.792 871.424 457.152 841.152 457.152z"/></svg>
-</i>
-</a>
-</li>
-<li class=menu-item>
-<a id=search-btn class="menu-item-link menu-item-search" href=#>
-<i class=iconfont><svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="18" height="18" xmlns:xlink="http://www.w3.org/1999/xlink"><path d="M973.81454219 973.81454219a91.78207815 91.78207815.0 01-129.80999631.0L682.0297247 811.83972101a425.48527711 425.48527711.0 01-230.35931791 68.16531768 428.3346319 428.3346319.0 11428.3346319-428.3346319A425.48527711 425.48527711.0 01811.83972101 682.0297247l162.02961656 161.97482118a91.83687354 91.83687354.0 01-.05479538 129.80999631zm-522.1441354-828.1209266a305.97679241 305.97679241.0 100 611.95358361 305.97679241 305.97679241.0 000-611.95358361z"/></svg>
-</i>
-</a>
-</li>
-</ul>
-</nav>
-</header>
-<div id=mobile-panel>
-<main id=main class="main bg-llight">
-<div class=content-wrapper>
-<div id=content class="content container">
-<article class="post bg-white">
-<header class=post-header>
-<h1 class=post-title>使用Rust编写操作系统（四）：内核测试</h1>
-<div class=post-meta>
-<time datetime=2024-03-07 class=post-time>
-2024-03-07 11:58:54
-</time>
-<div class=post-category>
-<a href=https://justice.bj.cn/categories/pub/> pub </a>
-<a href=https://justice.bj.cn/categories/writing-an-os-in-rust/> writing-an-os-in-rust </a>
-</div>
-<span id=busuanzi_container_page_pv>
-| 阅读 <span id=busuanzi_value_page_pv></span>
-</span>
-</div>
-</header>
-<div class=post-toc id=post-toc>
-<h2 class=post-toc-title>文章目录</h2>
-<div class=post-toc-content>
-<nav id=TableOfContents>
-<ul>
-<li><a href=#阅读要求>阅读要求</a></li>
-<li><a href=#rust中的测试>Rust中的测试</a>
-<ul>
-<li><a href=#自定义测试框架>自定义测试框架</a></li>
-</ul>
-</li>
-<li><a href=#退出qemu>退出QEMU</a>
-<ul>
-<li><a href=#io-端口>I/O 端口</a></li>
-<li><a href=#使用退出exit设备>使用退出(Exit)设备</a></li>
-<li><a href=#代表成功的退出代码>代表成功的退出代码</a></li>
-</ul>
-</li>
-<li><a href=#打印到控制台>打印到控制台</a>
-<ul>
-<li><a href=#串口>串口</a></li>
-<li><a href=#qemu参数>QEMU参数</a></li>
-<li><a href=#在panic时打印一个错误信息>在panic时打印一个错误信息</a></li>
-<li><a href=#隐藏-qemu>隐藏 QEMU</a></li>
-<li><a href=#超时>超时</a></li>
-</ul>
-</li>
-<li><a href=#测试vga缓冲区>测试VGA缓冲区</a></li>
-<li><a href=#集成测试>集成测试</a>
-<ul>
-<li><a href=#创建一个库>创建一个库</a></li>
-<li><a href=#完成集成测试>完成集成测试</a></li>
-<li><a href=#未来的测试>未来的测试</a></li>
-<li><a href=#那些应该panic的测试>那些应该Panic的测试</a></li>
-<li><a href=#无约束测试>无约束测试</a></li>
-</ul>
-</li>
-<li><a href=#总结>总结</a></li>
-<li><a href=#下期预告>下期预告</a></li>
-</ul>
-</nav>
-</div>
-</div>
-<div class=post-content>
-<h1 id=使用rust编写操作系统四内核测试>使用Rust编写操作系统（四）：内核测试</h1>
-<p>本文主要讲述了在<code>no_std</code>环境下进行单元测试和集成测试的方法。我们将通过Rust的自定义测试框架来在我们的内核中执行一些测试函数。为了将结果反馈到QEMU上，我们需要使用QEMU的一些其他的功能以及<code>bootimage</code>工具。</p>
-<p>这个系列的blog在<a href=https://github.com/phil-opp/blog_os>GitHub</a>上开放开发，如果你有任何问题，请在这里开一个issue来讨论。当然你也可以在[底部]留言。你可以在<a href=https://github.com/phil-opp/blog_os/tree/post-04>这里</a>找到这篇文章的完整源码。</p>
-<h2 id=阅读要求>阅读要求</h2>
-<p>这篇文章替换了此前的(现在已经过时了) <a href=./second-edition/posts/deprecated/04-unit-testing/index.md><em>单元测试(Unit Testing)</em></a> 和 <a href=./second-edition/posts/deprecated/05-integration-tests/index.md><em>集成测试(Integration Tests)</em></a> 两篇文章。这里我将假定你是在2019-04-27日后阅读的<a href=./second-edition/posts/02-minimal-rust-kernel/index.md><em>最小Rust内核</em></a>一文。总而言之，本文要求你已经有一个<a href=./second-edition/posts/02-minimal-rust-kernel/index.md#set-a-default-target>设置默认目标</a>的 <code>.cargo/config</code> 文件且<a href=./second-edition/posts/02-minimal-rust-kernel/index.md#using-cargo-run>定义了一个runner可执行文件</a>。</p>
-<h2 id=rust中的测试>Rust中的测试</h2>
-<p>Rust有一个<strong>内置的测试框架</strong>（<a href=https://doc.rust-lang.org/book/second-edition/ch11-00-testing.html>built-in test framework</a>）：无需任何设置就可以进行单元测试，只需要创建一个通过assert来检查结果的函数并在函数的头部加上<code>#[test]</code>属性即可。然后<code>cargo test</code>会自动找到并执行你的crate中的所有测试函数。</p>
-<p>不幸的是，对于一个<code>no_std</code>的应用，比如我们的内核，这有点点复杂。现在的问题是，Rust的测试框架会隐式的调用内置的<a href=https://doc.rust-lang.org/test/index.html><code>test</code></a>库，但是这个库依赖于标准库。这也就是说我们的 <code>#[no_std]</code>内核无法使用默认的测试框架。</p>
-<p>当我们试图在我们的项目中执行<code>cargo xtest</code>时，我们可以看到如下信息:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+<!doctype html><html lang=zh-cn><head prefix="og: http://ogp.me/ns# article: http://ogp.me/ns/article#"><meta charset=utf-8><meta name=generator content="Hugo 0.88.1"><meta name=theme-color content="#eee"><meta name=color-scheme content="light dark"><meta name=viewport content="width=device-width,initial-scale=1"><meta name=format-detection content="telephone=no, date=no, address=no, email=no"><meta http-equiv=cache-control content="no-transform"><meta http-equiv=cache-control content="no-siteapp"><title>使用Rust编写操作系统（四）：内核测试 | Justice's Site</title><link rel=stylesheet href=/css/meme.min.67f47a7b15ac0d9812c0cb1d9e833f83f178b3b5529591a58246a31918afd5a7.css><script src=/js/meme.min.dd11d9ee391c28c55e7e558480edc7328d764051868779a373ae6f7b959c1e01.js></script>
+<script src=/js/search/fuse-search.js></script>
+<link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" media=print onload="this.media='all'"><noscript><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;500;700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap"></noscript><meta name=author content="Justice"><meta name=description content="使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测……"><link rel="shortcut icon" href=/favicon.ico type=image/x-icon><link rel=mask-icon href=/icons/safari-pinned-tab.svg color=#2a6df4><link rel=apple-touch-icon sizes=180x180 href=/icons/apple-touch-icon.png><meta name=apple-mobile-web-app-capable content="yes"><meta name=apple-mobile-web-app-title content="Justice's Site"><meta name=apple-mobile-web-app-status-bar-style content="black"><meta name=mobile-web-app-capable content="yes"><meta name=application-name content="Justice's Site"><meta name=msapplication-starturl content="../../../../"><meta name=msapplication-TileColor content="#fff"><meta name=msapplication-TileImage content="../../../../icons/mstile-150x150.png"><link rel=manifest href=/manifest.json><link rel=canonical href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","datePublished":"2024-03-07T11:58:54+08:00","dateModified":"2024-04-28T06:05:43+00:00","url":"https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/","headline":"使用Rust编写操作系统（四）：内核测试","description":"使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测……","inLanguage":"zh-cn","articleSection":"post","wordCount":13197,"image":["https://os.phil-opp.com/testing/qemu-test-runner-output.png","https://os.phil-opp.com/testing/qemu-failed-test.png"],"author":{"@type":"Person","description":"Viva La Vida","email":"justice_103@126.com","image":"https://justice.bj.cn/icons/apple-touch-icon.png","url":"https://io-oi.me/","name":"Justice"},"license":"[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)","publisher":{"@type":"Organization","name":"Justice's Site","logo":{"@type":"ImageObject","url":"https://justice.bj.cn/icons/apple-touch-icon.png"},"url":"https://justice.bj.cn"},"mainEntityOfPage":{"@type":"WebSite","@id":"https://justice.bj.cn"}}</script><meta name=twitter:card content="summary_large_image"><meta name=twitter:site content="@reuixiy"><meta name=twitter:creator content="@reuixiy"><meta property="og:title" content="使用Rust编写操作系统（四）：内核测试"><meta property="og:description" content="使用Rust编写操作系统（四）：内核测试 本文主要讲述了在no_std环境下进行单元测……"><meta property="og:url" content="https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/"><meta property="og:site_name" content="Justice's Site"><meta property="og:locale" content="zh-cn"><meta property="og:image" content="https://os.phil-opp.com/testing/qemu-test-runner-output.png"><meta property="og:type" content="article"><meta property="article:published_time" content="2024-03-07T11:58:54+08:00"><meta property="article:modified_time" content="2024-04-28T06:05:43+00:00"><meta property="article:section" content="post"></head><body><div class=container><header class=header><div class=header-wrapper><div class="header-inner single"><div class=site-brand><a href=/ class=brand>Justice's Site</a></div><nav class=nav><ul class=menu id=menu><li class=menu-item><a href=/><span class=menu-item-name>主页</span></a></li><li class=menu-item><a href=/post/><span class=menu-item-name>点滴</span></a></li><li class=menu-item><a href=/tags/><span class=menu-item-name>标签</span></a></li><li class=menu-item><a href=/categories/><span class=menu-item-name>分类</span></a></li><li class=menu-item><a href=/about><span class=menu-item-name>关于</span></a></li><li class=menu-item><a href=http://passer-by.com/pacman/><span class=menu-item-name>更多</span></a></li><li class=menu-item><a id=theme-switcher href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-light"><path d="M193.2 104.5 242 7a18 18 0 0128 0l48.8 97.5L422.2 70A18 18 0 01442 89.8l-34.5 103.4L505 242a18 18 0 010 28l-97.5 48.8L442 422.2A18 18 0 01422.2 442l-103.4-34.5L270 505a18 18 0 01-28 0l-48.8-97.5L89.8 442A18 18 0 0170 422.2l34.5-103.4-97.5-48.8a18 18 0 010-28l97.5-48.8L70 89.8A18 18 0 0189.8 70zM256 128a128 128 0 10.01.0M256 160a96 96 0 10.01.0"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon theme-icon-dark"><path d="M27 412A256 256 0 10181 5a11.5 11.5.0 00-5 20A201.5 201.5.0 0142 399a11.5 11.5.0 00-15 13"/></svg></a></li><li class="menu-item search-item" data-target=search-modal><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="16" width="16" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg></li></ul></nav></div></div><input type=checkbox id=nav-toggle aria-hidden=true>
+<label for=nav-toggle class=nav-toggle></label>
+<label for=nav-toggle class=nav-curtain></label></header><script>let indexURL="https://justice.bj.cn/index.json",includeSectionsInSearch=["post"],search_no_results="0 results for",search_initial_message=""</script><div class=search-modal aria-hidden=true style=--color-primary:#7f0ec6><div data-target=close-search-modal class=search-modal-overlay></div><div class=search-wrapper data-image=true data-description=true data-tags=true data-categories=true><div class=search-wrapper-header><label for=search-modal-input style=margin-top:-1px><span class=sr-only>search icon</span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-icon" data-type="search"><path fill="currentcolor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8.0 45.3s-32.8 12.5-45.3.0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9.0 208S93.1.0 208 0 416 93.1 416 208zM208 352a144 144 0 100-288 144 144 0 100 288z"/></svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="18" width="18" class="search-reset" data-type="reset"><path fill="currentcolor" d="M256 512A256 256 0 10256 0a256 256 0 100 512zM175 175c9.4-9.4 24.6-9.4 33.9.0l47 47 47-47c9.4-9.4 24.6-9.4 33.9.0s9.4 24.6.0 33.9l-47 47 47 47c9.4 9.4 9.4 24.6.0 33.9s-24.6 9.4-33.9.0l-47-47-47 47c-9.4 9.4-24.6 9.4-33.9.0s-9.4-24.6.0-33.9l47-47-47-47c-9.4-9.4-9.4-24.6.0-33.9z"/></svg></label>
+<input id=search-modal-input type=text data-search-input autocomplete=off aria-label=Search placeholder></div><div class=search-wrapper-body><div class=search-result data-search-result></div><span class=search-result-empty></span></div><div class=search-wrapper-footer><span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" viewBox="0 0 16 16"><path d="M3.204 11h9.592L8 5.519 3.204 11zm-.753-.659 4.796-5.48a1 1 0 011.506.0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 01-.753-1.659z"/></svg></kbd><kbd><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentcolor" style="margin-top:1px" viewBox="0 0 16 16"><path d="M3.204 5h9.592L8 10.481 3.204 5zm-.753.659 4.796 5.48a1 1 0 001.506.0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 00-.753 1.659z"/></svg></kbd>to navigate</span>
+<span><kbd><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentcolor" style="display:inline-block" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M14.5 1.5a.5.5.0 01.5.5v4.8a2.5 2.5.0 01-2.5 2.5H2.707l3.347 3.346a.5.5.0 01-.708.708l-4.2-4.2a.5.5.0 010-.708l4-4a.5.5.0 11.708.708L2.707 8.3H12.5A1.5 1.5.0 0014 6.8V2a.5.5.0 01.5-.5z"/></svg></kbd>to select</span>
+<span class=search-result-info></span>
+<span data-target=close-search-modal><kbd>ESC</kbd> to close</span></div></div></div><main class="main single" id=main><div class=main-inner><article class="content post h-entry" data-align=justify data-type=post data-toc-num=true><h1 class="post-title p-name">使用Rust编写操作系统（四）：内核测试</h1><div class=post-meta><time datetime=2024-03-07T11:58:54+08:00 class="post-meta-item published dt-published"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M148 288h-40c-6.6.0-12-5.4-12-12v-40c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v40c0 6.6-5.4 12-12 12zm108-12v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 96v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm-96 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm192 0v-40c0-6.6-5.4-12-12-12h-40c-6.6.0-12 5.4-12 12v40c0 6.6 5.4 12 12 12h40c6.6.0 12-5.4 12-12zm96-260v352c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V112c0-26.5 21.5-48 48-48h48V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h128V12c0-6.6 5.4-12 12-12h40c6.6.0 12 5.4 12 12v52h48c26.5.0 48 21.5 48 48zm-48 346V160H48v298c0 3.3 2.7 6 6 6h340c3.3.0 6-2.7 6-6z"/></svg>&nbsp;2024.3.7</time>
+<time datetime=2024-04-28T06:05:43+00:00 class="post-meta-item modified dt-updated"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon post-meta-icon"><path d="M4e2 64h-48V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H160V12c0-6.627-5.373-12-12-12h-40c-6.627.0-12 5.373-12 12v52H48C21.49 64 0 85.49.0 112v352c0 26.51 21.49 48 48 48h352c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 4e2H54a6 6 0 01-6-6V160h352v298a6 6 0 01-6 6zm-52.849-200.65L198.842 404.519c-4.705 4.667-12.303 4.637-16.971-.068l-75.091-75.699c-4.667-4.705-4.637-12.303.068-16.971l22.719-22.536c4.705-4.667 12.303-4.637 16.97.069l44.104 44.461 111.072-110.181c4.705-4.667 12.303-4.637 16.971.068l22.536 22.718c4.667 4.705 4.636 12.303-.069 16.97z"/></svg>&nbsp;2024.4.28</time>
+<span class="post-meta-item category"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M464 128H272l-54.63-54.63c-6-6-14.14-9.37-22.63-9.37H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V176c0-26.51-21.49-48-48-48zm0 272H48V112h140.12l54.63 54.63c6 6 14.14 9.37 22.63 9.37H464v224z"/></svg>&nbsp;<a href=/post/ class="category-link p-category">滴水穿石</a></span>
+<span class="post-meta-item wordcount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3.0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9.0l60.1 60.1c18.8 18.7 18.8 49.1.0 67.9zM284.2 99.8 21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3.0-17l-111-111c-4.8-4.7-12.4-4.7-17.1.0zM124.1 339.9c-5.5-5.5-5.5-14.3.0-19.8l154-154c5.5-5.5 14.3-5.5 19.8.0s5.5 14.3.0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8.0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"/></svg>&nbsp;13197</span>
+<span class="post-meta-item reading-time"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon post-meta-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm0 448c-110.5.0-2e2-89.5-2e2-2e2S145.5 56 256 56s2e2 89.5 2e2 2e2-89.5 2e2-2e2 2e2zm61.8-104.4-84.9-61.7c-3.1-2.3-4.9-5.9-4.9-9.7V116c0-6.6 5.4-12 12-12h32c6.6.0 12 5.4 12 12v141.7l66.8 48.6c5.4 3.9 6.5 11.4 2.6 16.8L334.6 349c-3.9 5.3-11.4 6.5-16.8 2.6z"/></svg>&nbsp;27&nbsp;分钟</span></div><nav class=contents><h2 id=contents class=contents-title>目录</h2><ol class=toc><li><a id=contents:阅读要求 href=#阅读要求>阅读要求</a></li><li><a id=contents:rust中的测试 href=#rust中的测试>Rust中的测试</a><ol><li><a id=contents:自定义测试框架 href=#自定义测试框架>自定义测试框架</a></li></ol></li><li><a id=contents:退出qemu href=#退出qemu>退出QEMU</a><ol><li><a id=contents:io-端口 href=#io-端口>I/O 端口</a></li><li><a id=contents:使用退出exit设备 href=#使用退出exit设备>使用退出(Exit)设备</a></li><li><a id=contents:代表成功的退出代码 href=#代表成功的退出代码>代表成功的退出代码</a></li></ol></li><li><a id=contents:打印到控制台 href=#打印到控制台>打印到控制台</a><ol><li><a id=contents:串口 href=#串口>串口</a></li><li><a id=contents:qemu参数 href=#qemu参数>QEMU参数</a></li><li><a id=contents:在panic时打印一个错误信息 href=#在panic时打印一个错误信息>在panic时打印一个错误信息</a></li><li><a id=contents:隐藏-qemu href=#隐藏-qemu>隐藏 QEMU</a></li><li><a id=contents:超时 href=#超时>超时</a></li></ol></li><li><a id=contents:测试vga缓冲区 href=#测试vga缓冲区>测试VGA缓冲区</a></li><li><a id=contents:集成测试 href=#集成测试>集成测试</a><ol><li><a id=contents:创建一个库 href=#创建一个库>创建一个库</a></li><li><a id=contents:完成集成测试 href=#完成集成测试>完成集成测试</a></li><li><a id=contents:未来的测试 href=#未来的测试>未来的测试</a></li><li><a id=contents:那些应该panic的测试 href=#那些应该panic的测试>那些应该Panic的测试</a></li><li><a id=contents:无约束测试 href=#无约束测试>无约束测试</a></li></ol></li><li><a id=contents:总结 href=#总结>总结</a></li><li><a id=contents:下期预告 href=#下期预告>下期预告</a></li></ol></nav><div class="post-body e-content"><h1 id=使用rust编写操作系统四内核测试><a href=#使用rust编写操作系统四内核测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:使用rust编写操作系统四内核测试 class=headings>使用Rust编写操作系统（四）：内核测试</a></h1><p>本文主要讲述了在<code>no_std</code>环境下进行单元测试和集成测试的方法。我们将通过Rust的自定义测试框架来在我们的内核中执行一些测试函数。为了将结果反馈到QEMU上，我们需要使用QEMU的一些其他的功能以及<code>bootimage</code>工具。</p><p>这个系列的blog在<a href=https://github.com/phil-opp/blog_os target=_blank rel=noopener>GitHub</a>上开放开发，如果你有任何问题，请在这里开一个issue来讨论。当然你也可以在[底部]留言。你可以在<a href=https://github.com/phil-opp/blog_os/tree/post-04 target=_blank rel=noopener>这里</a>找到这篇文章的完整源码。</p><h2 id=阅读要求><a href=#阅读要求 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:阅读要求 class=headings>阅读要求</a></h2><p>这篇文章替换了此前的(现在已经过时了) <a href=./second-edition/posts/deprecated/04-unit-testing/index.md><em>单元测试(Unit Testing)</em></a> 和 <a href=./second-edition/posts/deprecated/05-integration-tests/index.md><em>集成测试(Integration Tests)</em></a> 两篇文章。这里我将假定你是在2019-04-27日后阅读的<a href=./second-edition/posts/02-minimal-rust-kernel/index.md><em>最小Rust内核</em></a>一文。总而言之，本文要求你已经有一个<a href=./second-edition/posts/02-minimal-rust-kernel/index.md#set-a-default-target>设置默认目标</a>的 <code>.cargo/config</code> 文件且<a href=./second-edition/posts/02-minimal-rust-kernel/index.md#using-cargo-run>定义了一个runner可执行文件</a>。</p><h2 id=rust中的测试><a href=#rust中的测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:rust中的测试 class=headings>Rust中的测试</a></h2><p>Rust有一个<strong>内置的测试框架</strong>（<a href=https://doc.rust-lang.org/book/second-edition/ch11-00-testing.html target=_blank rel=noopener>built-in test framework</a>）：无需任何设置就可以进行单元测试，只需要创建一个通过assert来检查结果的函数并在函数的头部加上<code>#[test]</code>属性即可。然后<code>cargo test</code>会自动找到并执行你的crate中的所有测试函数。</p><p>不幸的是，对于一个<code>no_std</code>的应用，比如我们的内核，这有点点复杂。现在的问题是，Rust的测试框架会隐式的调用内置的<a href=https://doc.rust-lang.org/test/index.html target=_blank rel=noopener><code>test</code></a>库，但是这个库依赖于标准库。这也就是说我们的 <code>#[no_std]</code>内核无法使用默认的测试框架。</p><p>当我们试图在我们的项目中执行<code>cargo xtest</code>时，我们可以看到如下信息:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
    Compiling blog_os v0.1.0 (/…/blog_os)
 error[E0463]: can&#39;t find crate for `test`
-</code></pre></td></tr></table>
-</div>
-</div><p>由于<code>test</code>crate依赖于标准库，所以它在我们的裸机目标上并不可用。虽然将<code>test</code>crate移植到一个 <code>#[no_std]</code> 上下文环境中是<a href=https://github.com/japaric/utest>可能的</a>，但是这样做是高度不稳定的并且还会需要一些特殊的hacks，例如重定义 <code>panic</code> 宏。</p>
-<h3 id=自定义测试框架>自定义测试框架</h3>
-<p>幸运的是，Rust支持通过使用不稳定的<strong>自定义测试框架</strong>（<a href=https://doc.rust-lang.org/unstable-book/language-features/custom-test-frameworks.html><code>custom_test_frameworks</code></a>） 功能来替换默认的测试框架。该功能不需要额外的库，因此在 <code>#[no_std]</code>环境中它也可以工作。它的工作原理是收集所有标注了 <code>#[test_case]</code>属性的函数，然后将这个测试函数的列表作为参数传递给用户指定的runner函数。因此，它实现了对测试过程的最大控制。</p>
-<p>与默认的测试框架相比，它的缺点是有一些高级功能诸如 <a href=https://doc.rust-lang.org/book/ch11-01-writing-tests.html#checking-for-panics-with-should_panic><code>should_panic</code> tests</a>都不可用了。相对的，如果需要这些功能，我们需要自己来实现。当然，这点对我们来说是好事，因为我们的环境非常特殊，在这个环境里，这些高级功能的默认实现无论如何都是无法工作的，举个例子， <code>#[should_panic]</code>属性依赖于堆栈展开来捕获内核panic，而我的内核早已将其禁用了。</p>
-<p>要为我们的内核实现自定义测试框架，我们需要将如下代码添加到我们的<code>main.rs</code>中去:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>由于<code>test</code>crate依赖于标准库，所以它在我们的裸机目标上并不可用。虽然将<code>test</code>crate移植到一个 <code>#[no_std]</code> 上下文环境中是<a href=https://github.com/japaric/utest target=_blank rel=noopener>可能的</a>，但是这样做是高度不稳定的并且还会需要一些特殊的hacks，例如重定义 <code>panic</code> 宏。</p><h3 id=自定义测试框架><a href=#自定义测试框架 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:自定义测试框架 class=headings>自定义测试框架</a></h3><p>幸运的是，Rust支持通过使用不稳定的<strong>自定义测试框架</strong>（<a href=https://doc.rust-lang.org/unstable-book/language-features/custom-test-frameworks.html target=_blank rel=noopener><code>custom_test_frameworks</code></a>） 功能来替换默认的测试框架。该功能不需要额外的库，因此在 <code>#[no_std]</code>环境中它也可以工作。它的工作原理是收集所有标注了 <code>#[test_case]</code>属性的函数，然后将这个测试函数的列表作为参数传递给用户指定的runner函数。因此，它实现了对测试过程的最大控制。</p><p>与默认的测试框架相比，它的缺点是有一些高级功能诸如 <a href=https://doc.rust-lang.org/book/ch11-01-writing-tests.html#checking-for-panics-with-should_panic target=_blank rel=noopener><code>should_panic</code> tests</a>都不可用了。相对的，如果需要这些功能，我们需要自己来实现。当然，这点对我们来说是好事，因为我们的环境非常特殊，在这个环境里，这些高级功能的默认实现无论如何都是无法工作的，举个例子， <code>#[should_panic]</code>属性依赖于堆栈展开来捕获内核panic，而我的内核早已将其禁用了。</p><p>要为我们的内核实现自定义测试框架，我们需要将如下代码添加到我们的<code>main.rs</code>中去:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -244,9 +28,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=lnt>10
 </span><span class=lnt>11
 </span><span class=lnt>12
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![feature(custom_test_frameworks)]</span><span class=w>
 </span><span class=w></span><span class=cp>#![test_runner(crate::test_runner)]</span><span class=w>
@@ -258,14 +40,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=w>        </span><span class=n>test</span><span class=p>();</span><span class=w>
 </span><span class=w>    </span><span class=p>}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>我们的runner会打印一个简短的debug信息然后调用列表中的每个测试函数。参数类型 <code>&[&dyn Fn()]</code> 是<a href=https://doc.rust-lang.org/std/ops/trait.Fn.html><em>Fn()</em></a> trait的 <a href=https://doc.rust-lang.org/1.30.0/book/first-edition/trait-objects.html><em>trait object</em></a> 引用的一个 <a href=https://doc.rust-lang.org/std/primitive.slice.html><em>slice</em></a>。它基本上可以被看做一个可以像函数一样被调用的类型的引用列表。由于这个函数在不进行测试的时候没有什么用，这里我们使用 <code>#[cfg(test)]</code>属性保证它只会出现在测试中。</p>
-<p>现在当我们运行 <code>cargo xtest</code> ，我们可以发现运行成功了。然而，我们看到的仍然是"Hello World"而不是我们的 <code>test_runner</code>传递来的信息。这是由于我们的入口点仍然是 <code>_start</code> 函数——自定义测试框架会生成一个<code>main</code>函数来调用<code>test_runner</code>，但是由于我们使用了 <code>#[no_main]</code>并提供了我们自己的入口点，所以这个<code>main</code>函数就被忽略了。</p>
-<p>为了修复这个问题，我们需要通过 <code>reexport_test_harness_main</code>属性来将生成的函数的名称更改为与<code>main</code>不同的名称。然后我们可以在我们的<code>_start</code>函数里调用这个重命名的函数:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>我们的runner会打印一个简短的debug信息然后调用列表中的每个测试函数。参数类型 <code>&[&dyn Fn()]</code> 是<a href=https://doc.rust-lang.org/std/ops/trait.Fn.html target=_blank rel=noopener><em>Fn()</em></a> trait的 <a href=https://doc.rust-lang.org/1.30.0/book/first-edition/trait-objects.html target=_blank rel=noopener><em>trait object</em></a> 引用的一个 <a href=https://doc.rust-lang.org/std/primitive.slice.html target=_blank rel=noopener><em>slice</em></a>。它基本上可以被看做一个可以像函数一样被调用的类型的引用列表。由于这个函数在不进行测试的时候没有什么用，这里我们使用 <code>#[cfg(test)]</code>属性保证它只会出现在测试中。</p><p>现在当我们运行 <code>cargo xtest</code> ，我们可以发现运行成功了。然而，我们看到的仍然是"Hello World"而不是我们的 <code>test_runner</code>传递来的信息。这是由于我们的入口点仍然是 <code>_start</code> 函数——自定义测试框架会生成一个<code>main</code>函数来调用<code>test_runner</code>，但是由于我们使用了 <code>#[no_main]</code>并提供了我们自己的入口点，所以这个<code>main</code>函数就被忽略了。</p><p>为了修复这个问题，我们需要通过 <code>reexport_test_harness_main</code>属性来将生成的函数的名称更改为与<code>main</code>不同的名称。然后我们可以在我们的<code>_start</code>函数里调用这个重命名的函数:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -278,9 +53,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=lnt>11
 </span><span class=lnt>12
 </span><span class=lnt>13
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![reexport_test_harness_main = </span><span class=s>&#34;test_main&#34;</span><span class=cp>]</span><span class=w>
 </span><span class=w>
@@ -293,13 +66,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=w>
 </span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>我们将测试框架的入口函数的名字设置为<code>test_main</code>，并在我们的 <code>_start</code>入口点里调用它。通过使用<strong>条件编译</strong>（<a href=https://doc.rust-lang.org/1.30.0/book/first-edition/conditional-compilation.html>conditional compilation</a>），我们能够只在上下文环境为测试（test）时调用<code>test_main</code>，因为该函数将不在非测试上下文中生成。</p>
-<p>现在当我们执行 <code>cargo xtest</code>时，我们可以看到我们的<code>test_runner</code>将"Running 0 tests"信息显示在屏幕上了。我们可以创建第一个测试函数了:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>我们将测试框架的入口函数的名字设置为<code>test_main</code>，并在我们的 <code>_start</code>入口点里调用它。通过使用<strong>条件编译</strong>（<a href=https://doc.rust-lang.org/1.30.0/book/first-edition/conditional-compilation.html target=_blank rel=noopener>conditional compilation</a>），我们能够只在上下文环境为测试（test）时调用<code>test_main</code>，因为该函数将不在非测试上下文中生成。</p><p>现在当我们执行 <code>cargo xtest</code>时，我们可以看到我们的<code>test_runner</code>将"Running 0 tests"信息显示在屏幕上了。我们可以创建第一个测试函数了:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -307,9 +74,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=lnt>6
 </span><span class=lnt>7
 </span><span class=lnt>8
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[test_case]</span><span class=w>
 </span><span class=w></span><span class=k>fn</span> <span class=nf>trivial_assertion</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
@@ -317,56 +82,23 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=w>    </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span><span class=w> </span><span class=mi>1</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>现在，当我们运行 <code>cargo xtest</code>时，我们可以看到如下输出:</p>
-<p><img src=https://os.phil-opp.com/testing/qemu-test-runner-output.png alt="QEMU printing &ldquo;Hello World!&rdquo;, &ldquo;Running 1 tests&rdquo;, and &ldquo;trivial assertion&mldr; [ok]" "></p>
-<p>传递给 <code>test_runner</code>函数的<code>tests</code>切片里包含了一个 <code>trivial_assertion</code> 函数的引用，从屏幕上输出的 <code>trivial assertion... [ok]</code>信息可见，我们的测试已被调用并且顺利通过。</p>
-<p>在执行完tests后， <code>test_runner</code>会将结果返回给 <code>test_main</code>函数，而这个函数又返回到 <code>_start</code>入口点函数——这样我们就进入了一个死循环，因为入口点函数是不允许返回的。这将导致一个问题：我们希望<code>cargo xtest</code>在所有的测试运行完毕后，才返回并退出。</p>
-<h2 id=退出qemu>退出QEMU</h2>
-<p>现在我们在<code>_start</code>函数结束后进入了一个死循环，所以每次执行完<code>cargo xtest</code>后我们都需要手动去关闭QEMU；但是我们还想在没有用户交互的脚本环境下执行 <code>cargo xtest</code>。解决这个问题的最佳方式，是实现一个合适的方法来关闭我们的操作系统——不幸的是，这个方式实现起来相对有些复杂，因为这要求我们实现对<a href=https://wiki.osdev.org/APM>APM</a>或<a href=https://wiki.osdev.org/ACPI>ACPI</a>电源管理标准的支持。</p>
-<p>幸运的是，还有一个绕开这些问题的办法：QEMU支持一种名为 <code>isa-debug-exit</code>的特殊设备，它提供了一种从客户系统（guest system）里退出QEMU的简单方式。为了使用这个设备，我们需要向QEMU传递一个<code>-device</code>参数。当然，我们也可以通过将 <code>package.metadata.bootimage.test-args</code> 配置关键字添加到我们的<code>Cargo.toml</code>来达到目的：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>现在，当我们运行 <code>cargo xtest</code>时，我们可以看到如下输出:</p><p><img src=https://os.phil-opp.com/testing/qemu-test-runner-output.png alt="QEMU printing " hello world!", "running 1 tests", and "trivial assertion... [ok]""></p><p>传递给 <code>test_runner</code>函数的<code>tests</code>切片里包含了一个 <code>trivial_assertion</code> 函数的引用，从屏幕上输出的 <code>trivial assertion... [ok]</code>信息可见，我们的测试已被调用并且顺利通过。</p><p>在执行完tests后， <code>test_runner</code>会将结果返回给 <code>test_main</code>函数，而这个函数又返回到 <code>_start</code>入口点函数——这样我们就进入了一个死循环，因为入口点函数是不允许返回的。这将导致一个问题：我们希望<code>cargo xtest</code>在所有的测试运行完毕后，才返回并退出。</p><h2 id=退出qemu><a href=#退出qemu class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:退出qemu class=headings>退出QEMU</a></h2><p>现在我们在<code>_start</code>函数结束后进入了一个死循环，所以每次执行完<code>cargo xtest</code>后我们都需要手动去关闭QEMU；但是我们还想在没有用户交互的脚本环境下执行 <code>cargo xtest</code>。解决这个问题的最佳方式，是实现一个合适的方法来关闭我们的操作系统——不幸的是，这个方式实现起来相对有些复杂，因为这要求我们实现对<a href=https://wiki.osdev.org/APM target=_blank rel=noopener>APM</a>或<a href=https://wiki.osdev.org/ACPI target=_blank rel=noopener>ACPI</a>电源管理标准的支持。</p><p>幸运的是，还有一个绕开这些问题的办法：QEMU支持一种名为 <code>isa-debug-exit</code>的特殊设备，它提供了一种从客户系统（guest system）里退出QEMU的简单方式。为了使用这个设备，我们需要向QEMU传递一个<code>-device</code>参数。当然，我们也可以通过将 <code>package.metadata.bootimage.test-args</code> 配置关键字添加到我们的<code>Cargo.toml</code>来达到目的：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>package</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>bootimage</span><span class=p>]</span>
 <span class=nx>test-args</span> <span class=p>=</span> <span class=p>[</span><span class=s2>&#34;-device&#34;</span><span class=p>,</span> <span class=s2>&#34;isa-debug-exit,iobase=0xf4,iosize=0x04&#34;</span><span class=p>]</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>bootimage runner</code> 会在QEMU的默认测试命令后添加<code>test-args</code> 参数。（对于<code>cargo xrun</code>命令，这个参数会被忽略。）</p>
-<p>在传递设备名 (<code>isa-debug-exit</code>)的同时，我们还传递了两个参数，<code>iobase</code> 和 <code>iosize</code> 。这两个参数指定了一个_I/O 端口_，我们的内核将通过它来访问设备。</p>
-<h3 id=io-端口>I/O 端口</h3>
-<p>在x86平台上，CPU和外围硬件通信通常有两种方式，<strong>内存映射I/O</strong>和<strong>端口映射I/O</strong>。之前，我们已经使用内存映射的方式，通过内存地址<code>0xb8000</code>访问了[VGA文本缓冲区]。该地址并没有映射到RAM，而是映射到了VGA设备的一部分内存上。</p>
-<p>与内存映射不同，端口映射I/O使用独立的I/O总线来进行通信。每个外围设备都有一个或数个端口号。CPU采用了特殊的<code>in</code>和<code>out</code>指令来和端口通信，这些指令要求一个端口号和一个字节的数据作为参数（有些这种指令的变体也允许发送<code>u16</code>或是<code>u32</code>长度的数据）。</p>
-<p><code>isa-debug-exit</code>设备使用的就是端口映射I/O。其中， <code>iobase</code> 参数指定了设备对应的端口地址（在x86中，<code>0xf4</code>是一个<a href=https://wiki.osdev.org/I/O_Ports#The_list>通常未被使用的端口</a>），而<code>iosize</code>则指定了端口的大小（<code>0x04</code>代表4字节）。</p>
-<h3 id=使用退出exit设备>使用退出(Exit)设备</h3>
-<p><code>isa-debug-exit</code>设备的功能非常简单。当一个 <code>value</code>写入<code>iobase</code>指定的端口时，它会导致QEMU以<strong>退出状态</strong>（<a href=https://en.wikipedia.org/wiki/Exit_status>exit status</a>）<code>(value &lt;&lt; 1) | 1</code>退出。也就是说，当我们向端口写入<code>0</code>时，QEMU将以退出状态<code>(0 &lt;&lt; 1) | 1 = 1</code>退出，而当我们向端口写入<code>1</code>时，它将以退出状态<code>(1 &lt;&lt; 1) | 1 = 3</code>退出。</p>
-<p>这里我们使用 <a href=https://docs.rs/x86_64/0.7.5/x86_64/><code>x86_64</code></a> crate提供的抽象，而不是手动调用<code>in</code>或<code>out</code>指令。为了添加对该crate的依赖，我们可以将其添加到我们的 <code>Cargo.toml</code>中的 <code>dependencies</code> 小节中去:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p><code>bootimage runner</code> 会在QEMU的默认测试命令后添加<code>test-args</code> 参数。（对于<code>cargo xrun</code>命令，这个参数会被忽略。）</p><p>在传递设备名 (<code>isa-debug-exit</code>)的同时，我们还传递了两个参数，<code>iobase</code> 和 <code>iosize</code> 。这两个参数指定了一个_I/O 端口_，我们的内核将通过它来访问设备。</p><h3 id=io-端口><a href=#io-端口 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:io-端口 class=headings>I/O 端口</a></h3><p>在x86平台上，CPU和外围硬件通信通常有两种方式，<strong>内存映射I/O</strong>和<strong>端口映射I/O</strong>。之前，我们已经使用内存映射的方式，通过内存地址<code>0xb8000</code>访问了[VGA文本缓冲区]。该地址并没有映射到RAM，而是映射到了VGA设备的一部分内存上。</p><p>与内存映射不同，端口映射I/O使用独立的I/O总线来进行通信。每个外围设备都有一个或数个端口号。CPU采用了特殊的<code>in</code>和<code>out</code>指令来和端口通信，这些指令要求一个端口号和一个字节的数据作为参数（有些这种指令的变体也允许发送<code>u16</code>或是<code>u32</code>长度的数据）。</p><p><code>isa-debug-exit</code>设备使用的就是端口映射I/O。其中， <code>iobase</code> 参数指定了设备对应的端口地址（在x86中，<code>0xf4</code>是一个<a href=https://wiki.osdev.org/I/O_Ports#The_list target=_blank rel=noopener>通常未被使用的端口</a>），而<code>iosize</code>则指定了端口的大小（<code>0x04</code>代表4字节）。</p><h3 id=使用退出exit设备><a href=#使用退出exit设备 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:使用退出exit设备 class=headings>使用退出(Exit)设备</a></h3><p><code>isa-debug-exit</code>设备的功能非常简单。当一个 <code>value</code>写入<code>iobase</code>指定的端口时，它会导致QEMU以<strong>退出状态</strong>（<a href=https://en.wikipedia.org/wiki/Exit_status target=_blank rel=noopener>exit status</a>）<code>(value &lt;&lt; 1) | 1</code>退出。也就是说，当我们向端口写入<code>0</code>时，QEMU将以退出状态<code>(0 &lt;&lt; 1) | 1 = 1</code>退出，而当我们向端口写入<code>1</code>时，它将以退出状态<code>(1 &lt;&lt; 1) | 1 = 3</code>退出。</p><p>这里我们使用 <a href=https://docs.rs/x86_64/0.7.5/x86_64/ target=_blank rel=noopener><code>x86_64</code></a> crate提供的抽象，而不是手动调用<code>in</code>或<code>out</code>指令。为了添加对该crate的依赖，我们可以将其添加到我们的 <code>Cargo.toml</code>中的 <code>dependencies</code> 小节中去:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
 <span class=nx>x86_64</span> <span class=p>=</span> <span class=s2>&#34;0.7.5&#34;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>现在我们可以使用crate中提供的<a href=https://docs.rs/x86_64/0.7.0/x86_64/instructions/port/struct.Port.html><code>Port</code></a> 类型来创建一个<code>exit_qemu</code> 函数了:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>现在我们可以使用crate中提供的<a href=https://docs.rs/x86_64/0.7.0/x86_64/instructions/port/struct.Port.html target=_blank rel=noopener><code>Port</code></a> 类型来创建一个<code>exit_qemu</code> 函数了:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -383,9 +115,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=lnt>15
 </span><span class=lnt>16
 </span><span class=lnt>17
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span><span class=w>
 </span><span class=w></span><span class=cp>#[repr(u32)]</span><span class=w>
@@ -402,14 +132,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=w>        </span><span class=n>port</span><span class=p>.</span><span class=n>write</span><span class=p>(</span><span class=n>exit_code</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>u32</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=p>}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>该函数在<code>0xf4</code>处创建了一个新的端口，该端口同时也是 <code>isa-debug-exit</code> 设备的 <code>iobase</code> 。然后它会向端口写入传递的退出代码。这里我们使用<code>u32</code>来传递数据，因为我们之前已经将 <code>isa-debug-exit</code>设备的 <code>iosize</code> 指定为4字节了。上述两个操作都是<code>unsafe</code>的，因为I/O端口的写入操作通常会导致一些不可预知的行为。</p>
-<p>为了指定退出状态，我们创建了一个 <code>QemuExitCode</code>枚举。思路大体上是，如果所有的测试均成功，就以成功退出码退出；否则就以失败退出码退出。这个枚举类型被标记为 <code>#[repr(u32)]</code>，代表每个变量都是一个<code>u32</code>的整数类型。我们使用退出代码<code>0x10</code>代表成功，<code>0x11</code>代表失败。 实际的退出代码并不重要，只要它们不与QEMU的默认退出代码冲突即可。 例如，使用退出代码0表示成功可能并不是一个好主意，因为它在转换后就变成了<code>(0 &lt;&lt; 1) | 1 = 1</code> ，而<code>1</code>是QEMU运行失败时的默认退出代码。 这样，我们就无法将QEMU错误与成功的测试运行区分开来了。</p>
-<p>现在我们来更新<code>test_runner</code>的代码，让程序在运行所有测试完毕后退出QEMU：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>该函数在<code>0xf4</code>处创建了一个新的端口，该端口同时也是 <code>isa-debug-exit</code> 设备的 <code>iobase</code> 。然后它会向端口写入传递的退出代码。这里我们使用<code>u32</code>来传递数据，因为我们之前已经将 <code>isa-debug-exit</code>设备的 <code>iosize</code> 指定为4字节了。上述两个操作都是<code>unsafe</code>的，因为I/O端口的写入操作通常会导致一些不可预知的行为。</p><p>为了指定退出状态，我们创建了一个 <code>QemuExitCode</code>枚举。思路大体上是，如果所有的测试均成功，就以成功退出码退出；否则就以失败退出码退出。这个枚举类型被标记为 <code>#[repr(u32)]</code>，代表每个变量都是一个<code>u32</code>的整数类型。我们使用退出代码<code>0x10</code>代表成功，<code>0x11</code>代表失败。 实际的退出代码并不重要，只要它们不与QEMU的默认退出代码冲突即可。 例如，使用退出代码0表示成功可能并不是一个好主意，因为它在转换后就变成了<code>(0 &lt;&lt; 1) | 1 = 1</code> ，而<code>1</code>是QEMU运行失败时的默认退出代码。 这样，我们就无法将QEMU错误与成功的测试运行区分开来了。</p><p>现在我们来更新<code>test_runner</code>的代码，让程序在运行所有测试完毕后退出QEMU：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -417,9 +140,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=lnt>6
 </span><span class=lnt>7
 </span><span class=lnt>8
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>fn</span> <span class=nf>test_runner</span><span class=p>(</span><span class=n>tests</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=o>&amp;</span><span class=n>dyn</span><span class=w> </span><span class=nb>Fn</span><span class=p>()])</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=k>fn</span> <span class=nf>test_runner</span><span class=p>(</span><span class=n>tests</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=o>&amp;</span><span class=n>dyn</span><span class=w> </span><span class=nb>Fn</span><span class=p>()])</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;Running {} tests&#34;</span><span class=p>,</span><span class=w> </span><span class=n>tests</span><span class=p>.</span><span class=n>len</span><span class=p>());</span><span class=w>
 </span><span class=w>    </span><span class=k>for</span><span class=w> </span><span class=n>test</span><span class=w> </span><span class=k>in</span><span class=w> </span><span class=n>tests</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>        </span><span class=n>test</span><span class=p>();</span><span class=w>
@@ -427,12 +148,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=w>    </span><span class=sd>/// new
 </span><span class=sd></span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Success</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>当我们现在运行<code>cargo xtest</code>时，QEMU会在测试运行后立刻退出。现在的问题是，即使我们传递了表示成功（<code>Success</code>）的退出代码， <code>cargo test</code>依然会将所有的测试都视为失败：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>当我们现在运行<code>cargo xtest</code>时，QEMU会在测试运行后立刻退出。现在的问题是，即使我们传递了表示成功（<code>Success</code>）的退出代码， <code>cargo test</code>依然会将所有的测试都视为失败：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -442,9 +158,7 @@ error[E0463]: can&#39;t find crate for `test`
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
     Finished dev [unoptimized + debuginfo] target(s) in 0.03s
      Running target/x86_64-blog_os/debug/deps/blog_os-5804fc7d2dd4c9be
 Building bootloader
@@ -454,61 +168,27 @@ Running: `qemu-system-x86_64 -drive format=raw,file=/…/target/x86_64-blog_os/d
     deps/bootimage-blog_os-5804fc7d2dd4c9be.bin -device isa-debug-exit,iobase=0xf4,
     iosize=0x04`
 error: test failed, to rerun pass &#39;--bin blog_os&#39;
-</code></pre></td></tr></table>
-</div>
-</div><p>这里的问题在于，<code>cargo test</code>会将所有非<code>0</code>的错误码都视为测试失败。</p>
-<h3 id=代表成功的退出代码>代表成功的退出代码</h3>
-<p>为了解决这个问题， <code>bootimage</code>提供了一个 <code>test-success-exit-code</code>配置项，可以将指定的退出代码映射到退出代码<code>0</code>:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>这里的问题在于，<code>cargo test</code>会将所有非<code>0</code>的错误码都视为测试失败。</p><h3 id=代表成功的退出代码><a href=#代表成功的退出代码 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:代表成功的退出代码 class=headings>代表成功的退出代码</a></h3><p>为了解决这个问题， <code>bootimage</code>提供了一个 <code>test-success-exit-code</code>配置项，可以将指定的退出代码映射到退出代码<code>0</code>:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=p>[</span><span class=nx>package</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>bootimage</span><span class=p>]</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=p>[</span><span class=nx>package</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>bootimage</span><span class=p>]</span>
 <span class=nx>test-args</span> <span class=p>=</span> <span class=p>[</span><span class=err>…</span><span class=p>]</span>
 <span class=nx>test-success-exit-code</span> <span class=p>=</span> <span class=mi>33</span>         <span class=c># (0x10 &lt;&lt; 1) | 1</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>有了这个配置，<code>bootimage</code>就会将我们的成功退出码映射到退出码0；这样一来， <code>cargo xtest</code>就能正确的识别出测试成功的情况，而不会将其视为测试失败。</p>
-<p>我们的测试runner现在会在正确报告测试结果后自动关闭QEMU。我们可以看到QEMU的窗口只会显示很短的时间——我们不容易看清测试的结果。如果测试结果会打印在控制台上而不是QEMU里，让我们能在QEMU退出后仍然能看到测试结果就好了。</p>
-<h2 id=打印到控制台>打印到控制台</h2>
-<p>要在控制台上查看测试输出，我们需要以某种方式将数据从内核发送到宿主系统。 有多种方法可以实现这一点，例如通过TCP网络接口来发送数据。但是，设置网络堆栈是一项很复杂的任务——这里我们选择更简单的解决方案。</p>
-<h3 id=串口>串口</h3>
-<p>发送数据的一个简单的方式是通过<a href=https://en.wikipedia.org/wiki/Serial_port>串行端口</a>，这是一个现代电脑中已经不存在的旧标准接口（译者注：玩过单片机的同学应该知道，其实译者上大学的时候有些同学的笔记本电脑还有串口的，没有串口的同学在烧录单片机程序的时候也都会需要usb转串口线，一般是51，像stm32有st-link，这个另说，不过其实也可以用串口来下载）。串口非常易于编程，QEMU可以将通过串口发送的数据重定向到宿主机的标准输出或是文件中。</p>
-<p>用来实现串行接口的芯片被称为 <a href=https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter>UARTs</a>。在x86上，有<a href=https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter#UART_models>很多UART模型</a>，但是幸运的是，它们之间仅有的那些不同之处都是我们用不到的高级功能。目前通用的UARTs都会兼容<a href=https://en.wikipedia.org/wiki/16550_UART>16550 UART</a>，所以我们在我们测试框架里采用该模型。</p>
-<p>我们使用<a href=https://docs.rs/uart_16550><code>uart_16550</code></a> crate来初始化UART，并通过串口来发送数据。为了将该crate添加为依赖，我们将我们的<code>Cargo.toml</code>和<code>main.rs</code>修改为如下:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>有了这个配置，<code>bootimage</code>就会将我们的成功退出码映射到退出码0；这样一来， <code>cargo xtest</code>就能正确的识别出测试成功的情况，而不会将其视为测试失败。</p><p>我们的测试runner现在会在正确报告测试结果后自动关闭QEMU。我们可以看到QEMU的窗口只会显示很短的时间——我们不容易看清测试的结果。如果测试结果会打印在控制台上而不是QEMU里，让我们能在QEMU退出后仍然能看到测试结果就好了。</p><h2 id=打印到控制台><a href=#打印到控制台 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:打印到控制台 class=headings>打印到控制台</a></h2><p>要在控制台上查看测试输出，我们需要以某种方式将数据从内核发送到宿主系统。 有多种方法可以实现这一点，例如通过TCP网络接口来发送数据。但是，设置网络堆栈是一项很复杂的任务——这里我们选择更简单的解决方案。</p><h3 id=串口><a href=#串口 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:串口 class=headings>串口</a></h3><p>发送数据的一个简单的方式是通过<a href=https://en.wikipedia.org/wiki/Serial_port target=_blank rel=noopener>串行端口</a>，这是一个现代电脑中已经不存在的旧标准接口（译者注：玩过单片机的同学应该知道，其实译者上大学的时候有些同学的笔记本电脑还有串口的，没有串口的同学在烧录单片机程序的时候也都会需要usb转串口线，一般是51，像stm32有st-link，这个另说，不过其实也可以用串口来下载）。串口非常易于编程，QEMU可以将通过串口发送的数据重定向到宿主机的标准输出或是文件中。</p><p>用来实现串行接口的芯片被称为 <a href=https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter target=_blank rel=noopener>UARTs</a>。在x86上，有<a href=https://en.wikipedia.org/wiki/Universal_asynchronous_receiver-transmitter#UART_models target=_blank rel=noopener>很多UART模型</a>，但是幸运的是，它们之间仅有的那些不同之处都是我们用不到的高级功能。目前通用的UARTs都会兼容<a href=https://en.wikipedia.org/wiki/16550_UART target=_blank rel=noopener>16550 UART</a>，所以我们在我们测试框架里采用该模型。</p><p>我们使用<a href=https://docs.rs/uart_16550 target=_blank rel=noopener><code>uart_16550</code></a> crate来初始化UART，并通过串口来发送数据。为了将该crate添加为依赖，我们将我们的<code>Cargo.toml</code>和<code>main.rs</code>修改为如下:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>dependencies</span><span class=p>]</span>
 <span class=nx>uart_16550</span> <span class=p>=</span> <span class=s2>&#34;0.2.0&#34;</span>
-</code></pre></td></tr></table>
-</div>
-</div><p><code>uart_16550</code> crate包含了一个代表UART寄存器的<code>SerialPort</code>结构体，但是我们仍然需要自己来创建一个相应的实例。我们使用以下内容来创建一个新的串口模块<code>serial</code>:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p><code>uart_16550</code> crate包含了一个代表UART寄存器的<code>SerialPort</code>结构体，但是我们仍然需要自己来创建一个相应的实例。我们使用以下内容来创建一个新的串口模块<code>serial</code>:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=k>mod</span> <span class=nn>serial</span><span class=p>;</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -521,9 +201,7 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=lnt>11
 </span><span class=lnt>12
 </span><span class=lnt>13
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/serial.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/serial.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>uart_16550</span>::<span class=n>SerialPort</span><span class=p>;</span><span class=w>
 </span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>spin</span>::<span class=n>Mutex</span><span class=p>;</span><span class=w>
@@ -536,14 +214,7 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=w>        </span><span class=n>Mutex</span>::<span class=n>new</span><span class=p>(</span><span class=n>serial_port</span><span class=p>)</span><span class=w>
 </span><span class=w>    </span><span class=p>};</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>就像<a href=./second-edition/posts/03-vga-text-buffer/index.md#lazy-statics>VGA文本缓冲区</a>一样，我们使用 <code>lazy_static</code> 和一个自旋锁来创建一个 <code>static</code> writer实例。通过使用 <code>lazy_static</code> ，我们可以保证<code>init</code>方法只会在该示例第一次被使用使被调用。</p>
-<p>和 <code>isa-debug-exit</code>设备一样，UART也是用过I/O端口进行编程的。由于UART相对来讲更加复杂，它使用多个I/O端口来对不同的设备寄存器进行编程。不安全的<code>SerialPort::new</code>函数需要UART的第一个I/O端口的地址作为参数，从该地址中可以计算出所有所需端口的地址。我们传递的端口地址为<code>0x3F8</code> ，该地址是第一个串行接口的标准端口号。</p>
-<p>为了使串口更加易用，我们添加了 <code>serial_print!</code> 和 <code>serial_println!</code>宏:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>就像<a href=./second-edition/posts/03-vga-text-buffer/index.md#lazy-statics>VGA文本缓冲区</a>一样，我们使用 <code>lazy_static</code> 和一个自旋锁来创建一个 <code>static</code> writer实例。通过使用 <code>lazy_static</code> ，我们可以保证<code>init</code>方法只会在该示例第一次被使用使被调用。</p><p>和 <code>isa-debug-exit</code>设备一样，UART也是用过I/O端口进行编程的。由于UART相对来讲更加复杂，它使用多个I/O端口来对不同的设备寄存器进行编程。不安全的<code>SerialPort::new</code>函数需要UART的第一个I/O端口的地址作为参数，从该地址中可以计算出所有所需端口的地址。我们传递的端口地址为<code>0x3F8</code> ，该地址是第一个串行接口的标准端口号。</p><p>为了使串口更加易用，我们添加了 <code>serial_print!</code> 和 <code>serial_println!</code>宏:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -565,9 +236,7 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=lnt>20
 </span><span class=lnt>21
 </span><span class=lnt>22
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=cp>#[doc(hidden)]</span><span class=w>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=cp>#[doc(hidden)]</span><span class=w>
 </span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>fn</span> <span class=nf>_print</span><span class=p>(</span><span class=n>args</span>: ::<span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Arguments</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>    </span><span class=k>use</span><span class=w> </span><span class=n>core</span>::<span class=n>fmt</span>::<span class=n>Write</span><span class=p>;</span><span class=w>
 </span><span class=w>    </span><span class=n>SERIAL1</span><span class=p>.</span><span class=n>lock</span><span class=p>().</span><span class=n>write_fmt</span><span class=p>(</span><span class=n>args</span><span class=p>).</span><span class=n>expect</span><span class=p>(</span><span class=s>&#34;Printing to serial failed&#34;</span><span class=p>);</span><span class=w>
@@ -589,13 +258,7 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=w>    </span><span class=p>(</span><span class=cp>$fmt</span>:<span class=nc>expr</span><span class=p>,</span><span class=w> </span><span class=cp>$($arg</span>:<span class=nc>tt</span><span class=p>)</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=o>=&gt;</span><span class=w> </span><span class=p>(</span><span class=cp>$crate</span>::<span class=n>serial_print</span><span class=o>!</span><span class=p>(</span><span class=w>
 </span><span class=w>        </span><span class=n>concat</span><span class=o>!</span><span class=p>(</span><span class=cp>$fmt</span><span class=p>,</span><span class=w> </span><span class=s>&#34;\n&#34;</span><span class=p>),</span><span class=w> </span><span class=cp>$($arg</span><span class=p>)</span><span class=o>*</span><span class=p>));</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>该实现和我们此前的<code>print</code>和<code>println</code>宏的实现非常类似。 由于<code>SerialPort</code>类型已经实现了<code>fmt::Write</code> trait，所以我们不需要提供我们自己的实现了。</p>
-<p>现在我们可以从测试代码里向串行接口打印而不是向VGA文本缓冲区打印了:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>该实现和我们此前的<code>print</code>和<code>println</code>宏的实现非常类似。 由于<code>SerialPort</code>类型已经实现了<code>fmt::Write</code> trait，所以我们不需要提供我们自己的实现了。</p><p>现在我们可以从测试代码里向串行接口打印而不是向VGA文本缓冲区打印了:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -609,9 +272,7 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[cfg(test)]</span><span class=w>
 </span><span class=w></span><span class=k>fn</span> <span class=nf>test_runner</span><span class=p>(</span><span class=n>tests</span>: <span class=kp>&amp;</span><span class=p>[</span><span class=o>&amp;</span><span class=n>dyn</span><span class=w> </span><span class=nb>Fn</span><span class=p>()])</span><span class=w> </span><span class=p>{</span><span class=w>
@@ -625,33 +286,19 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=w>    </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span><span class=w> </span><span class=mi>1</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>注意，由于我们使用了 <code>#[macro_export]</code> 属性， <code>serial_println</code>宏直接位于根命名空间下——所以通过<code>use crate::serial::serial_println</code> 来导入该宏是不起作用的。</p>
-<h3 id=qemu参数>QEMU参数</h3>
-<p>为了查看QEMU的串行输出，我们需要使用<code>-serial</code>参数将输出重定向到stdout：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>注意，由于我们使用了 <code>#[macro_export]</code> 属性， <code>serial_println</code>宏直接位于根命名空间下——所以通过<code>use crate::serial::serial_println</code> 来导入该宏是不起作用的。</p><h3 id=qemu参数><a href=#qemu参数 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:qemu参数 class=headings>QEMU参数</a></h3><p>为了查看QEMU的串行输出，我们需要使用<code>-serial</code>参数将输出重定向到stdout：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>package</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>bootimage</span><span class=p>]</span>
 <span class=nx>test-args</span> <span class=p>=</span> <span class=p>[</span>
     <span class=s2>&#34;-device&#34;</span><span class=p>,</span> <span class=s2>&#34;isa-debug-exit,iobase=0xf4,iosize=0x04&#34;</span><span class=p>,</span> <span class=s2>&#34;-serial&#34;</span><span class=p>,</span> <span class=s2>&#34;stdio&#34;</span>
 <span class=p>]</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>现在，当我们运行 <code>cargo xtest</code>时，我们可以直接在控制台里看到测试输出了:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>现在，当我们运行 <code>cargo xtest</code>时，我们可以直接在控制台里看到测试输出了:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -661,9 +308,7 @@ error: test failed, to rerun pass &#39;--bin blog_os&#39;
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
     Finished dev [unoptimized + debuginfo] target(s) in 0.02s
      Running target/x86_64-blog_os/debug/deps/blog_os-7b7c37b4ad62551a
 Building bootloader
@@ -673,16 +318,7 @@ Running: `qemu-system-x86_64 -drive format=raw,file=/…/target/x86_64-blog_os/d
     isa-debug-exit,iobase=0xf4,iosize=0x04 -serial stdio`
 Running 1 tests
 trivial assertion... [ok]
-</code></pre></td></tr></table>
-</div>
-</div><p>然而，当测试失败时，我们仍然会在QEMU内看到输出结果，因为我们的panic handler还是用了<code>println</code>。为了模拟这个过程，我们将我们的 <code>trivial_assertion</code> test中的断言(assertion)修改为 <code>assert_eq!(0, 1)</code>:</p>
-<p><img src=https://os.phil-opp.com/testing/qemu-failed-test.png alt="QEMU printing &ldquo;Hello World!&rdquo; and &ldquo;panicked at &lsquo;assertion failed: (left == right)left: 0, right: 1&rsquo;, src/main.rs:55:5"></p>
-<p>可以看到，panic信息被打印到了VGA缓冲区里，而测试输出则被打印到串口上了。panic信息非常有用，所以我们希望能够在控制台中来查看它。</p>
-<h3 id=在panic时打印一个错误信息>在panic时打印一个错误信息</h3>
-<p>为了在panic时使用错误信息来退出QEMU，我们可以使用<strong>条件编译</strong>（<a href=https://doc.rust-lang.org/1.30.0/book/first-edition/conditional-compilation.html>conditional compilation</a>）在测试模式下使用（与非测试模式下）不同的panic处理方式:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>然而，当测试失败时，我们仍然会在QEMU内看到输出结果，因为我们的panic handler还是用了<code>println</code>。为了模拟这个过程，我们将我们的 <code>trivial_assertion</code> test中的断言(assertion)修改为 <code>assert_eq!(0, 1)</code>:</p><p><img src=https://os.phil-opp.com/testing/qemu-failed-test.png alt="QEMU printing " hello world!" and "panicked at 'assertion failed: (left="=" right)left: 0, right: 1', src/main.rs:55:5"></p><p>可以看到，panic信息被打印到了VGA缓冲区里，而测试输出则被打印到串口上了。panic信息非常有用，所以我们希望能够在控制台中来查看它。</p><h3 id=在panic时打印一个错误信息><a href=#在panic时打印一个错误信息 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:在panic时打印一个错误信息 class=headings>在panic时打印一个错误信息</a></h3><p>为了在panic时使用错误信息来退出QEMU，我们可以使用<strong>条件编译</strong>（<a href=https://doc.rust-lang.org/1.30.0/book/first-edition/conditional-compilation.html target=_blank rel=noopener>conditional compilation</a>）在测试模式下使用（与非测试模式下）不同的panic处理方式:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -699,9 +335,7 @@ trivial assertion... [ok]
 </span><span class=lnt>15
 </span><span class=lnt>16
 </span><span class=lnt>17
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// our existing panic handler
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// our existing panic handler
 </span><span class=c1></span><span class=cp>#[cfg(not(test))]</span><span class=w> </span><span class=c1>// new attribute
 </span><span class=c1></span><span class=cp>#[panic_handler]</span><span class=w>
 </span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
@@ -718,13 +352,7 @@ trivial assertion... [ok]
 </span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Failed</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>在我们的测试panic处理中，我们用 <code>serial_println</code>来代替<code>println</code> 并使用失败代码来退出QEMU。注意，在<code>exit_qemu</code>调用后，我们仍然需要一个无限循环的<code>loop</code>因为编译器并不知道 <code>isa-debug-exit</code>设备会导致程序退出。</p>
-<p>现在，即使在测试失败的情况下QEMU仍然会存在，并会将一些有用的错误信息打印到控制台：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>在我们的测试panic处理中，我们用 <code>serial_println</code>来代替<code>println</code> 并使用失败代码来退出QEMU。注意，在<code>exit_qemu</code>调用后，我们仍然需要一个无限循环的<code>loop</code>因为编译器并不知道 <code>isa-debug-exit</code>设备会导致程序退出。</p><p>现在，即使在测试失败的情况下QEMU仍然会存在，并会将一些有用的错误信息打印到控制台：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -738,9 +366,7 @@ trivial assertion... [ok]
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text>&gt; cargo xtest
     Finished dev [unoptimized + debuginfo] target(s) in 0.02s
      Running target/x86_64-blog_os/debug/deps/blog_os-7b7c37b4ad62551a
 Building bootloader
@@ -754,63 +380,29 @@ trivial assertion... [failed]
 Error: panicked at &#39;assertion failed: `(left == right)`
   left: `0`,
  right: `1`&#39;, src/main.rs:65:5
-</code></pre></td></tr></table>
-</div>
-</div><p>由于现在所有的测试都将输出到控制台上，我们不再需要让QEMU窗口弹出一小会儿了——我们完全可以把窗口藏起来。</p>
-<h3 id=隐藏-qemu>隐藏 QEMU</h3>
-<p>由于我们使用<code>isa-debug-exit</code>设备和串行端口来报告完整的测试结果，所以我们不再需要QMEU的窗口了。我们可以通过向QEMU传递 <code>-display none</code>参数来将其隐藏:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>由于现在所有的测试都将输出到控制台上，我们不再需要让QEMU窗口弹出一小会儿了——我们完全可以把窗口藏起来。</p><h3 id=隐藏-qemu><a href=#隐藏-qemu class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:隐藏-qemu class=headings>隐藏 QEMU</a></h3><p>由于我们使用<code>isa-debug-exit</code>设备和串行端口来报告完整的测试结果，所以我们不再需要QMEU的窗口了。我们可以通过向QEMU传递 <code>-display none</code>参数来将其隐藏:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
 </span><span class=lnt>6
 </span><span class=lnt>7
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>package</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>bootimage</span><span class=p>]</span>
 <span class=nx>test-args</span> <span class=p>=</span> <span class=p>[</span>
     <span class=s2>&#34;-device&#34;</span><span class=p>,</span> <span class=s2>&#34;isa-debug-exit,iobase=0xf4,iosize=0x04&#34;</span><span class=p>,</span> <span class=s2>&#34;-serial&#34;</span><span class=p>,</span> <span class=s2>&#34;stdio&#34;</span><span class=p>,</span>
     <span class=s2>&#34;-display&#34;</span><span class=p>,</span> <span class=s2>&#34;none&#34;</span>
 <span class=p>]</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>现在QEMU完全在后台运行且没有任何窗口会被打开。这不仅不那么烦人，还允许我们的测试框架在没有图形界面的环境里，诸如CI服务器或是<a href=https://en.wikipedia.org/wiki/Secure_Shell>SSH</a>连接里运行。</p>
-<h3 id=超时>超时</h3>
-<p>由于 <code>cargo xtest</code> 会等待测试运行器退出，如果一个测试永远不返回那么它就会一直阻塞测试运行器。幸运的是，在实际应用中这并不是一个大问题，因为无限循环通常是很容易避免的。在我们的这个例子里，无限循环会发生在以下几种不同的情况中：</p>
-<ul>
-<li>bootloader加载内核失败，导致系统不停重启；</li>
-<li>BIOS/UEFI固件加载bootloader失败，同样会导致无限重启；</li>
-<li>CPU在某些函数结束时进入一个<code>loop {}</code>语句，例如因为QEMU的exit设备无法正常工作而导致死循环；</li>
-<li>硬件触发了系统重置，例如未捕获CPU异常时（后续的文章将会详细解释）。</li>
-</ul>
-<p>由于无限循环可能会在各种情况中发生，因此， <code>bootimage</code> 工具默认为每个可执行测试设置了一个长度为5分钟的超时时间。如果测试未在此时间内完成，则将其标记为失败，并向控制台输出"Timed Out（超时）&ldquo;错误。这个功能确保了那些卡在无限循环里的测试不会一直阻塞<code>cargo xtest</code>。</p>
-<p>你可以将<code>loop {}</code>语句添加到 <code>trivial_assertion</code>测试中来进行尝试。当你运行 <code>cargo xtest</code>时，你可以发现该测试会在五分钟后被标记为超时。超时持续的时间可以通过Cargo.toml中的<code>test-timeout</code>来进行<a href=https://github.com/rust-osdev/bootimage#configuration>配置</a>：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</code></pre></td></tr></table></div></div></div><p>现在QEMU完全在后台运行且没有任何窗口会被打开。这不仅不那么烦人，还允许我们的测试框架在没有图形界面的环境里，诸如CI服务器或是<a href=https://en.wikipedia.org/wiki/Secure_Shell target=_blank rel=noopener>SSH</a>连接里运行。</p><h3 id=超时><a href=#超时 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:超时 class=headings>超时</a></h3><p>由于 <code>cargo xtest</code> 会等待测试运行器退出，如果一个测试永远不返回那么它就会一直阻塞测试运行器。幸运的是，在实际应用中这并不是一个大问题，因为无限循环通常是很容易避免的。在我们的这个例子里，无限循环会发生在以下几种不同的情况中：</p><ul><li>bootloader加载内核失败，导致系统不停重启；</li><li>BIOS/UEFI固件加载bootloader失败，同样会导致无限重启；</li><li>CPU在某些函数结束时进入一个<code>loop {}</code>语句，例如因为QEMU的exit设备无法正常工作而导致死循环；</li><li>硬件触发了系统重置，例如未捕获CPU异常时（后续的文章将会详细解释）。</li></ul><p>由于无限循环可能会在各种情况中发生，因此， <code>bootimage</code> 工具默认为每个可执行测试设置了一个长度为5分钟的超时时间。如果测试未在此时间内完成，则将其标记为失败，并向控制台输出"Timed Out（超时）"错误。这个功能确保了那些卡在无限循环里的测试不会一直阻塞<code>cargo xtest</code>。</p><p>你可以将<code>loop {}</code>语句添加到 <code>trivial_assertion</code>测试中来进行尝试。当你运行 <code>cargo xtest</code>时，你可以发现该测试会在五分钟后被标记为超时。超时持续的时间可以通过Cargo.toml中的<code>test-timeout</code>来进行<a href=https://github.com/rust-osdev/bootimage#configuration target=_blank rel=noopener>配置</a>：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[</span><span class=nx>package</span><span class=p>.</span><span class=nx>metadata</span><span class=p>.</span><span class=nx>bootimage</span><span class=p>]</span>
 <span class=nx>test-timeout</span> <span class=p>=</span> <span class=mi>300</span>          <span class=c># (in seconds)</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>如果你不想为了观察<code>trivial_assertion</code> 测试超时等待5分钟之久，你可以暂时降低将上述值。</p>
-<p>此后，我们不再需要 <code>trivial_assertion</code> 测试，所以我们可以将其删除。</p>
-<h2 id=测试vga缓冲区>测试VGA缓冲区</h2>
-<p>现在我们已经有了一个可以工作的测试框架了，我们可以为我们的VGA缓冲区实现创建一些测试。首先，我们创建了一个非常简单的测试来验证 <code>println</code>是否正常运行而不会panic：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>如果你不想为了观察<code>trivial_assertion</code> 测试超时等待5分钟之久，你可以暂时降低将上述值。</p><p>此后，我们不再需要 <code>trivial_assertion</code> 测试，所以我们可以将其删除。</p><h2 id=测试vga缓冲区><a href=#测试vga缓冲区 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:测试vga缓冲区 class=headings>测试VGA缓冲区</a></h2><p>现在我们已经有了一个可以工作的测试框架了，我们可以为我们的VGA缓冲区实现创建一些测试。首先，我们创建了一个非常简单的测试来验证 <code>println</code>是否正常运行而不会panic：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -821,9 +413,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt> 9
 </span><span class=lnt>10
 </span><span class=lnt>11
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[cfg(test)]</span><span class=w>
 </span><span class=w></span><span class=k>use</span><span class=w> </span><span class=k>crate</span>::<span class=p>{</span><span class=n>serial_print</span><span class=p>,</span><span class=w> </span><span class=n>serial_println</span><span class=p>};</span><span class=w>
@@ -834,13 +424,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;test_println_simple output&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>这个测试所做的仅仅是将一些内容打印到VGA缓冲区。如果它正常结束并且没有panic，也就意味着<code>println</code>调用也没有panic。由于我们只需要将 <code>serial_println</code> 导入到测试模式里，所以我们添加了 <code>cfg(test)</code> 属性（attribute）来避免正常模式下 <code>cargo xbuild</code>会出现的未使用导入警告（unused import warning）。</p>
-<p>为了确保即使打印很多行且有些行超出屏幕的情况下也没有panic发生，我们可以创建另一个测试：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>这个测试所做的仅仅是将一些内容打印到VGA缓冲区。如果它正常结束并且没有panic，也就意味着<code>println</code>调用也没有panic。由于我们只需要将 <code>serial_println</code> 导入到测试模式里，所以我们添加了 <code>cfg(test)</code> 属性（attribute）来避免正常模式下 <code>cargo xbuild</code>会出现的未使用导入警告（unused import warning）。</p><p>为了确保即使打印很多行且有些行超出屏幕的情况下也没有panic发生，我们可以创建另一个测试：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -850,9 +434,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[test_case]</span><span class=w>
 </span><span class=w></span><span class=k>fn</span> <span class=nf>test_println_many</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
@@ -862,12 +444,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=p>}</span><span class=w>
 </span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>我们还可以创建另一个测试函数，来验证打印的几行字符是否真的出现在了屏幕上:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>我们还可以创建另一个测试函数，来验证打印的几行字符是否真的出现在了屏幕上:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -882,9 +459,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>13
 </span><span class=lnt>14
 </span><span class=lnt>15
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/vga_buffer.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[test_case]</span><span class=w>
 </span><span class=w></span><span class=k>fn</span> <span class=nf>test_println_output</span><span class=p>()</span><span class=w> </span><span class=p>{</span><span class=w>
@@ -899,18 +474,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>
 </span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>该函数定义了一个测试字符串，并通过 <code>println</code>将其输出，然后遍历静态 <code>WRITER</code>也就是vga字符缓冲区的屏幕字符。由于<code>println</code>在将字符串打印到屏幕上最后一行后会立刻附加一个新行(即输出完后有一个换行符)，所以这个字符串应该会出现在第 <code>BUFFER_HEIGHT - 2</code>行。</p>
-<p>通过使用<a href=https://doc.rust-lang.org/core/iter/trait.Iterator.html#method.enumerate><code>enumerate</code></a> ，我们统计了变量<code>i</code>的迭代次数，然后用它来加载对应于<code>c</code>的屏幕字符。 通过比较屏幕字符的<code>ascii_character</code>和<code>c</code> ，我们可以确保字符串的每个字符确实出现在vga文本缓冲区中。</p>
-<p>如你所想，我们可以创建更多的测试函数：例如一个用来测试当打印一个很长的且包装正确的行时是否会发生panic的函数，或是一个用于测试换行符、不可打印字符、非unicode字符是否能被正确处理的函数。</p>
-<p>在这篇文章的剩余部分，我们还会解释如何创建一个_集成测试_以测试不同组建之间的交互。</p>
-<h2 id=集成测试>集成测试</h2>
-<p>在Rust中，<strong>集成测试</strong>（<a href=https://doc.rust-lang.org/book/ch11-03-test-organization.html#integration-tests>integration tests</a>）的约定是将其放到项目根目录中的<code>tests</code>目录下(即<code>src</code>的同级目录)。无论是默认测试框架还是自定义测试框架都将自动获取并执行该目录下所有的测试。</p>
-<p>所有的集成测试都是它们自己的可执行文件，并且与我们的<code>main.rs</code>完全独立。这也就意味着每个测试都需要定义它们自己的函数入口点。让我们创建一个名为<code>basic_boot</code>的例子来看看集成测试的工作细节吧:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>该函数定义了一个测试字符串，并通过 <code>println</code>将其输出，然后遍历静态 <code>WRITER</code>也就是vga字符缓冲区的屏幕字符。由于<code>println</code>在将字符串打印到屏幕上最后一行后会立刻附加一个新行(即输出完后有一个换行符)，所以这个字符串应该会出现在第 <code>BUFFER_HEIGHT - 2</code>行。</p><p>通过使用<a href=https://doc.rust-lang.org/core/iter/trait.Iterator.html#method.enumerate target=_blank rel=noopener><code>enumerate</code></a> ，我们统计了变量<code>i</code>的迭代次数，然后用它来加载对应于<code>c</code>的屏幕字符。 通过比较屏幕字符的<code>ascii_character</code>和<code>c</code> ，我们可以确保字符串的每个字符确实出现在vga文本缓冲区中。</p><p>如你所想，我们可以创建更多的测试函数：例如一个用来测试当打印一个很长的且包装正确的行时是否会发生panic的函数，或是一个用于测试换行符、不可打印字符、非unicode字符是否能被正确处理的函数。</p><p>在这篇文章的剩余部分，我们还会解释如何创建一个_集成测试_以测试不同组建之间的交互。</p><h2 id=集成测试><a href=#集成测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:集成测试 class=headings>集成测试</a></h2><p>在Rust中，<strong>集成测试</strong>（<a href=https://doc.rust-lang.org/book/ch11-03-test-organization.html#integration-tests target=_blank rel=noopener>integration tests</a>）的约定是将其放到项目根目录中的<code>tests</code>目录下(即<code>src</code>的同级目录)。无论是默认测试框架还是自定义测试框架都将自动获取并执行该目录下所有的测试。</p><p>所有的集成测试都是它们自己的可执行文件，并且与我们的<code>main.rs</code>完全独立。这也就意味着每个测试都需要定义它们自己的函数入口点。让我们创建一个名为<code>basic_boot</code>的例子来看看集成测试的工作细节吧:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -935,9 +499,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>23
 </span><span class=lnt>24
 </span><span class=lnt>25
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/basic_boot.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/basic_boot.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![no_std]</span><span class=w>
 </span><span class=w></span><span class=cp>#![no_main]</span><span class=w>
@@ -962,30 +524,13 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>由于集成测试都是单独的可执行文件，所以我们需要再次提供所有的crate属性(<code>no_std</code>, <code>no_main</code>, <code>test_runner</code>, 等等)。我们还需要创建一个新的入口点函数<code>_start</code>，用于调用测试入口函数<code>test_main</code>。我们不需要任何的<code>cfg(test)</code> attributes(属性)，因为集成测试的二进制文件在非测试模式下根本不会被编译构建。</p>
-<p>这里我们采用<a href=https://doc.rust-lang.org/core/macro.unimplemented.html><code>unimplemented</code></a>宏，充当<code>test_runner</code>暂未实现的占位符；添加简单的<code>loop {}</code>循环，作为<code>panic</code>处理器的内容。理想情况下，我们希望能向我们在<code>main.rs</code>里所做的一样使用<code>serial_println</code>宏和<code>exit_qemu</code>函数来实现这个函数。但问题是，由于这些测试的构建和我们的<code>main.rs</code>的可执行文件是完全独立的，我们没有办法使用这些函数。</p>
-<p>如果现阶段你运行<code>cargo xtest</code>，你将进入一个无限循环，因为目前panic的处理就是进入无限循环。你需要使用快捷键<code>Ctrl+c</code>，才可以退出QEMU。</p>
-<h3 id=创建一个库>创建一个库</h3>
-<p>为了让这些函数能在我们的集成测试中使用，我们需要从我们的<code>main.rs</code>中分割出一个库，这个库应当可以被其他的crate和集成测试可执行文件使用。为了达成这个目的，我们创建了一个新文件，<code>src/lib.rs</code>:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>由于集成测试都是单独的可执行文件，所以我们需要再次提供所有的crate属性(<code>no_std</code>, <code>no_main</code>, <code>test_runner</code>, 等等)。我们还需要创建一个新的入口点函数<code>_start</code>，用于调用测试入口函数<code>test_main</code>。我们不需要任何的<code>cfg(test)</code> attributes(属性)，因为集成测试的二进制文件在非测试模式下根本不会被编译构建。</p><p>这里我们采用<a href=https://doc.rust-lang.org/core/macro.unimplemented.html target=_blank rel=noopener><code>unimplemented</code></a>宏，充当<code>test_runner</code>暂未实现的占位符；添加简单的<code>loop {}</code>循环，作为<code>panic</code>处理器的内容。理想情况下，我们希望能向我们在<code>main.rs</code>里所做的一样使用<code>serial_println</code>宏和<code>exit_qemu</code>函数来实现这个函数。但问题是，由于这些测试的构建和我们的<code>main.rs</code>的可执行文件是完全独立的，我们没有办法使用这些函数。</p><p>如果现阶段你运行<code>cargo xtest</code>，你将进入一个无限循环，因为目前panic的处理就是进入无限循环。你需要使用快捷键<code>Ctrl+c</code>，才可以退出QEMU。</p><h3 id=创建一个库><a href=#创建一个库 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:创建一个库 class=headings>创建一个库</a></h3><p>为了让这些函数能在我们的集成测试中使用，我们需要从我们的<code>main.rs</code>中分割出一个库，这个库应当可以被其他的crate和集成测试可执行文件使用。为了达成这个目的，我们创建了一个新文件，<code>src/lib.rs</code>:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// src/lib.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// src/lib.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![no_std]</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>和<code>main.rs</code>一样，<code>lib.rs</code>也是一个可以被cargo自动识别的特殊文件。该库是一个独立的编译单元，所以我们需要再次指定<code>#![no_std]</code> 属性。</p>
-<p>为了让我们的库可以和<code>cargo xtest</code>一起协同工作，我们还需要添加以下测试函数和属性:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>和<code>main.rs</code>一样，<code>lib.rs</code>也是一个可以被cargo自动识别的特殊文件。该库是一个独立的编译单元，所以我们需要再次指定<code>#![no_std]</code> 属性。</p><p>为了让我们的库可以和<code>cargo xtest</code>一起协同工作，我们还需要添加以下测试函数和属性:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1022,9 +567,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>35
 </span><span class=lnt>36
 </span><span class=lnt>37
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![cfg_attr(test, no_main)]</span><span class=w>
 </span><span class=w></span><span class=cp>#![feature(custom_test_frameworks)]</span><span class=w>
@@ -1061,14 +604,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>    </span><span class=n>test_panic_handler</span><span class=p>(</span><span class=n>info</span><span class=p>)</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>为了能在可执行文件和集成测试中使用<code>test_runner</code>，我们不对其应用<code>cfg(test)</code> 属性，并将其设置为public。同时，我们还将panic的处理程序分解为public函数<code>test_panic_handler</code>，这样一来它也可以用于可执行文件了。</p>
-<p>由于我们的<code>lib.rs</code>是独立于<code>main.rs</code>进行测试的，因此当该库实在测试模式下编译时我们需要添加一个<code>_start</code>入口点和一个panic处理程序。通过使用<a href=https://doc.rust-lang.org/reference/conditional-compilation.html#the-cfg_attr-attribute><code>cfg_attr</code></a> ，我们可以在这种情况下有条件地启用<code>no_main</code> 属性。</p>
-<p>我们还将<code>QemuExitCode</code>枚举和<code>exit_qemu</code>函数从main.rs移动过来，并将其设置为公有函数：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>为了能在可执行文件和集成测试中使用<code>test_runner</code>，我们不对其应用<code>cfg(test)</code> 属性，并将其设置为public。同时，我们还将panic的处理程序分解为public函数<code>test_panic_handler</code>，这样一来它也可以用于可执行文件了。</p><p>由于我们的<code>lib.rs</code>是独立于<code>main.rs</code>进行测试的，因此当该库实在测试模式下编译时我们需要添加一个<code>_start</code>入口点和一个panic处理程序。通过使用<a href=https://doc.rust-lang.org/reference/conditional-compilation.html#the-cfg_attr-attribute target=_blank rel=noopener><code>cfg_attr</code></a> ，我们可以在这种情况下有条件地启用<code>no_main</code> 属性。</p><p>我们还将<code>QemuExitCode</code>枚举和<code>exit_qemu</code>函数从main.rs移动过来，并将其设置为公有函数：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1085,9 +621,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>15
 </span><span class=lnt>16
 </span><span class=lnt>17
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#[derive(Debug, Clone, Copy, PartialEq, Eq)]</span><span class=w>
 </span><span class=w></span><span class=cp>#[repr(u32)]</span><span class=w>
@@ -1104,28 +638,15 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>        </span><span class=n>port</span><span class=p>.</span><span class=n>write</span><span class=p>(</span><span class=n>exit_code</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=kt>u32</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=p>}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>现在，可执行文件和集成测试都可以从库中导入这些函数，而不需要实现自己的定义。为了使<code>println</code> 和 <code>serial_println</code>可用，我们将以下的模块声明代码也移动到<code>lib.rs</code>中：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>现在，可执行文件和集成测试都可以从库中导入这些函数，而不需要实现自己的定义。为了使<code>println</code> 和 <code>serial_println</code>可用，我们将以下的模块声明代码也移动到<code>lib.rs</code>中：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in src/lib.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>serial</span><span class=p>;</span><span class=w>
 </span><span class=w></span><span class=k>pub</span><span class=w> </span><span class=k>mod</span> <span class=nn>vga_buffer</span><span class=p>;</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>我们将这些模块设置为public(公有)，这样一来我们在库的外部也一样能使用它们了。由于这两者都用了该模块内的<code>_print</code>函数，所以这也是让<code>println</code> 和 <code>serial_println</code>宏可用的必要条件。</p>
-<p>现在我们修改我们的<code>main.rs</code>代码来使用该库:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>我们将这些模块设置为public(公有)，这样一来我们在库的外部也一样能使用它们了。由于这两者都用了该模块内的<code>_print</code>函数，所以这也是让<code>println</code> 和 <code>serial_println</code>宏可用的必要条件。</p><p>现在我们修改我们的<code>main.rs</code>代码来使用该库:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1159,9 +680,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>32
 </span><span class=lnt>33
 </span><span class=lnt>34
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// src/main.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// src/main.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![no_std]</span><span class=w>
 </span><span class=w></span><span class=cp>#![no_main]</span><span class=w>
@@ -1195,15 +714,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>test_panic_handler</span><span class=p>(</span><span class=n>info</span><span class=p>)</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>可以看到，这个库用起来就像一个普通的外部crate。它的调用方法与其它crate无异；在我们的这个例子中，位置可能为<code>blog_os</code>。上述代码使用了<code>test_runner</code>属性中的<code>blog_os::test_runner</code>函数，<code>cfg(test)</code>的panic处理中的<code>blog_os::test_panic_handler</code>函数。它还导入了<code>println</code>宏，这样一来，我们可以在我们的<code>_start</code>和<code>panic</code>中使用它了。</p>
-<p>与此同时，<code>cargo xrun</code>和<code>cargo xtest</code>可以再次正常工作了。当然了，<code>cargo xtest</code>仍然会进入无限循环（你可以通过<code>ctrl+c</code>来退出）。接下来让我们在我们的集成测试中通过所需要的库函数来修复这个问题吧。</p>
-<h3 id=完成集成测试>完成集成测试</h3>
-<p>就像我们的<code>src/main.rs</code>，我们的<code>tests/basic_boot.rs</code>可执行文件同样可以从我们的新库中导入类型。这也就意味着我们可以导入缺失的组件来完成我们的测试。</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>可以看到，这个库用起来就像一个普通的外部crate。它的调用方法与其它crate无异；在我们的这个例子中，位置可能为<code>blog_os</code>。上述代码使用了<code>test_runner</code>属性中的<code>blog_os::test_runner</code>函数，<code>cfg(test)</code>的panic处理中的<code>blog_os::test_panic_handler</code>函数。它还导入了<code>println</code>宏，这样一来，我们可以在我们的<code>_start</code>和<code>panic</code>中使用它了。</p><p>与此同时，<code>cargo xrun</code>和<code>cargo xtest</code>可以再次正常工作了。当然了，<code>cargo xtest</code>仍然会进入无限循环（你可以通过<code>ctrl+c</code>来退出）。接下来让我们在我们的集成测试中通过所需要的库函数来修复这个问题吧。</p><h3 id=完成集成测试><a href=#完成集成测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:完成集成测试 class=headings>完成集成测试</a></h3><p>就像我们的<code>src/main.rs</code>，我们的<code>tests/basic_boot.rs</code>可执行文件同样可以从我们的新库中导入类型。这也就意味着我们可以导入缺失的组件来完成我们的测试。</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -1211,9 +722,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>6
 </span><span class=lnt>7
 </span><span class=lnt>8
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/basic_boot.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/basic_boot.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![test_runner(blog_os::test_runner)]</span><span class=w>
 </span><span class=w>
@@ -1221,14 +730,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w></span><span class=k>fn</span> <span class=nf>panic</span><span class=p>(</span><span class=n>info</span>: <span class=kp>&amp;</span><span class=nc>PanicInfo</span><span class=p>)</span><span class=w> </span>-&gt; <span class=o>!</span><span class=w> </span><span class=p>{</span><span class=w>
 </span><span class=w>    </span><span class=n>blog_os</span>::<span class=n>test_panic_handler</span><span class=p>(</span><span class=n>info</span><span class=p>)</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>这里我们使用我们的库中的<code>test_runner</code>函数，而不是重新实现一个测试运行器。至于panic处理，调用<code>blog_os::test_panic_handler</code>函数即可，就像我们之前在我们的<code>main.rs</code>里面做的一样。</p>
-<p>现在，<code>cargo xtest</code>又可以正常退出了。当你运行该命令时，你会发现它为我们的<code>lib.rs</code>, <code>main.rs</code>, 和 <code>basic_boot.rs</code>分别构建并运行了测试。其中，对于 <code>main.rs</code> 和 <code>basic_boot</code>的集成测试，它会报告"Running 0 tests&rdquo;（正在执行0个测试），因为这些文件里面没有任何用 <code>#[test_case]</code>标注的函数。</p>
-<p>现在我们可以在<code>basic_boot.rs</code>中添加测试了。举个例子，我们可以测试<code>println</code>是否能够正常工作而不panic，就像我们之前在vga缓冲区测试中做的那样:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>这里我们使用我们的库中的<code>test_runner</code>函数，而不是重新实现一个测试运行器。至于panic处理，调用<code>blog_os::test_panic_handler</code>函数即可，就像我们之前在我们的<code>main.rs</code>里面做的一样。</p><p>现在，<code>cargo xtest</code>又可以正常退出了。当你运行该命令时，你会发现它为我们的<code>lib.rs</code>, <code>main.rs</code>, 和 <code>basic_boot.rs</code>分别构建并运行了测试。其中，对于 <code>main.rs</code> 和 <code>basic_boot</code>的集成测试，它会报告"Running 0 tests"（正在执行0个测试），因为这些文件里面没有任何用 <code>#[test_case]</code>标注的函数。</p><p>现在我们可以在<code>basic_boot.rs</code>中添加测试了。举个例子，我们可以测试<code>println</code>是否能够正常工作而不panic，就像我们之前在vga缓冲区测试中做的那样:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1238,9 +740,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt> 8
 </span><span class=lnt> 9
 </span><span class=lnt>10
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/basic_boot.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/basic_boot.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=p>{</span><span class=n>println</span><span class=p>,</span><span class=w> </span><span class=n>serial_print</span><span class=p>,</span><span class=w> </span><span class=n>serial_println</span><span class=p>};</span><span class=w>
 </span><span class=w>
@@ -1250,26 +750,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=n>println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;test_println output&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=n>serial_println</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;[ok]&#34;</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>现在当我们运行<code>cargo xtest</code>时，我们可以看到它会寻找并执行这些测试函数。</p>
-<p>由于该测试和vga缓冲区测试中的一个几乎完全相同，所以目前它看起来似乎没什么用。然而，在将来，我们的<code>main.rs</code>和<code>lib.rs</code>中的<code>_start</code>函数的内容会不断增长，并且在运行<code>test_main</code>之前需要调用一系列的初始化进程，所以这两个测试将会运行在完全不同的环境中(译者注:也就是说虽然现在看起来差不多，但是在将来该测试和vga buffer中的测试会很不一样，有必要单独拿出来，这两者并没有重复)。</p>
-<p>通过在<code>basic_boot</code>环境里不掉用任何初始化例程的<code>_start</code>中测试<code>println</code>函数，我们可以确保<code>println</code>在启动（boot）后可以正常工作。这一点非常重要，因为我们有很多部分依赖于<code>println</code>，例如打印panic信息。</p>
-<h3 id=未来的测试>未来的测试</h3>
-<p>集成测试的强大之处在于，它们可以被看成是完全独立的可执行文件；这也给了它们完全控制环境的能力，使得他们能够测试代码和CPU或是其他硬件的交互是否正确。</p>
-<p>我们的<code>basic_boot</code>测试正是集成测试的一个非常简单的例子。在将来，我们的内核的功能会变得更多，和硬件交互的方式也会变得多种多样。通过添加集成测试，我们可以保证这些交互按预期工作（并一直保持工作）。下面是一些对于未来的测试的设想:</p>
-<ul>
-<li><strong>CPU异常</strong>：当代码执行无效操作（例如除以零）时，CPU就会抛出异常。内核会为这些异常注册处理函数。集成测试可以验证在CPU异常时是否调用了正确的异常处理程序，或者在可解析的异常之后程序是否能正确执行；</li>
-<li><strong>页表</strong>：页表定义了哪些内存区域是有效且可访问的。通过修改页表，可以重新分配新的内存区域，例如，当你启动一个软件的时候。我们可以在集成测试中调整<code>_start</code>函数中的一些页表项，并确认这些改动是否会对<code>#[test_case]</code>的函数产生影响；</li>
-<li><strong>用户空间程序</strong>：用户空间程序是只能访问有限的系统资源的程序。例如，他们无法访问内核数据结构或是其他应用程序的内存。集成测试可以启动执行禁止操作的用户空间程序验证认内核是否会将这些操作全都阻止。</li>
-</ul>
-<p>可以想象，还有更多的测试可以进行。通过添加各种各样的测试，我们确保在为我们的内核添加新功能或是重构代码时，不会意外地破坏他们。这一点在我们的内核变得更大和更复杂的时候显得尤为重要。</p>
-<h3 id=那些应该panic的测试>那些应该Panic的测试</h3>
-<p>标准库的测试框架支持允许构造失败测试的<a href=https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#testing-panics><code>#[should_panic]</code> attribute</a>。这个功能对于验证传递无效参数时函数是否会失败非常有用。不幸的是，这个属性需要标准库的支持，因此，在<code>#[no_std]</code>环境下无法使用。</p>
-<p>尽管我们不能在我们的内核中使用<code>#[should_panic]</code> 属性，但是通过创建一个集成测试我们可以达到类似的效果——该集成测试可以从panic处理程序中返回一个成功错误代码。接下来让我一起来创建一个如上所述名为<code>should_panic</code>的测试吧：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>现在当我们运行<code>cargo xtest</code>时，我们可以看到它会寻找并执行这些测试函数。</p><p>由于该测试和vga缓冲区测试中的一个几乎完全相同，所以目前它看起来似乎没什么用。然而，在将来，我们的<code>main.rs</code>和<code>lib.rs</code>中的<code>_start</code>函数的内容会不断增长，并且在运行<code>test_main</code>之前需要调用一系列的初始化进程，所以这两个测试将会运行在完全不同的环境中(译者注:也就是说虽然现在看起来差不多，但是在将来该测试和vga buffer中的测试会很不一样，有必要单独拿出来，这两者并没有重复)。</p><p>通过在<code>basic_boot</code>环境里不掉用任何初始化例程的<code>_start</code>中测试<code>println</code>函数，我们可以确保<code>println</code>在启动（boot）后可以正常工作。这一点非常重要，因为我们有很多部分依赖于<code>println</code>，例如打印panic信息。</p><h3 id=未来的测试><a href=#未来的测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:未来的测试 class=headings>未来的测试</a></h3><p>集成测试的强大之处在于，它们可以被看成是完全独立的可执行文件；这也给了它们完全控制环境的能力，使得他们能够测试代码和CPU或是其他硬件的交互是否正确。</p><p>我们的<code>basic_boot</code>测试正是集成测试的一个非常简单的例子。在将来，我们的内核的功能会变得更多，和硬件交互的方式也会变得多种多样。通过添加集成测试，我们可以保证这些交互按预期工作（并一直保持工作）。下面是一些对于未来的测试的设想:</p><ul><li><strong>CPU异常</strong>：当代码执行无效操作（例如除以零）时，CPU就会抛出异常。内核会为这些异常注册处理函数。集成测试可以验证在CPU异常时是否调用了正确的异常处理程序，或者在可解析的异常之后程序是否能正确执行；</li><li><strong>页表</strong>：页表定义了哪些内存区域是有效且可访问的。通过修改页表，可以重新分配新的内存区域，例如，当你启动一个软件的时候。我们可以在集成测试中调整<code>_start</code>函数中的一些页表项，并确认这些改动是否会对<code>#[test_case]</code>的函数产生影响；</li><li><strong>用户空间程序</strong>：用户空间程序是只能访问有限的系统资源的程序。例如，他们无法访问内核数据结构或是其他应用程序的内存。集成测试可以启动执行禁止操作的用户空间程序验证认内核是否会将这些操作全都阻止。</li></ul><p>可以想象，还有更多的测试可以进行。通过添加各种各样的测试，我们确保在为我们的内核添加新功能或是重构代码时，不会意外地破坏他们。这一点在我们的内核变得更大和更复杂的时候显得尤为重要。</p><h3 id=那些应该panic的测试><a href=#那些应该panic的测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:那些应该panic的测试 class=headings>那些应该Panic的测试</a></h3><p>标准库的测试框架支持允许构造失败测试的<a href=https://doc.rust-lang.org/rust-by-example/testing/unit_testing.html#testing-panics target=_blank rel=noopener><code>#[should_panic]</code> attribute</a>。这个功能对于验证传递无效参数时函数是否会失败非常有用。不幸的是，这个属性需要标准库的支持，因此，在<code>#[no_std]</code>环境下无法使用。</p><p>尽管我们不能在我们的内核中使用<code>#[should_panic]</code> 属性，但是通过创建一个集成测试我们可以达到类似的效果——该集成测试可以从panic处理程序中返回一个成功错误代码。接下来让我一起来创建一个如上所述名为<code>should_panic</code>的测试吧：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1283,9 +764,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>12
 </span><span class=lnt>13
 </span><span class=lnt>14
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![no_std]</span><span class=w>
 </span><span class=w></span><span class=cp>#![no_main]</span><span class=w>
@@ -1299,12 +778,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Success</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>这个测试还没有完成，因为它尚未定义<code>_start</code>函数或是其他自定义的测试运行器属性。让我们来补充缺少的内容吧：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span></code></pre></td></tr></table></div></div></div><p>这个测试还没有完成，因为它尚未定义<code>_start</code>函数或是其他自定义的测试运行器属性。让我们来补充缺少的内容吧：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1326,9 +800,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>20
 </span><span class=lnt>21
 </span><span class=lnt>22
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![feature(custom_test_frameworks)]</span><span class=w>
 </span><span class=w></span><span class=cp>#![test_runner(test_runner)]</span><span class=w>
@@ -1350,13 +822,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=p>}</span><span class=w>
 </span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Success</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>这个测试定义了自己的<code>test_runner</code>函数，而不是复用<code>lib.rs</code>中的<code>test_runner</code>，该函数会在测试没有panic而是正常退出时返回一个错误退出代码(因为这里我们希望测试会panic)。如果没有定义测试函数，运行器就会以一个成功错误代码退出。由于这个运行器总是在执行完单个的测试后就退出，因此定义超过一个<code>#[test_case]</code>的函数都是没有意义的。</p>
-<p>现在我们来创建一个应该失败的测试:</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>这个测试定义了自己的<code>test_runner</code>函数，而不是复用<code>lib.rs</code>中的<code>test_runner</code>，该函数会在测试没有panic而是正常退出时返回一个错误退出代码(因为这里我们希望测试会panic)。如果没有定义测试函数，运行器就会以一个成功错误代码退出。由于这个运行器总是在执行完单个的测试后就退出，因此定义超过一个<code>#[test_case]</code>的函数都是没有意义的。</p><p>现在我们来创建一个应该失败的测试:</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
@@ -1365,9 +831,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>7
 </span><span class=lnt>8
 </span><span class=lnt>9
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=k>use</span><span class=w> </span><span class=n>blog_os</span>::<span class=n>serial_print</span><span class=p>;</span><span class=w>
 </span><span class=w>
@@ -1376,35 +840,17 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=n>serial_print</span><span class=o>!</span><span class=p>(</span><span class=s>&#34;should_fail... &#34;</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=n>assert_eq</span><span class=o>!</span><span class=p>(</span><span class=mi>0</span><span class=p>,</span><span class=w> </span><span class=mi>1</span><span class=p>);</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>该测试用 <code>assert_eq</code>来断言（assert）<code>0</code>和<code>1</code>是否相等。毫无疑问，这当然会失败(<code>0</code>当然不等于<code>1</code>)，所以我们的测试就会像我们想要的那样panic。</p>
-<p>当我们通过<code>cargo xtest --test should_panic</code>运行该测试时，我们会发现成功了因为该测试如我们预期的那样panic了。当我们将断言部分（即<code>assert_eq!(0, 1);</code>）注释掉后，我们就会发现测试失败并返回了_&ldquo;test did not panic&rdquo;_的信息。</p>
-<p>这种方法的缺点是它只使用于单个的测试函数。对于多个<code>#[test_case]</code>函数，它只会执行第一个函数因为程序无法在panic处理被调用后继续执行。我目前没有想到解决这个问题的方法，如果你有任何想法，请务必告诉我！</p>
-<h3 id=无约束测试>无约束测试</h3>
-<p>对于那些只有单个测试函数的集成测试而言(例如我们的<code>should_panic</code>测试)，其实并不需要测试运行器。对于这种情况，我们可以完全禁用测试运行器，直接在<code>_start</code>函数中直接运行我们的测试。</p>
-<p>这里的关键就是在<code>Cargo.toml</code>中为测试禁用 <code>harness</code> flag，这个标志（flag）定义了是否将测试运行器用于集成测试中。如果该标志位被设置为<code>false</code>，那么默认的测试运行器和自定义的测试运行器功能都将被禁用，这样一来该测试就可以像一个普通的可执行程序一样运行了。</p>
-<p>现在让我们为我们的<code>should_panic</code>测试禁用<code>harness</code> flag吧：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td></tr></table></div></div></div><p>该测试用 <code>assert_eq</code>来断言（assert）<code>0</code>和<code>1</code>是否相等。毫无疑问，这当然会失败(<code>0</code>当然不等于<code>1</code>)，所以我们的测试就会像我们想要的那样panic。</p><p>当我们通过<code>cargo xtest --test should_panic</code>运行该测试时，我们会发现成功了因为该测试如我们预期的那样panic了。当我们将断言部分（即<code>assert_eq!(0, 1);</code>）注释掉后，我们就会发现测试失败并返回了_"test did not panic"_的信息。</p><p>这种方法的缺点是它只使用于单个的测试函数。对于多个<code>#[test_case]</code>函数，它只会执行第一个函数因为程序无法在panic处理被调用后继续执行。我目前没有想到解决这个问题的方法，如果你有任何想法，请务必告诉我！</p><h3 id=无约束测试><a href=#无约束测试 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:无约束测试 class=headings>无约束测试</a></h3><p>对于那些只有单个测试函数的集成测试而言(例如我们的<code>should_panic</code>测试)，其实并不需要测试运行器。对于这种情况，我们可以完全禁用测试运行器，直接在<code>_start</code>函数中直接运行我们的测试。</p><p>这里的关键就是在<code>Cargo.toml</code>中为测试禁用 <code>harness</code> flag，这个标志（flag）定义了是否将测试运行器用于集成测试中。如果该标志位被设置为<code>false</code>，那么默认的测试运行器和自定义的测试运行器功能都将被禁用，这样一来该测试就可以像一个普通的可执行程序一样运行了。</p><p>现在让我们为我们的<code>should_panic</code>测试禁用<code>harness</code> flag吧：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
 </span><span class=lnt>2
 </span><span class=lnt>3
 </span><span class=lnt>4
 </span><span class=lnt>5
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=c># in Cargo.toml</span>
 
 <span class=p>[[</span><span class=nx>test</span><span class=p>]]</span>
 <span class=nx>name</span> <span class=p>=</span> <span class=s2>&#34;should_panic&#34;</span>
 <span class=nx>harness</span> <span class=p>=</span> <span class=kc>false</span>
-</code></pre></td></tr></table>
-</div>
-</div><p>现在我们通过移除测试运行器相关的代码，大大简化了我们的<code>should_panic</code>测试。结果看起来如下：</p>
-<div class=highlight><div class=chroma>
-<table class=lntable><tr><td class=lntd>
-<pre tabindex=0 class=chroma><code><span class=lnt> 1
+</code></pre></td></tr></table></div></div></div><p>现在我们通过移除测试运行器相关的代码，大大简化了我们的<code>should_panic</code>测试。结果看起来如下：</p><div class=highlight><div class=chroma><div class=table-container><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
 </span><span class=lnt> 2
 </span><span class=lnt> 3
 </span><span class=lnt> 4
@@ -1431,9 +877,7 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=lnt>25
 </span><span class=lnt>26
 </span><span class=lnt>27
-</span></code></pre></td>
-<td class=lntd>
-<pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-rust data-lang=rust><span class=c1>// in tests/should_panic.rs
 </span><span class=c1></span><span class=w>
 </span><span class=w></span><span class=cp>#![no_std]</span><span class=w>
 </span><span class=w></span><span class=cp>#![no_main]</span><span class=w>
@@ -1460,139 +904,8 @@ Error: panicked at &#39;assertion failed: `(left == right)`
 </span><span class=w>    </span><span class=n>exit_qemu</span><span class=p>(</span><span class=n>QemuExitCode</span>::<span class=n>Success</span><span class=p>);</span><span class=w>
 </span><span class=w>    </span><span class=k>loop</span><span class=w> </span><span class=p>{}</span><span class=w>
 </span><span class=w></span><span class=p>}</span><span class=w>
-</span></code></pre></td></tr></table>
-</div>
-</div><p>现在我们可以通过我们的<code>_start</code>函数来直接调用<code>should_fail</code>函数了，如果返回则返回一个失败退出代码并退出。现在当我们执行<code>cargo xtest --test should_panic</code>时，我们可以发现测试的行为和之前完全一样。</p>
-<p>除了创建<code>should_panic</code>测试，禁用<code>harness</code> attribute对复杂集成测试也很有用，例如，当单个测试函数会产生一些边际效应需要通过特定的顺序执行时。</p>
-<h2 id=总结>总结</h2>
-<p>测试是一种非常有用的技术，它能确保特定的部件拥有我们期望的行为。即使它们不能显示是否有bug，它们仍然是用来寻找bug的利器，尤其是用来避免回归。</p>
-<p>本文讲述了如何为我们的Rust kernel创建一个测试框架。我们使用Rust的自定义框架功能为我们的裸机环境实现了一个简单的<code>#[test_case]</code> attribute支持。通过使用QEMU的<code>isa-debug-exit</code>设备，我们的测试运行器可以在运行测试后退出QEMU并报告测试状态。我们还为串行端口实现了一个简单的驱动，使得错误信息可以被打印到控制台而不是VGA buffer中。</p>
-<p>在为我们的<code>println</code>宏创建了一些测试后，我们在本文的后半部分还探索了集成测试。我们了解到它们位于<code>tests</code>目录中，并被视为完全独立的可执行文件。为了使他们能够使用<code>exit_qemu</code> 函数和 <code>serial_println</code> 宏，我们将大部分代码移动到一个库里，使其能够被导入到所有可执行文件和集成测试中。由于集成测试在各自独立的环境中运行，所以能够测试与硬件的交互或是创建应该panic的测试。</p>
-<p>我们现在有了一个在QEMU内部真是环境中运行的测试框架。在未来的文章里，我们会创建更多的测试，从而让我们的内核在变得更复杂的同时保持可维护性。</p>
-<h2 id=下期预告>下期预告</h2>
-<p>在下一篇文章中，我们将会探索 <em>CPU异常</em> 。这些异常将在一些非法事件发生时由CPU抛出，例如抛出除以零或是访问没有映射的内存页（通常也被称为<code>page fault</code>即缺页异常）。能够捕获和检查这些异常，对将来的调试来说是非常重要的。异常处理与键盘支持所需的硬件中断处理十分相似。</p>
-</div>
-<div class=post-copyright>
-<p class=copyright-item>
-<span class=item-title>文章作者</span>
-<span class=item-content>Justice</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>上次更新</span>
-<span class=item-content>
-2024-03-07 11:58:54
-</span>
-</p>
-<p class=copyright-item>
-<span class=item-title>许可协议</span>
-<span class=item-content><a rel="license noopener" href=https://creativecommons.org/licenses/by-nc-nd/4.0/ target=_blank>CC BY-NC-ND 4.0</a></span>
-</p>
-</div>
-<div class=post-reward>
-<input type=checkbox name=reward id=reward hidden>
-<label class=reward-button for=reward>赞赏支持</label>
-<div class=qr-code>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/wx_reward_qrcode.png>
-<span>微信打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/alipay_reward_qrcode.png>
-<span>支付宝打赏</span>
-</label>
-<label class=qr-code-image for=reward>
-<img class=image src=/image/bitcoin_reward_qrcode.png>
-<span>比特币打赏</span>
-</label>
-</div>
-</div>
-<footer class=post-footer>
-<div class=post-tags>
-<a href=https://justice.bj.cn/tags/pub/>pub</a>
-<a href=https://justice.bj.cn/tags/writing-an-os-in-rust/>writing-an-os-in-rust</a>
-</div>
-<nav class=post-nav>
-<a class=prev href=/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M691.908486 949.511495l75.369571-89.491197c10.963703-12.998035 10.285251-32.864502-1.499144-44.378743L479.499795 515.267417l277.93508-310.326815c11.338233-12.190647 11.035334-32.285311-.638543-44.850487l-80.46666-86.564541c-11.680017-12.583596-30.356378-12.893658-41.662889-.716314L257.233596 494.235404c-11.332093 12.183484-11.041474 32.266891.657986 44.844348l80.46666 86.564541c1.772366 1.910513 3.706415 3.533476 5.750981 4.877077l306.620399 321.703933C662.505829 963.726242 680.945807 962.528973 691.908486 949.511495z"/></svg>
-</i>
-<span class="prev-text nav-default">使用Rust编写操作系统（二）：最小化内核</span>
-<span class="prev-text nav-mobile">上一篇</span>
-</a>
-<a class=next href=/post/09.pub/writing-an-os-in-rust/appendix-a-linker-arguments/>
-<span class="next-text nav-default">使用Rust编写操作系统（附录一）：链接器参数</span>
-<span class="prev-text nav-mobile">下一篇</span>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="18" height="18"><path d="M332.091514 74.487481l-75.369571 89.491197c-10.963703 12.998035-10.285251 32.864502 1.499144 44.378743l286.278095 300.375162L266.565125 819.058374c-11.338233 12.190647-11.035334 32.285311.638543 44.850487l80.46666 86.564541c11.680017 12.583596 30.356378 12.893658 41.662889.716314l377.434212-421.426145c11.332093-12.183484 11.041474-32.266891-.657986-44.844348l-80.46666-86.564541c-1.772366-1.910513-3.706415-3.533476-5.750981-4.877077L373.270379 71.774697c-11.777231-11.500939-30.216186-10.304694-41.178865 2.712784z"/></svg>
-</i>
-</a>
-</nav>
-</footer>
-</article>
-<div class="post bg-white">
-<script src=https://utteranc.es/client.js repo=ZhuZhengyi/gh_comment issue-term=pathname theme=github-light crossorigin=anonymous async></script>
-</div>
-</div>
-</div>
-<div class=modal-dialog>
-<div class=modal-content>
-<div id=closeSearch title=Close class=close>X</div>
-<div id=fastSearch>
-<input id=searchInput tabindex=0>
-<ul id=searchResults>
-</ul>
-</div>
-</div>
-</div>
-</main>
-<footer id=footer class=footer>
-<div class=icon-links>
-<a href=mailto:justice_103@126.com rel="me noopener" class=iconfont title=email><svg class="icon" viewBox="0 0 1451 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="36" height="36"><path d="M664.781909 681.472759.0 97.881301C0 3.997201 71.046997.0 71.046997.0H474.477909 961.649408h399.992405s71.046998 3.997201 71.046998 97.881301L771.345323 681.472759S764.482731 685.154773 753.594283 688.65053V688.664858C741.602731 693.493018 729.424896 695.068979 718.077952 694.839748 706.731093 695.068979 694.553173 693.493018 682.561621 688.664858V688.65053C671.644501 685.140446 664.781909 681.472759 664.781909 681.472759zm53.281707 130.131124C693.779541 811.016482 658.879232 802.205449 619.10784 767.734955 542.989056 701.759633.0 212.052267.0 212.052267V942.809523S0 1024 83.726336 1024H682.532949 753.579947h595.368192C1432.688811 1024 1432.688811 942.809523 1432.688811 942.809523V212.052267S893.138176 701.759633 817.019477 767.734955c-39.771477 34.470494-74.671786 43.295855-98.955861 43.868928z"/></svg>
-</a>
-<a href=https://justice.bj.cn/index.xml rel="noopener alternate" type=application/rss+xml class=iconfont title=rss target=_blank><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="30" height="30"><path d="M819.157333 1024C819.157333 574.592 449.408 204.8.0 204.8V0c561.706667.0 1024 462.293333 1024 1024H819.157333zM140.416 743.04a140.8 140.8.0 01140.501333 140.586667A140.928 140.928.0 01140.074667 1024C62.72 1024 0 961.109333.0 883.626667S62.933333 743.082667 140.416 743.04zM678.784 1024h-199.04c0-263.210667-216.533333-479.786667-479.744-479.786667v-199.04c372.352.0 678.784 306.517333 678.784 678.826667z"/></svg>
-</a>
-</div>
-<div class=copyright>
-<span class=power-by>
-Powered by <a class=hexo-link href=https://gohugo.io>Hugo</a>
-</span>
-<span class=division>|</span>
-<span class=theme-info>
-Theme - <a class=theme-link href=https://github.com/xianmin/hugo-theme-jane>Jane</a>
-</span>
-<span class=copyright-year>
-&copy;
-2000 -
-2024
-<span class=heart>
-<i class=iconfont><svg class="icon" viewBox="0 0 1025 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14" height="14"><path d="M1000.1 247.9c-15.5-37.3-37.6-70.6-65.7-98.9-54.4-54.8-125.8-85-201-85-85.7.0-166 39-221.4 107.4C456.6 103 376.3 64 290.6 64c-75.1.0-146.5 30.4-201.1 85.6-28.2 28.5-50.4 61.9-65.8 99.3-16 38.8-24 79.9-23.6 122.2.7 91.7 40.1 177.2 108.1 234.8 3.1 2.6 6 5.1 8.9 7.8 14.9 13.4 58 52.8 112.6 102.7 93.5 85.5 209.9 191.9 257.5 234.2 7 6.1 15.8 9.5 24.9 9.5 9.2.0 18.1-3.4 24.9-9.5 34.5-30.7 105.8-95.9 181.4-165 74.2-67.8 150.9-138 195.8-178.2 69.5-57.9 109.6-144.4 109.9-237.3.1-42.5-8-83.6-24-122.2z" fill="#8a8a8a"/></svg>
-</i>
-</span><span class=author>
-Justice
-</span></span>
-<span id=busuanzi_container>
-访客数/访问量：<span id=busuanzi_value_site_uv></span>/<span id=busuanzi_value_site_pv></span>
-</span>
-</div>
-</footer>
-<div class=back-to-top id=back-to-top>
-<i class=iconfont><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="35" height="35"><path d="M510.866688 227.694839 95.449397 629.218702h235.761562L329.15309 958.01517h362.40389L691.55698 628.188232l241.942331-3.089361L510.866688 227.694839zM63.840492 63.962777h894.052392v131.813095H63.840492V63.962777zm0 0"/></svg>
-</i>
-</div>
-</div>
-<script type=text/javascript src=/lib/jquery/jquery-3.2.1.min.js></script>
-<script type=text/javascript src=/lib/slideout/slideout-1.0.1.min.js></script>
-<script type=text/javascript src=/js/main.638251f4230630f0335d8c6748e53a96f94b72670920b60c09a56fdc8bece214.js integrity="sha256-Y4JR9CMGMPAzXYxnSOU6lvlLcmcJILYMCaVv3Ivs4hQ=" crossorigin=anonymous></script>
-<script type=text/javascript>window.MathJax={showProcessingMessages:!1,messageStyle:'none'}</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
-<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.css integrity=sha384-BdGj8xC2eZkQaxoQ8nSLefg4AV4/AwB3Fj+8SUSo7pnKP6Eoy18liIKTPn9oBYNG crossorigin=anonymous>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/katex.min.js integrity=sha384-JiKN5O8x9Hhs/UE5cT5AAJqieYlOZbGT3CHws/y97o3ty4R7/O5poG9F3JoiOYw1 crossorigin=anonymous></script>
-<script defer src=https://cdn.jsdelivr.net/npm/katex@0.11.0/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous onload=renderMathInElement(document.body)></script>
-<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{})})</script>
-<script type=text/javascript src=/js/load-photoswipe.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe.min.js></script>
-<script type=text/javascript src=/lib/photoswipe/photoswipe-ui-default.min.js></script>
-<script async src=//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js></script>
-<script>$("#search-btn").click(function(){$(".modal-dialog").addClass("visible")}),$("#closeSearch").click(function(){$(".modal-dialog").removeClass("visible")}),$(document).click(function(a){$(a.target).closest(".modal-content, #search-btn").length||$("body").find(".modal-dialog").removeClass("visible")})</script>
-<script src=/js/fuse.min.js></script>
-<script src=/js/fastsearch.js></script>
-</body>
-</html>
+</span></code></pre></td></tr></table></div></div></div><p>现在我们可以通过我们的<code>_start</code>函数来直接调用<code>should_fail</code>函数了，如果返回则返回一个失败退出代码并退出。现在当我们执行<code>cargo xtest --test should_panic</code>时，我们可以发现测试的行为和之前完全一样。</p><p>除了创建<code>should_panic</code>测试，禁用<code>harness</code> attribute对复杂集成测试也很有用，例如，当单个测试函数会产生一些边际效应需要通过特定的顺序执行时。</p><h2 id=总结><a href=#总结 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:总结 class=headings>总结</a></h2><p>测试是一种非常有用的技术，它能确保特定的部件拥有我们期望的行为。即使它们不能显示是否有bug，它们仍然是用来寻找bug的利器，尤其是用来避免回归。</p><p>本文讲述了如何为我们的Rust kernel创建一个测试框架。我们使用Rust的自定义框架功能为我们的裸机环境实现了一个简单的<code>#[test_case]</code> attribute支持。通过使用QEMU的<code>isa-debug-exit</code>设备，我们的测试运行器可以在运行测试后退出QEMU并报告测试状态。我们还为串行端口实现了一个简单的驱动，使得错误信息可以被打印到控制台而不是VGA buffer中。</p><p>在为我们的<code>println</code>宏创建了一些测试后，我们在本文的后半部分还探索了集成测试。我们了解到它们位于<code>tests</code>目录中，并被视为完全独立的可执行文件。为了使他们能够使用<code>exit_qemu</code> 函数和 <code>serial_println</code> 宏，我们将大部分代码移动到一个库里，使其能够被导入到所有可执行文件和集成测试中。由于集成测试在各自独立的环境中运行，所以能够测试与硬件的交互或是创建应该panic的测试。</p><p>我们现在有了一个在QEMU内部真是环境中运行的测试框架。在未来的文章里，我们会创建更多的测试，从而让我们的内核在变得更复杂的同时保持可维护性。</p><h2 id=下期预告><a href=#下期预告 class=anchor-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"><path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96.0-59.27-59.26-59.27-155.7.0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757.0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037.0 01-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482.0 0120.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96.0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454.0 0020.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037.0 00-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639.0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/></svg></a><a href=#contents:下期预告 class=headings>下期预告</a></h2><p>在下一篇文章中，我们将会探索 <em>CPU异常</em> 。这些异常将在一些非法事件发生时由CPU抛出，例如抛出除以零或是访问没有映射的内存页（通常也被称为<code>page fault</code>即缺页异常）。能够捕获和检查这些异常，对将来的调试来说是非常重要的。异常处理与键盘支持所需的硬件中断处理十分相似。</p></div><ul class=post-copyright><li class="copyright-item author"><span class=copyright-item-text>作者</span>：<a href=https://io-oi.me/ class="p-author h-card" target=_blank rel=noopener>Justice</a></li><li class="copyright-item link"><span class=copyright-item-text>链接</span>：<a href=/post/09.pub/writing-an-os-in-rust/04-testing/ target=_blank rel=noopener>https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/</a></li><li class="copyright-item license"><span class=copyright-item-text>许可</span>：<a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></li></ul></article><div class=updated-badge-container><span title="Updated @ 2024-04-28 06:05:43 UTC" style=cursor:help><svg xmlns="http://www.w3.org/2000/svg" width="130" height="20" class="updated-badge"><linearGradient id="b" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="a"><rect width="130" height="20" rx="3" fill="#fff"/></clipPath><g clip-path="url(#a)"><path class="updated-badge-left" d="M0 0h55v20H0z"/><path class="updated-badge-right" d="M55 0h75v20H55z"/><path fill="url(#b)" d="M0 0h130v20H0z"/></g><g fill="#fff" text-anchor="middle" font-size="110"><text x="285" y="150" fill="#010101" fill-opacity=".3" textLength="450" transform="scale(.1)">updated</text><text x="285" y="140" textLength="450" transform="scale(.1)">updated</text><text x="915" y="150" fill="#010101" fill-opacity=".3" textLength="650" transform="scale(.1)">2024-04-28</text><text x="915" y="140" textLength="650" transform="scale(.1)">2024-04-28</text></g></svg></span></div><div class=post-share><div class=share-items><div class="share-item facebook"><a href="https://www.facebook.com/sharer/sharer.php?u=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&hashtag=%23pub" title=分享到「Facebook」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon facebook-icon"><path d="M504 256C504 119 393 8 256 8S8 119 8 256c0 123.78 90.69 226.38 209.25 245V327.69h-63V256h63v-54.64c0-62.15 37-96.48 93.67-96.48 27.14.0 55.52 4.84 55.52 4.84v61h-31.28c-30.8.0-40.41 19.12-40.41 38.73V256h68.78l-11 71.69h-57.78V501C413.31 482.38 504 379.78 504 256z"/></svg></a></div><div class="share-item mastodon"><a href="/fedishare.html#title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&description=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/" title=分享到「Mastodon」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon mastodon-icon"><path d="M433 179.11c0-97.2-63.71-125.7-63.71-125.7-62.52-28.7-228.56-28.4-290.48.0.0.0-63.72 28.5-63.72 125.7.0 115.7-6.6 259.4 105.63 289.1 40.51 10.7 75.32 13 103.33 11.4 50.81-2.8 79.32-18.1 79.32-18.1l-1.7-36.9s-36.31 11.4-77.12 10.1c-40.41-1.4-83-4.4-89.63-54a102.54 102.54.0 01-.9-13.9c85.63 20.9 158.65 9.1 178.75 6.7 56.12-6.7 105-41.3 111.23-72.9 9.8-49.8 9-121.5 9-121.5zm-75.12 125.2h-46.63v-114.2c0-49.7-64-51.6-64 6.9v62.5h-46.33V197c0-58.5-64-56.6-64-6.9v114.2H90.19c0-122.1-5.2-147.9 18.41-175 25.9-28.9 79.82-30.8 103.83 6.1l11.6 19.5 11.6-19.5c24.11-37.1 78.12-34.8 103.83-6.1 23.71 27.3 18.4 53 18.4 175z"/></svg></a></div><div class="share-item fediverse"><a href="/fedishare.html#title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&description=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/" title=分享到「Fediverse」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="64 163 873 873" class="icon fediverse-icon"><defs><linearGradient id="fediverse-gradient"><stop offset="0" stop-color="#ff0101"/><stop offset="10%" stop-color="#9501ff"/><stop offset="50%" stop-color="#ffca01"/><stop offset="75%" stop-color="#01a3ff"/><stop offset="100%" stop-color="#65ff01"/></linearGradient></defs><path d="M539 176q-32 0-55 22t-25 55 20.5 58 56 27 58.5-20.5 27-56-20.5-59T544 176h-5zm-87 95-232 118q20 20 25 48l231-118q-19-20-24-48zm167 27q-13 25-38 38l183 184q13-25 39-38zM477 320 342 585l40 40 143-280q-28-5-48-25zm104 16q-22 11-46 10l-8-1 21 132 56 9zM155 370q-32 0-55 22.5t-25 55 20.5 58 56.5 27 59-21 26.5-56-21-58.5-55.5-27h-6zm90 68q1 9 1 18-1 19-10 35l132 21 26-50zm225 36-26 51 311 49q-1-8-1-17 1-19 10-36zm372 6q-32 1-55 23t-24.5 55 21 58 56 27 58.5-20.5 27-56.5-20.5-59-56.5-27h-6zM236 493q-13 25-39 38l210 210 51-25zm-40 38q-21 11-44 10l-9-1 40 256q21-10 45-9l8 1zm364 22 48 311q21-10 44-9l10 1-46-294zm195 23-118 60 8 56 135-68q-20-20-25-48zm26 49-119 231q28 5 48 25l119-231q-28-5-48-25zM306 654l-68 134q28 5 48 25l60-119zm262 17-281 143q19 20 24 48l265-135zM513 771l-51 25 106 107q13-25 39-38zM222 795q-32 0-55.5 22.5t-25 55 21 57.5 56 27 58.5-20.5 27-56-20.5-58.5-56.5-27h-5zm89 68q2 9 1 18-1 19-9 35l256 41q-1-9-1-18 1-18 10-35zm335 0q-32 0-55 22.5t-24.5 55 20.5 58 56 27 59-21 27-56-20.5-58.5-56.5-27h-6z"/></svg></a></div><div class="share-item twitter"><a href="https://twitter.com/share?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&text=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&hashtags=pub,writing-an-os-in-rust,&via=reuixiy" title=分享到「Twitter」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon twitter-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></div><div class="share-item linkedin"><a href="https://www.linkedin.com/shareArticle?mini=true&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&summary=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6&source=Justice%27s%20Site" title=分享到「LinkedIn」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon linkedin-icon"><path d="M416 32H31.9C14.3 32 0 46.5.0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6.0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3.0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2.0 38.5 17.3 38.5 38.5.0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6.0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2.0 79.7 44.3 79.7 101.9V416z"/></svg></a></div><div class="share-item telegram"><a href="https://t.me/share/url?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&text=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95" title=分享到「Telegram」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon telegram-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></div><div class="share-item weibo"><a href="https://service.weibo.com/share/share.php?&url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&pic=https://os.phil-opp.com/testing/qemu-test-runner-output.png&searchPic=false" title=分享到「新浪微博」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon weibo-icon"><path d="M407 177.6c7.6-24-13.4-46.8-37.4-41.7-22 4.8-28.8-28.1-7.1-32.8 50.1-10.9 92.3 37.1 76.5 84.8-6.8 21.2-38.8 10.8-32-10.3zM214.8 446.7C108.5 446.7.0 395.3.0 310.4c0-44.3 28-95.4 76.3-143.7C176 67 279.5 65.8 249.9 161c-4 13.1 12.3 5.7 12.3 6 79.5-33.6 140.5-16.8 114 51.4-3.7 9.4 1.1 10.9 8.3 13.1 135.7 42.3 34.8 215.2-169.7 215.2zm143.7-146.3c-5.4-55.7-78.5-94-163.4-85.7-84.8 8.6-148.8 60.3-143.4 116s78.5 94 163.4 85.7c84.8-8.6 148.8-60.3 143.4-116zM347.9 35.1c-25.9 5.6-16.8 43.7 8.3 38.3 72.3-15.2 134.8 52.8 111.7 124-7.4 24.2 29.1 37 37.4 12 31.9-99.8-55.1-195.9-157.4-174.3zm-78.5 311c-17.1 38.8-66.8 60-109.1 46.3-40.8-13.1-58-53.4-40.3-89.7 17.7-35.4 63.1-55.4 103.4-45.1 42 10.8 63.1 50.2 46 88.5zm-86.3-30c-12.9-5.4-30 .3-38 12.9-8.3 12.9-4.3 28 8.6 34 13.1 6 30.8.3 39.1-12.9 8-13.1 3.7-28.3-9.7-34zm32.6-13.4c-5.1-1.7-11.4.6-14.3 5.4-2.9 5.1-1.4 10.6 3.7 12.9 5.1 2 11.7-.3 14.6-5.4 2.8-5.2 1.1-10.9-4-12.9z"/></svg></a></div><div class="share-item douban"><a href="https://www.douban.com/share/service?href=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&name=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&text=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6" title=分享到「豆瓣」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon douban-icon"><path d="M.643.92v2.412h22.714V.92H.643zm1.974 4.926v9.42h18.764v-9.42H2.617zm2.72 2.408H18.69v4.605H5.338V8.254zm1.657 7.412-2.512.938c1.037 1.461 1.87 2.825 2.512 4.091H0v2.385h24v-2.385h-6.678c.818-1.176 1.589-2.543 2.303-4.091l-2.73-.938a29.952 29.952.0 01-2.479 5.03h-4.75c-.786-1.962-1.677-3.641-2.672-5.03z"/></svg></a></div><div class="share-item qq"><a href="https://connect.qq.com/widget/shareqq/index.html?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&summary=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6&pics=https://os.phil-opp.com/testing/qemu-test-runner-output.png&site=Justice%27s%20Site" title=分享到「QQ」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qq-icon"><path d="M433.754 420.445c-11.526 1.393-44.86-52.741-44.86-52.741.0 31.345-16.136 72.247-51.051 101.786 16.842 5.192 54.843 19.167 45.803 34.421-7.316 12.343-125.51 7.881-159.632 4.037-34.122 3.844-152.316 8.306-159.632-4.037-9.045-15.25 28.918-29.214 45.783-34.415-34.92-29.539-51.059-70.445-51.059-101.792.0.0-33.334 54.134-44.859 52.741-5.37-.65-12.424-29.644 9.347-99.704 10.261-33.024 21.995-60.478 40.144-105.779C60.683 98.063 108.982.006 224 0c113.737.006 163.156 96.133 160.264 214.963 18.118 45.223 29.912 72.85 40.144 105.778 21.768 70.06 14.716 99.053 9.346 99.704z"/></svg></a></div><div class="share-item qzone"><a href="https://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&title=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&summary=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6&pics=https://os.phil-opp.com/testing/qemu-test-runner-output.png&site=Justice%27s%20Site" title="分享到「QQ 空间」" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon qzone-icon"><path d="M23.985 9.202c-.032-.099-.127-.223-.334-.258-.207-.036-7.351-1.406-7.351-1.406s-.105-.022-.198-.07c-.092-.047-.127-.167-.127-.167S12.447.956 12.349.77C12.25.583 12.104.532 12 .532s-.251.051-.349.238c-.098.186-3.626 6.531-3.626 6.531s-.035.12-.128.167c-.092.047-.197.07-.197.07S.556 8.908.348 8.943c-.208.036-.302.16-.333.258a.477.477.0 00.125.449l5.362 5.49s.072.08.119.172c.016.104.005.21.005.21s-1.189 7.242-1.22 7.45.075.369.159.43c.083.062.233.106.421.013.189-.093 6.812-3.261 6.812-3.261s.098-.044.201-.061.201.061.201.061 6.623 3.168 6.812 3.261c.188.094.338.049.421-.013a.463.463.0 00.159-.43c-.021-.14-.93-5.677-.93-5.677.876-.54 1.425-1.039 1.849-1.747-2.594.969-6.006 1.717-9.415 1.866-.915.041-2.41.097-3.473-.015-.678-.071-1.17-.144-1.243-.438-.053-.215.054-.46.545-.831a2640.5 2640.5.0 012.861-2.155c1.285-.968 3.559-2.47 3.559-2.731.0-.285-2.144-.781-4.037-.781-1.945.0-2.275.132-2.811.168-.488.034-.769.005-.804-.138-.06-.248.183-.389.588-.568.709-.314 1.86-.594 1.984-.626.194-.052 3.082-.805 5.618-.535 1.318.14 3.244.668 3.244 1.276.0.342-1.721 1.494-3.225 2.597-1.149.843-2.217 1.561-2.217 1.688.0.342 3.533 1.241 6.689 1.01l.003-.022c.048-.092.119-.172.119-.172l5.362-5.49a.477.477.0 00.127-.449z"/></svg></a></div><div class="share-item pocket"><a href="https://getpocket.com/edit.php?url=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/" title=分享到「Pocket」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon pocket-icon"><path d="M407.6 64h-367C18.5 64 0 82.5.0 104.6v135.2C0 364.5 99.7 464 224.2 464c124 0 223.8-99.5 223.8-224.2V104.6c0-22.4-17.7-40.6-40.4-40.6zm-162 268.5c-12.4 11.8-31.4 11.1-42.4.0C89.5 223.6 88.3 227.4 88.3 209.3c0-16.9 13.8-30.7 30.7-30.7 17 0 16.1 3.8 105.2 89.3 90.6-86.9 88.6-89.3 105.5-89.3 16.9.0 30.7 13.8 30.7 30.7.0 17.8-2.9 15.7-114.8 123.2z"/></svg></a></div><div class="share-item hackernews"><a href="https://news.ycombinator.com/submitlink?u=https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/&t=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95" title="分享到Hacker News" target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon hackernews-icon"><path d="M0 32v448h448V32H0zm21.2 197.2H21c.1-.1.2-.3.3-.4.0.1.0.3-.1.4zm218 53.9V384h-31.4V281.3L128 128h37.3c52.5 98.3 49.2 101.2 59.3 125.6 12.3-27 5.8-24.4 60.6-125.6H320l-80.8 155.1z"/></svg></a></div><div class="share-item qrcode"><div class=qrcode-container title=通过「二维码」><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon qrcode-icon"><path d="M0 224h192V32H0v192zM64 96h64v64H64V96zm192-64v192h192V32H256zm128 128h-64V96h64v64zM0 480h192V288H0v192zm64-128h64v64H64v-64zm352-64h32v128h-96v-32h-32v96h-64V288h96v32h64v-32zm0 160h32v32h-32v-32zm-64 0h32v32h-32v-32z"/></svg><div id=qrcode-img></div></div><script src=https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js></script>
+<script>const typeNumber=0,errorCorrectionLevel='L',qr=qrcode(typeNumber,errorCorrectionLevel);qr.addData('https://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/'),qr.make(),document.getElementById('qrcode-img').innerHTML=qr.createImgTag()</script></div><div class="share-item email"><a href="mailto:?subject=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95&body=%e4%bd%bf%e7%94%a8Rust%e7%bc%96%e5%86%99%e6%93%8d%e4%bd%9c%e7%b3%bb%e7%bb%9f%ef%bc%88%e5%9b%9b%ef%bc%89%ef%bc%9a%e5%86%85%e6%a0%b8%e6%b5%8b%e8%af%95%20%e6%9c%ac%e6%96%87%e4%b8%bb%e8%a6%81%e8%ae%b2%e8%bf%b0%e4%ba%86%e5%9c%a8no_std%e7%8e%af%e5%a2%83%e4%b8%8b%e8%bf%9b%e8%a1%8c%e5%8d%95%e5%85%83%e6%b5%8b%e2%80%a6%e2%80%a6%0Ahttps://justice.bj.cn/post/09.pub/writing-an-os-in-rust/04-testing/" title=通过「电子邮件」 target=_blank rel=noopener><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon email-icon"><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V4e2c0 26.5-21.5 48-48 48H48c-26.5.0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5.0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg></a></div></div></div><div class=related-posts><h2 class=related-title>相关文章：<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon related-icon"><path d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm144 276c0 6.6-5.4 12-12 12h-92v92c0 6.6-5.4 12-12 12h-56c-6.6.0-12-5.4-12-12v-92h-92c-6.6.0-12-5.4-12-12v-56c0-6.6 5.4-12 12-12h92v-92c0-6.6 5.4-12 12-12h56c6.6.0 12 5.4 12 12v92h92c6.6.0 12 5.4 12 12v56z"/></svg></h2><ul class=related-list><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/appendix-b-red-zone/ class=related-link>使用Rust编写操作系统（附录二）：禁用红区</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/03-vga-text-mode/ class=related-link>使用Rust编写操作系统（三）：VGA字符模式</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/appendix-c-disable-simd/ class=related-link>使用Rust编写操作系统（附录三）：禁用SIMD</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/translation-table/ class=related-link>译名表</a></li><li class=related-item><a href=/post/09.pub/writing-an-os-in-rust/05-cpu-exceptions/ class=related-link>CPU异常</a></li></ul></div><div class=post-tags><a href=/tags/pub/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>pub</a>
+<a href=/tags/writing-an-os-in-rust/ rel=tag class=post-tags-link><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon tag-icon"><path d="M0 252.118V48C0 21.49 21.49.0 48 0h204.118a48 48 0 0133.941 14.059l211.882 211.882c18.745 18.745 18.745 49.137.0 67.882L293.823 497.941c-18.745 18.745-49.137 18.745-67.882.0L14.059 286.059A48 48 0 010 252.118zM112 64c-26.51.0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48z"/></svg>writing-an-os-in-rust</a></div><ul class=post-nav><li class=post-nav-prev><a href=/post/09.pub/writing-an-os-in-rust/02-minimal-rust-kernel/ rel=prev>&lt; 使用Rust编写操作系统（二）：最小化内核</a></li><li class=post-nav-next><a href=/post/09.pub/writing-an-os-in-rust/appendix-a-linker-arguments/ rel=next>使用Rust编写操作系统（附录一）：链接器参数 ></a></li></ul><div id=utterances></div></div></main><div id=back-to-top class=back-to-top><a href=#><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon arrow-up"><path d="M34.9 289.5l-22.2-22.2c-9.4-9.4-9.4-24.6.0-33.9L207 39c9.4-9.4 24.6-9.4 33.9.0l194.3 194.3c9.4 9.4 9.4 24.6.0 33.9L413 289.4c-9.5 9.5-25 9.3-34.3-.4L264 168.6V456c0 13.3-10.7 24-24 24h-32c-13.3.0-24-10.7-24-24V168.6L69.2 289.1c-9.3 9.8-24.8 10-34.3.4z"/></svg></a></div><footer id=footer class=footer><div class=footer-inner><div class=site-info>©&nbsp;1969–2024&nbsp;<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon footer-icon"><path d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3.0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z"/></svg>&nbsp;Justice</div><div class=powered-by>Powered by <a href=https://github.com/gohugoio/hugo target=_blank rel=noopener>Hugo</a> | Theme is <a href=https://github.com/reuixiy/hugo-theme-meme target=_blank rel=noopener>MemE</a></div><div class=site-copyright><a href=https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh target=_blank rel=noopener>CC BY-NC-SA 4.0</a></div><ul class=socials><li class=socials-item><a href=/rss.xml target=_blank rel="external noopener" title=RSS><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M19.199 24C19.199 13.467 10.533 4.8.0 4.8V0c13.165.0 24 10.835 24 24h-4.801zM3.291 17.415c1.814.0 3.293 1.479 3.293 3.295.0 1.813-1.485 3.29-3.301 3.29C1.47 24 0 22.526.0 20.71s1.475-3.294 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727.0 15.909 7.184 15.909 15.91z"/></svg></a></li><li class=socials-item><a href=mailto:reuixiy@gmail.com target=_blank rel="external noopener" title=Email><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M464 64H48C21.49 64 0 85.49.0 112v288c0 26.51 21.49 48 48 48h416c26.51.0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm0 48v40.805c-22.422 18.259-58.168 46.651-134.587 106.49-16.841 13.247-50.201 45.072-73.413 44.701-23.208.375-56.579-31.459-73.413-44.701C106.18 199.465 70.425 171.067 48 152.805V112h416zM48 4e2V214.398c22.914 18.251 55.409 43.862 104.938 82.646 21.857 17.205 60.134 55.186 103.062 54.955 42.717.231 80.509-37.199 103.053-54.947 49.528-38.783 82.032-64.401 104.947-82.653V4e2H48z"/></svg></a></li><li class=socials-item><a href=https://github.com/reuixiy target=_blank rel="external noopener" title=GitHub><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="icon social-icon"><path d="M12 .297c-6.63.0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577.0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93.0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176.0.0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22.0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22.0 1.606-.015 2.896-.015 3.286.0.315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a></li><li class=socials-item><a href=https://twitter.com/reuixiy target=_blank rel="external noopener" title=Twitter><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon social-icon"><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645.0 138.72-105.583 298.558-298.558 298.558-59.452.0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055.0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421.0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391.0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04.0-57.828 46.782-104.934 104.934-104.934 30.213.0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg></a></li><li class=socials-item><a href=https://t.me/yixiuer target=_blank rel="external noopener" title=Telegram><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon social-icon"><path d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm121.8 169.9-40.7 191.8c-3 13.6-11.1 16.9-22.4 10.5l-62-45.7-29.9 28.8c-3.3 3.3-6.1 6.1-12.5 6.1l4.4-63.1 114.9-103.8c5-4.4-1.1-6.9-7.7-2.5l-142 89.4-61.2-19.1c-13.3-4.2-13.6-13.3 2.8-19.7l239.1-92.2c11.1-4 20.8 2.7 17.2 19.5z"/></svg></a></li></ul></div></footer></div><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.css><script>if(typeof renderMathInElement=='undefined'){const a=b=>{const a=document.createElement('script');a.defer=!0,a.crossOrigin='anonymous',Object.keys(b).forEach(c=>{a[c]=b[c]}),document.body.appendChild(a)};a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/katex.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/mhchem.min.js',onload:()=>{a({src:'https://cdn.jsdelivr.net/npm/katex@0.13.0/dist/contrib/auto-render.min.js',onload:()=>{renderKaTex()}})}})}})}else renderKaTex();function renderKaTex(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"\\[",right:"\\]",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1}]})}</script><script>typeof MathJax=='undefined'?(window.MathJax={loader:{load:['[tex]/mhchem']},tex:{inlineMath:{'[+]':[['$','$']]},tags:'ams',packages:{'[+]':['mhchem']}}},function(){const a=document.createElement('script');a.src='https://cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js',a.defer=!0,document.head.appendChild(a)}()):(MathJax.texReset(),MathJax.typeset())</script><script src=https://cdn.jsdelivr.net/npm/mermaid@8.8.3/dist/mermaid.min.js></script>
+<script>Array.from(document.getElementsByClassName("language-mermaid")).forEach(a=>{a.parentElement.outerHTML=`<div class="mermaid">${a.innerText}</div>`});const mermaidConfig={startOnLoad:!0,flowchart:{useMaxWidth:!1,htmlLabels:!0},theme:'default'};mermaid.initialize(mermaidConfig)</script><script>function loadComments(){(function(){const b=document.getElementById("utterances");if(!b)return;const a=document.createElement('script');a.src='https://utteranc.es/client.js',a.async=!0,a.crossOrigin='anonymous',a.setAttribute('repo','ZhuZhengyi/gh_comment'),a.setAttribute('issue-term','pathname');const c=getCurrentTheme()==='dark';c?a.setAttribute('theme','photon-dark'):a.setAttribute('theme','github-light'),b.appendChild(a)})()}</script><script src=https://cdn.jsdelivr.net/npm/medium-zoom@latest/dist/medium-zoom.min.js></script>
+<script>let imgNodes=document.querySelectorAll('div.post-body img');imgNodes=Array.from(imgNodes).filter(a=>a.parentNode.tagName!=="A"),mediumZoom(imgNodes,{background:'hsla(var(--color-bg-h), var(--color-bg-s), var(--color-bg-l), 0.95)'})</script><script src=https://cdn.jsdelivr.net/npm/instant.page@5.1.0/instantpage.min.js type=module defer></script></body></html>
