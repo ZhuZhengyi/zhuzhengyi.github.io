@@ -128,11 +128,11 @@ B+Tree索引：支持范围查询； Hash索引：只支持精确查询，不支
 事务一旦提交，则其结果就是永久性的。即使发生宕机的故障，数据库也能将数据恢复; 事务并发安全问题 MySQL中并发操作带来的数据安全问题主要包括：</description></item><item><title>CSS</title><link>https://justice.bj.cn/post/14.language/web/css/</link><pubDate>Tue, 30 Apr 2024 21:55:57 +0800</pubDate><author>justice_103@126.com (Justice)</author><guid>https://justice.bj.cn/post/14.language/web/css/</guid><description>CSS 简介 CSS (Cascading Style Sheets，层叠样式表）； 文件扩展名为.css； 定义如何显示 HTML 元素； 实现 web 页面的内容与表现分离； CSS 布局主要是基于盒子模型； CSS 工作原理 加载html：浏览器载入 HTML 文件（比如从网络上获取）; 解析html：将 HTML 文件转化成一个 DOM（Document Object Model）; 拉取html依赖资源：拉取该 HTML 相关的大部分资源，比如嵌入到页面的图片、视频和 CSS 样式; 解析css：浏览器拉取到 CSS 之后会进行解析，根据选择器的不同类型（比如 element,class,id 等等）把他们分到不同的“桶”中; 构建css渲染树：浏览器基于它找到的不同的选择器，将不同的规则（基于选择器的规则，如元素选择器、类选择器、id 选择器等）应用在对应的 DOM 的节点中，并添加节点依赖的样式（这个中间步骤称为渲染树）; 生成渲染树布局：上述的规则应用于渲染树之后，渲染树会依照应该出现的结构进行布局; 着色:在屏幕上展示网页; css 规则 css 文件由一系列的 css 规则组成； 每个 css 规则由一个选择器和一或多个 css 声明组成； css 选择器 标签选择(a): 选择名称为 a的标签；</description></item><item><title>Rust中的Pin和Unpin</title><link>https://justice.bj.cn/post/14.language/rust/rust-pin/</link><pubDate>Tue, 30 Apr 2024 00:00:00 +0000</pubDate><author>justice_103@126.com (Justice)</author><guid>https://justice.bj.cn/post/14.language/rust/rust-pin/</guid><description>Rust中的Pin和Unpin 简介 Pin&amp;lt;P&amp;gt;是一个struct，
 Pin&amp;lt;P&amp;gt;的作用是将P所指向内存对象固定住，不能通过Safe的方式进行移动。
 不能通过safe代码拿到&amp;amp;mut T。
-定义如下：
-1 2 3 pubstruct Pin&amp;lt;P&amp;gt;{pointer: P,} Pin的由来 Rust中Pin出现的初衷是为了解决异步运行时中的状态机自引用结构体如果被移动后带来的问题而设计的。
+Pin的由来 Rust中Pin出现的初衷是为了解决异步运行时中的状态机自引用结构体如果被移动后带来的问题而设计的。
 先了解一下自引用结构体。
 自引用结构体(Self-Reference-Struct) 自引用结构体是指在内部包含了指向自身某个内存位置指针的结构体；
-自引用结构体在移动时，内部的自引用指针并无移动，导致移动后的自引用指针仍然指向原来的位置，变为悬垂指针，从而产生内存安全问题，违反rust的设计初衷。
+自引用结构体在移动时，内部的自引用指针并无移动，导致移动后的自引用指针仍然指向原来的位置，变为悬垂指针，从而产生内存安全问题，违反rust的设计初衷；
+Rust通过引入 Pin来防止自引用结构体被随意（Safe方式）移动，来解决自引用结构体移动带来的问题。
 1 2 3 4 5 6 7 8 9 10 11 12 struct SelfRef&amp;lt;&amp;#39;a&amp;gt;{value: String,// 该引用指向上面的value pointer_to_value: &amp;amp;&amp;#39;astr,}fn main(){lets=&amp;#34;aaa&amp;#34;.</description></item><item><title>Linux IO 之 文件系统的架构(转)</title><link>https://justice.bj.cn/post/21.linux/linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%9E%B6%E6%9E%84/</link><pubDate>Wed, 24 Apr 2024 12:31:05 +0800</pubDate><author>justice_103@126.com (Justice)</author><guid>https://justice.bj.cn/post/21.linux/linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%9E%B6%E6%9E%84/</guid><description>Linux IO 之 文件系统的架构(转) VFS和文件系统总结 一切都是文件： VFS
 文件系统的设计，类似抽象基类，面向对象的思想。
 虚函数都必须由底层派生出的实例实现，使用成员函数 file_operations。在linux里面的文件操作，底层都要实现file_operations，抽象出owner，write，open，release。所以，无论是字符块，还是文件系统的文件，最终操作就必须是file_operations。
