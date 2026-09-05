@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WORD RUSH · 单词快打 — 北京教材单词打字特训</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============ 主题变量 ============ */
+body[data-theme=board]{--bg:#0f2420;--grid:rgba(240,240,225,.05);--ink:#f2efe3;--sub:#9db3a6;--panel:rgba(255,255,255,.045);--line:rgba(242,239,227,.17);--c-y:#ffd84d;--c-p:#ff8fa3;--c-c:#6fe3d4;--c-b:#7cc7ff;--ok:#7ce38b;--bad:#ff6b6b;--glow1:rgba(124,199,255,.10);--glow2:rgba(255,143,163,.09);--vig:rgba(0,0,0,.5)}
+body[data-theme=midnight]{--bg:#0d1526;--grid:rgba(200,220,255,.05);--ink:#eef2fb;--sub:#93a4c4;--panel:rgba(255,255,255,.05);--line:rgba(210,225,255,.18);--c-y:#ffd166;--c-p:#ff8fa3;--c-c:#6fe3d4;--c-b:#8ab6ff;--ok:#7ce38b;--bad:#ff6b6b;--glow1:rgba(138,182,255,.12);--glow2:rgba(186,130,255,.10);--vig:rgba(0,0,10,.55)}
+body[data-theme=sakura]{--bg:#241421;--grid:rgba(255,230,240,.05);--ink:#f9edf1;--sub:#c09aa8;--panel:rgba(255,255,255,.05);--line:rgba(255,230,240,.18);--c-y:#ffd166;--c-p:#ff9eb5;--c-c:#7ce8d5;--c-b:#9db8ff;--ok:#8ae89b;--bad:#ff6b6b;--glow1:rgba(255,158,181,.13);--glow2:rgba(157,184,255,.09);--vig:rgba(20,0,10,.55)}
+body[data-theme=amber]{--bg:#221609;--grid:rgba(255,235,200,.05);--ink:#f7eedd;--sub:#bda47e;--panel:rgba(255,255,255,.05);--line:rgba(255,235,200,.18);--c-y:#ffcf4d;--c-p:#ff9e7a;--c-c:#7fe0c3;--c-b:#8ec7ff;--ok:#9be26b;--bad:#ff6b6b;--glow1:rgba(255,190,90,.12);--glow2:rgba(255,120,90,.09);--vig:rgba(20,8,0,.55)}
+body[data-theme=paper]{--bg:#f4efdd;--grid:rgba(76,125,199,.13);--ink:#20304a;--sub:#67788e;--panel:rgba(255,255,255,.78);--line:rgba(32,48,74,.25);--c-y:#b57e00;--c-p:#d6496f;--c-c:#0d9e8d;--c-b:#2f6fd6;--ok:#1d9e57;--bad:#d84c4c;--glow1:rgba(47,111,214,.08);--glow2:rgba(214,73,111,.07);--vig:rgba(90,70,30,.14)}
+/* ============ 基础 ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Noto Sans SC",sans-serif;color:var(--ink);background:
+ radial-gradient(1100px 560px at 82% -8%,var(--glow1),transparent 60%),
+ radial-gradient(900px 520px at 8% 108%,var(--glow2),transparent 60%),var(--bg);
+ min-height:100vh;overflow-x:hidden;transition:background .4s}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+ background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+ background-size:34px 34px}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;box-shadow:inset 0 0 180px var(--vig)}
+.disp{font-family:"Bungee","Noto Sans SC",sans-serif}
+.mono{font-family:"Space Mono",monospace}
+#amb{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#amb span{position:absolute;bottom:-12vh;font-family:"Bungee","Noto Sans SC",sans-serif;opacity:.13;animation:floatUp linear infinite;white-space:nowrap}
+@keyframes floatUp{0%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-60vh) rotate(5deg)}100%{transform:translateY(-125vh) rotate(-3deg)}}
+/* ============ 顶栏 ============ */
+header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:10px 22px;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(8px);border-bottom:1.5px dashed var(--line)}
+.lg-en{font-family:"Bungee";font-size:1.35rem;letter-spacing:1px;color:var(--c-y);text-shadow:0 0 18px var(--glow1),2px 2px 0 rgba(0,0,0,.25)}
+.lg-cn{display:block;font-size:.68rem;color:var(--sub);letter-spacing:.35em;margin-top:2px}
+.hstats{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hcoin{font-weight:900;background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:5px 14px;font-size:.95rem}
+.hcoin.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.25) rotate(-4deg)}}
+.hlv{display:flex;align-items:center;gap:8px}
+.lvbadge{font-family:"Bungee";font-size:.8rem;color:var(--c-c);border:1.5px solid var(--c-c);border-radius:8px;padding:3px 8px;transform:rotate(-2deg)}
+.xpwrap{width:110px;height:9px;border:1.5px solid var(--line);border-radius:99px;overflow:hidden;background:rgba(0,0,0,.12)}
+.xpwrap i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--c-c),var(--ok));transition:width .5s}
+.lvname{font-size:.75rem;color:var(--sub)}
+.iconbtn{background:var(--panel);border:1.5px solid var(--line);color:var(--ink);border-radius:10px;padding:6px 10px;font-size:1rem;cursor:pointer;transition:.18s}
+.iconbtn:hover{transform:translateY(-2px) rotate(-3deg);border-color:var(--c-y)}
+.iconbtn.off{opacity:.4;filter:grayscale(1)}
+/* ============ 布局 ============ */
+main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:26px 22px 60px}
+.scr{display:none}
+.scr.on{display:block;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}}
+.panel{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px}
+h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px;text-decoration:underline wavy var(--c-y) 2px;text-underline-offset:7px}
+/* ============ 主页 ============ */
+.home-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:22px;align-items:start}
+.bktabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.bktab{font-size:.8rem;font-weight:700;color:var(--sub);background:transparent;border:1.5px dashed var(--line);border-radius:999px;padding:5px 13px;cursor:pointer;transition:.18s}
+.bktab:hover{transform:translateY(-2px);color:var(--ink)}
+.bktab.on{color:#14202c;background:var(--bc,var(--c-y));border-color:transparent;transform:rotate(-2deg) scale(1.06);font-weight:900;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.hero-name{font-size:1.7rem;font-weight:900}
+.hero-meta{color:var(--sub);font-size:.85rem;margin-top:4px}
+.tag{display:inline-block;font-size:.68rem;font-weight:900;border-radius:6px;padding:3px 8px;color:#14202c;background:var(--bc,var(--c-y));transform:rotate(-1.5deg)}
+.lvmap{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.lvchip{min-width:64px;text-align:center;border:1.5px solid var(--line);border-radius:12px;padding:8px 6px;cursor:pointer;background:rgba(0,0,0,.1);transition:.18s;font-size:.75rem;color:var(--sub)}
+.lvchip b{display:block;font-family:"Bungee";font-size:1rem;color:var(--ink)}
+.lvchip .st{color:var(--c-y);letter-spacing:1px}
+.lvchip:hover{transform:translateY(-3px) rotate(-1.5deg);border-color:var(--c-y)}
+.lvchip.cur{border-color:var(--c-c);box-shadow:0 0 0 2px color-mix(in srgb,var(--c-c) 35%,transparent);animation:pulseB 1.6s infinite}
+.lvchip.lock{opacity:.4;cursor:not-allowed}
+@keyframes pulseB{50%{box-shadow:0 0 0 6px transparent}}
+.btn{font-family:"Noto Sans SC";font-weight:900;font-size:1rem;border:2px solid;border-radius:14px;background:transparent;color:var(--ink);padding:12px 26px;cursor:pointer;transition:.16s;letter-spacing:.06em}
+.btn:hover{transform:translateY(-3px) rotate(-1deg);box-shadow:0 10px 22px rgba(0,0,0,.3)}
+.btn:active{transform:translateY(0) scale(.97)}
+.btn.y{border-color:var(--c-y);color:var(--c-y)}.btn.y:hover{background:var(--c-y);color:#14202c}
+.btn.c{border-color:var(--c-c);color:var(--c-c)}.btn.c:hover{background:var(--c-c);color:#14202c}
+.btn.p{border-color:var(--c-p);color:var(--c-p)}.btn.p:hover{background:var(--c-p);color:#14202c}
+.btn.b{border-color:var(--c-b);color:var(--c-b)}.btn.b:hover{background:var(--c-b);color:#14202c}
+.btn.solid{background:var(--c-y);border-color:var(--c-y);color:#14202c;font-size:1.15rem;padding:14px 34px}
+.btn.solid:hover{background:color-mix(in srgb,var(--c-y) 82%,#fff)}
+.btn.sm{padding:7px 16px;font-size:.85rem;border-radius:10px}
+.sci-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.sci{border:1.5px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:.8rem;color:var(--sub);line-height:1.55;transition:.2s}
+.sci:nth-child(1){transform:rotate(-.7deg)}.sci:nth-child(2){transform:rotate(.5deg)}.sci:nth-child(3){transform:rotate(-.4deg)}
+.sci:hover{transform:rotate(0) translateY(-3px);border-color:var(--c-c);color:var(--ink)}
+.sci b{display:block;color:var(--c-c);font-size:.9rem;margin-bottom:4px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.minip{border:1.5px solid var(--line);border-radius:14px;padding:14px;background:var(--panel)}
+.minip h4{font-size:.85rem;margin-bottom:6px}
+.minip .num{font-family:"Bungee";font-size:1.9rem;color:var(--c-p)}
+.minip p{font-size:.74rem;color:var(--sub);margin:4px 0 10px}
+.col-side{display:flex;flex-direction:column;gap:14px}
+.mode{display:flex;align-items:center;gap:14px;text-align:left;width:100%;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:16px 18px;cursor:pointer;color:var(--ink);transition:.18s;position:relative;overflow:hidden}
+.mode::after{content:"→";position:absolute;right:18px;font-family:"Bungee";color:var(--mc);opacity:.55;transition:.18s}
+.mode:hover{transform:translateX(6px) rotate(-.5deg);border-color:var(--mc);box-shadow:0 12px 26px rgba(0,0,0,.28)}
+.mode:hover::after{right:12px;opacity:1}
+.mode .ic{font-size:2rem;transform:rotate(-6deg);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+.mode h3{font-size:1.06rem;font-weight:900}
+.mode h3 small{font-family:"Bungee";font-size:.62rem;color:var(--mc);margin-left:6px;letter-spacing:.1em}
+.mode p{font-size:.76rem;color:var(--sub);margin-top:3px}
+.mini-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* ============ 作业本纸片 ============ */
+.paper{background:repeating-linear-gradient(#fdfaf0 0 27px,rgba(88,130,200,.22) 27px 28px);color:#22304a;border:1px solid #d8cfb4;border-radius:6px;box-shadow:0 14px 30px rgba(0,0,0,.35);position:relative}
+.paper::before{content:"";position:absolute;top:0;bottom:0;left:34px;width:2px;background:rgba(230,90,90,.5)}
+.paper::after{content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-2deg);width:96px;height:24px;background:rgba(255,235,150,.75);border:1px solid rgba(180,150,60,.4)}
+/* ============ 游戏区 ============ */
+.hud{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.hud .hl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-size:.72rem;font-weight:900;border:1.5px solid var(--mc,var(--c-y));color:var(--mc,var(--c-y));border-radius:8px;padding:4px 10px;transform:rotate(-1.5deg)}
+.pill{background:var(--panel);border:1.5px solid var(--line);border-radius:999px;padding:5px 14px;font-size:.85rem;font-weight:700}
+.pill b{font-family:"Bungee";color:var(--c-y)}
+.hearts{font-size:1.1rem;letter-spacing:3px;color:var(--bad)}
+.ibtn{position:relative;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);padding:5px 10px;cursor:pointer;font-size:.95rem;transition:.15s}
+.ibtn:hover:not(:disabled){border-color:var(--c-c);transform:translateY(-2px)}
+.ibtn:disabled{opacity:.35;cursor:not-allowed}
+.ibtn small{position:absolute;top:-7px;right:-7px;background:var(--c-p);color:#fff;border-radius:99px;font-size:.62rem;padding:1px 6px;font-weight:900}
+.stage{position:relative;min-height:430px;border:1.5px solid var(--line);border-radius:18px;background:rgba(0,0,0,.16);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px}
+.stage.shake{animation:shake .3s}
+@keyframes shake{20%{transform:translate(-7px,3px) rotate(-.5deg)}50%{transform:translate(6px,-4px)}80%{transform:translate(-4px,2px) rotate(.4deg)}}
+.cnchip{display:inline-flex;align-items:center;gap:10px;background:#fdfaf0;color:#22304a;border-radius:8px;padding:8px 18px 8px 44px;position:relative;font-weight:900;font-size:1.1rem;transform:rotate(-1deg);box-shadow:0 8px 18px rgba(0,0,0,.3);border-left:3px solid rgba(230,90,90,.6)}
+.cnchip em{font-style:normal;font-size:.66rem;background:#ffe9a8;border-radius:5px;padding:2px 7px;font-weight:700}
+.wordbox{font-family:"Space Mono",monospace;font-weight:700;font-size:clamp(2.1rem,6vw,3.6rem);letter-spacing:.1em;white-space:pre;text-align:center;min-height:1.3em}
+.wordbox .l{display:inline-block;transition:transform .08s}
+.wordbox .l.ok{color:var(--ok);text-shadow:0 0 14px color-mix(in srgb,var(--ok) 60%,transparent);animation:popL .18s}
+.wordbox .l.cur{border-bottom:4px solid var(--c-y);animation:blink .9s infinite}
+.wordbox .l.err{color:var(--bad);animation:jit .18s}
+@keyframes popL{40%{transform:scale(1.35) translateY(-4px)}}
+@keyframes blink{50%{border-color:transparent}}
+@keyframes jit{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.run-hint{font-size:.75rem;color:var(--sub);letter-spacing:.2em}
+.speakbtn{background:transparent;border:1.5px dashed var(--line);border-radius:99px;color:var(--sub);padding:6px 16px;cursor:pointer;font-size:.8rem;transition:.15s}
+.speakbtn:hover{color:var(--c-b);border-color:var(--c-b);transform:scale(1.06)}
+/* 陨石 */
+.fall-area{position:relative;width:100%;height:430px;border-radius:14px;background:rgba(0,0,0,.2);overflow:hidden}
+.fall-area::after{content:"";position:absolute;left:0;right:0;bottom:26px;border-bottom:2px dashed var(--bad);opacity:.7}
+.fword{position:absolute;font-family:"Space Mono",monospace;font-weight:700;font-size:1.25rem;letter-spacing:.08em;padding:4px 12px;border:1.5px solid var(--line);border-radius:10px;background:rgba(0,0,0,.35);white-space:pre;transition:border-color .1s,box-shadow .1s}
+.fword .ok{color:var(--ok)}
+.fword.target{border-color:var(--c-y);box-shadow:0 0 18px color-mix(in srgb,var(--c-y) 45%,transparent);transform:scale(1.06)}
+.fall-input{font-family:"Space Mono",monospace;font-size:1.5rem;letter-spacing:.2em;color:var(--c-y);min-height:1.4em}
+/* 对战 */
+.lanes{width:100%;display:flex;flex-direction:column;gap:14px}
+.lane{position:relative}
+.lane .nm{font-size:.78rem;font-weight:900;margin-bottom:5px;display:flex;justify-content:space-between}
+.track{height:26px;border:1.5px solid var(--line);border-radius:99px;background:rgba(0,0,0,.2);position:relative;overflow:visible}
+.fill{height:100%;width:0;border-radius:99px;transition:width .12s linear}
+.fill.me{background:linear-gradient(90deg,var(--c-c),var(--ok))}
+.fill.foe{background:linear-gradient(90deg,var(--c-p),var(--bad))}
+.racer{position:absolute;top:50%;transform:translate(-60%,-50%);font-size:1.3rem;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+/* 倒计时 / 特效 */
+#count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none}
+#count span{font-family:"Bungee";font-size:6rem;color:var(--c-y);text-shadow:0 0 40px var(--glow1);animation:cd .65s ease forwards}
+@keyframes cd{0%{transform:scale(2.4);opacity:0}30%{opacity:1}100%{transform:scale(.9);opacity:0}}
+.shard{position:fixed;width:7px;height:7px;border-radius:2px;z-index:90;pointer-events:none;animation:shard .65s ease-out forwards}
+@keyframes shard{to{transform:translate(var(--dx),var(--dy)) rotate(240deg);opacity:0}}
+.floaty{position:fixed;z-index:90;pointer-events:none;font-family:"Bungee";font-size:1rem;animation:fup 1s ease-out forwards}
+@keyframes fup{to{transform:translateY(-70px);opacity:0}}
+/* 弹窗 */
+.modal{position:fixed;inset:0;background:rgba(4,10,8,.72);backdrop-filter:blur(4px);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal.hide{display:none}
+.mbox{max-width:560px;width:100%;padding:34px 38px 30px 52px;animation:popIn .3s cubic-bezier(.2,1.4,.4,1)}
+@keyframes popIn{from{transform:scale(.8) rotate(-2deg);opacity:0}}
+.mbox h3{font-family:"Bungee";font-size:1.5rem;color:#c33f3f;letter-spacing:.05em}
+.mbox .sub{color:#5b6b7f;font-size:.85rem;margin:6px 0 18px}
+.optrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.opt{border:2px solid #b9c4d6;background:#fff;color:#22304a;border-radius:10px;padding:7px 14px;font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s}
+.opt:hover{transform:translateY(-2px)}
+.opt.on{border-color:#c33f3f;background:#ffecec;box-shadow:0 4px 10px rgba(195,63,63,.2)}
+.mbtns{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+/* 结算 */
+.stamp{display:inline-block;font-family:"Bungee";font-size:1.9rem;color:#c33f3f;border:4px solid #c33f3f;border-radius:10px;padding:6px 20px;transform:rotate(-5deg);letter-spacing:.08em;margin-bottom:8px}
+.stars{font-size:2.2rem;letter-spacing:8px;color:#e0a80c;text-shadow:0 3px 6px rgba(0,0,0,.15)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin:18px 0}
+.rcell{background:#fff;border:1.5px dashed #c8bfa4;border-radius:10px;padding:10px;text-align:center}
+.rcell b{display:block;font-family:"Bungee";font-size:1.4rem;color:#2f6fd6}
+.rcell span{font-size:.7rem;color:#67788e}
+.rw{display:flex;gap:20px;align-items:center;background:#fff;border-radius:12px;padding:12px 18px;border:1.5px solid #e0d6ba;margin-bottom:14px}
+.rw b{font-family:"Bungee";font-size:1.6rem;color:#b57e00}
+.rw small{color:#67788e;font-size:.72rem;display:block}
+.wchips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.wchip{font-family:"Space Mono";font-size:.8rem;background:#fff;border:1.5px solid #d6c9a5;border-radius:99px;padding:4px 12px;cursor:pointer;color:#22304a;transition:.15s}
+.wchip:hover{background:#ffe9a8;transform:translateY(-2px)}
+.tip{font-size:.74rem;color:#8a6d1d;background:#fff6d8;border-left:3px solid #e0b93f;border-radius:6px;padding:8px 12px;margin:12px 0}
+.lvlup{font-weight:900;color:#1d9e57;background:#e2f8e8;border-radius:8px;padding:6px 12px;display:inline-block;margin-bottom:10px;animation:bump .5s}
+/* 单词本 & 商店 */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.toolbar input,.toolbar select{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);padding:8px 14px;font-family:inherit;font-size:.85rem;outline:none}
+.toolbar input:focus,.toolbar select:focus{border-color:var(--c-c)}
+.wrow{display:grid;grid-template-columns:1.2fr 1fr auto auto auto;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px dashed var(--line);font-size:.9rem;transition:.15s;cursor:pointer}
+.wrow:hover{background:var(--panel);transform:translateX(4px)}
+.wrow .we{font-family:"Space Mono";font-weight:700}
+.wrow .wc{color:var(--sub);font-size:.82rem}
+.mbar{display:flex;gap:3px}
+.mbar i{width:14px;height:7px;border-radius:3px;background:var(--line)}
+.mbar i.on{background:linear-gradient(90deg,var(--c-y),var(--ok))}
+.due{font-size:.7rem;color:var(--sub);min-width:74px;text-align:right}
+.due.hot{color:var(--bad);font-weight:900}
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.ach{border:1.5px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:.8rem;color:var(--sub)}
+.ach.done{border-style:solid;border-color:var(--c-y);color:var(--ink);background:var(--panel);transform:rotate(-.6deg)}
+.ach b{display:block;font-size:.92rem}
+.thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-bottom:26px}
+.th{border:1.5px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);text-align:center;transition:.18s}
+.th:hover{transform:translateY(-4px) rotate(-.8deg)}
+.th .sw{height:56px;border-radius:10px;margin-bottom:10px;border:1.5px solid rgba(0,0,0,.15)}
+.shoprow{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1.5px dashed var(--line);border-radius:12px;padding:12px 16px;margin-bottom:10px;flex-wrap:wrap}
+/* toast */
+#toasts{position:fixed;top:70px;right:18px;z-index:99;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--panel);border:1.5px solid var(--c-y);border-left:6px solid var(--c-y);color:var(--ink);border-radius:12px;padding:12px 18px;font-size:.85rem;font-weight:700;box-shadow:0 12px 28px rgba(0,0,0,.35);animation:tin .3s cubic-bezier(.2,1.4,.4,1);max-width:280px}
+.toast small{display:block;color:var(--sub);font-weight:400;margin-top:2px}
+@keyframes tin{from{transform:translateX(120%)}}
+.back{background:none;border:none;color:var(--sub);cursor:pointer;font-size:.85rem;margin-bottom:14px;font-family:inherit}
+.back:hover{color:var(--c-y)}
+footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:.72rem;padding:20px;letter-spacing:.1em;border-top:1.5px dashed var(--line)}
+@media(max-width:900px){.home-grid{grid-template-columns:1fr}.sci-strip{grid-template-columns:1fr}.wrow{grid-template-columns:1fr 1fr auto}}
+</style>
+</head>
+<body data-theme="board">
+<div id="amb"></div>
+
+<header>
+  <div><span class="lg-en">WORD RUSH</span><span class="lg-cn">单词快打 · 北京教材打字特训</span></div>
+  <div class="hstats">
+    <div class="hcoin" id="hCoin">🪙 <b id="coinN">0</b></div>
+    <div class="hlv"><span class="lvbadge" id="lvBadge">LV 1</span><div class="xpwrap"><i id="xpBar"></i></div><span class="lvname" id="lvName">单词新手</span></div>
+    <button class="iconbtn" id="btnSound" title="音效开关">🔔</button>
+    <button class="iconbtn" id="btnTts" title="单词朗读开关">🔊</button>
+  </div>
+</header>
+
+<main>
+<!-- ============ 主页 ============ -->
+<section id="scr-home" class="scr on">
+  <div class="home-grid">
+    <div>
+      <div class="panel">
+        <h2 class="sec">📗 闯关模式 · 教材同步</h2>
+        <div class="bktabs" id="bkTabs"></div>
+        <div class="hero-top">
+          <div><div class="hero-name" id="heroName"></div><div class="hero-meta" id="heroMeta"></div></div>
+          <span class="tag" id="heroTag"></span>
+        </div>
+        <div class="lvmap" id="lvMap"></div>
+        <button class="btn solid" id="btnStart">▶ 开始闯关</button>
+      </div>
+      <div class="sci-strip">
+        <div class="sci"><b>🧠 艾宾浩斯曲线</b>系统按遗忘规律自动排定复习任务，越熟的词、间隔越长。</div>
+        <div class="sci"><b>⚡ 测试效应</b>主动拼写提取，比被动朗读的记忆效率高 2–3 倍。</div>
+        <div class="sci"><b>🔁 间隔重复</b>每个词经历 陌生→初识→熟悉→掌握→牢固→永久 六个阶段。</div>
+      </div>
+      <div class="duo">
+        <div class="minip"><h4>📌 今日复习任务</h4><div class="num" id="dueN">0</div><p id="dueTxt">根据遗忘曲线，这些词该见面了</p><button class="btn c sm" id="btnReview">开始复习</button></div>
+        <div class="minip"><h4>✏️ 我的错题本</h4><div class="num" id="wrongN">0</div><p>拼错过的词，集中歼灭</p><button class="btn p sm" id="btnWrong">错题重练</button></div>
+      </div>
+    </div>
+    <div class="col-side">
+      <button class="mode" style="--mc:var(--c-c)" onclick="openMode('time')"><span class="ic">⏱️</span><span><h3>限时冲刺 <small>TIME RUSH</small></h3><p>60 秒极限手速，连击翻倍得分</p></span></button>
+      <button class="mode" style="--mc:var(--c-p)" onclick="openMode('fall')"><span class="ic">☄️</span><span><h3>陨石单词 <small>WORD FALL</small></h3><p>单词坠落，拼完即击碎，护住底线</p></span></button>
+      <button class="mode" style="--mc:var(--c-y)" onclick="openMode('battle')"><span class="ic">⚔️</span><span><h3>对战竞技场 <small>PVP ARENA</small></h3><p>人机竞速 / 双人同屏轮流 PK</p></span></button>
+      <div class="mini-row">
+        <button class="mode" style="--mc:var(--c-b)" onclick="go('scr-book')"><span class="ic">📖</span><span><h3>单词本</h3><p>记忆进度总览</p></span></button>
+        <button class="mode" style="--mc:var(--c-p)" onclick="go('scr-shop')"><span class="ic">🛒</span><span><h3>奖励商店</h3><p>主题与道具</p></span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 游戏 ============ -->
+<section id="scr-game" class="scr"><div id="arenaWrap"></div></section>
+
+<!-- ============ 单词本 ============ -->
+<section id="scr-book" class="scr">
+  <button class="back" onclick="go('scr-home')">← 返回主页</button>
+  <h2 class="sec">📖 我的单词本 · 记忆曲线</h2>
+  <div class="toolbar">
+    <input id="bkSearch" placeholder="搜索单词 / 中文…" style="flex:1;min-width:160px">
+    <select id="bkBook"></select>
+    <select id="bkLv"><option value="all">全部状态</option><option value="new">未学习</option><option value="ing">学习中</option><option value="max">已牢记</option></select>
+  </div>
+  <div class="panel" style="padding:6px 10px" id="wbList"></div>
+  <h2 class="sec" style="margin-top:30px">🏅 成就墙</h2>
+  <div class="achgrid" id="achGrid"></div>
+</section>
+
+<!-- ============ 商店 ============ -->
+<section id="scr-shop" class="scr">
+  <button class="back" onclick="go('scr-home')">← 返回主页</button>
+  <h2 class="sec">🎨 黑板主题</h2>
+  <div class="thgrid" id="thGrid"></div>
+  <h2 class="sec">🎒 战斗道具</h2>
+  <div id="itList"></div>
+</section>
+</main>
+
+<footer>词汇依据人教版初中 / 高中英语教材整理 · 数据保存在本地浏览器 · 建议使用电脑键盘游玩 · 按 ESC 可随时退出对局</footer>
+<div id="toasts"></div>
+<div id="fx"></div>
+<div class="modal hide" id="modal"><div class="mbox paper" id="mbox"></div></div>
+
+<script>
+/* ================= 工具 ================= */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.random()*a.length|0];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const K='wordrush_v1';
+
+/* ================= 词库（人教版 北京初高中） ================= */
+const P=s=>s.split('|').map(p=>p.split('@'));
+const BOOKS=[
+{id:'j1',stage:'初中',name:'七年级 · 上',color:'#ffd84d',w:P("hello@你好|name@名字|morning@早晨|teacher@老师|student@学生|friend@朋友|school@学校|classroom@教室|book@书|pencil@铅笔|ruler@尺子|eraser@橡皮|color@颜色|yellow@黄色|blue@蓝色|green@绿色|apple@苹果|banana@香蕉|orange@橙子|milk@牛奶|bread@面包|rice@米饭|chicken@鸡肉|breakfast@早餐|lunch@午餐|dinner@晚餐|family@家庭|father@父亲|mother@母亲|brother@兄弟|sister@姐妹|water@水|juice@果汁|vegetable@蔬菜|fruit@水果|happy@开心的"),p:P("good morning@早上好|how are you@你好吗|stand up@起立|sit down@坐下")},
+{id:'j2',stage:'初中',name:'七年级 · 下',color:'#7cc7ff',w:P("weather@天气|sunny@晴朗的|cloudy@多云的|rainy@下雨的|windy@有风的|snowy@下雪的|season@季节|spring@春天|summer@夏天|autumn@秋天|winter@冬天|animal@动物|panda@熊猫|tiger@老虎|elephant@大象|monkey@猴子|river@河流|mountain@高山|forest@森林|park@公园|garden@花园|weekend@周末|movie@电影|music@音乐|sport@运动|swim@游泳|dance@跳舞|sing@唱歌|draw@画画|read@阅读|write@写|listen@听|speak@说|clean@打扫|cook@烹饪|visit@拜访"),p:P("go shopping@去购物|do homework@做作业|get up@起床")},
+{id:'j3',stage:'初中',name:'八年级 · 上',color:'#ff8fa3',w:P("hobby@爱好|collect@收集|stamp@邮票|travel@旅行|journey@旅程|culture@文化|tradition@传统|festival@节日|dumpling@饺子|lantern@灯笼|dragon@龙|lucky@幸运的|relative@亲戚|visitor@游客|invite@邀请|prepare@准备|delicious@美味的|exercise@锻炼|healthy@健康的|habit@习惯|advice@建议|problem@问题|worried@担心的|exam@考试|mistake@错误|grammar@语法|dictionary@词典|magazine@杂志|newspaper@报纸|Internet@因特网|online@在线的|website@网站|information@信息|message@消息|decision@决定|improve@提高"),p:P("look forward to@期待|take part in@参加|ask for@请求")},
+{id:'j4',stage:'初中',name:'八年级 · 下',color:'#6fe3d4',w:P("volunteer@志愿者|community@社区|notice@通知|raise@筹集|homeless@无家可归的|blind@失明的|deaf@聋的|imagine@想象|difficulty@困难|train@训练|excited@兴奋的|nervous@紧张的|proud@自豪的|shy@害羞的|brave@勇敢的|honest@诚实的|polite@有礼貌的|patient@耐心的|serious@严肃的|humorous@幽默的|creative@有创造力的|confident@自信的|communicate@交流|relationship@关系|argue@争吵|allow@允许|perhaps@也许|lonely@孤独的|courage@勇气|kindness@善良|respect@尊重|trust@信任|memory@记忆|praise@表扬"),p:P("give up@放弃|be proud of@为…感到自豪|cheer up@振作起来")},
+{id:'j5',stage:'初中',name:'九年级 · 中考核心',color:'#ffb066',w:P("achieve@实现|dream@梦想|opportunity@机会|challenge@挑战|overcome@克服|succeed@成功|failure@失败|experience@经历|knowledge@知识|education@教育|graduate@毕业|university@大学|scholarship@奖学金|abroad@在国外|language@语言|pronounce@发音|conversation@对话|express@表达|attention@注意|review@复习|method@方法|efficient@高效的|progress@进步|effort@努力|encourage@鼓励|celebrate@庆祝|ceremony@典礼|future@未来|pressure@压力|relax@放松|suggest@建议|consider@考虑|compare@比较|purpose@目的|society@社会|government@政府"),p:P("as soon as@一…就…|make a decision@做出决定|pay attention to@注意")},
+{id:'g1',stage:'高中',name:'高一 · 必修',color:'#c6a9ff',w:P("advance@前进|solution@解决办法|curious@好奇的|explore@探索|experiment@实验|science@科学|technology@技术|expert@专家|data@数据|system@系统|process@过程|design@设计|invent@发明|discover@发现|environment@环境|pollution@污染|protect@保护|energy@能源|recycle@回收|global@全球的|climate@气候|disaster@灾难|flood@洪水|drought@干旱|earthquake@地震|rescue@救援|damage@损害|affect@影响|survive@幸存|emergency@紧急情况|inspire@鼓舞|admire@钦佩|ambition@抱负|talent@天赋"),p:P("take action@采取行动|make a difference@产生影响|in order to@为了")},
+{id:'g2',stage:'高中',name:'高二 · 高考核心',color:'#8de18a',w:P("acquire@获得|adapt@适应|adjust@调整|appreciate@感激|approach@方法|appropriate@恰当的|assume@假定|attitude@态度|benefit@益处|budget@预算|campaign@活动|candidate@候选人|circumstance@环境|commit@承诺|consequence@后果|contemporary@当代的|contribute@贡献|controversial@有争议的|crucial@关键的|debate@辩论|demonstrate@证明|distinct@独特的|dominate@主导|eliminate@消除|emphasis@强调|enormous@巨大的|essential@必要的|evaluate@评估|eventually@最终|evidence@证据|fundamental@基本的|generate@产生|guarantee@保证|identify@识别|innovation@创新|involve@涉及|launch@发起|maintain@维持|participate@参与|phenomenon@现象"),p:P("in addition@另外|as a result@结果|be responsible for@对…负责")},
+{id:'g3',stage:'高中',name:'高考 · 高频冲刺',color:'#ff9e7a',w:P("potential@潜力|priority@优先事项|promote@促进|pursue@追求|reveal@揭示|significant@重要的|strategy@策略|sufficient@充足的|transform@转变|tremendous@极大的|ultimate@最终的|widespread@广泛的|acknowledge@承认|alternative@可替代的|ambitious@有雄心的|anxiety@焦虑|authentic@真实的|barrier@障碍|capacity@能力|compensate@补偿|compromise@妥协|conflict@冲突|conscious@意识到的|consistent@一致的|constant@持续不断的|crisis@危机|decline@下降|deserve@值得|diverse@多样的|duration@持续时间|dynamic@充满活力的|embrace@拥抱|enhance@增强|ensure@确保|establish@建立|flexible@灵活的"),p:P("come up with@想出|carry out@执行|adapt to@适应")}
+];
+const ALL=[];{const seen=new Set();for(const b of BOOKS){b.items=[];const add=(arr,ph)=>arr.forEach(([en,cn])=>{if(seen.has(en))return;seen.add(en);const it={en,cn,book:b.id,phrase:ph};b.items.push(it);ALL.push(it)});add(b.w,false);add(b.p,true)}}
+const bookOf=id=>BOOKS.find(b=>b.id===id);
+const LVN=['陌生','初识','熟悉','掌握','牢固','永久'];
+const DUE=[0,20*6e4,12*36e5,864e5,2*864e5,4*864e5];
+
+/* ================= 存档 ================= */
+function def(){return{coins:60,xp:0,theme:'board',themes:['board'],items:{hint:1,time:0,shield:0},curBook:'j1',prog:{},mastery:{},ach:{},stats:{games:0,words:0,bestCombo:0,perfect:0,hardWin:0,wins:0},set:{sound:true,tts:true}}}
+let S;try{S=Object.assign(def(),JSON.parse(localStorage.getItem(K)||'{}'));S.items=Object.assign({hint:1,time:0,shield:0},S.items);S.stats=Object.assign(def().stats,S.stats);S.set=Object.assign({sound:true,tts:true},S.set)}catch(e){S=def()}
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const mOf=en=>S.mastery[en]||(S.mastery[en]={lv:0,r:0,w:0,due:0});
+function markWord(it,ok,errs){const m=mOf(it.en);
+ if(ok){m.r++;if(errs===0){if(m.lv<5){m.lv++;if(m.lv===5)S.stats.maxed=1}}else m.w++;m.due=Date.now()+DUE[m.lv]}
+ else{m.w++;m.lv=Math.max(0,m.lv-1);m.due=Date.now()}}
+const dueWords=()=>ALL.filter(w=>{const m=S.mastery[w.en];return m&&m.r>0&&m.lv<5&&m.due<=Date.now()});
+const wrongWords=()=>ALL.filter(w=>{const m=S.mastery[w.en];return m&&m.w>0});
+function lvl(xp){let lv=1,need=100,r=xp;while(r>=need){r-=need;lv++;need=100+(lv-1)*50}return{lv,into:r,need}}
+const TITLES=[[1,'单词新手'],[3,'词汇学徒'],[5,'记忆新秀'],[8,'单词猎人'],[12,'词汇学者'],[16,'记忆大师'],[20,'单词宗师'],[26,'词典守望者']];
+const titleOf=l=>{let t=TITLES[0][1];for(const[a,b]of TITLES)if(l>=a)t=b;return t};
+
+/* ================= 音效 / 朗读 ================= */
+let AC;function ac(){return AC||(AC=new(window.AudioContext||window.webkitAudioContext)())}
+function beep(f,d=.07,t='square',g=.045){if(!S.set.sound)return;try{const a=ac(),o=a.createOscillator(),v=a.createGain();o.type=t;o.frequency.value=f;v.gain.value=g;v.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);o.connect(v).connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+const sTick=()=>beep(760,.03,'square',.02),sOk=()=>{beep(660,.08);setTimeout(()=>beep(880,.1),60)},sBad=()=>beep(130,.16,'sawtooth',.06),
+sWin=()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.14,'triangle',.06),i*110)),sShield=()=>beep(420,.12,'triangle',.06);
+function speak(t){if(!S.set.tts)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.92;speechSynthesis.speak(u)}catch(e){}}
+
+/* ================= 头部 & 屏幕 ================= */
+function refreshHead(){const l=lvl(S.xp);$('#coinN').textContent=S.coins;$('#lvBadge').textContent='LV '+l.lv;$('#lvName').textContent=titleOf(l.lv);$('#xpBar').style.width=(l.into/l.need*100)+'%';
+ $('#btnSound').classList.toggle('off',!S.set.sound);$('#btnTts').classList.toggle('off',!S.set.tts);
+ $('#btnSound').textContent=S.set.sound?'🔔':'🔕';$('#btnTts').textContent=S.set.tts?'🔊':'🔇'}
+$('#btnSound').onclick=()=>{S.set.sound=!S.set.sound;save();refreshHead()};
+$('#btnTts').onclick=()=>{S.set.tts=!S.set.tts;save();refreshHead()};
+function go(id){$$('.scr').forEach(s=>s.classList.remove('on'));$('#'+id).classList.add('on');window.scrollTo({top:0});
+ if(id==='scr-home')renderHome();if(id==='scr-book')renderBook();if(id==='scr-shop')renderShop()}
+function toast(t,sub){const d=document.createElement('div');d.className='toast';d.innerHTML=t+(sub?`<small>${sub}</small>`:'');$('#toasts').appendChild(d);setTimeout(()=>{d.style.transition='.4s';d.style.opacity=0;d.style.transform='translateX(60px)';setTimeout(()=>d.remove(),400)},3200)}
+function burst(x,y,c){for(let i=0;i<13;i++){const s=document.createElement('span');s.className='shard';s.style.left=x+'px';s.style.top=y+'px';s.style.background=c;s.style.setProperty('--dx',rnd(-90,90)+'px');s.style.setProperty('--dy',rnd(-110,40)+'px');$('#fx').appendChild(s);setTimeout(()=>s.remove(),700)}}
+function floaty(x,y,txt,c){const s=document.createElement('span');s.className='floaty';s.textContent=txt;s.style.left=x+'px';s.style.top=y+'px';s.style.color=c;$('#fx').appendChild(s);setTimeout(()=>s.remove(),1000)}
+function coinBump(){const e=$('#hCoin');e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}
+
+/* ================= 成就 ================= */
+const ACH=[['first','初来乍到','完成第一局游戏',s=>s.stats.games>=1],['c10','连击新星','达成 10 连击',s=>s.stats.bestCombo>=10],['c25','心流状态','达成 25 连击',s=>s.stats.bestCombo>=25],['w100','百词斩','累计拼对 100 词',s=>s.stats.words>=100],['w500','词汇大亨','累计拼对 500 词',s=>s.stats.words>=500],['p3','完美主义','任意关卡三星通关',s=>s.stats.perfect>=1],['beat','精英杀手','对战击败精英机器人',s=>s.stats.hardWin>=1],['rich','小有积蓄','持有 1000 金币',s=>s.coins>=1000],['max','永久记忆','首个单词达到永久记忆',s=>s.stats.maxed>=1],['win5','常胜将军','累计获胜 5 次',s=>s.stats.wins>=5]];
+function checkAch(){for(const[id,n,d,f]of ACH){if(!S.ach[id]&&f(S)){S.ach[id]=1;S.coins+=30;save();toast('🏅 成就解锁：'+n,'奖励 30 金币 · '+d);coinBump()}}}
+
+/* ================= 主页 ================= */
+function renderHome(){
+ $('#bkTabs').innerHTML=BOOKS.map(b=>`<button class="bktab ${b.id===S.curBook?'on':''}" style="--bc:${b.color}" onclick="pickBook('${b.id}')">${b.name.replace(' · ','')}</button>`).join('');
+ const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0,stars:{}},lvN=Math.ceil(b.items.length/8);
+ $('#heroName').textContent=b.name;$('#heroTag').textContent=b.stage;$('#heroTag').style.setProperty('--bc',b.color);$('#heroTag').style.background=b.color;
+ const got=Object.values(pr.stars||{}).reduce((a,c)=>a+c,0);
+ $('#heroMeta').textContent=`共 ${b.items.length} 词条 · ${lvN} 关 · 已通 ${pr.cleared} 关 · ⭐ ${got}/${lvN*3}`;
+ $('#lvMap').innerHTML=Array.from({length:lvN},(_,i)=>{const st=pr.stars?.[i],unlocked=i<=pr.cleared,cur=i===pr.cleared&&unlocked;
+  return`<div class="lvchip ${cur?'cur':''} ${unlocked?'':'lock'}" onclick="clickLv(${i})"><b>${i+1}</b><span class="st">${st?'★'.repeat(st)+'☆'.repeat(3-st):(unlocked?'GO':'🔒')}</span></div>`}).join('');
+ $('#btnStart').textContent=pr.cleared>=lvN?'🔁 重新挑战全册':`▶ 开始 第 ${pr.cleared+1} 关`;
+ const due=dueWords().length,wr=wrongWords().length;
+ $('#dueN').textContent=due;$('#dueTxt').textContent=due?'根据遗忘曲线，这些词该见面了':'太棒了，暂无待复习单词 ✨';
+ $('#btnReview').disabled=!due;$('#wrongN').textContent=wr;$('#btnWrong').disabled=!wr;
+ refreshHead()}
+window.pickBook=id=>{S.curBook=id;save();renderHome()};
+window.clickLv=i=>{const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0,stars:{}};if(i>pr.cleared){toast('🔒 先通过前面的关卡');return}startLevel(S.curBook,i)};
+$('#btnStart').onclick=()=>{const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0};startLevel(S.curBook,Math.min(pr.cleared,Math.ceil(b.items.length/8)-1))};
+$('#btnReview').onclick=()=>{const q=shuffle(dueWords()).slice(0,15);if(q.length)return;startRun({mode:'review',title:'复习任务',queue:q})};
+$('#btnWrong').onclick=()=>{const q=shuffle(wrongWords()).sort((a,b)=>(S.mastery[a.en].lv-S.mastery[b.en].lv)).slice(0,15);if(!q.length)return;startRun({mode:'review',title:'错题重练',queue:q})};
+
+/* ================= 弹窗 ================= */
+let modalOpen=false,modalToken=0;
+function openModal(html){modalOpen=true;$('#mbox').innerHTML=html;$('#modal').classList.remove('hide')}
+function closeModal(){modalOpen=false;$('#modal').classList.add('hide');modalToken++}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal'&&G&&!G.active)closeModal()});
+
+/* ================= 模式设置弹窗 ================= */
+let sel={book:'mix',btype:'bot',diff:'mid'};
+const bookOpts=()=>`<button class="opt on" data-b="mix">🎲 混合词库</button>`+BOOKS.map(b=>`<button class="opt" data-b="${b.id}">${b.name}</button>`).join('');
+window.openMode=m=>{
+ if(m==='time'||m==='fall'){sel.book='mix';
+  openModal(`<h3>${m==='time'?'TIME RUSH':'WORD FALL'}</h3><div class="sub">${m==='time'?'60 秒内拼出尽可能多的单词，连击越高分越高':'单词不断坠落，在触底前把它拼完击碎'}</div>
+  <div class="sub" style="margin-bottom:8px">选择词库：</div><div class="optrow" id="bkOpts">${bookOpts()}</div>
+  <div class="mbtns"><button class="btn y" id="goBtn">开始 ${m==='time'?'⏱ 60s':'☄️'}</button><button class="btn sm" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`)}
+ if(m==='battle'){sel.btype='bot';sel.diff='mid';sel.book='mix';
+  openModal(`<h3>PVP ARENA</h3><div class="sub">同一组词，谁先拼完谁赢！人机竞速或双人同屏轮流比拼。</div>
+  <div class="sub" style="margin-bottom:8px">对手：</div><div class="optrow" id="btOpts">
+   <button class="opt on" data-t="bot-easy">🐢 机器人·轻松</button><button class="opt" data-t="bot-mid">🐇 机器人·进阶</button><button class="opt" data-t="bot-e? no'.replace('-e? no','hard')">🦅 机器人·精英</button><button class="opt" data-t="2p">🎮 双人同屏</button></div>
+  <div class="sub" style="margin-bottom:8px">词库：</div><div class="optrow" id="bkOpts">${bookOpts()}</div>
+  <div class="mbtns"><button class="btn y" id="goBtn">⚔️ 进入竞技场</button><button class="btn sm" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`)}
+ const tk=modalToken;
+ $$('#bkOpts .opt').forEach(o=>o.onclick=()=>{if(tk!==modalToken)return;$$('#bkOpts .opt').forEach(x=>x.classList.remove('on'));o.classList.add('on');sel.book=o.dataset.b});
+ if(m==='battle')$$('#btOpts .opt').forEach(o=>o.onclick=()=>{if(tk!==modalToken)return;$$('#btOpts .opt').forEach(x=>x.classList.remove('on'));o.classList.add('on');const t=o.dataset.t;if(t==='2p'){sel.btype='2p'}else{sel.btype='bot';sel.diff=t.split('-')[1]}});
+ $('#goBtn').onclick=()=>{const tk2=modalToken;closeModal();
+  const pool=sel.book==='mix'?ALL:bookOf(sel.book).items;
+  if(m==='time')startTime(pool);else if(m==='fall')startFalling(pool.filter(w=>!w.phrase&&w.en.length<=10));
+  else startBattle(sel.btype,sel.diff,pool)}
+};
+window.closeModal=closeModal;
+
+/* ================= 游戏核心 ================= */
+let G=null;
+document.addEventListener('keydown',e=>{
+ if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+ if(e.key==='Escape'){handleEsc();return}
+ if(modalOpen||!G||!G.active)return;
+ if(e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key.length===1){e.preventDefault();G.onChar&&G.onChar(e.key.toLowerCase())}
+});
+function handleEsc(){if(modalOpen){closeModal();return}
+ if(G&&G.active){openModal(`<h3>PAUSE</h3><div class="sub">确定退出本局吗？当前进度不会保存。</div><div class="mbtns"><button class="btn c" onclick="closeModal()">继续战斗</button><button class="btn p" onclick="quitGame()">退出</button></div>`)}
+ else if($('#scr-game').classList.contains('on'))go('scr-home')}
+window.quitGame=()=>{closeModal();endGameCleanup();go('scr-home')};
+function endGameCleanup(){if(!G)return;G.active=false;if(G.raf)cancelAnimationFrame(G.raf);if(G.iv)clearInterval(G.iv);if(G.iv2)clearInterval(G.iv2)}
+async function countdown(){if(!G)return;G.started=false;const c=document.createElement('div');c.id='count';$('#arenaWrap .stage').appendChild(c);
+ for(const t of['3','2','1','GO!']){if(!G||!G.active)return;c.innerHTML=`<span>${t}</span>`;beep(t==='GO!'?880:520,.1,'triangle',.05);await sleep(620)}c.remove();if(G)G.started=true}
+function hudHTML(mc,title,mid,right){return`<div class="hud"><div class="hl"><span class="badge" style="--mc:${mc}">${title}</span>${mid}</div><div class="hl">${right}<button class="iconbtn" onclick="handleEsc()" title="退出/暂停">✕</button></div></div>`}
+function itemBtns(show){return`<button class="ibtn" id="ibHint" ${show.hint?'':'style="display:none"'} onclick="useHint()">✏️<small id="nHint">${S.items.hint}</small></button>
+<button class="ibtn" id="ibTime" ${show.time?'':'style="display:none"'} onclick="useTime()">⏳<small id="nTime">${S.items.time}</small></button>
+<button class="ibtn" id="ibShield" ${show.shield?'':'style="display:none"'} onclick="useShield()">🛡️<small id="nShield">${S.items.shield}</small></button>`}
+function refreshItems(){['Hint','Time','Shield'].forEach(k=>{const el=$('#n'+k);if(el)el.textContent=S.items[k.toLowerCase()];const b=$('#ib'+k);if(b)b.disabled=S.items[k.toLowerCase()]<=0})}
+window.useHint=()=>{if(!G||!G.active||!G.started||G.type!=='run'||S.items.hint<=0)return;const it=G.queue[G.idx];if(!it)return;
+ S.items.hint--;save();refreshItems();let n=2;while(n-->0&&G.typed<it.en.length)goodChar();};
+window.useTime=()=>{if(!G||!G.active||G.mode!=='time'||S.items.time<=0)return;S.items.time--;save();refreshItems();G.timeLeft+=15;floaty(innerWidth/2,140,'+15s','var(--c-c)');sShield()};
+window.useShield=()=>{if(!G||!G.active||G.shield||S.items.shield<=0)return;if(G.type!=='run'&&G.type!=='fall')return;S.items.shield--;save();refreshItems();G.shield=true;toast('🛡️ 护盾已激活','抵挡下一次失误');sShield()};
+
+function paintWord(el,word,typed,err){el.innerHTML=[...word].map((ch,i)=>{const c=ch===' '?'&nbsp;':ch.replace(/</g,'&lt;');
+ let cls=i<typed?'l ok':(i===typed?'l cur'+(err?' err':''):'l');return`<span class="${cls}">${c}</span>`}).join('')}
+function goodChar(){ // 供提示道具复用的“正确按键”
+ const it=G.queue[G.idx];G.typed++;sTick();paintWord($('#wordBox'),it.en,G.typed);if(G.typed>=it.en.length)runComplete()}
+
+/* ---------- 打字关卡 / 限时 / 复习 ---------- */
+window.startLevel=(bookId,li)=>{const b=bookOf(bookId);startRun({mode:'level',bookId,li,title:`第 ${li+1} 关`,queue:b.items.slice(li*8,li*8+8),lives:3})};
+window.startTime=pool=>startRun({mode:'time',title:'限时冲刺',queue:shuffle(pool),time:60});
+function startRun(cfg){endGameCleanup();
+ G={type:'run',mode:cfg.mode,cfg,queue:[...cfg.queue],idx:0,typed:0,curErrs:0,errors:0,correct:0,score:0,combo:0,best:0,
+    lives:cfg.lives||0,timeLeft:cfg.time||0,wrong:[],retried:new Set(),shield:false,active:true,started:false};
+ S.stats.games++;save();go('scr-game');
+ const mc=cfg.mode==='level'?'var(--c-y)':cfg.mode==='time'?'var(--c-c)':'var(--c-b)';
+ const mid=cfg.mode==='time'?`<span class="pill">⏱ <b id="tLeft">${cfg.time}</b>s</span>`:`<span class="pill">进度 <b id="prog">1/${G.queue.length}</b></span>`;
+ const right=`${cfg.mode==='level'?`<span class="hearts" id="hearts">♥♥♥</span>`:''}
+  <span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>
+  ${itemBtns({hint:true,time:cfg.mode==='time',shield:cfg.mode==='level'})}`;
+ $('#arenaWrap').innerHTML=hudHTML(mc,`${cfg.title} · ${cfg.mode==='level'?bookOf(cfg.bookId).name:cfg.mode==='time'?'60 秒':'记忆计划'}`,mid,right)
+  +`<div class="stage"><div class="cnchip" id="cnChip"></div><div class="wordbox" id="wordBox"></div>
+     <button class="speakbtn" onclick="speak(G.queue[G.idx]&&G.queue[G.idx].en)">🔊 听发音</button>
+     <div class="run-hint">${cfg.mode==='level'?'键入拼写 · 单词内错 3 次扣一颗心':'键入拼写 · 连击越高分越高'}</div></div>`;
+ refreshItems();showWord();if(cfg.mode==='time')G.iv=setInterval(tickTime,1000);countdown();
+}
+function showWord(){const it=G.queue[G.idx];if(!it)return;G.typed=0;G.curErrs=0;
+ $('#cnChip').innerHTML=`🀄 ${it.cn} <em>${bookOf(it.book).name}</em>`;paintWord($('#wordBox'),it.en,0);
+ if(G.mode!=='time')$('#prog').textContent=`${G.idx+1}/${G.queue.length}`;
+ if(S.set.tts&&G.mode!=='time')speak(it.en)}
+function tickTime(){if(!G||!G.active||!G.started)return;G.timeLeft--;const t=$('#tLeft');if(t)t.textContent=Math.max(0,Math.ceil(G.timeLeft));
+ if(G.timeLeft<=0)finishRun(true)}
+function updateRunHud(){$('#combo').textContent=G.combo;$('#score').textContent=G.score;
+ const h=$('#hearts');if(h)h.textContent='♥'.repeat(Math.max(0,G.lives))+'♡'.repeat(Math.max(0,3-G.lives))}
+function onRunChar(ch){if(!G.started)return;const it=G.queue[G.idx];if(!it)return;
+ if(ch===it.en[G.typed]){goodChar()}
+ else{ if(G.shield){G.shield=false;sShield();floaty(innerWidth/2,180,'🛡️ 抵挡!','var(--c-c)');return}
+  G.errors++;G.curErrs++;G.combo=0;sBad();paintWord($('#wordBox'),it.en,G.typed,true);
+  $('#arenaWrap .stage').classList.add('shake');setTimeout(()=>$('#arenaWrap .stage')?.classList.remove('shake'),320);
+  updateRunHud();
+  if(G.curErrs>=3)runFailWord()}}
+function runFailWord(){const it=G.queue[G.idx];markWord(it,false,G.curErrs);G.wrong.push(it);
+ if(G.mode==='level'){G.lives--;updateRunHud();if(G.lives<=0)return finishRun(false)}
+ if(!G.retried.has(it.en)){G.retried.add(it.en);G.queue.push({...it})}
+ G.idx++;if(G.idx>=G.queue.length)finishRun(true);else showWord()}
+function runComplete(){const it=G.queue[G.idx];markWord(it,true,G.curErrs);S.stats.words++;
+ G.correct++;G.combo++;G.best=Math.max(G.best,G.combo);S.stats.bestCombo=Math.max(S.stats.bestCombo,G.best);
+ const gain=10+Math.min(G.combo,20)*2;G.score+=gain;
+ const r=$('#wordBox').getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'var(--ok)');
+ if(G.combo%5===0)floaty(innerWidth/2,r.top-20,'COMBO x'+G.combo+'!','var(--c-y)');
+ floaty(r.right,r.top,'+'+gain,'var(--ok)');sOk();if(G.curErrs>0)G.wrong.push(it);
+ updateRunHud();G.idx++;if(G.idx>=G.queue.length)finishRun(true);else showWord()}
+function finishRun(victory){endGameCleanup();save();
+ let stars=0;if(G.mode==='level'&&victory){stars=G.errors===0?3:G.errors<=4?2:1;
+  const pr=S.prog[G.cfg.bookId]||(S.prog[G.cfg.bookId]={cleared:0,stars:{}});
+  pr.stars[G.cfg.li]=Math.max(pr.stars[G.cfg.li]||0,stars);pr.cleared=Math.max(pr.cleared,G.cfg.li+1);
+  if(stars===3)S.stats.perfect++}
+ const coins=G.correct*4+G.best*2+(victory&&G.mode==='level'?20:0),xp=G.correct*10+G.best*3;
+ showResult({stamp:victory?(G.mode==='time'?'TIME UP!':'CLEAR!'):'FAILED...',
+  stars:G.mode==='level'?stars:null,
+  stats:[['拼对单词',G.correct],['最佳连击','×'+G.best],['失误按键',G.errors],['本局得分',G.score]],
+  coins,xp,wrong:[...new Map(G.wrong.map(w=>[w.en,w])).values()],
+  restart:()=>{if(G.mode==='level')startLevel(G.cfg.bookId,G.cfg.li);else startRun(G.cfg)}})}
+
+/* ---------- 陨石单词 ---------- */
+window.startFalling=pool=>{endGameCleanup();if(!pool.length)pool=ALL.filter(w=>!w.phrase&&w.en.length<=10);
+ G={type:'fall',pool,words:[],target:null,lives:3,score:0,combo:0,best:0,correct:0,errors:0,spawnAcc:1e9,active:true,started:false,wrong:[],shield:false};
+ S.stats.games++;save();go('scr-game');
+ $('#arenaWrap').innerHTML=hudHTML('var(--c-p)','陨石单词 · WORD FALL',`<span class="hearts" id="hearts">♥♥♥</span>`,
+  `<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>${itemBtns({hint:false,time:false,shield:true})}`)
+  +`<div class="stage" style="padding:18px;justify-content:flex-start"><div class="fall-area" id="fallArea"></div>
+     <div class="fall-input" id="fallInput">— 输入首字母锁定单词 —</div>
+     <div class="run-hint">单词坠到底线将损失一颗心 · 拼错会丢失锁定</div></div>`;
+ refreshItems();G.raf=requestAnimationFrame(fallLoop);countdown()}
+let fallLast=0;
+function fallLoop(ts){if(!G||!G.active||G.type!=='fall')return;G.raf=requestAnimationFrame(fallLoop);
+ if(!G.started){fallLast=ts;return}
+ const dt=clamp(ts-fallLast,0,50)/1000;fallLast=ts;const el=(ts-G.t0)/1000;
+ if(!G.t0)G.t0=ts;
+ G.spawnAcc+=dt*1000;const gap=Math.max(1000,2500-el*14);
+ if(G.spawnAcc>gap&&G.words.length<7){G.spawnAcc=0;spawnFall()}
+ const H=430,spd=30+el*.9;
+ for(const w of[...G.words]){w.y+=spd*dt;w.el.style.top=w.y+'px';if(w.y>H-58)bottomHit(w)}}
+function spawnFall(){const cand=G.pool.filter(p=>!G.words.some(w=>w.it.en===p.en));if(!cand.length)return;
+ const it=pick(cand),el=document.createElement('div');el.className='fword';el.innerHTML=escHtml(it.en);
+ el.style.left=rnd(4,68)+'%';el.style.top='-44px';$('#fallArea').appendChild(el);
+ G.words.push({it,el,y:-44,matched:0,errs:0})}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function paintFall(w){w.el.innerHTML=[...w.it.en].map((c,i)=>i<w.matched?`<span class="ok">${c}</span>`:escHtml(c)).join('')}
+function onFallChar(ch){if(!G.started)return;
+ if(!G.target){const cands=G.words.filter(w=>w.it.en[0]===ch);if(!cands.length)return fallMiss();
+  G.target=cands.reduce((a,b)=>a.y>b.y?a:b);G.target.matched=1;G.target.el.classList.add('target');paintFall(G.target);sTick();paintFallInput()}
+ else{const w=G.target;if(ch===w.it.en[w.matched]){w.matched++;sTick();paintFall(w);paintFallInput();
+   if(w.matched>=w.it.en.length)destroyFall(w)}else fallMiss()}}
+function paintFallInput(){const i=$('#fallInput');if(!G.target){i.textContent='— 输入首字母锁定单词 —';return}
+ const w=G.target;i.innerHTML=[...w.it.en].map((c,k)=>k<w.matched?`<span style="color:var(--ok)">${c}</span>`:c).join('')}
+function fallMiss(){if(G.shield){G.shield=false;sShield();floaty(innerWidth/2,200,'🛡️ 抵挡!','var(--c-c)');return}
+ G.errors++;G.combo=0;sBad();if(G.target){G.target.errs++;G.target.el.classList.remove('target');G.target=null}
+ paintFallInput();$('#combo').textContent=0;$('#arenaWrap .stage').classList.add('shake');setTimeout(()=>$('#arenaWrap .stage')?.classList.remove('shake'),320)}
+function destroyFall(w){const r=w.el.getBoundingClientRect();burst(r.left+r.width/2,r.top,'var(--c-y)');
+ markWord(w.it,true,w.errs);S.stats.words++;G.correct++;G.combo++;G.best=Math.max(G.best,G.combo);S.stats.bestCombo=Math.max(S.stats.bestCombo,G.best);
+ const gain=w.it.en.length*5+Math.min(G.combo,15)*2;G.score+=gain;floaty(r.left,r.top,'+'+gain,'var(--c-y)');sOk();
+ if(G.combo%5===0)floaty(innerWidth/2,r.top-14,'COMBO x'+G.combo+'!','var(--c-p)');
+ w.el.remove();G.words=G.words.filter(x=>x!==w);G.target=null;paintFallInput();
+ $('#combo').textContent=G.combo;$('#score').textContent=G.score}
+function bottomHit(w){if(w.errs===0||true){markWord(w.it,false,1);if(!G.wrong.some(x=>x.en===w.it.en))G.wrong.push(w.it)}
+ if(G.target===w){G.target=null;paintFallInput()}
+ w.el.remove();G.words=G.words.filter(x=>x!==w);G.lives--;G.combo=0;sBad();
+ $('#hearts').textContent='♥'.repeat(Math.max(0,G.lives))+'♡'.repeat(Math.max(0,3-G.lives));
+ $('#combo').textContent=0;$('#arenaWrap .stage').classList.add('shake');setTimeout(()=>$('#arenaWrap .stage')?.classList.remove('shake'),320);
+ if(G.lives<=0)endFall()}
+function endFall(){endGameCleanup();save();
+ showResult({stamp:'GAME OVER',stats:[['击碎单词',G.correct],['最佳连击','×'+G.best],['漏掉/失误',G.errors],['本局得分',G.score]],
+  coins:G.correct*4+G.best*2,xp:G.correct*10+G.best*3,wrong:G.wrong,restart:()=>startFalling(G.pool)})}
+
+/* ---------- 对战竞技场 ---------- */
+const BOTS={easy:{n:'🐢 机器人·轻松',s:1.35},mid:{n:'🐇 机器人·进阶',s:2.35},hard:{n:'🦅 机器人·精英',s:3.45}};
+window.startBattle=(btype,diff,pool)=>{endGameCleanup();
+ const q=shuffle(pool.filter(w=>w.en.length<=12)).slice(0,8),total=q.reduce((a,w)=>a+w.en.length,0);
+ G={type:'battle',btype,diff,queue:q,total,idx:0,typed:0,done:0,errors:0,correct:0,combo:0,best:0,chars:0,
+    botChars:0,bot:btype==='bot'?BOTS[diff]:null,phase:1,p:[],t0:0,active:true,started:false,wrong:[]};
+ S.stats.games++;save();go('scr-game');renderBattle();G.raf=requestAnimationFrame(battleLoop);countdown()}
+function renderBattle(){const foe=G.bot?G.bot.n:'🎮 玩家二';
+ $('#arenaWrap').innerHTML=hudHTML('var(--c-y)',`对战竞技场 · ${G.btype==='2p'?'双人轮流':'人机竞速'}`,
+   `<span class="pill">单词 <b id="bIdx">1/${G.queue.length}</b></span>`,
+   `<span class="pill">🔥 <b id="combo">0</b></span><button class="ibtn" title="本模式无道具" disabled>⚔️</button>`)
+  +`<div class="stage"><div class="lanes">
+    <div class="lane"><div class="nm"><span>🧑‍🎓 ${G.btype==='2p'?(G.phase===1?'玩家一':'玩家二'):'你'}</span><span id="meP">0%</span></div><div class="track"><div class="fill me" id="meFill"></div><span class="racer" id="meR">🚀</span></div></div>
+    <div class="lane"><div class="nm"><span>${foe}</span><span id="foeP">0%</span></div><div class="track"><div class="fill foe" id="foeFill"></div><span class="racer" id="foeR">${G.bot?'🤖':'🎮'}</span></div></div>
+   </div>
+   <div class="cnchip" id="cnChip"></div><div class="wordbox" id="wordBox"></div>
+   <div class="run-hint">抢先拼完全部 ${G.queue.length} 个单词即获胜！</div></div>`;
+ showBattleWord();updateLanes()}
+function showBattleWord(){const it=G.queue[G.idx];G.typed=0;
+ $('#cnChip').innerHTML=`🀄 ${it.cn} <em>${bookOf(it.book).name}</em>`;paintWord($('#wordBox'),it.en,0);$('#bIdx').textContent=`${G.idx+1}/${G.queue.length}`}
+let bLast=0;
+function battleLoop(ts){if(!G||!G.active||G.type!=='battle')return;G.raf=requestAnimationFrame(battleLoop);
+ if(!G.started){bLast=ts;return}if(!G.t0)G.t0=ts;
+ const dt=clamp(ts-bLast,0,50)/1000;bLast=ts;
+ if(G.bot){G.botChars+=G.bot.s*dt*(0.88+Math.random()*.24);if(G.botChars>=G.total)return battleEnd(false)}
+ updateLanes()}
+function updateLanes(){const mp=clamp(G.chars/G.total,0,1),fp=clamp((G.bot?G.botChars:G.chars)/G.total,0,1);
+ $('#meFill').style.width=mp*100+'%';$('#meR').style.left=mp*100+'%';$('#meP').textContent=Math.round(mp*100)+'%';
+ $('#foeFill').style.width=fp*100+'%';$('#foeR').style.left=fp*100+'%';$('#foeP').textContent=Math.round(fp*100)+'%'}
+function onBattleChar(ch){if(!G.started)return;const it=G.queue[G.idx];
+ if(ch===it.en[G.typed]){G.typed++;G.chars++;sTick();paintWord($('#wordBox'),it.en,G.typed);updateLanes();
+  if(G.typed>=it.en.length){markWord(it,true,0);S.stats.words++;G.correct++;G.combo++;G.best=Math.max(G.best,G.combo);S.stats.bestCombo=Math.max(S.stats.bestCombo,G.best);
+   $('#combo').textContent=G.combo;sOk();const r=$('#wordBox').getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'var(--c-y)');
+   G.idx++;if(G.idx>=G.queue.length)return battleEnd(true);showBattleWord()}}
+ else{G.errors++;G.combo=0;$('#combo').textContent=0;sBad();paintWord($('#wordBox'),it.en,G.typed,true);
+  $('#arenaWrap .stage').classList.add('shake');setTimeout(()=>$('#arenaWrap .stage')?.classList.remove('shake'),320)}}
+function battleEnd(win){endGameCleanup();
+ const time=((performance.now()-(G.t0?performance.now()-(bLast-G.t0*0+0):0)))/1000; // 占位，实际用时见下
+ if(G.btype==='2p'){const rec={time:(bLast-G.t0)/1000,errors:G.errors,chars:G.chars};
+  G.p.push(rec);
+  if(G.phase===1){openModal(`<h3>ROUND 1 完成！</h3><div class="sub">玩家一：用时 ${rec.time.toFixed(1)}s · 失误 ${rec.errors} 次。<br>请把键盘交给 <b>玩家二</b>，挑战同样的 8 个单词！</div><div class="mbtns"><button class="btn y" onclick="battlePhase2()">玩家二开始 ▶</button></div>`);return}
+  const[a,b]=G.p,sa=a.time+a.errors*2,sb=b.time+b.errors*2,w1=sa<=sb;
+  S.stats.wins++;save();
+  return showResult({stamp:w1?'P1 WINS!':'P2 WINS!',
+   stats:[['玩家一用时',a.time.toFixed(1)+'s'],['玩家一失误',a.errors],['玩家二用时',b.time.toFixed(1)+'s'],['玩家二失误',b.errors]],
+   coins:40,xp:60,wrong:G.wrong,restart:()=>openMode('battle')})}
+ if(win){S.stats.wins++;if(G.diff==='hard')S.stats.hardWin=1;sWin()}
+ save();
+ const diffB={easy:0,mid:15,hard:35}[G.diff]||0;
+ showResult({stamp:win?'YOU WIN!':'LOSE...',stars:null,
+  stats:[['拼对单词',G.correct],['最佳连击','×'+G.best],['失误按键',G.errors],['对手',G.bot.n]],
+  coins:win?60+diffB:15,xp:win?80+diffB:25,wrong:G.wrong,restart:()=>openMode('battle')})}
+window.battlePhase2=()=>{closeModal();G.phase=2;G.idx=0;G.chars=0;G.errors=0;G.combo=0;G.t0=0;G.active=true;G.started=false;
+ renderBattle();G.raf=requestAnimationFrame(battleLoop);countdown()};
+
+/* ---------- 键位路由 ---------- */
+const origOnChar=ch=>{};
+Object.defineProperty(window,'_noop',{value:0});
+function routeChar(ch){if(!G)return;if(G.type==='run')onRunChar(ch);else if(G.type==='fall')onFallChar(ch);else if(G.type==='battle')onBattleChar(ch)}
+// 绑定：在 G 创建后由 keydown 统一调用
+(function(){const kd=e=>{if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='Escape')return;if(modalOpen||!G||!G.active)return;if(e.key.length===1)routeChar(e.key.toLowerCase())};document.addEventListener('keydown',kd)})();
+
+/* ---------- 结算 ---------- */
+const TIPS=['间隔重复：今天拼对的词，明天系统会自动安排再见一面。','睡前回忆一遍本局的错词，记忆巩固效果最佳。','把单词放进短语里记，比孤立背拼写更牢固。','测试效应：遮住中文先拼英文，比反复朗读更有效。','连击时大脑处于“心流”状态，是背词的黄金时段。'];
+function showResult(o){const lvB=lvl(S.xp);const coins=o.coins||0,xp=o.xp||0;S.coins+=coins;S.xp+=xp;checkAch();save();refreshHead();coinBump();
+ const lvA=lvl(S.xp),up=lvA.lv>lvB.lv;
+ openModal(`<div style="text-align:center">
+  <div class="stamp">${o.stamp}</div>
+  ${o.stars!=null?`<div class="stars">${'★'.repeat(o.stars)}${'☆'.repeat(3-o.stars)}</div>`:''}
+  ${up?`<div class="lvlup">🎉 升级！LV ${lvA.lv} · ${titleOf(lvA.lv)}</div>`:''}
+  <div class="rgrid">${o.stats.map(([k,v])=>`<div class="rcell"><b>${v}</b><span>${k}</span></div>`).join('')}</div>
+  <div class="rw"><div><b id="rCoin">0</b><small>金币入账</small></div><div><b id="rXp" style="color:#1d9e57">0</b><small>经验值</small></div>
+   <div style="margin-left:auto;font-size:.75rem;color:#67788e">当前 🪙 ${S.coins} · XP ${S.xp}</div></div>
+  ${o.wrong&&o.wrong.length?`<div style="font-size:.78rem;color:#67788e;text-align:left">本局错词（点击发音，已自动加入复习）：</div>
+   <div class="wchips">${o.wrong.slice(0,14).map(w=>`<span class="wchip" onclick="speak('${w.en.replace(/'/g,"")}')">${w.en}</span>`).join('')}</div>`:''}
+  <div class="tip">💡 ${pick(TIPS)}</div>
+  <div class="mbtns" style="justify-content:center"><button class="btn y" id="btnAgain">🔁 再来一局</button><button class="btn b" onclick="closeModal();go('scr-home')">返回主页</button></div></div>`);
+ countUp($('#rCoin'),coins);countUp($('#rXp'),xp);
+ $('#btnAgain').onclick=()=>{closeModal();o.restart&&o.restart()}}
+function countUp(el,t){const s=performance.now();(function f(n){const p=clamp((n-s)/800,0,1);el.textContent=Math.round(t*p);if(p<1)requestAnimationFrame(f)})(s)}
+
+/* ---------- 单词本 ---------- */
+$('#bkSearch').oninput=renderWb;$('#bkBook').onchange=renderWb;$('#bkLv').onchange=renderWb;
+function fmtDue(m){if(!m||m.r===0)return'未学习';if(m.lv>=5)return'已牢记 🏆';if(m.due<=Date.now())return'待复习 🔥';
+ const d=m.due-Date.now();return d<36e5?Math.ceil(d/6e4)+'分钟后':d<864e5?Math.ceil(d/36e5)+'小时后':Math.ceil(d/864e5)+'天后'}
+function renderBook(){$('#bkBook').innerHTML=`<option value="all">全部词书</option>`+BOOKS.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');renderWb();
+ $('#achGrid').innerHTML=ACH.map(([id,n,d])=>`<div class="ach ${S.ach[id]?'done':''}"><b>${S.ach[id]?'🏅':'🔒'} ${n}</b>${d}</div>`).join('')}
+function renderWb(){const q=($('#bkSearch').value||'').trim().toLowerCase(),bk=$('#bkBook').value,lv=$('#bkLv').value;
+ const rows=ALL.filter(w=>{const m=S.mastery[w.en];
+  if(bk!=='all'&&w.book!==bk)return false;
+  if(q&&!w.en.includes(q)&&!w.cn.includes(q))return false;
+  if(lv==='new'&&m&&m.r>0)return false;if(lv==='ing'&&(!m||m.r===0||m.lv>=5))return false;if(lv==='max'&&(!m||m.lv<5))return false;return true});
+ $('#wbList').innerHTML=rows.slice(0,400).map(w=>{const m=S.mastery[w.en],lvv=m?m.lv:0;
+  return`<div class="wrow" onclick="speak('${w.en.replace(/'/g,"")}')"><span class="we">${w.en}</span><span class="wc">${w.cn}</span>
+   <span class="tag" style="background:${bookOf(w.book).color};font-size:.6rem">${bookOf(w.book).name.split(' · ')[0]}</span>
+   <span class="mbar">${[1,2,3,4,5].map(i=>`<i class="${i<=lvv?'on':''}"></i>`).join('')}</span>
+   <span class="due ${m&&m.lv<5&&m.due<=Date.now()&&m.r>0?'hot':''}">${fmtDue(m)}</span></div>`}).join('')
+  ||'<div style="padding:26px;text-align:center;color:var(--sub)">没有匹配的单词</div>'}
+
+/* ---------- 商店 ---------- */
+const THEMES=[{id:'board',n:'黑板绿',p:0,c:'#0f2420'},{id:'midnight',n:'午夜蓝',p:200,c:'#0d1526'},{id:'sakura',n:'樱花粉',p:300,c:'#241421'},{id:'amber',n:'琥珀教室',p:300,c:'#221609'},{id:'paper',n:'作业本（浅色）',p:450,c:'#f4efdd'}];
+const ITEMS={hint:{n:'✏️ 提示粉笔',d:'自动补全 2 个字母',p:30},time:{n:'⏳ 时间沙漏',d:'限时模式 +15 秒',p:40},shield:{n:'🛡️ 拼写护盾',d:'抵挡一次失误',p:50}};
+function renderShop(){$('#thGrid').innerHTML=THEMES.map(t=>{const owned=S.themes.includes(t.id),cur=S.theme===t.id;
+ return`<div class="th"><div class="sw" style="background:${t.c}"></div><b>${t.n}</b>
+  <div style="margin-top:10px">${cur?`<span class="tag" style="background:var(--c-c)">使用中</span>`:owned?`<button class="btn c sm" onclick="useTheme('${t.id}')">启用</button>`:`<button class="btn y sm" onclick="buyTheme('${t.id}',${t.p})">🪙 ${t.p}</button>`}</div></div>`}).join('');
+ $('#itList').innerHTML=Object.entries(ITEMS).map(([k,it])=>`<div class="shoprow"><div><b>${it.n}</b> <span style="color:var(--sub);font-size:.8rem">— ${it.d} · 持有 ${S.items[k]}</span></div>
+  <button class="btn y sm" onclick="buyItem('${k}',${it.p})">🪙 ${it.p} 购买</button></div>`).join('')}
+window.useTheme=id=>{S.theme=id;document.body.dataset.theme=id;save();renderShop();toast('🎨 主题已切换')};
+window.buyTheme=(id,p)=>{if(S.coins<p)return toast('🪙 金币不足','去打几局赚一点吧');S.coins-=p;S.themes.push(id);S.theme=id;document.body.dataset.theme=id;save();refreshHead();renderShop();toast('🎉 购买成功并已启用')};
+window.buyItem=(k,p)=>{if(S.coins<p)return toast('🪙 金币不足','去打几局赚一点吧');S.coins-=p;S.items[k]++;save();refreshHead();renderShop();toast('🎒 道具 +1',ITEMS[k].n)};
+
+/* ---------- 环境漂浮字母 ---------- */
+(function(){const chars='ABDEGKMPRSTWY★?单词梦想坚持',words=['DREAM','FUTURE','COMBO','高考','加油','WORD'];const box=$('#amb');
+ for(let i=0;i<18;i++){const s=document.createElement('span');const useWord=Math.random()<.25;
+  s.textContent=useWord?pick(words):chars[Math.random()*chars.length|0];
+  s.style.left=rnd(0,96)+'%';s.style.fontSize=rnd(14,44)+'px';
+  s.style.color=pick(['var(--c-y)','var(--c-p)','var(--c-c)','var(--c-b)']);
+  s.style.animationDuration=rnd(22,46)+'s';s.style.animationDelay=-rnd(0,40)+'s';box.appendChild(s)}})();
+
+/* ---------- 路由绑定（覆盖初始空实现） ---------- */
+G&&0; // noop
+document.addEventListener('keydown',function route(e){ /* 主路由已在上方注册，这里兜底绑定 G.onChar */ });
+// 统一把 onChar 指向路由
+setInterval(()=>{if(G&&!G.onChar)G.onChar=ch=>routeChar(ch)},100);
+
+refreshHead();renderHome();
+</script>
+</body>
+</html>
