@@ -300,7 +300,6 @@ footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:
  .hud{gap:7px}.hud .pill{padding:4px 10px;font-size:.76rem}.badge{font-size:.64rem}
  .run-hint{font-size:.62rem;letter-spacing:.08em}
  .mbox{padding:24px 16px 22px 28px}
- .mbox::before{left:12px}
  .rgrid{grid-template-columns:repeat(2,1fr)}
  .mbtns .btn{flex:1;text-align:center;padding:12px 10px}
  .fword-f{font-size:1rem}
@@ -347,6 +346,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:
           <div><div class="hero-name" id="heroName"></div><div class="hero-meta" id="heroMeta"></div></div>
           <span class="tag" id="heroTag"></span>
         </div>
+        <div id="todayStats" style="font-size:.8rem;color:var(--sub);margin:6px 0 0;padding:6px 10px;background:var(--panel);border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;"></div>
         <div class="lvmap" id="lvMap"></div>
         <button class="btn solid" id="btnStart">▶ 开始闯关</button>
       </div>
@@ -357,7 +357,12 @@ footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:
       </div>
       <div class="duo">
         <div class="minip"><h4>📌 今日复习任务</h4><div class="num" id="dueN">0</div><p id="dueTxt">根据遗忘曲线，这些词该见面了</p><button class="btn c sm" id="btnReview">开始复习</button></div>
-        <div class="minip"><h4>✏️ 我的错题本</h4><div class="num" id="wrongN">0</div><p>拼错过的词，集中歼灭</p><button class="btn p sm" id="btnWrong">错题重练</button></div>
+        <div class="minip"><h4>✏️ 我的错题本</h4><div class="num" id="wrongN">0</div><p>拼错过的词，集中歼灭</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn p sm" id="btnWrong">错题重练</button>
+            <button class="btn sm" style="border-color:var(--c-p);color:var(--c-p);" onclick="showWrongList()">📖 查看错题</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-side">
@@ -543,8 +548,8 @@ crucial:"crucial moment // 关键时刻",vital:"vital role // 关键作用",obje
 const DUE=[0,20*6e4,12*36e5,864e5,2*864e5,4*864e5];
 
 /* ================= 存档 ================= */
-function def(){return{coins:60,xp:0,theme:'board',themes:['board'],items:{hint:1,time:0,shield:0},curBook:'j1',prog:{},mastery:{},ach:{},stats:{games:0,words:0,bestCombo:0,perfect:0,hardWin:0,wins:0,memPerfect:0},set:{sound:true,tts:true,osk:'auto'}}}
-let S;try{S=Object.assign(def(),JSON.parse(localStorage.getItem(K)||'{}'));S.items=Object.assign({hint:1,time:0,shield:0},S.items);S.stats=Object.assign(def().stats,S.stats);S.set=Object.assign({sound:true,tts:true,osk:'auto'},S.set)}catch(e){S=def()}
+function def(){return{coins:60,xp:0,theme:'board',themes:['board'],items:{hint:1,time:0,shield:0},curBook:'j1',prog:{},mastery:{},ach:{},stats:{games:0,words:0,bestCombo:0,perfect:0,hardWin:0,wins:0,memPerfect:0,unitsCleared:0},set:{sound:true,tts:true,osk:'auto'},daily:{}}}
+let S;try{S=Object.assign(def(),JSON.parse(localStorage.getItem(K)||'{}'));S.items=Object.assign({hint:1,time:0,shield:0},S.items);S.stats=Object.assign(def().stats,S.stats);S.set=Object.assign({sound:true,tts:true,osk:'auto'},S.set);if(!S.daily) S.daily={}}catch(e){S=def()}
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 const mOf=en=>S.mastery[en.toLowerCase()]||(S.mastery[en.toLowerCase()]={lv:0,r:0,w:0,due:0});
 function markWord(it,ok,errs){const m=mOf(it.en);
@@ -555,6 +560,18 @@ const wrongWords=()=>ALL.filter(w=>{const m=S.mastery[w.en.toLowerCase()];return
 function lvl(xp){let lv=1,need=100,r=xp;while(r>=need){r-=need;lv++;need=100+(lv-1)*50}return{lv,into:r,need}}
 const TITLES=[[1,'单词新手'],[3,'词汇学徒'],[5,'记忆新秀'],[8,'单词猎人'],[12,'词汇学者'],[16,'记忆大师'],[20,'单词宗师'],[26,'词典守望者'],[32,'九册通神']];
 const titleOf=l=>{let t=TITLES[0][1];for(const[a,b]of TITLES)if(l>=a)t=b;return t};
+
+/* ================= 每日统计 ================= */
+function updateDailyStats(correct, errors, score) {
+  const date = new Date().toISOString().slice(0,10);
+  if(!S.daily[date]) S.daily[date]={words:0,correct:0,errors:0,score:0,games:0};
+  S.daily[date].words += correct;
+  S.daily[date].correct += correct;
+  S.daily[date].errors += errors;
+  S.daily[date].score += score;
+  S.daily[date].games += 1;
+  save();
+}
 
 /* ================= 学习信息卡片 ================= */
 function phLine(it){
@@ -614,6 +631,16 @@ function renderHome(){
  $('#heroName').textContent=b.name;$('#heroTag').textContent=b.stage;$('#heroTag').style.background=b.color;
  const got=Object.values(pr.stars||{}).reduce((a,c)=>a+c,0);
  $('#heroMeta').textContent=`${b.units.length} 个单元 · ${b.items.length} 词条 · 已通 ${pr.cleared} 单元 · ⭐ ${got}/${lvN*3}`;
+ // 今日统计
+ const today=new Date().toISOString().slice(0,10);
+ const dstat=S.daily[today]||{words:0,correct:0,errors:0,score:0,games:0};
+ const acc=dstat.correct+dstat.errors?Math.round(dstat.correct/(dstat.correct+dstat.errors)*100):0;
+ $('#todayStats').innerHTML=`<span>📅 今日学习：<b style="color:var(--c-y)">${dstat.words}</b> 词</span>
+  <span>✅ 正确：<b style="color:var(--ok)">${dstat.correct}</b></span>
+  <span>❌ 错误：<b style="color:var(--bad)">${dstat.errors}</b></span>
+  <span>🎯 正确率：<b style="color:var(--c-c)">${acc}%</b></span>
+  <span>🏅 局数：<b>${dstat.games}</b></span>`;
+ // 单元列表
  $('#lvMap').innerHTML=b.units.map((u,i)=>{const st=pr.stars?.[i],unlocked=i<=pr.cleared,cur=i===pr.cleared&&unlocked;
   return`<div class="lvchip ${cur?'cur':''} ${unlocked?'':'lock'}" title="${u.n}" onclick="clickLv(${i})"><b>${u.s}</b><span class="st">${st?'★'.repeat(st)+'☆'.repeat(3-st):(unlocked?'GO':'🔒')}</span></div>`}).join('');
  const nxt=Math.min(pr.cleared,lvN-1);
@@ -633,6 +660,25 @@ let modalOpen=false,modalToken=0;
 function openModal(html){modalOpen=true;$('#mbox').innerHTML=html;$('#modal').classList.remove('hide')}
 function closeModal(){modalOpen=false;$('#modal').classList.add('hide');modalToken++}
 window.closeModal=closeModal;
+
+/* ================= 错题查看 ================= */
+window.showWrongList=function(){
+ const list=wrongWords();
+ if(!list.length){toast('🎉 没有错词，继续加油！');return}
+ const html=`<h3>📖 错题本</h3><div class="sub">共 ${list.length} 个单词曾被拼错（点击发音）</div>
+  <div style="max-height:60vh;overflow-y:auto;text-align:left">
+    ${list.map(w=>{
+      const m=S.mastery[w.en.toLowerCase()];
+      return `<div style="border-bottom:1px dashed var(--line);padding:6px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span><b>${w.en}</b> ${w.cn}</span>
+        <span style="color:var(--bad);font-size:.8rem">错误 ${m?m.w:0} 次</span>
+        <button class="phspk" data-t="${w.en}">🔊</button>
+      </div>`;
+    }).join('')}
+  </div>
+  <div class="mbtns"><button class="btn c" onclick="closeModal();$('#btnWrong').click()">错题重练</button><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">关闭</button></div>`;
+ openModal(html);
+};
 
 /* ================= 模式设置弹窗 ================= */
 let sel={book:'mix',btype:'bot',diff:'mid'};
@@ -665,6 +711,34 @@ window.openMode=m=>{
 let G=null;
 document.addEventListener('keydown',e=>{
  if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+ // 主页快捷键（当主页可见且没有游戏进行时）
+ if($('#scr-home').classList.contains('on')) {
+   const key=e.key.toLowerCase();
+   // 数字键 1-9 选单元
+   if(key>='1'&&key<='9') {
+     const idx=parseInt(key)-1;
+     const b=bookOf(S.curBook);
+     if(idx<b.units.length&&idx<=(S.prog[b.id]?.cleared||0)) {
+       clickLv(idx);
+     } else {
+       toast('单元未解锁或不存在');
+     }
+     e.preventDefault(); return;
+   }
+   const map={
+     'r':'#btnReview','w':'#btnWrong',
+     'm':()=>openMode('memory'),'t':()=>openMode('time'),
+     'f':()=>openMode('fall'),'b':()=>openMode('battle'),
+     'l':()=>go('scr-table'),'p':()=>go('scr-book'),'s':()=>go('scr-shop')
+   };
+   if(map[key]) {
+     const v=map[key];
+     if(typeof v==='string'){const el=document.querySelector(v);if(el)el.click();}
+     else v();
+     e.preventDefault(); return;
+   }
+ }
+ // 游戏内按键
  if(e.key==='Escape'){handleEsc();return}
  if(modalOpen||!G||!G.active)return;
  if(e.ctrlKey||e.metaKey||e.altKey)return;
@@ -705,10 +779,11 @@ function startRun(cfg){endGameCleanup();
   <span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>
   ${itemBtns({hint:true,time:cfg.mode==='time',shield:cfg.mode==='level'})}`;
  const hd=cfg.mode==='level'?`${cfg.title} · ${bookOf(cfg.bookId).name.split(' · ')[0]}`:`${cfg.title} · ${cfg.mode==='time'?'60 秒':'记忆计划'}`;
+ const extraHint = (cfg.mode==='time') ? `<div style="font-size:0.7rem;color:var(--sub);text-align:center;margin-top:4px;">拼写正确自动朗读（🔊控制）</div>` : '';
  $('#arenaWrap').innerHTML=hudHTML(mc,hd,mid,right)
   +`<div class="stage"><div id="cardBox"></div><div class="wordbox" id="wordBox"></div>
      <button class="speakbtn" onclick="speak(G.queue[G.idx]&&G.queue[G.idx].en)">🔊 听发音</button>
-     <div class="run-hint">${cfg.mode==='level'?'键入拼写（大小写均可）· 单词内错 3 次扣一颗心':'键入拼写 · 连击越高分越高'}</div></div>`;
+     <div class="run-hint">${cfg.mode==='level'?'键入拼写（大小写均可）· 单词内错 3 次扣一颗心':'键入拼写 · 连击越高分越高'}</div>${extraHint}</div>`;
  refreshItems();showWord();if(cfg.mode==='time')G.iv=setInterval(tickTime,1000);countdown();refreshOsk()}
 function showWord(){const it=G.queue[G.idx];if(!it)return;G.typed=0;G.curErrs=0;
  $('#cardBox').innerHTML=wordCard(it,false);
@@ -737,8 +812,13 @@ function runComplete(){const it=G.queue[G.idx];markWord(it,true,G.curErrs);S.sta
  const r=$('#wordBox').getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'var(--ok)');
  if(G.combo%5===0)floaty(innerWidth/2,r.top-20,'COMBO x'+G.combo+'!','var(--c-y)');
  floaty(r.right,r.top,'+'+gain,'var(--ok)');sOk();if(G.curErrs>0)G.wrong.push(it);
+ // 自动朗读单词（限时冲刺模式，TTS开启时）
+ if(G.mode==='time' && S.set.tts) speak(it.en);
  updateRunHud();G.idx++;if(G.idx>=G.queue.length)finishRun(true);else showWord()}
-function finishRun(victory){endGameCleanup();save();
+function finishRun(victory){endGameCleanup();
+ // 更新每日统计
+ updateDailyStats(G.correct, G.errors, G.score);
+ save();
  let stars=0;if(G.mode==='level'&&victory){stars=G.errors===0?3:G.errors<=4?2:1;
   const pr=S.prog[G.cfg.bookId]||(S.prog[G.cfg.bookId]={cleared:0,stars:{}});
   const first=!pr.stars[G.cfg.li];
@@ -823,7 +903,9 @@ function updateFlower(){let t=0;for(let i=0;i<TIER_XP.length;i++)if(G.sxp>=TIER_
  const petals=5+Math.min(6,G.streak);
  if(t!==G.tier){G.tier=t;toast('🌸 花朵升级！','花瓣变为 '+['白色','粉色','红色','蓝色','金色','紫色'][t]);sWin()}
  $('#flowerWrap').innerHTML=flowerSVG(petals,PETAL_COLORS[G.tier],104)+`<div class="flower-lv">LV ${G.tier+1} · ${['白花','粉花','红花','蓝花','金花','紫花'][G.tier]} · ${petals}瓣</div>`}
-function finishMemory(){endGameCleanup();save();
+function finishMemory(){endGameCleanup();
+ updateDailyStats(G.correct, G.errors, G.score);
+ save();
  showResult({stamp:'BLOOM!',stats:[['完美拼写',G.perfectN+'/'+G.queue.length],['最佳连对','×'+G.best],['失误按键',G.errors],['本局得分',G.score]],
   coins:G.correct*4+G.perfectN*5+G.best*2,xp:G.correct*12+G.perfectN*6,wrong:G.wrong,
   restart:()=>openMode('memory')})}
@@ -836,7 +918,8 @@ window.startFalling=pool=>{endGameCleanup();if(!pool.length)pool=ALL.filter(w=>!
   `<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>${itemBtns({hint:false,time:false,shield:true})}`)
   +`<div class="stage" style="padding:18px;justify-content:flex-start"><div class="fall-area" id="fallArea"></div>
      <div class="fall-input" id="fallInput">— 输入首字母锁定单词 —</div>
-     <div class="run-hint">单词坠到底线将损失一颗心 · 拼错会丢失锁定</div></div>`;
+     <div class="run-hint">单词坠到底线将损失一颗心 · 拼错会丢失锁定</div>
+     <div style="font-size:0.7rem;color:var(--sub);text-align:center;margin-top:4px;">拼写正确自动朗读（🔊控制）</div></div>`;
  refreshItems();G.raf=requestAnimationFrame(fallLoop);countdown();refreshOsk()}
 let fallLast=0;
 function fallLoop(ts){if(!G||!G.active||G.type!=='fall')return;G.raf=requestAnimationFrame(fallLoop);
@@ -866,6 +949,8 @@ function fallMiss(){if(G.shield){G.shield=false;sShield();floaty(innerWidth/2,20
 function destroyFall(w){const r=w.el.getBoundingClientRect();burst(r.left+r.width/2,r.top,'var(--c-y)');
  markWord(w.it,true,w.errs);S.stats.words++;G.correct++;G.combo++;G.best=Math.max(G.best,G.combo);S.stats.bestCombo=Math.max(S.stats.bestCombo,G.best);
  const gain=w.it.en.length*5+Math.min(G.combo,15)*2;G.score+=gain;floaty(r.left,r.top,'+'+gain,'var(--c-y)');sOk();
+ // 自动朗读单词（陨石单词，TTS开启时）
+ if(S.set.tts) speak(w.it.en);
  if(G.combo%5===0)floaty(innerWidth/2,r.top-14,'COMBO x'+G.combo+'!','var(--c-p)');
  w.el.remove();G.words=G.words.filter(x=>x!==w);G.target=null;paintFallInput();
  $('#combo').textContent=G.combo;$('#score').textContent=G.score}
@@ -876,7 +961,9 @@ function bottomHit(w){markWord(w.it,false,1);if(!G.wrong.some(x=>same(x.en,w.it.
  $('#combo').textContent=0;
  const st=$('#arenaWrap .stage');if(st){st.classList.add('shake');setTimeout(()=>st.classList.remove('shake'),320)}
  if(G.lives<=0)endFall()}
-function endFall(){endGameCleanup();save();
+function endFall(){endGameCleanup();
+ updateDailyStats(G.correct, G.errors, G.score);
+ save();
  showResult({stamp:'GAME OVER',stats:[['击碎单词',G.correct],['最佳连击','×'+G.best],['漏掉/失误',G.errors],['本局得分',G.score]],
   coins:G.correct*4+G.best*2,xp:G.correct*10+G.best*3,wrong:G.wrong,restart:()=>startFalling(G.pool)})}
 
@@ -918,6 +1005,11 @@ function onBattleChar(ch){if(!G.started)return;const it=G.queue[G.idx];
  else{G.errors++;G.combo=0;$('#combo').textContent=0;sBad();vib(50);paintWord($('#wordBox'),it.en,G.typed,true);
   const st=$('#arenaWrap .stage');if(st){st.classList.add('shake');setTimeout(()=>st.classList.remove('shake'),320)}}}
 function battleEnd(win){endGameCleanup();
+ // 每日统计（对战只统计玩家一，双人模式统计玩家一）
+ if(G.btype!=='2p' || G.phase===1) {
+   // 仅当为玩家一或单机时更新，避免重复
+   updateDailyStats(G.correct, G.errors, G.score);
+ }
  if(G.btype==='2p'){const rec={time:G.t0?(performance.now()-G.t0)/1000:0,errors:G.errors};
   G.p.push(rec);
   if(G.phase===1){openModal(`<h3>ROUND 1 完成！</h3><div class="sub">玩家一：用时 ${rec.time.toFixed(1)}s · 失误 ${rec.errors} 次。<br>请把键盘交给 <b>玩家二</b>，挑战同样的 8 个单词！</div><div class="mbtns"><button class="btn y" onclick="battlePhase2()">玩家二开始 ▶</button></div>`);return}
