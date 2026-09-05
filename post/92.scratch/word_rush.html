@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>WORD RUSH · 单词快打 — 多教材·多词库</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
+/* ===== 完整样式（压缩但保留所有） ===== */
 body[data-theme=board]{--bg:#0f2420;--grid:rgba(240,240,225,.05);--ink:#f2efe3;--sub:#9db3a6;--panel:rgba(255,255,255,.045);--line:rgba(242,239,227,.17);--c-y:#ffd84d;--c-p:#ff8fa3;--c-c:#6fe3d4;--c-b:#7cc7ff;--ok:#7ce38b;--bad:#ff6b6b;--glow1:rgba(124,199,255,.10);--glow2:rgba(255,143,163,.09);--vig:rgba(0,0,0,.5)}
 body[data-theme=midnight]{--bg:#0d1526;--grid:rgba(200,220,255,.05);--ink:#eef2fb;--sub:#93a4c4;--panel:rgba(255,255,255,.05);--line:rgba(210,225,255,.18);--c-y:#ffd166;--c-p:#ff8fa3;--c-c:#6fe3d4;--c-b:#8ab6ff;--ok:#7ce38b;--bad:#ff6b6b;--glow1:rgba(138,182,255,.12);--glow2:rgba(186,130,255,.10);--vig:rgba(0,0,10,.55)}
 body[data-theme=sakura]{--bg:#241421;--grid:rgba(255,230,240,.05);--ink:#f9edf1;--sub:#c09aa8;--panel:rgba(255,255,255,.05);--line:rgba(255,230,240,.18);--c-y:#ffd166;--c-p:#ff9eb5;--c-c:#7ce8d5;--c-b:#9db8ff;--ok:#8ae89b;--bad:#ff6b6b;--glow1:rgba(255,158,181,.13);--glow2:rgba(157,184,255,.09);--vig:rgba(20,0,10,.55)}
@@ -14,19 +16,13 @@ body[data-theme=amber]{--bg:#221609;--grid:rgba(255,235,200,.05);--ink:#f7eedd;-
 body[data-theme=paper]{--bg:#f4efdd;--grid:rgba(76,125,199,.13);--ink:#20304a;--sub:#67788e;--panel:rgba(255,255,255,.78);--line:rgba(32,48,74,.25);--c-y:#b57e00;--c-p:#d6496f;--c-c:#0d9e8d;--c-b:#2f6fd6;--ok:#1d9e57;--bad:#d84c4c;--glow1:rgba(47,111,214,.08);--glow2:rgba(214,73,111,.07);--vig:rgba(90,70,30,.14)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overscroll-behavior-y:none}
-body{font-family:"Noto Sans SC",sans-serif;color:var(--ink);background:
- radial-gradient(1100px 560px at 82% -8%,var(--glow1),transparent 60%),
- radial-gradient(900px 520px at 8% 108%,var(--glow2),transparent 60%),var(--bg);
- min-height:100vh;min-height:100dvh;overflow-x:hidden;transition:background .4s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
- background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:34px 34px}
+body{font-family:"Noto Sans SC",sans-serif;color:var(--ink);background:radial-gradient(1100px 560px at 82% -8%,var(--glow1),transparent 60%),radial-gradient(900px 520px at 8% 108%,var(--glow2),transparent 60%),var(--bg);min-height:100vh;min-height:100dvh;overflow-x:hidden;transition:background .4s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:34px 34px}
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;box-shadow:inset 0 0 180px var(--vig)}
 #amb{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 #amb span{position:absolute;bottom:-12vh;font-family:"Bungee","Noto Sans SC",sans-serif;opacity:.13;animation:floatUp linear infinite;white-space:nowrap}
 @keyframes floatUp{0%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-60vh) rotate(5deg)}100%{transform:translateY(-125vh) rotate(-3deg)}}
-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
- padding:10px 22px;padding-top:calc(10px + env(safe-area-inset-top));
- background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(8px);border-bottom:1.5px dashed var(--line)}
+header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 22px;padding-top:calc(10px + env(safe-area-inset-top));background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(8px);border-bottom:1.5px dashed var(--line)}
 .lg-en{font-family:"Bungee";font-size:1.35rem;letter-spacing:1px;color:var(--c-y);text-shadow:0 0 18px var(--glow1),2px 2px 0 rgba(0,0,0,.25)}
 .lg-cn{display:block;font-size:.68rem;color:var(--sub);letter-spacing:.35em;margin-top:2px}
 .hstats{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -42,8 +38,7 @@ header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-
 .iconbtn:hover{transform:translateY(-2px) rotate(-3deg);border-color:var(--c-y)}
 .iconbtn.off{opacity:.4;filter:grayscale(1)}
 main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:26px 22px calc(60px + env(safe-area-inset-bottom))}
-.scr{display:none}
-.scr.on{display:block;animation:fadeUp .4s ease}
+.scr{display:none}.scr.on{display:block;animation:fadeUp .4s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}}
 .panel{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px}
 h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px;text-decoration:underline wavy var(--c-y) 2px;text-underline-offset:7px}
@@ -136,12 +131,8 @@ h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px
 .run-hint{font-size:.75rem;color:var(--sub);letter-spacing:.16em;text-align:center}
 .speakbtn{background:transparent;border:1.5px dashed var(--line);border-radius:99px;color:var(--sub);padding:6px 16px;cursor:pointer;font-size:.8rem;transition:.15s;font-family:inherit}
 .speakbtn:hover{color:var(--c-b);border-color:var(--c-b);transform:scale(1.06)}
-.stage.florr{background:#93d05e;border-color:#69a83f;justify-content:flex-start;gap:11px;padding:20px 16px 54px;
- background-image:radial-gradient(rgba(255,255,255,.13) 2px,transparent 3px),radial-gradient(rgba(0,70,0,.10) 2px,transparent 3px);
- background-size:46px 46px,64px 64px;background-position:0 0,22px 30px}
-.stage.florr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34px;opacity:.95;pointer-events:none;
- background:radial-gradient(circle at 14px 10px,#fff 0 3px,transparent 4px),radial-gradient(circle at 46px 18px,#ffb3c9 0 3px,transparent 4px),radial-gradient(circle at 76px 12px,#ffe14d 0 3px,transparent 4px),linear-gradient(#7cb84e,#69a83f);
- background-size:92px 34px,92px 34px,92px 34px,100% 100%}
+.stage.florr{background:#93d05e;border-color:#69a83f;justify-content:flex-start;gap:11px;padding:20px 16px 54px;background-image:radial-gradient(rgba(255,255,255,.13) 2px,transparent 3px),radial-gradient(rgba(0,70,0,.10) 2px,transparent 3px);background-size:46px 46px,64px 64px;background-position:0 0,22px 30px}
+.stage.florr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34px;opacity:.95;pointer-events:none;background:radial-gradient(circle at 14px 10px,#fff 0 3px,transparent 4px),radial-gradient(circle at 46px 18px,#ffb3c9 0 3px,transparent 4px),radial-gradient(circle at 76px 12px,#ffe14d 0 3px,transparent 4px),linear-gradient(#7cb84e,#69a83f);background-size:92px 34px,92px 34px,92px 34px,100% 100%}
 .stage.florr .wordcard{background:rgba(255,255,255,.9);border-color:rgba(42,77,30,.35);color:#22304a}
 .stage.florr .wc-ph,.stage.florr .wc-src{color:#5a7048}
 .stage.florr .wc-ph b{color:#1d7a63}
@@ -152,10 +143,8 @@ h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px
 @keyframes fpulse{40%{transform:scale(1.28) rotate(10deg)}}
 .flower-lv{position:absolute;left:50%;transform:translateX(-50%);bottom:-16px;font-family:"Bungee";font-size:.56rem;color:#fff;background:rgba(0,0,0,.4);border-radius:99px;padding:2px 10px;white-space:nowrap}
 .fword{font-family:"Space Mono",monospace;font-weight:700;font-size:clamp(1.8rem,6vw,3.2rem);letter-spacing:.1em;white-space:pre;text-align:center;min-height:1.3em;z-index:2;max-width:96%}
-.fword .fl{display:inline-block;position:relative;color:#fff;transition:transform .12s;
- text-shadow:3px 0 0 #2a4d1e,-3px 0 0 #2a4d1e,0 3px 0 #2a4d1e,0 -3px 0 #2a4d1e,2px 2px 0 #2a4d1e,-2px -2px 0 #2a4d1e,2px -2px 0 #2a4d1e,-2px 2px 0 #2a4d1e,0 7px 16px rgba(0,0,0,.35)}
-.fword .fl.focus{color:#ffe14d;transform:scale(1.42) translateY(-6px);
- text-shadow:0 0 22px rgba(255,225,77,.9),3px 0 0 #6b4a00,-3px 0 0 #6b4a00,0 3px 0 #6b4a00,0 -3px 0 #6b4a00,2px 2px 0 #6b4a00,-2px -2px 0 #6b4a00,2px -2px 0 #6b4a00,-2px 2px 0 #6b4a00}
+.fword .fl{display:inline-block;position:relative;color:#fff;transition:transform .12s;text-shadow:3px 0 0 #2a4d1e,-3px 0 0 #2a4d1e,0 3px 0 #2a4d1e,0 -3px 0 #2a4d1e,2px 2px 0 #2a4d1e,-2px -2px 0 #2a4d1e,2px -2px 0 #2a4d1e,-2px 2px 0 #2a4d1e,0 7px 16px rgba(0,0,0,.35)}
+.fword .fl.focus{color:#ffe14d;transform:scale(1.42) translateY(-6px);text-shadow:0 0 22px rgba(255,225,77,.9),3px 0 0 #6b4a00,-3px 0 0 #6b4a00,0 3px 0 #6b4a00,0 -3px 0 #6b4a00,2px 2px 0 #6b4a00,-2px -2px 0 #6b4a00,2px -2px 0 #6b4a00,-2px 2px 0 #6b4a00}
 .fword .fl.hid{color:rgba(255,255,255,.5);background:rgba(0,0,0,.18);border:3px dashed rgba(255,255,255,.75);border-radius:12px;min-width:1.05em;text-shadow:none}
 .fword .fl.hid.err{border-color:#ff6b6b;color:#ff6b6b;animation:jit .18s}
 .fword .fl.mok{color:#eaffb0;text-shadow:0 0 18px rgba(124,227,139,.8),3px 0 0 #1e4d2a,-3px 0 0 #1e4d2a,0 3px 0 #1e4d2a,0 -3px 0 #1e4d2a,2px 2px 0 #1e4d2a,-2px -2px 0 #1e4d2a,2px -2px 0 #1e4d2a,-2px 2px 0 #1e4d2a;animation:popL .18s}
@@ -167,9 +156,7 @@ h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px
 @keyframes beeFly{0%{left:-50px;top:18%;transform:rotate(10deg)}50%{top:36%;transform:rotate(-8deg)}100%{left:105%;top:22%;transform:rotate(8deg)}}
 .pfloat{position:absolute;top:-24px;z-index:1;animation:pdrift linear forwards;opacity:.85}
 @keyframes pdrift{to{transform:translateY(540px) rotate(320deg)}}
-.orb{position:fixed;width:13px;height:13px;border-radius:50%;z-index:95;pointer-events:none;
- background:radial-gradient(circle at 35% 30%,#fff,#7ce38b);box-shadow:0 0 12px #7ce38b;
- transition:transform .6s cubic-bezier(.3,.7,.4,1),opacity .6s}
+.orb{position:fixed;width:13px;height:13px;border-radius:50%;z-index:95;pointer-events:none;background:radial-gradient(circle at 35% 30%,#fff,#7ce38b);box-shadow:0 0 12px #7ce38b;transition:transform .6s cubic-bezier(.3,.7,.4,1),opacity .6s}
 .fall-area{position:relative;width:100%;height:clamp(280px,50vh,430px);border-radius:14px;background:rgba(0,0,0,.2);overflow:hidden}
 .fall-area::after{content:"";position:absolute;left:0;right:0;bottom:26px;border-bottom:2px dashed var(--bad);opacity:.7}
 .fword-f{position:absolute;font-family:"Space Mono",monospace;font-weight:700;font-size:clamp(1rem,3.4vw,1.25rem);letter-spacing:.06em;padding:4px 10px;border:1.5px solid var(--line);border-radius:10px;background:rgba(0,0,0,.35);white-space:pre}
@@ -282,45 +269,25 @@ table.wt{width:100%;border-collapse:collapse;font-size:.86rem;min-width:780px}
 .back{background:none;border:none;color:var(--sub);cursor:pointer;font-size:.9rem;margin-bottom:14px;font-family:inherit;padding:8px 0}
 .back:hover{color:var(--c-y)}
 footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:.72rem;padding:20px 14px calc(18px + env(safe-area-inset-bottom));letter-spacing:.08em;border-top:1.5px dashed var(--line);line-height:1.8}
+.p2p-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;font-size:.75rem;font-weight:700}
+.p2p-status.connecting{background:#ffb74d;color:#3e2723}
+.p2p-status.connected{background:var(--ok);color:#1b3a1b}
+.p2p-status.disconnected{background:var(--bad);color:#fff}
+.p2p-status .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.p2p-status.connecting .dot{background:#f57c00;animation:pulse 1s infinite}
+.p2p-status.connected .dot{background:#2e7d32}
+.p2p-status.disconnected .dot{background:#c62828}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.room-code{font-family:"Bungee";font-size:2rem;letter-spacing:4px;color:var(--c-y);background:rgba(0,0,0,.3);padding:8px 20px;border-radius:12px;display:inline-block;margin:8px 0}
+.p2p-input{font-family:"Space Mono",monospace;font-size:1.2rem;padding:10px 16px;border:2px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);width:200px;text-align:center;letter-spacing:2px}
+.p2p-input:focus{outline:none;border-color:var(--c-y)}
+.p2p-input::placeholder{color:var(--sub);font-size:.8rem}
 @media(max-width:1024px){.home-grid{grid-template-columns:1fr}}
-@media(max-width:720px){
- header{padding-left:12px;padding-right:12px;gap:8px}
- .lg-en{font-size:1.02rem}.lg-cn{display:none}
- .xpwrap{width:64px}.hlv .lvname{display:none}
- main{padding:14px 12px calc(46px + env(safe-area-inset-bottom))}
- .panel{padding:14px;border-radius:14px}
- .hero-name{font-size:1.3rem}
- .lvchip{min-width:52px;padding:7px 4px}
- .sci-strip{grid-template-columns:1fr}
- .duo{grid-template-columns:1fr}
- .mode{padding:13px 40px 13px 14px;gap:11px}.mode .ic{font-size:1.7rem}
- .btn{padding:11px 18px}.btn.solid{width:100%}
- .stage{min-height:clamp(300px,52vh,440px);padding:16px 10px 34px;gap:11px}
- .stage.florr{padding:14px 8px 50px}
- .wordbox,.fword{letter-spacing:.05em}
- .wordcard{padding:10px 14px 9px}
- .hud{gap:7px}.hud .pill{padding:4px 10px;font-size:.76rem}.badge{font-size:.64rem}
- .run-hint{font-size:.62rem;letter-spacing:.08em}
- .mbox{padding:24px 16px 22px 28px}
- .rgrid{grid-template-columns:repeat(2,1fr)}
- .mbtns .btn{flex:1;text-align:center;padding:12px 10px}
- .fword-f{font-size:1rem}
- footer{font-size:.62rem}
-}
-@media(max-width:520px){
- .wrow{grid-template-columns:1fr auto auto}.wrow .wc{display:none}
- .hcoin{padding:4px 10px;font-size:.82rem}
-}
+@media(max-width:720px){header{padding-left:12px;padding-right:12px;gap:8px}.lg-en{font-size:1.02rem}.lg-cn{display:none}.xpwrap{width:64px}.hlv .lvname{display:none}main{padding:14px 12px calc(46px + env(safe-area-inset-bottom))}.panel{padding:14px;border-radius:14px}.hero-name{font-size:1.3rem}.lvchip{min-width:52px;padding:7px 4px}.sci-strip{grid-template-columns:1fr}.duo{grid-template-columns:1fr}.mode{padding:13px 40px 13px 14px;gap:11px}.mode .ic{font-size:1.7rem}.btn{padding:11px 18px}.btn.solid{width:100%}.stage{min-height:clamp(300px,52vh,440px);padding:16px 10px 34px;gap:11px}.stage.florr{padding:14px 8px 50px}.wordbox,.fword{letter-spacing:.05em}.wordcard{padding:10px 14px 9px}.hud{gap:7px}.hud .pill{padding:4px 10px;font-size:.76rem}.badge{font-size:.64rem}.run-hint{font-size:.62rem;letter-spacing:.08em}.mbox{padding:24px 16px 22px 28px}.rgrid{grid-template-columns:repeat(2,1fr)}.mbtns .btn{flex:1;text-align:center;padding:12px 10px}.fword-f{font-size:1rem}footer{font-size:.62rem}.p2p-input{width:140px;font-size:1rem}.room-code{font-size:1.4rem}}
+@media(max-width:520px){.wrow{grid-template-columns:1fr auto auto}.wrow .wc{display:none}.hcoin{padding:4px 10px;font-size:.82rem}}
 @media(max-width:400px){.lvbadge{font-size:.68rem}.hstats{gap:6px}}
 @media(max-height:600px){.stage{min-height:clamp(250px,58vh,400px)}header{padding-top:6px;padding-bottom:6px}.flower-wrap svg{width:56px}}
-@media(pointer:coarse){
- .iconbtn{min-width:42px;min-height:42px}
- .ibtn{min-height:42px;min-width:42px}
- .opt{padding:11px 15px}
- .bktab{padding:8px 14px}
- .lvchip{padding:10px 6px}
- .wchip{padding:8px 14px}
-}
+@media(pointer:coarse){.iconbtn{min-width:42px;min-height:42px}.ibtn{min-height:42px;min-width:42px}.opt{padding:11px 15px}.bktab{padding:8px 14px}.lvchip{padding:10px 6px}.wchip{padding:8px 14px}}
 </style>
 </head>
 <body data-theme="board">
@@ -351,6 +318,8 @@ footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:
         <div id="todayStats" style="font-size:.8rem;color:var(--sub);margin:6px 0 0;padding:6px 10px;background:var(--panel);border-radius:8px;display:flex;flex-wrap:wrap;gap:12px;"></div>
         <div class="lvmap" id="lvMap"></div>
         <button class="btn solid" id="btnStart">▶ 开始闯关</button>
+        <button class="btn b sm" onclick="showShareModal()">📤 分享挑战</button>
+        <button class="btn c sm" onclick="showAchievementModal()">🏆 成就榜</button>
       </div>
       <div class="sci-strip">
         <div class="sci"><b>🧠 艾宾浩斯曲线</b>系统按遗忘规律自动排定复习任务，越熟的词、间隔越长。</div>
@@ -377,6 +346,7 @@ footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:
         <button class="mode" style="--mc:var(--c-b)" onclick="go('scr-book')"><span class="ic">📖</span><span><h3>单词本</h3><p>按单元浏览词表</p></span></button>
         <button class="mode" style="--mc:var(--c-p)" onclick="go('scr-shop')"><span class="ic">🛒</span><span><h3>奖励商店</h3><p>主题与道具</p></span></button>
       </div>
+      <button class="mode" style="--mc:#7c4dff;border-color:#7c4dff;" onclick="openP2PMode()"><span class="ic">🌐</span><span><h3>联机对战 <small>P2P ARENA</small></h3><p>PeerJS 实时对战 · 创建/加入房间</p></span></button>
     </div>
   </div>
 </section>
@@ -635,7 +605,8 @@ function wordCard(it,compact){
  return`<div class="wordcard ${compact?'compact':''}">
   <div class="wc-cn">${escHtml(it.cn)}<span class="pos pos-${posCls(it.pos)}">${posTxt}</span></div>
   ${phLine(it)}
-  <div class="wc-src">${bookOf(it.book).name.split(' · ')[0]} · ${it.us} ${it.un}</div></div>`}
+  <div class="wc-src">${bookOf(it.book).name.split(' · ')[0]} · ${it.us} ${it.un}</div></div>`
+ }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t)speak(t.dataset.t)});
 
 /* ================= 音效 / 朗读（修复移动端TTS） ================= */
@@ -702,8 +673,39 @@ function floaty(x,y,txt,c){const s=document.createElement('span');s.className='f
 function coinBump(){const e=$('#hCoin');e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}
 
 /* ================= 成就 ================= */
-const ACH=[['first','初来乍到','完成第一局游戏',s=>s.stats.games>=1],['c10','连击新星','达成 10 连击',s=>s.stats.bestCombo>=10],['c25','心流状态','达成 25 连击',s=>s.stats.bestCombo>=25],['w100','百词斩','累计拼对 100 词',s=>s.stats.words>=100],['w500','词汇大亨','累计拼对 500 词',s=>s.stats.words>=500],['p3','完美主义','任意单元三星通关',s=>s.stats.perfect>=1],['beat','精英杀手','对战击败精英机器人',s=>s.stats.hardWin>=1],['rich','小有积蓄','持有 1000 金币',s=>s.coins>=1000],['max','永久记忆','首个单词达到永久记忆',s=>s.stats.maxed>=1],['win5','常胜将军','累计获胜 5 次',s=>s.stats.wins>=5],['bloom','花语者','花瓣记忆累计完美拼写 10 词',s=>s.stats.memPerfect>=10],['unit20','单元猎人','累计通关 20 个单元',s=>s.stats.unitsCleared>=20]];
-function checkAch(){for(const[id,n,d,f]of ACH){if(!S.ach[id]&&f(S)){S.ach[id]=1;S.coins+=30;save();toast('🏅 成就解锁：'+n,'奖励 30 金币 · '+d);coinBump()}}}
+const ACH=[
+	['first','初来乍到','完成第一局游戏',s=>s.stats.games>=1],
+	['c10','连击新星','达成 10 连击',s=>s.stats.bestCombo>=10],
+	['c25','心流状态','达成 25 连击',s=>s.stats.bestCombo>=25],
+	['w100','百词斩','累计拼对 100 词',s=>s.stats.words>=100],
+	['w500','词汇大亨','累计拼对 500 词',s=>s.stats.words>=500],
+	['p3','完美主义','任意单元三星通关',s=>s.stats.perfect>=1],
+	['beat','精英杀手','对战击败精英机器人',s=>s.stats.hardWin>=1],['rich','小有积蓄','持有 1000 金币',s=>s.coins>=1000],['max','永久记忆','首个单词达到永久记忆',s=>s.stats.maxed>=1],['win5','常胜将军','累计获胜 5 次',s=>s.stats.wins>=5],['bloom','花语者','花瓣记忆累计完美拼写 10 词',s=>s.stats.memPerfect>=10],['unit20','单元猎人','累计通关 20 个单元',s=>s.stats.unitsCleared>=20],['p2p_win','🌐 联机首胜','赢得一场联机对战',s=>s.stats.p2pWins>=1],['p2p_warrior','🌐 联机勇士','赢得 5 场联机对战',s=>s.stats.p2pWins>=5]
+];
+
+function checkAch(){
+	for(const[id,n,d,f]of ACH){if(!S.ach[id]&&f(S)){S.ach[id]=1;S.coins+=30;save();toast('🏅 成就解锁：'+n,'奖励 30 金币 · '+d);coinBump()}}
+}
+function getAchProgress(id){
+const map={first:S.stats.games,c10:S.stats.bestCombo,c25:S.stats.bestCombo,w100:S.stats.words,w500:S.stats.words,p3:S.stats.perfect,beat:S.stats.hardWin,rich:S.coins,max:S.stats.maxed,win5:S.stats.wins,bloom:S.stats.memPerfect,unit20:S.stats.unitsCleared,p2p_win:S.stats.p2pWins,p2p_warrior:S.stats.p2pWins};
+return map[id]||0
+}
+function getAchTarget(id){
+	const map={first:1,c10:10,c25:25,w100:100,w500:500,p3:1,beat:1,rich:1000,max:1,win5:5,bloom:10,unit20:20,p2p_win:1,p2p_warrior:5};
+	return map[id]||1
+}
+function showAchievementModal(){const html=`<h3>🏆 成就榜</h3><div class="sub">每解锁一个成就奖励 30 金币</div><div style="display:grid;grid-template-columns:1fr;gap:8px;text-align:left;max-height:50vh;overflow-y:auto;padding:4px 0">${ACH.map(([id,n,d])=>{const done=!!S.ach[id];const prog=getAchProgress(id),target=getAchTarget(id);const pct=Math.min(100,Math.round(prog/target*100));return`<div style="display:flex;align-items:center;gap:10px;border-bottom:1px dashed var(--line);padding:6px 0;flex-wrap:wrap;"><span style="font-size:1.4rem">${done?'✅':'⬜'}</span><div style="flex:1;min-width:120px"><b>${n}</b><div style="font-size:.7rem;color:var(--sub)">${d}</div></div><div style="width:100px;height:6px;background:var(--panel);border-radius:99px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pct}%;background:${done?'var(--ok)':'var(--c-y)'};border-radius:99px;transition:width .4s"></div></div><span style="font-size:.7rem;min-width:40px;text-align:right;color:var(--sub)">${done?'✔️':prog+'/'+target}</span></div>`}).join('')}</div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">关闭</button></div>`;openModal(html)
+}
+function showShareModal(){
+	const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0};const url=new URL(location.href);
+	const data={book:S.curBook,mode:'level',unit:Math.min(pr.cleared,b.units.length-1)};url.searchParams.set('challenge',btoa(JSON.stringify(data)));
+	const shareUrl=url.toString();
+	const html=`<h3>📤 分享挑战</h3><div class="sub">将以下链接发给好友，对方打开后自动进入同一单元挑战</div><div style="background:var(--panel);border-radius:10px;padding:12px;word-break:break-all;font-size:.8rem;border:1px solid var(--line);margin:12px 0;font-family:monospace">${escHtml(shareUrl)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><button class="btn y sm" onclick="copyShareLink('${escA(shareUrl)}')">📋 复制链接</button>${navigator.share?`<button class="btn c sm" onclick="navigator.share({title:'WORD RUSH 单词挑战',text:'来和我一起挑战单词吧！',url:'${escA(shareUrl)}'})">📱 分享</button>`:''}</div><div class="sub" style="font-size:.7rem">💡 对方打开链接后会自动进入对应词库和单元，支持所有游戏模式</div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">关闭</button></div>`;
+	openModal(html)
+}
+function copyShareLink(url){
+	navigator.clipboard.writeText(url).then(()=>toast('✅ 链接已复制')).catch(()=>{const i=document.createElement('input');i.value=url;document.body.appendChild(i);i.select();document.execCommand('copy');i.remove();toast('✅ 链接已复制')})
+}(function checkChallenge(){const params=new URLSearchParams(location.search);const enc=params.get('challenge');if(enc){try{const data=JSON.parse(atob(enc));if(data.book&&data.mode==='level'&&data.unit!==undefined){S.curBook=data.book;save();setTimeout(()=>{renderHome();const b=bookOf(data.book),pr=S.prog[b.id]||{};if(data.unit<=pr.cleared){toast('📤 已加载分享的挑战',`${b.name} · ${b.units[data.unit]?.n||'单元'}`);startLevel(data.book,data.unit)}else{toast('🔒 请先完成前面的单元')}},500)}}catch(e){}}})();
 
 /* ================= 顺序/随机切换 ================= */
 function toggleWordOrder(){
@@ -801,6 +803,24 @@ window.openMode=m=>{
   else if(m==='memory')startMemory(pool.filter(w=>!w.phrase&&w.en.length<=12));
   else startBattle(sel.btype,sel.diff,pool)}
 };
+
+/* ================= P2P 联机 ================= */
+let peer=null, conn=null, p2pRoom=null, p2pReady=false;
+function openP2PMode(){openModal(`<h3>🌐 联机对战</h3><div class="sub">基于 PeerJS 的实时 P2P 对战，需要双方网络畅通</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;justify-content:center"><button class="btn y" onclick="p2pCreateRoom()">🏠 创建房间</button><button class="btn c" onclick="p2pShowJoin()">🔗 加入房间</button></div><div id="p2pStatus" style="text-align:center;font-size:.85rem;color:var(--sub);padding:8px;border:1px dashed var(--line);border-radius:10px;display:none;">加载中...</div><div id="p2pRoomDisplay" style="text-align:center;display:none;margin:8px 0;"></div><div id="p2pJoinArea" style="display:none;text-align:center;"><input class="p2p-input" id="p2pJoinInput" placeholder="输入房间码" style="width:100%;max-width:280px;"><div style="margin-top:8px;"><button class="btn solid sm" onclick="p2pJoinRoom()">加入</button></div></div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`)}
+function p2pShowJoin(){$('#p2pJoinArea').style.display='block'}
+function p2pCreateRoom(){if(peer)peer.destroy();const id='wordrush-'+Math.random().toString(36).slice(2,8);peer=new Peer(id,{debug:2});p2pRoom=id;$('#p2pStatus').style.display='block';$('#p2pStatus').innerHTML='⏳ 创建房间中...';peer.on('open',()=>{$('#p2pRoomDisplay').style.display='block';$('#p2pRoomDisplay').innerHTML=`<div>📋 房间码</div><div class="room-code">${id}</div><div style="font-size:.7rem;color:var(--sub)">等待对手加入...</div>`;$('#p2pStatus').innerHTML='<span class="p2p-status connecting"><span class="dot"></span>等待连接...</span>';toast('🏠 房间已创建','房间码: '+id);});peer.on('connection',(c)=>{conn=c;setupP2PConnection();});peer.on('error',(e)=>{$('#p2pStatus').innerHTML='❌ 错误: '+e.message;toast('❌ 创建房间失败',e.message)});}
+function p2pJoinRoom(){const code=$('#p2pJoinInput').value.trim();if(!code){toast('请输入房间码');return}if(peer)peer.destroy();peer=new Peer({debug:2});peer.on('open',()=>{$('#p2pStatus').style.display='block';$('#p2pStatus').innerHTML='⏳ 连接中...';conn=peer.connect(code);setupP2PConnection();});peer.on('error',(e)=>{$('#p2pStatus').innerHTML='❌ 连接失败: '+e.message;toast('❌ 连接失败',e.message)});}
+function setupP2PConnection(){if(!conn)return;conn.on('open',()=>{$('#p2pStatus').innerHTML='<span class="p2p-status connected"><span class="dot"></span>已连接！</span>';toast('✅ 已连接！','准备开始对战');p2pReady=true;closeModal();setTimeout(()=>startP2PBattle(),300);});conn.on('data',(data)=>{handleP2PData(data);});conn.on('close',()=>{toast('🔌 连接断开');p2pReady=false;if(G&&G.type==='p2p')endP2PBattle();});}
+function sendP2P(data){if(conn&&conn.open)conn.send(data);}
+let p2pData={myProgress:0,oppProgress:0,myErrors:0,oppErrors:0,myDone:false,oppDone:false,words:[]};
+function startP2PBattle(){endGameCleanup();const pool=ALL.filter(w=>!w.phrase&&w.en.length<=10);const q=shuffle(pool).slice(0,8);p2pData={myProgress:0,oppProgress:0,myErrors:0,oppErrors:0,myDone:false,oppDone:false,words:q};G={type:'p2p',queue:q,idx:0,typed:0,errors:0,correct:0,active:true,started:false};S.stats.games++;save();go('scr-game');const right=`<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span><span class="pill">对手进度 <b id="oppProg">0%</b></span>`;$('#arenaWrap').innerHTML=hudHTML('#7c4dff','🌐 联机对战',`<span class="pill">单词 <b id="bIdx">1/${q.length}</b></span>`,right)+`<div class="stage"><div class="lanes"><div class="lane"><div class="nm"><span>🧑 你</span><span id="meP">0%</span></div><div class="track"><div class="fill me" id="meFill"></div><span class="racer" id="meR">🚀</span></div></div><div class="lane"><div class="nm"><span>👤 对手</span><span id="foeP">0%</span></div><div class="track"><div class="fill foe" id="foeFill"></div><span class="racer" id="foeR">🤖</span></div></div></div><div id="cardBox"></div><div class="wordbox" id="wordBox"></div><div class="run-hint">拼完全部 ${q.length} 个单词 · 先完成者获胜！</div></div>`;refreshItems();showP2PWord();countdown().then(()=>{if(G&&G.active)G.started=true});refreshOsk()}
+function showP2PWord(){const it=G.queue[G.idx];if(!it)return;G.typed=0;$('#cardBox').innerHTML=wordCard(it,true);$('#wordBox').style.fontSize=wFont(it.en.length);paintWord($('#wordBox'),it.en,0);$('#bIdx').textContent=`${G.idx+1}/${G.queue.length}`}
+function onP2PChar(ch){if(!G||!G.started)return;const it=G.queue[G.idx];if(same(ch,it.en[G.typed])){G.typed++;sTick();paintWord($('#wordBox'),it.en,G.typed);if(G.typed>=it.en.length){markWord(it,true,0);S.stats.words++;G.correct++;G.combo++;G.best=Math.max(G.best,G.combo);S.stats.bestCombo=Math.max(S.stats.bestCombo,G.best);$('#combo').textContent=G.combo;sOk();const r=$('#wordBox').getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,'var(--c-y)');G.idx++;p2pData.myProgress=G.idx/G.queue.length*100;sendP2P({type:'progress',prog:p2pData.myProgress,errors:G.errors});updateP2PLanes();if(G.idx>=G.queue.length){p2pData.myDone=true;sendP2P({type:'done',errors:G.errors});checkP2PWin();return}showP2PWord()}}else{G.errors++;G.combo=0;$('#combo').textContent=0;sBad();vib(50);paintWord($('#wordBox'),it.en,G.typed,true);const st=$('#arenaWrap .stage');if(st){st.classList.add('shake');setTimeout(()=>st.classList.remove('shake'),320)}}}
+function updateP2PLanes(){const mp=clamp(p2pData.myProgress/100,0,1),fp=clamp(p2pData.oppProgress/100,0,1);$('#meFill').style.width=mp*100+'%';$('#meR').style.left=mp*100+'%';$('#meP').textContent=Math.round(mp*100)+'%';$('#foeFill').style.width=fp*100+'%';$('#foeR').style.left=fp*100+'%';$('#foeP').textContent=Math.round(fp*100)+'%';$('#oppProg').textContent=Math.round(fp*100)+'%'}
+function handleP2PData(data){if(data.type==='progress'){p2pData.oppProgress=data.prog;p2pData.oppErrors=data.errors||0;updateP2PLanes()}if(data.type==='done'){p2pData.oppDone=true;p2pData.oppErrors=data.errors||0;checkP2PWin()}}
+function checkP2PWin(){if(!G)return;if(p2pData.myDone&&p2pData.oppDone){const win=p2pData.myErrors<=p2pData.oppErrors;endP2PBattle(win?1:0);return}if(p2pData.myDone&&!p2pData.oppDone){endP2PBattle(1);return}if(!p2pData.myDone&&p2pData.oppDone){endP2PBattle(0);return}}
+function endP2PBattle(win){if(!G||G.type!=='p2p')return;endGameCleanup();const lvB=lvl(S.xp);const coins=win?40:15,xp=win?80:25;S.coins+=coins;S.xp+=xp;if(win){S.stats.p2pWins=(S.stats.p2pWins||0)+1;S.stats.wins++}else{S.stats.p2pLosses=(S.stats.p2pLosses||0)+1}updateDailyStats(G.correct,G.errors,G.score);checkAch();save();refreshHead();coinBump();const lvA=lvl(S.xp),up=lvA.lv>lvB.lv;openModal(`<div style="text-align:center"><div class="stamp">${win?'🏆 胜利！':'💔 惜败'}</div>${up?`<div class="lvlup">🎉 升级！LV ${lvA.lv}</div>`:''}<div class="rgrid"><div class="rcell"><b>${G.correct}</b><span>拼对单词</span></div><div class="rcell"><b>${G.errors}</b><span>失误次数</span></div><div class="rcell"><b>${coins}</b><span>金币入账</span></div><div class="rcell"><b>${xp}</b><span>经验值</span></div></div><div class="mbtns"><button class="btn y" onclick="closeModal();openP2PMode()">🔁 再来一局</button><button class="btn b" onclick="closeModal();go('scr-home')">返回主页</button></div></div>`);if(conn){conn.close();}p2pReady=false;p2pData={myProgress:0,oppProgress:0,myErrors:0,oppErrors:0,myDone:false,oppDone:false,words:[]};}
+function endP2PBattleCleanup(){if(G&&G.type==='p2p'){endGameCleanup();G=null;}}
 
 /* ================= 游戏核心 ================= */
 let G=null;
