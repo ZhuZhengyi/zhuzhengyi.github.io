@@ -7,8 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-/* ===== 样式与之前完全一致（篇幅原因省略，实际使用需保留全部样式） ===== */
-/* 此处省略样式，实际文件会包含完整样式 */
 body[data-theme=board]{--bg:#0f2420;--grid:rgba(240,240,225,.05);--ink:#f2efe3;--sub:#9db3a6;--panel:rgba(255,255,255,.045);--line:rgba(242,239,227,.17);--c-y:#ffd84d;--c-p:#ff8fa3;--c-c:#6fe3d4;--c-b:#7cc7ff;--ok:#7ce38b;--bad:#ff6b6b;--glow1:rgba(124,199,255,.10);--glow2:rgba(255,143,163,.09);--vig:rgba(0,0,0,.5)}
 body[data-theme=midnight]{--bg:#0d1526;--grid:rgba(200,220,255,.05);--ink:#eef2fb;--sub:#93a4c4;--panel:rgba(255,255,255,.05);--line:rgba(210,225,255,.18);--c-y:#ffd166;--c-p:#ff8fa3;--c-c:#6fe3d4;--c-b:#8ab6ff;--ok:#7ce38b;--bad:#ff6b6b;--glow1:rgba(138,182,255,.12);--glow2:rgba(186,130,255,.10);--vig:rgba(0,0,10,.55)}
 body[data-theme=sakura]{--bg:#241421;--grid:rgba(255,230,240,.05);--ink:#f9edf1;--sub:#c09aa8;--panel:rgba(255,255,255,.05);--line:rgba(255,230,240,.18);--c-y:#ffd166;--c-p:#ff9eb5;--c-c:#7ce8d5;--c-b:#9db8ff;--ok:#8ae89b;--bad:#ff6b6b;--glow1:rgba(255,158,181,.13);--glow2:rgba(157,184,255,.09);--vig:rgba(20,0,10,.55)}
@@ -50,10 +48,12 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:26px 22p
 .panel{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px}
 h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px;text-decoration:underline wavy var(--c-y) 2px;text-underline-offset:7px}
 .home-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:22px;align-items:start}
-.bktabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.bktabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center}
 .bktab{font-size:.8rem;font-weight:700;color:var(--sub);background:transparent;border:1.5px dashed var(--line);border-radius:999px;padding:5px 13px;cursor:pointer;transition:.18s;font-family:inherit}
 .bktab:hover{transform:translateY(-2px);color:var(--ink)}
 .bktab.on{color:#14202c;background:var(--bc,var(--c-y));border-color:transparent;transform:rotate(-2deg) scale(1.06);font-weight:900;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+.bktab.order-btn{margin-left:auto;border-style:solid;border-color:var(--c-c);color:var(--c-c)}
+.bktab.order-btn:hover{background:var(--c-c);color:#14202c}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .hero-name{font-size:1.7rem;font-weight:900}
 .hero-meta{color:var(--sub);font-size:.85rem;margin-top:4px}
@@ -195,7 +195,7 @@ h2.sec{font-weight:900;font-size:1.05rem;letter-spacing:.14em;margin-bottom:14px
 .osk-row{display:flex;gap:6px;justify-content:center}
 #osk button{width:clamp(30px,9vw,46px);height:clamp(42px,11vw,54px);border-radius:9px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font-family:"Space Mono",monospace;font-weight:700;font-size:clamp(.85rem,2.6vw,1.05rem);cursor:pointer;touch-action:manipulation;transition:transform .05s}
 #osk button.press,#osk button:active{background:var(--c-y);color:#14202c;transform:scale(.92)}
-#osk button.space{width:clamp(80px,20vw,120px);flex:1;max-width:50%;}
+#osk button.space{width:clamp(80px,20vw,120px);flex:1;max-width:50%}
 .modal{position:fixed;inset:0;background:rgba(4,10,8,.72);backdrop-filter:blur(4px);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px}
 .modal.hide{display:none}
 .mbox{max-width:560px;width:100%;padding:34px 38px 30px 52px;animation:popIn .3s cubic-bezier(.2,1.4,.4,1);max-height:92vh;overflow-y:auto}
@@ -597,8 +597,8 @@ crucial:"crucial moment // 关键时刻",vital:"vital role // 关键作用",obje
 const DUE=[0,20*6e4,12*36e5,864e5,2*864e5,4*864e5];
 
 /* ================= 存档 ================= */
-function def(){return{coins:60,xp:0,theme:'board',themes:['board'],items:{hint:1,time:0,shield:0},curBook:'j1',prog:{},mastery:{},ach:{},stats:{games:0,words:0,bestCombo:0,perfect:0,hardWin:0,wins:0,memPerfect:0,unitsCleared:0},set:{sound:true,tts:true,osk:'auto'},daily:{}}}
-let S;try{S=Object.assign(def(),JSON.parse(localStorage.getItem(K)||'{}'));S.items=Object.assign({hint:1,time:0,shield:0},S.items);S.stats=Object.assign(def().stats,S.stats);S.set=Object.assign({sound:true,tts:true,osk:'auto'},S.set);if(!S.daily) S.daily={}}catch(e){S=def()}
+function def(){return{coins:60,xp:0,theme:'board',themes:['board'],items:{hint:1,time:0,shield:0},curBook:'j1',prog:{},mastery:{},ach:{},stats:{games:0,words:0,bestCombo:0,perfect:0,hardWin:0,wins:0,memPerfect:0,unitsCleared:0},set:{sound:true,tts:true,osk:'auto',wordOrder:'random'},daily:{}}}
+let S;try{S=Object.assign(def(),JSON.parse(localStorage.getItem(K)||'{}'));S.items=Object.assign({hint:1,time:0,shield:0},S.items);S.stats=Object.assign(def().stats,S.stats);S.set=Object.assign({sound:true,tts:true,osk:'auto',wordOrder:'random'},S.set);if(!S.daily) S.daily={}}catch(e){S=def()}
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 const mOf=en=>S.mastery[en.toLowerCase()]||(S.mastery[en.toLowerCase()]={lv:0,r:0,w:0,due:0});
 function markWord(it,ok,errs){const m=mOf(it.en);
@@ -638,12 +638,29 @@ function wordCard(it,compact){
   <div class="wc-src">${bookOf(it.book).name.split(' · ')[0]} · ${it.us} ${it.un}</div></div>`}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-t]');if(t)speak(t.dataset.t)});
 
-/* ================= 音效 / 朗读 ================= */
+/* ================= 音效 / 朗读（修复移动端TTS） ================= */
 let AC;function ac(){return AC||(AC=new(window.AudioContext||window.webkitAudioContext)())}
 function beep(f,d=.07,t='square',g=.045){if(!S.set.sound)return;try{const a=ac(),o=a.createOscillator(),v=a.createGain();o.type=t;o.frequency.value=f;v.gain.value=g;v.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);o.connect(v).connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
 const sTick=()=>beep(760,.03,'square',.02),sOk=()=>{beep(660,.08);setTimeout(()=>beep(880,.1),60)},sBad=()=>beep(130,.16,'sawtooth',.06),
 sWin=()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.14,'triangle',.06),i*110)),sShield=()=>beep(420,.12,'triangle',.06);
-function speak(t){if(!S.set.tts)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.92;speechSynthesis.speak(u)}catch(e){}}
+
+function speak(t){
+  if(!S.set.tts) return;
+  try{
+    if(AC && AC.state === 'suspended') AC.resume().catch(()=>{});
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'en-US';
+    u.rate = 0.92;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+    const voices = speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en')) || null;
+    if(voice) u.voice = voice;
+    u.onerror = (e) => { console.warn('TTS error:', e); };
+    speechSynthesis.speak(u);
+  }catch(e){ console.warn('speak exception:', e); }
+}
 
 /* ================= 头部 / 屏幕 / 屏幕键盘 ================= */
 function refreshHead(){const l=lvl(S.xp);$('#coinN').textContent=S.coins;$('#lvBadge').textContent='LV '+l.lv;$('#lvName').textContent=titleOf(l.lv);$('#xpBar').style.width=(l.into/l.need*100)+'%';
@@ -658,12 +675,10 @@ $('#btnOsk').onclick=()=>{const order=['auto','on','off'],cur=S.set.osk||'auto',
  S.set.osk=next;save();refreshOsk();refreshHead();
  toast('🎹 屏幕键盘：'+({auto:'自动（触屏设备显示）',on:'强制开启',off:'关闭'}[next]))};
 
-/* ===== 屏幕键盘生成（添加空格键） ===== */
 function buildOsk(){
   const rows=['qwertyuiop','asdfghjkl','zxcvbnm'];
   const pad=[0,4,10];
   let html = rows.map((r,i)=>`<div class="osk-row" style="padding-left:${pad[i]}%;padding-right:${pad[i]}%">${[...r].map(c=>`<button data-k="${c}">${c.toUpperCase()}</button>`).join('')}</div>`).join('');
-  // 添加空格键行
   html += `<div class="osk-row" style="justify-content:center;padding:0 10%;">
     <button data-k=" " class="space" style="flex:1;max-width:60%;">␣ 空格</button>
   </div>`;
@@ -690,31 +705,45 @@ function coinBump(){const e=$('#hCoin');e.classList.remove('bump');void e.offset
 const ACH=[['first','初来乍到','完成第一局游戏',s=>s.stats.games>=1],['c10','连击新星','达成 10 连击',s=>s.stats.bestCombo>=10],['c25','心流状态','达成 25 连击',s=>s.stats.bestCombo>=25],['w100','百词斩','累计拼对 100 词',s=>s.stats.words>=100],['w500','词汇大亨','累计拼对 500 词',s=>s.stats.words>=500],['p3','完美主义','任意单元三星通关',s=>s.stats.perfect>=1],['beat','精英杀手','对战击败精英机器人',s=>s.stats.hardWin>=1],['rich','小有积蓄','持有 1000 金币',s=>s.coins>=1000],['max','永久记忆','首个单词达到永久记忆',s=>s.stats.maxed>=1],['win5','常胜将军','累计获胜 5 次',s=>s.stats.wins>=5],['bloom','花语者','花瓣记忆累计完美拼写 10 词',s=>s.stats.memPerfect>=10],['unit20','单元猎人','累计通关 20 个单元',s=>s.stats.unitsCleared>=20]];
 function checkAch(){for(const[id,n,d,f]of ACH){if(!S.ach[id]&&f(S)){S.ach[id]=1;S.coins+=30;save();toast('🏅 成就解锁：'+n,'奖励 30 金币 · '+d);coinBump()}}}
 
+/* ================= 顺序/随机切换 ================= */
+function toggleWordOrder(){
+  S.set.wordOrder = S.set.wordOrder === 'random' ? 'sequential' : 'random';
+  save();
+  renderHome();
+  toast('📋 单词顺序：' + (S.set.wordOrder === 'random' ? '🔀 随机' : '➡️ 顺序'));
+}
+
 /* ================= 主页 ================= */
 function renderHome(){
- $('#bkTabs').innerHTML=BOOKS.map(b=>`<button class="bktab ${b.id===S.curBook?'on':''}" style="--bc:${b.color}" onclick="pickBook('${b.id}')">${b.name.replace(' · ','')}</button>`).join('');
- const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0,stars:{}},lvN=b.units.length;
- $('#heroName').textContent=b.name;$('#heroTag').textContent=b.stage;$('#heroTag').style.background=b.color;
- const got=Object.values(pr.stars||{}).reduce((a,c)=>a+c,0);
- $('#heroMeta').textContent=`${b.units.length} 个单元 · ${b.items.length} 词条 · 已通 ${pr.cleared} 单元 · ⭐ ${got}/${lvN*3}`;
- // 今日统计
- const today=new Date().toISOString().slice(0,10);
- const dstat=S.daily[today]||{words:0,correct:0,errors:0,score:0,games:0};
- const acc=dstat.correct+dstat.errors?Math.round(dstat.correct/(dstat.correct+dstat.errors)*100):0;
- $('#todayStats').innerHTML=`<span>📅 今日学习：<b style="color:var(--c-y)">${dstat.words}</b> 词</span>
-  <span>✅ 正确：<b style="color:var(--ok)">${dstat.correct}</b></span>
-  <span>❌ 错误：<b style="color:var(--bad)">${dstat.errors}</b></span>
-  <span>🎯 正确率：<b style="color:var(--c-c)">${acc}%</b></span>
-  <span>🏅 局数：<b>${dstat.games}</b></span>`;
- // 单元列表
- $('#lvMap').innerHTML=b.units.map((u,i)=>{const st=pr.stars?.[i],unlocked=i<=pr.cleared,cur=i===pr.cleared&&unlocked;
-  return`<div class="lvchip ${cur?'cur':''} ${unlocked?'':'lock'}" title="${u.n}" onclick="clickLv(${i})"><b>${u.s}</b><span class="st">${st?'★'.repeat(st)+'☆'.repeat(3-st):(unlocked?'GO':'🔒')}</span></div>`}).join('');
- const nxt=Math.min(pr.cleared,lvN-1);
- $('#btnStart').textContent=pr.cleared>=lvN?'🔁 重新挑战全册':`▶ 开始 ${b.units[nxt].s} · ${b.units[nxt].n}`;
- const due=dueWords().length,wr=wrongWords().length;
- $('#dueN').textContent=due;$('#dueTxt').textContent=due?'根据遗忘曲线，这些词该见面了':'太棒了，暂无待复习单词 ✨';
- $('#btnReview').disabled=!due;$('#wrongN').textContent=wr;$('#btnWrong').disabled=!wr;
- refreshHead()}
+  if(window.speechSynthesis) speechSynthesis.getVoices();
+  
+  // 词库标签
+  let tabsHtml = BOOKS.map(b=>`<button class="bktab ${b.id===S.curBook?'on':''}" style="--bc:${b.color}" onclick="pickBook('${b.id}')">${b.name.replace(' · ','')}</button>`).join('');
+  // 顺序/随机切换按钮
+  tabsHtml += `<button class="bktab order-btn" onclick="toggleWordOrder()" style="--bc:var(--c-c);margin-left:auto;">${S.set.wordOrder === 'random' ? '🔀 随机' : '➡️ 顺序'}</button>`;
+  $('#bkTabs').innerHTML = tabsHtml;
+  
+  const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0,stars:{}},lvN=b.units.length;
+  $('#heroName').textContent=b.name;$('#heroTag').textContent=b.stage;$('#heroTag').style.background=b.color;
+  const got=Object.values(pr.stars||{}).reduce((a,c)=>a+c,0);
+  $('#heroMeta').textContent=`${b.units.length} 个单元 · ${b.items.length} 词条 · 已通 ${pr.cleared} 单元 · ⭐ ${got}/${lvN*3}`;
+  const today=new Date().toISOString().slice(0,10);
+  const dstat=S.daily[today]||{words:0,correct:0,errors:0,score:0,games:0};
+  const acc=dstat.correct+dstat.errors?Math.round(dstat.correct/(dstat.correct+dstat.errors)*100):0;
+  $('#todayStats').innerHTML=`<span>📅 今日学习：<b style="color:var(--c-y)">${dstat.words}</b> 词</span>
+   <span>✅ 正确：<b style="color:var(--ok)">${dstat.correct}</b></span>
+   <span>❌ 错误：<b style="color:var(--bad)">${dstat.errors}</b></span>
+   <span>🎯 正确率：<b style="color:var(--c-c)">${acc}%</b></span>
+   <span>🏅 局数：<b>${dstat.games}</b></span>`;
+  $('#lvMap').innerHTML=b.units.map((u,i)=>{const st=pr.stars?.[i],unlocked=i<=pr.cleared,cur=i===pr.cleared&&unlocked;
+   return`<div class="lvchip ${cur?'cur':''} ${unlocked?'':'lock'}" title="${u.n}" onclick="clickLv(${i})"><b>${u.s}</b><span class="st">${st?'★'.repeat(st)+'☆'.repeat(3-st):(unlocked?'GO':'🔒')}</span></div>`}).join('');
+  const nxt=Math.min(pr.cleared,lvN-1);
+  $('#btnStart').textContent=pr.cleared>=lvN?'🔁 重新挑战全册':`▶ 开始 ${b.units[nxt].s} · ${b.units[nxt].n}`;
+  const due=dueWords().length,wr=wrongWords().length;
+  $('#dueN').textContent=due;$('#dueTxt').textContent=due?'根据遗忘曲线，这些词该见面了':'太棒了，暂无待复习单词 ✨';
+  $('#btnReview').disabled=!due;$('#wrongN').textContent=wr;$('#btnWrong').disabled=!wr;
+  refreshHead()
+}
 window.pickBook=id=>{S.curBook=id;save();renderHome()};
 window.clickLv=i=>{const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0,stars:{}};if(i>pr.cleared){toast('🔒 先通过前面的单元');return}startLevel(S.curBook,i)};
 $('#btnStart').onclick=()=>{const b=bookOf(S.curBook),pr=S.prog[b.id]||{cleared:0};startLevel(S.curBook,Math.min(pr.cleared,b.units.length-1))};
@@ -777,7 +806,6 @@ window.openMode=m=>{
 let G=null;
 document.addEventListener('keydown',e=>{
  if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
- // 主页快捷键
  if($('#scr-home').classList.contains('on')) {
    const key=e.key.toLowerCase();
    if(key>='1'&&key<='9') {
@@ -830,25 +858,37 @@ function paintWord(el,word,typed,err){el.innerHTML=[...word].map((ch,i)=>{const 
  let cls=i<typed?'l ok':(i===typed?'l cur'+(err?' err':''):'l');return`<span class="${cls}">${c}</span>`}).join('')}
 
 /* ---------- 单元闯关 / 限时 / 复习 ---------- */
-window.startLevel=(bookId,ui)=>{const b=bookOf(bookId),u=b.units[ui];
- startRun({mode:'level',bookId,li:ui,title:`${u.s} ${u.n}`,queue:b.items.filter(it=>it.ui===ui),lives:3})};
-window.startTime=pool=>startRun({mode:'time',title:'限时冲刺',queue:shuffle(pool),time:60});
-function startRun(cfg){endGameCleanup();
- G={type:'run',mode:cfg.mode,cfg,queue:[...cfg.queue],idx:0,typed:0,curErrs:0,errors:0,correct:0,score:0,combo:0,best:0,
-    lives:cfg.lives||0,timeLeft:cfg.time||0,wrong:[],retried:new Set(),shield:false,active:true,started:false};
- S.stats.games++;save();go('scr-game');
- const mc=cfg.mode==='level'?'var(--c-y)':cfg.mode==='time'?'var(--c-c)':'var(--c-b)';
- const mid=cfg.mode==='time'?`<span class="pill">⏱ <b id="tLeft">${cfg.time}</b>s</span>`:`<span class="pill">进度 <b id="prog">1/${G.queue.length}</b></span>`;
- const right=`${cfg.mode==='level'?`<span class="hearts" id="hearts">♥♥♥</span>`:''}
-  <span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>
-  ${itemBtns({hint:true,time:cfg.mode==='time',shield:cfg.mode==='level'})}`;
- const hd=cfg.mode==='level'?`${cfg.title} · ${bookOf(cfg.bookId).name.split(' · ')[0]}`:`${cfg.title} · ${cfg.mode==='time'?'60 秒':'记忆计划'}`;
- const extraHint = (cfg.mode==='time') ? `<div style="font-size:0.7rem;color:var(--sub);text-align:center;margin-top:4px;">拼写正确自动朗读（🔊控制）</div>` : '';
- $('#arenaWrap').innerHTML=hudHTML(mc,hd,mid,right)
-  +`<div class="stage"><div id="cardBox"></div><div class="wordbox" id="wordBox"></div>
-     <button class="speakbtn" onclick="speak(G.queue[G.idx]&&G.queue[G.idx].en)">🔊 听发音</button>
+window.startLevel=(bookId,ui)=>{
+  const b=bookOf(bookId),u=b.units[ui];
+  let queue = b.items.filter(it=>it.ui===ui);
+  if (S.set.wordOrder === 'random') queue = shuffle(queue);
+  startRun({mode:'level',bookId,li:ui,title:`${u.s} ${u.n}`,queue:queue,lives:3})
+};
+window.startTime=pool=>{
+  let queue = [...pool];
+  if (S.set.wordOrder === 'random') queue = shuffle(queue);
+  startRun({mode:'time',title:'限时冲刺',queue:queue,time:60})
+};
+function startRun(cfg){
+  let queue = [...cfg.queue];
+  if (S.set.wordOrder === 'random') queue = shuffle(queue);
+  endGameCleanup();
+  G={type:'run',mode:cfg.mode,cfg,queue:queue,idx:0,typed:0,curErrs:0,errors:0,correct:0,score:0,combo:0,best:0,
+     lives:cfg.lives||0,timeLeft:cfg.time||0,wrong:[],retried:new Set(),shield:false,active:true,started:false};
+  S.stats.games++;save();go('scr-game');
+  const mc=cfg.mode==='level'?'var(--c-y)':cfg.mode==='time'?'var(--c-c)':'var(--c-b)';
+  const mid=cfg.mode==='time'?`<span class="pill">⏱ <b id="tLeft">${cfg.time}</b>s</span>`:`<span class="pill">进度 <b id="prog">1/${queue.length}</b></span>`;
+  const right=`${cfg.mode==='level'?`<span class="hearts" id="hearts">♥♥♥</span>`:''}
+   <span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>
+   ${itemBtns({hint:true,time:cfg.mode==='time',shield:cfg.mode==='level'})}`;
+  const hd=cfg.mode==='level'?`${cfg.title} · ${bookOf(cfg.bookId).name.split(' · ')[0]}`:`${cfg.title} · ${cfg.mode==='time'?'60 秒':'记忆计划'}`;
+  const extraHint = (cfg.mode==='time') ? `<div style="font-size:0.7rem;color:var(--sub);text-align:center;margin-top:4px;">拼写正确自动朗读（🔊控制）</div>` : '';
+  $('#arenaWrap').innerHTML=hudHTML(mc,hd,mid,right)
+   +`<div class="stage"><div id="cardBox"></div><div class="wordbox" id="wordBox"></div>
+     <button class="speakbtn" onclick="speak(queue[G.idx]&&queue[G.idx].en)">🔊 听发音</button>
      <div class="run-hint">${cfg.mode==='level'?'键入拼写（大小写均可）· 单词内错 3 次扣一颗心':'键入拼写 · 连击越高分越高'}</div>${extraHint}</div>`;
- refreshItems();showWord();if(cfg.mode==='time')G.iv=setInterval(tickTime,1000);countdown();refreshOsk()}
+  refreshItems();showWord();if(cfg.mode==='time')G.iv=setInterval(tickTime,1000);countdown();refreshOsk()
+}
 function showWord(){const it=G.queue[G.idx];if(!it)return;G.typed=0;G.curErrs=0;
  $('#cardBox').innerHTML=wordCard(it,false);
  $('#wordBox').style.fontSize=wFont(it.en.length);paintWord($('#wordBox'),it.en,0);
@@ -903,11 +943,13 @@ function flowerSVG(petals,color,size){let s='';for(let i=0;i<petals;i++){const a
  return`<svg width="${size}" height="${size}" viewBox="-55 -55 110 110">${s}<circle r="15" fill="#ffd93b" stroke="rgba(0,0,0,.25)" stroke-width="2.5"/></svg>`}
 window.startMemory=pool=>{endGameCleanup();
  if(!pool||!pool.length)pool=ALL.filter(w=>!w.phrase&&w.en.length<=12);
- const q=shuffle(pool).slice(0,10);
- G={type:'mem',pool,queue:q,idx:0,phase:'show',focus:-1,typed:0,errsPos:{},correct:0,perfectN:0,errors:0,
+ let queue = [...pool];
+ if (S.set.wordOrder === 'random') queue = shuffle(queue);
+ queue = queue.slice(0,10);
+ G={type:'mem',pool,queue:queue,idx:0,phase:'show',focus:-1,typed:0,errsPos:{},correct:0,perfectN:0,errors:0,
     streak:0,best:0,score:0,sxp:0,tier:0,seq:0,active:true,started:false,wrong:[]};
  S.stats.games++;save();go('scr-game');
- $('#arenaWrap').innerHTML=hudHTML('#ff8fb3','花瓣记忆 · PETAL MEMORY',`<span class="pill">单词 <b id="mIdx">1/${q.length}</b></span>`,
+ $('#arenaWrap').innerHTML=hudHTML('#ff8fb3','花瓣记忆 · PETAL MEMORY',`<span class="pill">单词 <b id="mIdx">1/${queue.length}</b></span>`,
   `<span class="pill">🌸 连对 <b id="mStreak">0</b></span><span class="pill">得分 <b id="mScore">0</b></span>`)
   +`<div class="stage florr" id="memStage">
     <div class="flower-wrap" id="flowerWrap">${flowerSVG(5,'#ffffff',104)}<div class="flower-lv" id="flowerLv">LV 1 · 白花</div></div>
@@ -974,7 +1016,9 @@ function finishMemory(){endGameCleanup();
 
 /* ---------- 陨石单词 ---------- */
 window.startFalling=pool=>{endGameCleanup();if(!pool.length)pool=ALL.filter(w=>!w.phrase&&w.en.length<=10);
- G={type:'fall',pool,words:[],target:null,lives:3,score:0,combo:0,best:0,correct:0,errors:0,spawnAcc:1e9,active:true,started:false,wrong:[],shield:false,t0:0};
+ let wordPool = [...pool];
+ if (S.set.wordOrder === 'random') wordPool = shuffle(wordPool);
+ G={type:'fall',pool:wordPool,words:[],target:null,lives:3,score:0,combo:0,best:0,correct:0,errors:0,spawnAcc:1e9,active:true,started:false,wrong:[],shield:false,t0:0};
  S.stats.games++;save();go('scr-game');
  $('#arenaWrap').innerHTML=hudHTML('var(--c-p)','陨石单词 · WORD FALL',`<span class="hearts" id="hearts">♥♥♥</span>`,
   `<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span>${itemBtns({hint:false,time:false,shield:true})}`)
@@ -1031,7 +1075,9 @@ function endFall(){endGameCleanup();
 /* ---------- 对战竞技场 ---------- */
 const BOTS={easy:{n:'🐢 机器人·轻松',s:1.35},mid:{n:'🐇 机器人·进阶',s:2.35},hard:{n:'🦅 机器人·精英',s:3.45}};
 window.startBattle=(btype,diff,pool)=>{endGameCleanup();
- const q=shuffle(pool.filter(w=>w.en.length<=12)).slice(0,8),total=q.reduce((a,w)=>a+w.en.length,0);
+ let q = shuffle(pool.filter(w=>w.en.length<=12)).slice(0,8);
+ if (S.set.wordOrder === 'sequential') q = pool.filter(w=>w.en.length<=12).slice(0,8);
+ const total=q.reduce((a,w)=>a+w.en.length,0);
  G={type:'battle',btype,diff,queue:q,total,idx:0,typed:0,errors:0,correct:0,combo:0,best:0,chars:0,
     botChars:0,bot:btype==='bot'?BOTS[diff]:null,phase:1,p:[],t0:0,active:true,started:false,wrong:[]};
  S.stats.games++;save();go('scr-game');renderBattle();G.raf=requestAnimationFrame(battleLoop);countdown();refreshOsk()}
