@@ -1994,6 +1994,54 @@ footer {
   min-height: 1.1em;
   margin: -2px 0 4px;
 }
+/* ===== 联机对战：模式选择 / 多人房间 ===== */
+.p2p-mode-grid {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 14px 0;
+}
+.p2p-mode-grid .btn {
+  flex: 1;
+  max-width: 180px;
+}
+.p2p-create {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+.p2p-create select {
+  background: var(--panel);
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 38vh;
+  overflow-y: auto;
+  margin: 12px 0;
+  text-align: left;
+}
+.room-mem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
 @media (max-width: 1024px) {
   .home-grid {
     grid-template-columns: 1fr;
@@ -4296,21 +4344,48 @@ window.openMode = (m) => {
   };
 };
 
-/* ================= P2P 联机 ================= */
+/* ================= P2P 联机（1v1 / 多人房间） ================= */
 let peer = null,
   conn = null,
   p2pRoom = null,
   p2pReady = false,
-  oppProfile = null;
+  p2pMode = null, // "duel" | "room"
+  oppProfile = null,
+  isHost = false,
+  p2pRematchMe = false,
+  p2pRematchFoe = false,
+  // ---- 多人房间 ----
+  hostConns = {}, // 房主侧：peerId -> { conn }
+  members = {}, // 双方：peerId -> { id, profile, prog, errors, done }
+  myPeerId = null,
+  roomMax = 16,
+  p2pState = "lobby"; // lobby | playing
 function openP2PMode() {
   const pf = S.profile || {};
   openModal(
-    `<h3>🌐 联机对战</h3><div class="sub">基于 PeerJS 的实时 P2P 对战，需要双方网络畅通</div><div class="pf-summary"><span>${pf.avatar || "🧑"} ${
+    `<h3>🌐 联机对战</h3><div class="sub">选择对战模式</div><div class="pf-summary"><span>${
+      pf.avatar || "🧑"
+    } ${
       pf.name ? escHtml(pf.name) : "<i style='opacity:.65'>未设置昵称</i>"
-    }</span><button class="btn b sm" onclick="openProfileFromP2P()">✏️ 设置资料</button></div><div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;justify-content:center"><button class="btn y" onclick="p2pCreateRoom()">🏠 创建房间</button><button class="btn c" onclick="p2pShowJoin()">🔗 加入房间</button></div><div id="p2pStatus" style="text-align:center;font-size:.85rem;color:var(--sub);padding:8px;border:1px dashed var(--line);border-radius:10px;display:none;">加载中...</div><div id="p2pRoomDisplay" style="text-align:center;display:none;margin:8px 0;"></div><div id="p2pJoinArea" style="display:none;text-align:center;"><input class="p2p-input" id="p2pJoinInput" placeholder="输入房间码" style="width:100%;max-width:280px;"><div style="margin-top:8px;"><button class="btn solid sm" onclick="p2pJoinRoom()">加入</button></div></div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`
+    }</span><button class="btn b sm" onclick="openProfileFromP2P()">✏️ 设置资料</button></div><div class="p2p-mode-grid"><button class="btn y" onclick="openDuelMode()">⚔️ 1v1 对战</button><button class="btn c" onclick="openRoomMode()">👥 多人对战</button></div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`
+  );
+}
+function openDuelMode() {
+  p2pMode = "duel";
+  openModal(
+    `<h3>⚔️ 1v1 对战</h3><div class="sub">实时双人对战 · 先完成者获胜</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;justify-content:center"><button class="btn y" onclick="p2pCreateRoom()">🏠 创建房间</button><button class="btn c" onclick="p2pShowJoin()">🔗 加入房间</button></div><div id="p2pStatus" style="text-align:center;font-size:.85rem;color:var(--sub);padding:8px;border:1px dashed var(--line);border-radius:10px;display:none;">加载中...</div><div id="p2pRoomDisplay" style="text-align:center;display:none;margin:8px 0;"></div><div id="p2pJoinArea" style="display:none;text-align:center;"><input class="p2p-input" id="p2pJoinInput" placeholder="输入房间码" style="width:100%;max-width:280px;"><div style="margin-top:8px;"><button class="btn solid sm" onclick="p2pJoinRoom()">加入</button></div></div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="openP2PMode()">← 返回</button><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`
+  );
+}
+function openRoomMode() {
+  p2pMode = "room";
+  openModal(
+    `<h3>👥 多人对战</h3><div class="sub">一个房间最多 ${roomMax} 人 · 中途可加入 · 房主随时开局</div><div class="p2p-create"><span>人数上限</span><select id="p2pMax"><option value="2">2 人</option><option value="4">4 人</option><option value="8">8 人</option><option value="16" selected>16 人</option></select><button class="btn y" onclick="roomCreate()">🏠 创建房间</button></div><div style="margin:6px 0 10px;text-align:center"><button class="btn c" onclick="roomShowJoin()">🔗 加入房间</button></div><div id="p2pStatus" style="text-align:center;font-size:.85rem;color:var(--sub);padding:8px;border:1px dashed var(--line);border-radius:10px;display:none;">加载中...</div><div id="p2pJoinArea" style="display:none;text-align:center;"><input class="p2p-input" id="p2pJoinInput" placeholder="输入房间码" style="width:100%;max-width:280px;"><div style="margin-top:8px;"><button class="btn solid sm" onclick="roomJoin()">加入</button></div></div><div class="mbtns"><button class="btn" style="border-color:#999;color:#666" onclick="openP2PMode()">← 返回</button><button class="btn" style="border-color:#999;color:#666" onclick="closeModal()">取消</button></div>`
   );
 }
 function p2pShowJoin() {
+  $("#p2pJoinArea").style.display = "block";
+}
+function roomShowJoin() {
   $("#p2pJoinArea").style.display = "block";
 }
 function p2pCreateRoom() {
@@ -4318,6 +4393,7 @@ function p2pCreateRoom() {
   const id = "wordrush-" + Math.random().toString(36).slice(2, 8);
   peer = new Peer(id, { debug: 2 });
   p2pRoom = id;
+  isHost = true;
   $("#p2pStatus").style.display = "block";
   $("#p2pStatus").innerHTML = "⏳ 创建房间中...";
   peer.on("open", () => {
@@ -4346,6 +4422,7 @@ function p2pJoinRoom() {
   }
   if (peer) peer.destroy();
   peer = new Peer({ debug: 2 });
+  isHost = false;
   peer.on("open", () => {
     $("#p2pStatus").style.display = "block";
     $("#p2pStatus").innerHTML = "⏳ 连接中...";
@@ -4372,20 +4449,39 @@ function setupP2PConnection() {
     handleP2PData(data);
   });
   conn.on("close", () => {
+    conn = null;
     p2pReady = false;
-    oppProfile = null;
-    // 对局已正常结算（G.active=false）则静默清理；对局中对手断开则提示
+    p2pRematchMe = false;
+    p2pRematchFoe = false;
+    // 对局进行中对手断开：本局不结算
     if (G && G.type === "p2p" && G.active) {
-      toast("🔌 连接断开");
       endGameCleanup();
       G = null;
       openModal(
-        `<h3>🔌 连接断开</h3><div class="sub">对方已断开连接，本局不结算</div><div class="mbtns"><button class="btn b" onclick="closeModal();go('scr-home')">返回主页</button></div>`
+        `<h3>🔌 连接断开</h3><div class="sub">对方已退出，本局不结算</div><div class="mbtns"><button class="btn b" onclick="closeModal();go('scr-home')">返回主页</button></div>`
       );
+      return;
     }
+    // 对局已结束（房间内）：房主保留房间等待新对手，加入者退出房间
+    if (isHost && peer) {
+      toast("👋 对手已退出，房间等待中");
+    } else {
+      toast("🚪 房间已关闭");
+      p2pRoom = null;
+      if (peer) {
+        peer.destroy();
+        peer = null;
+      }
+    }
+    oppProfile = null;
   });
 }
 function sendP2P(data) {
+  if (p2pMode === "room") {
+    if (isHost) roomBroadcast(data);
+    else if (conn && conn.open) conn.send(data);
+    return;
+  }
   if (conn && conn.open) conn.send(data);
 }
 let p2pData = {
@@ -4399,6 +4495,7 @@ let p2pData = {
 };
 function startP2PBattle() {
   endGameCleanup();
+  closeModal();
   const pool = ALL.filter((w) => !w.phrase && w.en.length <= 10);
   const q = shuffle(pool).slice(0, 8);
   p2pData = {
@@ -4417,26 +4514,42 @@ function startP2PBattle() {
     typed: 0,
     errors: 0,
     correct: 0,
+    combo: 0,
+    best: 0,
+    score: 0,
     active: true,
     started: false,
+    t0: 0,
   };
   S.stats.games++;
   save();
   go("scr-game");
-  const right = `<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span><span class="pill">对手进度 <b id="oppProg">0%</b></span>`;
+  const isRoom = p2pMode === "room";
+  const right = isRoom
+    ? `<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">🏁 已完成 <b id="doneN">0/${Object.keys(members).length}</b></span>`
+    : `<span class="pill">🔥 <b id="combo">0</b></span><span class="pill">得分 <b id="score">0</b></span><span class="pill">对手进度 <b id="oppProg">0%</b></span>`;
+  const lanesHtml = isRoom
+    ? `<div class="lanes" id="p2pLanes"></div>`
+    : `<div class="lanes"><div class="lane"><div class="nm"><span id="meNm">🧑 你</span><span id="meP">0%</span></div><div class="moodline" id="meMood"></div><div class="track"><div class="fill me" id="meFill"></div><span class="racer" id="meR">🚀</span></div></div><div class="lane"><div class="nm"><span id="foeNm">👤 对手</span><span id="foeP">0%</span></div><div class="moodline" id="foeMood"></div><div class="track"><div class="fill foe" id="foeFill"></div><span class="racer" id="foeR">🤖</span></div></div></div>`;
   $("#arenaWrap").innerHTML =
     hudHTML(
       "#7c4dff",
-      "🌐 联机对战",
+      isRoom ? "👥 多人对战" : "🌐 联机对战",
       `<span class="pill">单词 <b id="bIdx">1/${q.length}</b></span>`,
       right
     ) +
-    `<div class="stage"><div class="lanes"><div class="lane"><div class="nm"><span id="meNm">🧑 你</span><span id="meP">0%</span></div><div class="moodline" id="meMood"></div><div class="track"><div class="fill me" id="meFill"></div><span class="racer" id="meR">🚀</span></div></div><div class="lane"><div class="nm"><span id="foeNm">👤 对手</span><span id="foeP">0%</span></div><div class="moodline" id="foeMood"></div><div class="track"><div class="fill foe" id="foeFill"></div><span class="racer" id="foeR">🤖</span></div></div></div><div id="cardBox"></div><div class="wordbox" id="wordBox"></div><div class="run-hint">拼完全部 ${q.length} 个单词 · 先完成者获胜！</div></div>`;
+    `<div class="stage">${lanesHtml}<div id="cardBox"></div><div class="wordbox" id="wordBox"></div><div class="run-hint">拼完全部 ${q.length} 个单词 · ${
+      isRoom ? "先完成者排名靠前" : "先完成者获胜"
+    }！</div></div>`;
   refreshItems();
-  p2pRenderNames();
+  if (isRoom) roomRenderLanes();
+  else p2pRenderNames();
   showP2PWord();
   countdown().then(() => {
-    if (G && G.active) G.started = true;
+    if (G && G.active) {
+      G.started = true;
+      G.t0 = performance.now();
+    }
   });
   refreshOsk();
 }
@@ -4474,11 +4587,13 @@ function onP2PChar(ch) {
       G.idx++;
       p2pData.myProgress = (G.idx / G.queue.length) * 100;
       sendP2P({ type: "progress", prog: p2pData.myProgress, errors: G.errors });
-      updateP2PLanes();
+      if (p2pMode === "room") roomRenderLanes();
+      else updateP2PLanes();
       if (G.idx >= G.queue.length) {
         p2pData.myDone = true;
         sendP2P({ type: "done", errors: G.errors });
-        checkP2PWin();
+        if (p2pMode === "room") endP2PBattle();
+        else checkP2PWin();
         return;
       }
       showP2PWord();
@@ -4499,9 +4614,11 @@ function onP2PChar(ch) {
 }
 
 function updateP2PLanes() {
+  const meFill = $("#meFill");
+  if (!meFill) return;
   const mp = clamp(p2pData.myProgress / 100, 0, 1),
     fp = clamp(p2pData.oppProgress / 100, 0, 1);
-  $("#meFill").style.width = mp * 100 + "%";
+  meFill.style.width = mp * 100 + "%";
   $("#meR").style.left = mp * 100 + "%";
   $("#meP").textContent = Math.round(mp * 100) + "%";
   $("#foeFill").style.width = fp * 100 + "%";
@@ -4526,6 +4643,8 @@ function p2pRenderNames() {
     foeMoodEl.textContent = ((foe.moodEmoji || "") + (foe.mood ? " " + foe.mood : "")).trim();
 }
 function handleP2PData(data) {
+  if (p2pMode === "room") return roomHandleData(data);
+  // ---- 1v1 ----
   if (data.type === "profile") {
     oppProfile = data.profile || null;
     if ($("#foeNm")) p2pRenderNames();
@@ -4539,6 +4658,24 @@ function handleP2PData(data) {
     p2pData.oppDone = true;
     p2pData.oppErrors = data.errors || 0;
     checkP2PWin();
+  }
+  if (data.type === "disband") {
+    toast("🚪 房主已解散房间");
+    p2pLeave();
+  }
+  if (data.type === "rematch") {
+    p2pRematchFoe = true;
+    if (p2pRematchMe) p2pStartRematch();
+    else {
+      const b = $("#btnRematch");
+      if (b) b.innerHTML = "✅ 接受再来一局";
+    }
+  }
+  if (data.type === "start") {
+    if (p2pRematchMe && p2pRematchFoe) return; // 已通过 p2pStartRematch 开局
+    p2pRematchMe = true;
+    p2pRematchFoe = true;
+    startP2PBattle();
   }
 }
 function checkP2PWin() {
@@ -4560,16 +4697,20 @@ function checkP2PWin() {
 function endP2PBattle(win) {
   if (!G || G.type !== "p2p" || !G.active) return;
   endGameCleanup();
+  const isRoom = p2pMode === "room";
+  const usec = G.t0 ? (performance.now() - G.t0) / 1000 : 0;
   const lvB = lvl(S.xp);
-  const coins = win ? 40 : 15,
-    xp = win ? 80 : 25;
+  const coins = isRoom ? 30 : win ? 40 : 15,
+    xp = isRoom ? 60 : win ? 80 : 25;
   S.coins += coins;
   S.xp += xp;
-  if (win) {
-    S.stats.p2pWins = (S.stats.p2pWins || 0) + 1;
-    S.stats.wins++;
-  } else {
-    S.stats.p2pLosses = (S.stats.p2pLosses || 0) + 1;
+  if (!isRoom) {
+    if (win) {
+      S.stats.p2pWins = (S.stats.p2pWins || 0) + 1;
+      S.stats.wins++;
+    } else {
+      S.stats.p2pLosses = (S.stats.p2pLosses || 0) + 1;
+    }
   }
   updateDailyStats(G.correct, G.errors, G.score);
   checkAch();
@@ -4578,22 +4719,43 @@ function endP2PBattle(win) {
   coinBump();
   const lvA = lvl(S.xp),
     up = lvA.lv > lvB.lv;
-  openModal(
-    `<div style="text-align:center"><div class="stamp">${
-      win ? "🏆 胜利！" : "💔 惜败"
-    }</div>${
-      up ? `<div class="lvlup">🎉 升级！LV ${lvA.lv}</div>` : ""
-    }<div class="rgrid"><div class="rcell"><b>${
-      G.correct
-    }</b><span>拼对单词</span></div><div class="rcell"><b>${
-      G.errors
-    }</b><span>失误次数</span></div><div class="rcell"><b>${coins}</b><span>金币入账</span></div><div class="rcell"><b>${xp}</b><span>经验值</span></div></div><div class="mbtns"><button class="btn y" onclick="closeModal();openP2PMode()">🔁 再来一局</button><button class="btn b" onclick="closeModal();go('scr-home')">返回主页</button></div></div>`
-  );
-  if (conn) {
-    conn.close();
+  const usecTxt = usec ? usec.toFixed(1) + "s" : "--";
+  if (isRoom) {
+    const total = Object.keys(members).length,
+      done = Object.values(members).filter((m) => (m.id === myPeerId ? true : m.done)).length;
+    const roomBtns = isHost
+      ? `<button class="btn y" onclick="roomStartGame()">🎮 再来一局</button><button class="btn p" onclick="p2pHostDisband()">🚪 解散房间</button>`
+      : `<div class="sub">等待房主开始下一局...</div><button class="btn b" onclick="p2pLeave()">🏠 退出房间</button>`;
+    openModal(
+      `<div style="text-align:center"><div class="stamp">🏁 完成！</div><div class="sub">用时 ${usecTxt} · 房间 ${done}/${total} 已完成</div>${
+        up ? `<div class="lvlup">🎉 升级！LV ${lvA.lv}</div>` : ""
+      }<div class="rgrid"><div class="rcell"><b>${
+        G.correct
+      }</b><span>拼对单词</span></div><div class="rcell"><b>${
+        G.errors
+      }</b><span>失误次数</span></div><div class="rcell"><b>${usecTxt}</b><span>用时</span></div><div class="rcell"><b>${coins}</b><span>金币入账</span></div></div><div class="mbtns">${roomBtns}</div></div>`
+    );
+  } else {
+    const foeN = oppProfile && oppProfile.name ? oppProfile.name : "对手";
+    const roomBtns = isHost
+      ? `<button class="btn y" id="btnRematch" onclick="p2pRequestRematch()">🔁 再来一局</button><button class="btn p" onclick="p2pHostDisband()">🚪 解散房间</button>`
+      : `<button class="btn y" id="btnRematch" onclick="p2pRequestRematch()">🔁 再来一局</button><button class="btn b" onclick="p2pLeave()">🏠 返回主页</button>`;
+    openModal(
+      `<div style="text-align:center"><div class="stamp">${
+        win ? "🏆 胜利！" : "💔 惜败"
+      }</div><div class="sub">${
+        win ? `击败了 ${foeN}` : `负于 ${foeN}`
+      }</div>${
+        up ? `<div class="lvlup">🎉 升级！LV ${lvA.lv}</div>` : ""
+      }<div class="rgrid"><div class="rcell"><b>${
+        G.correct
+      }</b><span>拼对单词</span></div><div class="rcell"><b>${
+        G.errors
+      }</b><span>失误次数</span></div><div class="rcell"><b>${coins}</b><span>金币入账</span></div><div class="rcell"><b>${xp}</b><span>经验值</span></div></div><div class="mbtns">${roomBtns}</div></div>`
+    );
   }
-  oppProfile = null;
-  p2pReady = false;
+  p2pRematchMe = false;
+  p2pRematchFoe = false;
   p2pData = {
     myProgress: 0,
     oppProgress: 0,
@@ -4604,10 +4766,318 @@ function endP2PBattle(win) {
     words: [],
   };
 }
+/* ---------- 房间：再来一局 / 解散 / 退出 ---------- */
+function p2pRequestRematch() {
+  if (p2pRematchMe || !conn) return;
+  p2pRematchMe = true;
+  const b = $("#btnRematch");
+  if (b) b.innerHTML = "⏳ 等待对方确认...";
+  sendP2P({ type: "rematch" });
+  if (p2pRematchFoe) p2pStartRematch();
+}
+function p2pStartRematch() {
+  p2pRematchMe = true;
+  p2pRematchFoe = true;
+  sendP2P({ type: "start" });
+  startP2PBattle();
+}
+function p2pCleanup() {
+  isHost = false;
+  p2pReady = false;
+  p2pRoom = null;
+  p2pMode = null;
+  oppProfile = null;
+  p2pRematchMe = false;
+  p2pRematchFoe = false;
+  hostConns = {};
+  members = {};
+  myPeerId = null;
+  p2pState = "lobby";
+}
+function p2pLeave() {
+  if (G && G.type === "p2p") {
+    endGameCleanup();
+    G = null;
+  }
+  if (conn) {
+    try {
+      conn.close();
+    } catch (e) {}
+    conn = null;
+  }
+  if (peer) {
+    try {
+      peer.destroy();
+    } catch (e) {}
+    peer = null;
+  }
+  p2pCleanup();
+  closeModal();
+  go("scr-home");
+}
+function p2pHostDisband() {
+  if (p2pMode === "room") roomBroadcast({ type: "disband" });
+  else sendP2P({ type: "disband" });
+  setTimeout(() => {
+    for (const m of Object.values(hostConns)) {
+      try {
+        m.conn && m.conn.close();
+      } catch (e) {}
+    }
+    hostConns = {};
+    if (peer) {
+      try {
+        peer.destroy();
+      } catch (e) {}
+      peer = null;
+    }
+    p2pCleanup();
+    closeModal();
+    go("scr-home");
+    toast("🚪 房间已解散");
+  }, 200);
+}
 function endP2PBattleCleanup() {
   if (G && G.type === "p2p") {
     endGameCleanup();
     G = null;
+  }
+}
+
+/* ---------- 多人房间（星型：房主为中心转发） ---------- */
+function roomCreate() {
+  if (peer) peer.destroy();
+  roomMax = parseInt($("#p2pMax")?.value || "16", 10) || 16;
+  const id = "wordrush-" + Math.random().toString(36).slice(2, 6);
+  peer = new Peer(id, { debug: 2 });
+  p2pRoom = id;
+  isHost = true;
+  p2pState = "lobby";
+  hostConns = {};
+  members = {};
+  myPeerId = null;
+  $("#p2pStatus").style.display = "block";
+  $("#p2pStatus").innerHTML = "⏳ 创建房间中...";
+  peer.on("open", () => {
+    myPeerId = peer.id;
+    members[myPeerId] = {
+      id: myPeerId,
+      profile: S.profile || {},
+      prog: 0,
+      errors: 0,
+      done: false,
+    };
+    roomRenderLobby();
+    toast("🏠 房间已创建", "房间码: " + id);
+  });
+  peer.on("connection", (c) => roomBindConn(c));
+  peer.on("error", (e) => {
+    $("#p2pStatus").innerHTML = "❌ 错误: " + e.message;
+    toast("❌ 创建房间失败", e.message);
+  });
+}
+function roomJoin() {
+  const code = $("#p2pJoinInput").value.trim();
+  if (!code) {
+    toast("请输入房间码");
+    return;
+  }
+  if (peer) peer.destroy();
+  peer = new Peer({ debug: 2 });
+  isHost = false;
+  p2pState = "lobby";
+  members = {};
+  $("#p2pStatus").style.display = "block";
+  $("#p2pStatus").innerHTML = "⏳ 连接中...";
+  peer.on("open", () => {
+    myPeerId = peer.id;
+    conn = peer.connect(code);
+    roomSetupConnection();
+  });
+  peer.on("error", (e) => {
+    $("#p2pStatus").innerHTML = "❌ 连接失败: " + e.message;
+    toast("❌ 连接失败", e.message);
+  });
+}
+function roomSetupConnection() {
+  if (!conn) return;
+  conn.on("open", () => {
+    p2pReady = true;
+    sendP2P({ type: "join", profile: S.profile || {} });
+    toast("✅ 已连接房间");
+  });
+  conn.on("data", (d) => roomHandleData(d));
+  conn.on("close", () => {
+    conn = null;
+    p2pReady = false;
+    if (G && G.type === "p2p" && G.active) {
+      endGameCleanup();
+      G = null;
+      openModal(
+        `<h3>🔌 连接断开</h3><div class="sub">与房主的连接已断开，本局不结算</div><div class="mbtns"><button class="btn b" onclick="closeModal();go('scr-home')">返回主页</button></div>`
+      );
+      return;
+    }
+    toast("🚪 已退出房间");
+    p2pCleanup();
+    closeModal();
+    go("scr-home");
+  });
+}
+function roomBindConn(c) {
+  hostConns[c.peer] = { conn: c };
+  c.on("data", (d) => {
+    if (!d) return;
+    if (d.type === "join") {
+      const pid = c.peer;
+      if (Object.keys(members).length >= roomMax) {
+        try {
+          c.send({ type: "full" });
+        } catch (e) {}
+        return;
+      }
+      members[pid] = {
+        id: pid,
+        profile: d.profile || {},
+        prog: 0,
+        errors: 0,
+        done: false,
+      };
+      roomBroadcastMembers();
+      roomRenderLanes();
+      if (modalOpen && $("#roomLobby")) roomRenderLobby();
+    } else if (d.type === "progress") {
+      const pid = c.peer;
+      if (members[pid]) {
+        members[pid].prog = d.prog || 0;
+        members[pid].errors = d.errors || 0;
+      }
+      roomBroadcast({ type: "progress", from: pid, prog: d.prog || 0, errors: d.errors || 0 });
+      roomRenderLanes();
+    } else if (d.type === "done") {
+      const pid = c.peer;
+      if (members[pid]) {
+        members[pid].done = true;
+        members[pid].errors = d.errors || 0;
+      }
+      roomBroadcast({ type: "done", from: pid, errors: d.errors || 0 });
+      roomRenderLanes();
+    }
+  });
+  c.on("close", () => {
+    const pid = c.peer;
+    delete hostConns[pid];
+    delete members[pid];
+    roomBroadcastMembers();
+    roomRenderLanes();
+    if (modalOpen && $("#roomLobby")) roomRenderLobby();
+  });
+}
+function roomHandleData(d) {
+  if (!d) return;
+  if (d.type === "members") {
+    const wasPlaying = p2pState === "playing";
+    members = {};
+    (d.members || []).forEach((m) => (members[m.id] = m));
+    p2pState = d.playing ? "playing" : "lobby";
+    if (wasPlaying || p2pState === "playing") roomRenderLanes();
+    else roomRenderLobby();
+  } else if (d.type === "full") {
+    toast("❌ 房间已满");
+    p2pLeave();
+  } else if (d.type === "start") {
+    p2pState = "playing";
+    startP2PBattle();
+  } else if (d.type === "disband") {
+    toast("🚪 房主已解散房间");
+    p2pLeave();
+  } else if (d.type === "progress") {
+    if (members[d.from]) members[d.from].prog = d.prog || 0;
+    roomRenderLanes();
+  } else if (d.type === "done") {
+    if (members[d.from]) {
+      members[d.from].done = true;
+      members[d.from].errors = d.errors || 0;
+    }
+    roomRenderLanes();
+  }
+}
+function roomBroadcast(msg) {
+  for (const m of Object.values(hostConns)) {
+    if (m.conn && m.conn.open) {
+      try {
+        m.conn.send(msg);
+      } catch (e) {}
+    }
+  }
+}
+function roomBroadcastMembers() {
+  roomBroadcast({ type: "members", members: Object.values(members), playing: p2pState === "playing" });
+}
+function roomStartGame() {
+  if (!isHost) return;
+  p2pState = "playing";
+  roomBroadcast({ type: "start" });
+  startP2PBattle();
+}
+function roomRenderLobby() {
+  const list = Object.values(members);
+  const rows = list
+    .map((m) => {
+      const isMe = m.id === myPeerId;
+      const nm = (m.profile && m.profile.name) || (isMe ? "你" : "玩家");
+      const av = (m.profile && m.profile.avatar) || (isMe ? "🧑" : "👤");
+      return `<div class="room-mem"><span>${av} ${escHtml(nm)}${
+        isMe ? "（我）" : ""
+      }</span><span class="tag" style="background:var(--panel);border:1px solid var(--line)">${
+        m.done ? "✅ 完成" : "🟢 就绪"
+      }</span></div>`;
+    })
+    .join("");
+  const head = isHost
+    ? `<div class="mbtns" style="margin-top:14px"><button class="btn y" onclick="roomStartGame()">🎮 开始对战（${list.length}/${roomMax}）</button><button class="btn p" onclick="p2pHostDisband()">🚪 解散房间</button></div>`
+    : `<div class="sub">${
+        p2pState === "playing"
+          ? "🎮 对局进行中，等待下一局开始..."
+          : "⏳ 等待房主开始对战..."
+      }</div><div class="mbtns" style="margin-top:14px"><button class="btn b" onclick="p2pLeave()">🏠 退出房间</button></div>`;
+  openModal(
+    `<h3>🏠 房间 <span class="room-code" style="font-size:1.15rem;letter-spacing:2px;padding:2px 12px">${p2pRoom}</span></h3><div class="sub">${
+      isHost ? "你是房主" : "已加入房间"
+    } · 上限 ${roomMax} 人 · 房主可随时开始</div><div class="room-list" id="roomLobby">${
+      rows || '<div class="sub" style="padding:8px">等待成员加入...</div>'
+    }</div>${head}`
+  );
+}
+function roomRenderLanes() {
+  const wrap = $("#p2pLanes");
+  if (!wrap) return;
+  const list = Object.values(members);
+  wrap.innerHTML = list
+    .map((m) => {
+      const isMe = m.id === myPeerId;
+      const pct = isMe ? p2pData.myProgress : m.prog || 0;
+      const done = isMe ? p2pData.myDone : !!m.done;
+      const nm = (m.profile && m.profile.name) || (isMe ? "你" : "玩家");
+      const av = (m.profile && m.profile.avatar) || (isMe ? "🧑" : "👤");
+      const mood = m.profile
+        ? ((m.profile.moodEmoji || "") + (m.profile.mood ? " " + m.profile.mood : "")).trim()
+        : "";
+      return `<div class="lane"><div class="nm"><span>${av} ${escHtml(nm)}${
+        isMe ? "（我）" : ""
+      }${done ? " ✅" : ""}</span><span>${Math.round(pct)}%</span></div><div class="moodline">${escHtml(
+        mood
+      )}</div><div class="track"><div class="fill ${isMe ? "me" : "foe"}" style="width:${clamp(
+        pct / 100,
+        0,
+        1
+      ) * 100}%"></div></div></div>`;
+    })
+    .join("");
+  const dn = $("#doneN");
+  if (dn) {
+    const d = list.filter((m) => (m.id === myPeerId ? p2pData.myDone : m.done)).length;
+    dn.textContent = `${d}/${list.length}`;
   }
 }
 
@@ -4683,6 +5153,11 @@ function handleEsc() {
 }
 window.quitGame = () => {
   closeModal();
+  if (G && G.type === "p2p") {
+    if (isHost) p2pHostDisband();
+    else p2pLeave();
+    return;
+  }
   endGameCleanup();
   go("scr-home");
 };
