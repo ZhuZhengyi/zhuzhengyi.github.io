@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>词域 Florr.io — 花朵进化英语对战</title>
+<title>词域 Florr.io — 花朵进化与决斗</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
 <script>
-/* PeerJS 多CDN自动容灾 */
 (function(){
   var list=[
     "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js",
@@ -75,12 +74,19 @@ input:focus{border-color:var(--blue)}
 #hotbar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(255,255,255,.9);padding:8px;border-radius:16px;border:2px solid var(--grid);z-index:5}
 .slot{width:48px;height:48px;background:#F8FAFC;border:2px solid var(--grid);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#CBD5E1}
 .slot.active{background:#ECFDF5;border-color:var(--green);color:var(--green)}
-#quizWrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:15;background:rgba(15,23,42,.4);backdrop-filter:blur(4px)}
-#quizCard{width:min(580px,94vw);background:#fff;border:3px solid var(--ink);border-radius:24px;box-shadow:0 20px 25px -5px rgba(0,0,0,.1);
-  padding:28px;animation:pop .2s cubic-bezier(.34,1.56,.64,1)}
+
+/* 答题卡与决斗UI */
+#quizWrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:15;background:rgba(15,23,42,.6);backdrop-filter:blur(6px)}
+#quizCard{width:min(580px,94vw);background:#fff;border:3px solid var(--ink);border-radius:24px;box-shadow:0 20px 25px -5px rgba(0,0,0,.2);
+  padding:28px;animation:pop .2s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden}
+#quizCard.duel{border-color:var(--red);box-shadow:0 0 40px rgba(239,68,68,.4)}
+#quizCard.duel::before{content:'';position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,var(--red),var(--orange));}
 @keyframes pop{from{transform:scale(.9);opacity:0}}
 #qKind{font-size:12px;font-weight:800;color:#fff;background:var(--ink);display:inline-block;padding:4px 14px;border-radius:999px}
-#qPrompt{font-family:Fredoka,'Nunito',sans-serif;font-size:clamp(24px,4.5vw,36px);margin:18px 0;line-height:1.4;color:var(--ink)}
+#quizCard.duel #qKind{background:var(--red)}
+#duelBanner{display:none;text-align:center;margin-bottom:12px;font-family:Fredoka,sans-serif;font-size:24px;color:var(--red);letter-spacing:2px;text-shadow:0 2px 4px rgba(0,0,0,.1)}
+#duelScore{font-size:14px;color:#64748B;margin-top:4px;font-weight:800}
+#qPrompt{font-family:Fredoka,'Nunito',sans-serif;font-size:clamp(22px,4vw,32px);margin:18px 0;line-height:1.4;color:var(--ink);min-height:80px}
 #qPrompt .blank{color:var(--orange);border-bottom:4px solid var(--orange);padding:0 8px}
 #qOpts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .opt{background:#F8FAFC;border:2px solid var(--grid);border-radius:16px;padding:16px;font-weight:800;font-size:17px;cursor:pointer;
@@ -91,15 +97,19 @@ input:focus{border-color:var(--blue)}
 .opt.ok{background:var(--green);border-color:#059669;color:#fff}
 .opt.no{background:var(--red);border-color:#DC2626;color:#fff}
 #qBar{height:10px;background:#F1F5F9;border-radius:999px;margin-top:20px;overflow:hidden}
-#qFill{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));width:100%;border-radius:999px}
+#qFill{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));width:100%;border-radius:999px;transition:width .1s linear}
+#quizCard.duel #qFill{background:linear-gradient(90deg,var(--red),var(--orange))}
 #qFb{margin-top:18px;padding:16px;border-radius:16px;background:#F8FAFC;line-height:1.7;border:1px solid var(--grid)}
 .fbt{font-family:Fredoka,sans-serif;font-size:20px}.fbt.good{color:var(--green)}.fbt.bad{color:var(--red)}
 .fbw{font-family:Fredoka,sans-serif;font-size:26px;color:var(--ink)}.fbp{color:#94A3B8;font-size:16px}
 .fbm{font-weight:800;color:#475569}.fbs{color:#64748B;font-weight:600}.fbs b{color:var(--orange)}
 .spk{border:0;background:#EFF6FF;color:var(--blue);border-radius:10px;padding:4px 12px;cursor:pointer;font-size:16px;font-weight:800}
+
 #toasts{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;z-index:30;pointer-events:none}
 .toast{background:var(--ink);color:#fff;font-weight:800;font-size:14px;padding:10px 24px;border-radius:999px;
   animation:rise .25s ease-out;white-space:nowrap;box-shadow:0 10px 15px -3px rgba(0,0,0,.1)}
+.toast.win{background:var(--green)}
+.toast.lose{background:var(--red)}
 @keyframes rise{from{transform:translateY(14px);opacity:0}}
 @media(max-width:640px){#qOpts{grid-template-columns:1fr}#lb{width:160px;display:none}}
 </style>
@@ -114,7 +124,7 @@ input:focus{border-color:var(--blue)}
   <div class="fshape" style="right:18%;bottom:20%;width:50px;height:50px;background:#8B5CF6;border-radius:50%;animation-delay:2s"></div>
   <div class="logo">
     <h1>词域 <span>Florr.io</span></h1>
-    <p class="tag">操控花朵 · 吞噬词块 · 联机进化对战</p>
+    <p class="tag">吞噬词块 · 联机进化 · ⚔️ 1v1 决斗</p>
   </div>
   <div class="panel">
     <label>你的花名</label><input id="name" maxlength="10" placeholder="输入昵称">
@@ -134,7 +144,7 @@ input:focus{border-color:var(--blue)}
       <button class="btn orange" id="bJoin" style="flex:1">加入房间</button>
     </div>
     <div id="bootStat">⏳ 引擎加载中…</div>
-    <p class="tip">🖱 鼠标/手指移动 · 吞噬词块答题 · 数字键1-4速答 · 避开红色刺球 · 联机走 P2P 直连</p>
+    <p class="tip">🖱 移动吞噬词块 · 靠近其他玩家触发 ⚔️决斗 · 答对进化,答错掉血</p>
   </div>
 </div>
 
@@ -155,12 +165,13 @@ input:focus{border-color:var(--blue)}
     <div class="slot">🍃</div>
     <div class="slot">⚡</div>
     <div class="slot">🛡️</div>
-    <div class="slot">🔥</div>
+    <div class="slot">⚔️</div>
   </div>
 </div>
 
 <div id="quizWrap" class="hide">
   <div id="quizCard">
+    <div id="duelBanner">⚔️ DUEL ⚔️<div id="duelScore"></div></div>
     <span id="qKind"></span>
     <div id="qPrompt"></div>
     <div id="qOpts"></div>
@@ -244,8 +255,8 @@ function speak(w){try{if(!window.speechSynthesis)return;speechSynthesis.cancel()
 
 /* ============ 4. 状态 ============ */
 const W=2600,H=2600,ORB_N=28,BOMB_N=4;
-const COLORS=['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444','#EC4899']; 
-const RAR_COLORS=['#CBD5E1','#86EFAC','#93C5FD','#D8B4FE','#FBBF24']; 
+const COLORS=['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444','#EC4899'];
+const RAR_COLORS=['#CBD5E1','#86EFAC','#93C5FD','#D8B4FE','#FBBF24'];
 const RAR_NAMES=['普通','优秀','稀有','史诗','传说'];
 const lvlOf=xp=>1+Math.floor(Math.sqrt(xp/40));
 const xpFor=l=>40*(l-1)*(l-1);
@@ -258,178 +269,309 @@ const view={p:new Map(),o:new Map()};
 let cam={x:W/2,y:H/2,z:1};
 const FX=[];
 
+/* ★ 运动配置表 ★ */
+const MOB_CONFIG={
+  v2c:{name:'ant',speed:[60,90],retarget:[1.0,2.5],jitter:0.35,pauseChance:0.1,pauseDur:[0.3,0.8]},
+  c2v:{name:'bee',speed:[100,140],retarget:[2.0,4.0],wobble:40,pauseChance:0.02,pauseDur:[0.1,0.3]},
+  cloze:{name:'spider',speed:[30,50],retarget:[3.0,5.0],jitter:0.1,pauseChance:0.25,pauseDur:[1.0,2.5]},
+  bomb:{name:'bomb',speed:[40,60],retarget:[4.0,6.0],bouncy:true}
+};
+
 function spawnPlayer(id,name,bot=false){
   const c=COLORS[colSeq++%COLORS.length];
   const p={id,name,bot,x:rand(250,W-250),y:rand(250,H-250),tx:W/2,ty:H/2,
-    xp:0,streak:0,col:c,hp:112,mhp:112,lvl:1,r:26,quiz:false,deadT:0,inv:1.5,lastHit:0,oa:Math.random()*6,bt:0};
+    xp:0,streak:0,col:c,hp:112,mhp:112,lvl:1,r:26,quiz:false,deadT:0,inv:1.5,lastHit:0,oa:Math.random()*6,bt:0,
+    duel:null, duelLock:false}; // ★ 新增决斗状态
   players.set(id,p); return p;
 }
+
 function spawnOrb(x,y,gold){
   const w=pool()[Math.random()*pool().length|0];
   const kinds=['v2c','v2c','c2v']; if(w.s)kinds.push('cloze');
   const kind=gold?'v2c':kinds[Math.random()*kinds.length|0];
-  const o={id:nextId++,x:x??rand(100,W-100),y:y??rand(100,H-100),r:gold?22:rand(16,22),
-    kind,word:w.w,gold:!!gold,free:true,rs:0,vx:rand(-4,4),vy:rand(-4,4)};
+  const cfg=MOB_CONFIG[kind];
+  const o={
+    id:nextId++,x:x??rand(150,W-150),y:y??rand(150,H-150),r:gold?22:rand(16,22),
+    kind,word:w.w,gold:!!gold,free:true,rs:0,
+    vx:0, vy:0, tx:null, ty:null, retargetIn:rand(cfg.retarget[0],cfg.retarget[1]),
+    maxSpeed:rand(cfg.speed[0],cfg.speed[1]), pauseTime:0, phase:Math.random()*Math.PI*2,
+    angle:Math.random()*Math.PI*2, wanderRadius:300+Math.random()*200
+  };
   orbs.push(o);
   const info={i:o.id,k:kind,g:o.gold,tx:kind==='v2c'?w.w:kind==='c2v'?w.m:'✎ 句子'};
   orbInfo.set(o.id,info); broadcast({t:'oa',o:info});
 }
+
 function spawnBomb(){
-  const o={id:nextId++,x:rand(150,W-150),y:rand(150,H-150),r:18,kind:'bomb',free:true,rs:0,vx:rand(-10,10),vy:rand(-10,10)};
+  const cfg=MOB_CONFIG.bomb;
+  const angle=Math.random()*Math.PI*2;
+  const speed=rand(cfg.speed[0],cfg.speed[1]);
+  const o={
+    id:nextId++,x:rand(150,W-150),y:rand(150,H-150),r:18,kind:'bomb',free:true,rs:0,
+    vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,tx:null,ty:null,retargetIn:999,
+    maxSpeed:speed,pauseTime:0,phase:0,angle:angle,wanderRadius:0
+  };
   orbs.push(o); const info={i:o.id,k:'bomb',g:false,tx:''}; orbInfo.set(o.id,info); broadcast({t:'oa',o:info});
 }
 
 /* ============ 5. 逻辑 ============ */
 function updateLvl(p,was){p.lvl=lvlOf(p.xp);if(p.lvl!==was){p.r=24+p.lvl*2.5;p.mhp=100+p.lvl*12;p.hp=Math.min(p.hp+20,p.mhp);fx('lvl',p.x,p.y,p.lvl);if(p.id===myPid)toast(`⬆ 升到 Lv.${p.lvl}! ${RAR_NAMES[rarIdx(p.lvl)]}花瓣进化`);}}
 function consumeOrb(o){orbs.splice(orbs.indexOf(o),1);spawnOrb();}
-function kill(p){p.deadT=3;p.quiz=false;p.streak=0;fx('boom',p.x,p.y);for(const oid in pending)if(pending[oid].pid===p.id){const o=orbs.find(o=>o.id==oid);if(o)o.free=true;delete pending[oid];}spawnOrb(p.x+rand(-50,50),p.y+rand(-50,50),true);spawnOrb(p.x+rand(-50,50),p.y+rand(-50,50),true);if(p.id===myPid)toast('💥 被大体型撞倒! 3秒后复活');}
-function respawn(p){for(let i=0;i<12;i++){p.x=rand(150,W-150);p.y=rand(150,H-150);let ok=true;for(const q of players.values())if(q!==p&&q.deadT<=0&&(q.x-p.x)**2+(q.y-p.y)**2<9e4){ok=false;break;}if(ok)break;}const was=p.lvl;p.xp=Math.floor(p.xp*.85);p.lvl=lvlOf(p.xp);p.r=24+p.lvl*2.5;p.mhp=100+p.lvl*12;p.hp=p.mhp;p.inv=2.5;p.quiz=false;if(p.id===myPid)toast('已复活! 损失15%经验');}
+function kill(p){p.deadT=3;p.quiz=false;p.streak=0;p.duel=null;p.duelLock=false;fx('boom',p.x,p.y);for(const oid in pending)if(pending[oid].pid===p.id){const o=orbs.find(o=>o.id==oid);if(o)o.free=true;delete pending[oid];}spawnOrb(p.x+rand(-50,50),p.y+rand(-50,50),true);spawnOrb(p.x+rand(-50,50),p.y+rand(-50,50),true);if(p.id===myPid)toast('💥 被大体型撞倒! 3秒后复活');}
+function respawn(p){for(let i=0;i<12;i++){p.x=rand(150,W-150);p.y=rand(150,H-150);let ok=true;for(const q of players.values())if(q!==p&&q.deadT<=0&&(q.x-p.x)**2+(q.y-p.y)**2<9e4){ok=false;break;}if(ok)break;}const was=p.lvl;p.xp=Math.floor(p.xp*.85);p.lvl=lvlOf(p.xp);p.r=24+p.lvl*2.5;p.mhp=100+p.lvl*12;p.hp=p.mhp;p.inv=2.5;p.quiz=false;p.duel=null;p.duelLock=false;if(p.id===myPid)toast('已复活! 损失15%经验');}
 function botThink(p,dt){p.bt-=dt;if(p.bt>0)return;p.bt=1.5+Math.random()*2.5;const free=orbs.filter(o=>o.free&&o.kind!=='bomb');if(free.length&&Math.random()<.85){let best=null,bd=1e18;for(const o of free){const d=(o.x-p.x)**2+(o.y-p.y)**2;if(d<bd){bd=d;best=o;}}p.tx=best.x;p.ty=best.y;}else{p.tx=rand(150,W-150);p.ty=rand(150,H-150);}}
-function tick(dt){const now=performance.now();for(const p of players.values()){if(p.deadT>0){p.deadT-=dt;if(p.deadT<=0)respawn(p);continue;}p.inv=Math.max(0,p.inv-dt);p.hp=Math.min(p.mhp,p.hp+2.2*dt);p.oa+=dt*2.6;if(p.bot)botThink(p,dt);if(!p.quiz){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);if(d>4){const sp=Math.min(d,280)*dt;p.x+=dx/d*sp;p.y+=dy/d*sp;}}p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=Math.max(p.r,Math.min(H-p.r,p.y));}for(const o of orbs){if(o.rs>0){o.rs-=dt;if(o.rs<=0){o.x=rand(150,W-150);o.y=rand(150,H-150);o.free=true;}continue;}if(!o.free)continue;o.x+=o.vx*dt;o.y+=o.vy*dt;if(o.x<o.r||o.x>W-o.r)o.vx*=-1;if(o.y<o.r||o.y>H-o.r)o.vy*=-1;}for(const p of players.values()){if(p.deadT>0||p.quiz)continue;for(const o of orbs){if(!o.free)continue;const d=Math.hypot(o.x-p.x,o.y-p.y);if(o.kind==='bomb'){if(d<p.r+o.r&&p.inv<=0){p.hp-=20;p.inv=.7;p.x+=(p.x-o.x)*.6;p.y+=(p.y-o.y)*.6;o.free=false;o.rs=3;fx('boom',o.x,o.y);}}else if(d<p.r+o.r+4){o.free=false;const word=pool().find(x=>x.w===o.word)||pool()[0];const qz=makeQuiz(word);pending[o.id]={pid:p.id,ans:qz.ans,dl:Date.now()+15000};p.quiz=true;sendTo(p.id,{t:'quiz',oid:o.id,q:qz});}}}const arr=[...players.values()];for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){const a=arr[i],b=arr[j];if(a.deadT>0||b.deadT>0)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,min=a.r+b.r;if(d<min){const push=(min-d)/2,nx=dx/d,ny=dy/d;if(!a.quiz){a.x-=nx*push;a.y-=ny*push;}if(!b.quiz){b.x+=nx*push;b.y+=ny*push;}const big=a.r>=b.r?a:b,sm=a.r>=b.r?b:a;if(big.r>sm.r*1.12&&!sm.quiz&&sm.inv<=0&&now-sm.lastHit>650){sm.hp-=6+big.lvl;sm.lastHit=now;sm.inv=.35;fx('hit',sm.x,sm.y);}}}for(const p of players.values())if(p.hp<=0&&p.deadT<=0)kill(p);for(const oid in pending)if(Date.now()>pending[oid].dl){const pid=pending[oid].pid;resolveAnswer(+oid,-1,false);sendTo(pid,{t:'res',oid:+oid,to:true});}}
-function resolveAnswer(oid,idx,due){const pd=pending[oid];if(!pd)return;delete pending[oid];const p=players.get(pd.pid),o=orbs.find(o=>o.id===oid);if(!p){if(o){o.x=rand(120,W-120);o.y=rand(120,H-120);o.free=true;}return;}p.quiz=false;if(idx===pd.ans){p.streak++;const mult=Math.min(5,1+((p.streak/3)|0));const gain=12*mult*(o&&o.gold?2:1)*(due?2:1);const was=p.lvl;p.xp+=gain;updateLvl(p,was);if(o){fx('pop',o.x,o.y,'+'+gain+(due?' ⭐复习':''));consumeOrb(o);}}else{p.streak=0;p.hp=Math.max(1,p.hp-10);if(o){fx('miss',o.x,o.y);o.x=rand(120,W-120);o.y=rand(120,H-120);o.free=true;}}}
+
+function updateMob(o,dt){
+  if(o.rs>0){o.rs-=dt;if(o.rs<=0){o.x=rand(150,W-150);o.y=rand(150,H-150);o.free=true;o.vx=0;o.vy=0;}return;}
+  if(!o.free)return;
+  const cfg=MOB_CONFIG[o.kind];
+  if(o.kind==='bomb'){
+    o.x+=o.vx*dt; o.y+=o.vy*dt;
+    if(o.x<o.r){o.x=o.r;o.vx=Math.abs(o.vx);}else if(o.x>W-o.r){o.x=W-o.r;o.vx=-Math.abs(o.vx);}
+    if(o.y<o.r){o.y=o.r;o.vy=Math.abs(o.vy);}else if(o.y>H-o.r){o.y=H-o.r;o.vy=-Math.abs(o.vy);}
+    o.angle=Math.atan2(o.vy,o.vx);return;
+  }
+  if(o.pauseTime>0){o.pauseTime-=dt;o.vx*=0.9;o.vy*=0.9;o.x+=o.vx*dt;o.y+=o.vy*dt;return;}
+  o.retargetIn-=dt;
+  if(o.retargetIn<=0 || o.tx===null){
+    const angle=Math.random()*Math.PI*2,dist=Math.random()*o.wanderRadius;
+    let nx=o.x+Math.cos(angle)*dist,ny=o.y+Math.sin(angle)*dist;
+    const margin=120;nx=Math.max(margin,Math.min(W-margin,nx));ny=Math.max(margin,Math.min(H-margin,ny));
+    o.tx=nx;o.ty=ny;o.retargetIn=rand(cfg.retarget[0],cfg.retarget[1]);
+    if(Math.random()<cfg.pauseChance){o.pauseTime=rand(cfg.pauseDur[0],cfg.pauseDur[1]);return;}
+  }
+  const dx=o.tx-o.x,dy=o.ty-o.y;const distToTarget=Math.hypot(dx,dy);const desiredAngle=Math.atan2(dy,dx);
+  let angleDiff=desiredAngle-o.angle;while(angleDiff>Math.PI)angleDiff-=Math.PI*2;while(angleDiff<-Math.PI)angleDiff+=Math.PI*2;
+  o.angle+=angleDiff*Math.min(1,dt*4);
+  let targetSpeed=o.maxSpeed;if(distToTarget<80)targetSpeed=o.maxSpeed*(distToTarget/80);
+  const moveAngle=o.angle;const desVx=Math.cos(moveAngle)*targetSpeed,desVy=Math.sin(moveAngle)*targetSpeed;
+  const accel=180;o.vx+=(desVx-o.vx)*Math.min(1,accel*dt/o.maxSpeed);o.vy+=(desVy-o.vy)*Math.min(1,accel*dt/o.maxSpeed);
+  const spd=Math.hypot(o.vx,o.vy);if(spd>o.maxSpeed*1.2){o.vx*=o.maxSpeed*1.2/spd;o.vy*=o.maxSpeed*1.2/spd;}
+  let dxFinal=o.vx,dyFinal=o.vy;
+  if(o.kind==='v2c'){if(Math.random()<0.3){dxFinal+=rand(-30,30);dyFinal+=rand(-30,30);}}
+  else if(o.kind==='c2v'){o.phase+=dt*6;const perpAngle=o.angle+Math.PI/2;const wobble=Math.sin(o.phase)*cfg.wobble;dxFinal+=Math.cos(perpAngle)*wobble;dyFinal+=Math.sin(perpAngle)*wobble;}
+  const margin=100;
+  if(o.x<margin)dxFinal+=100*(1-o.x/margin);else if(o.x>W-margin)dxFinal-=100*(1-(W-o.x)/margin);
+  if(o.y<margin)dyFinal+=100*(1-o.y/margin);else if(o.y>H-margin)dyFinal-=100*(1-(H-o.y)/margin);
+  o.x+=dxFinal*dt;o.y+=dyFinal*dt;
+  if(o.x<o.r)o.x=o.r;else if(o.x>W-o.r)o.x=W-o.r;if(o.y<o.r)o.y=o.r;else if(o.y>H-o.r)o.y=H-o.r;
+}
+
+/* ★ 决斗系统核心 (Host) ★ */
+function startDuel(p1, p2) {
+  const qs = [makeQuiz(pool()[Math.random()*pool().length|0]), makeQuiz(pool()[Math.random()*pool().length|0]), makeQuiz(pool()[Math.random()*pool().length|0])];
+  p1.duel = { oppId: p2.id, oppName: p2.name, qIdx: -1, questions: qs, myAns: [], oppAns: [], active: true };
+  p2.duel = { oppId: p1.id, oppName: p1.name, qIdx: -1, questions: qs, myAns: [], oppAns: [], active: true };
+  p1.duelLock = true; p2.duelLock = true;
+  p1.quiz = true; p2.quiz = true; // 防止被词块干扰
+  sendDuelQuestion(p1, p2, 0);
+}
+
+function sendDuelQuestion(p1, p2, idx) {
+  if(idx >= 3) { resolveDuel(p1, p2); return; }
+  p1.duel.qIdx = idx; p2.duel.qIdx = idx;
+  p1.duel.qStart = Date.now(); p2.duel.qStart = Date.now();
+  sendTo(p1.id, {t:'duel_q', oppName: p2.name, idx: idx, total: 3, q: p1.duel.questions[idx]});
+  sendTo(p2.id, {t:'duel_q', oppName: p1.name, idx: idx, total: 3, q: p2.duel.questions[idx]});
+  if(p1.bot) setTimeout(()=> botDuelAns(p1, idx), 1000 + Math.random()*2000);
+  if(p2.bot) setTimeout(()=> botDuelAns(p2, idx), 1000 + Math.random()*2000);
+}
+
+function botDuelAns(p, idx) {
+  if(!p.duel || p.duel.qIdx !== idx) return;
+  const correct = p.duel.questions[idx].ans;
+  const choice = Math.random() < 0.6 ? correct : (correct + 1 + Math.floor(Math.random()*3)) % 4;
+  handleDuelAns(p, idx, choice, 1000 + Math.random()*2000);
+}
+
+function handleDuelAns(p, idx, choice, timeTaken) {
+  if(!p.duel || p.duel.qIdx !== idx) return;
+  p.duel.myAns[idx] = { choice, time: timeTaken };
+  const opp = players.get(p.duel.oppId);
+  if(!opp) return;
+  opp.duel.oppAns[idx] = { choice, time: timeTaken };
+  
+  // 通知双方本题作答状态
+  sendTo(p.id, {t:'duel_status', idx, myDone: true, oppDone: !!opp.duel.myAns[idx]});
+  sendTo(opp.id, {t:'duel_status', idx, myDone: true, oppDone: !!p.duel.myAns[idx]});
+
+  if(p.duel.myAns[idx] && opp.duel.myAns[idx]) {
+    // 双方都答完，结算本题并准备下一题
+    setTimeout(()=> {
+      sendTo(p.id, {t:'duel_round_res', idx});
+      sendTo(opp.id, {t:'duel_round_res', idx});
+      setTimeout(()=> sendDuelQuestion(p, opp, idx + 1), 1200);
+    }, 400);
+  }
+}
+
+function resolveDuel(p1, p2) {
+  let s1 = 0, s2 = 0, t1 = 0, t2 = 0;
+  for(let i=0; i<3; i++) {
+    const a1 = p1.duel.myAns[i], a2 = p2.duel.myAns[i];
+    const correct = p1.duel.questions[i].ans;
+    const c1 = a1 && a1.choice === correct;
+    const c2 = a2 && a2.choice === correct;
+    if(c1 && !c2) s1++;
+    else if(!c1 && c2) s2++;
+    else if(c1 && c2) { if(a1.time < a2.time) s1 += 0.5; else if(a2.time < a1.time) s2 += 0.5; }
+    if(a1) t1 += a1.time; if(a2) t2 += a2.time;
+  }
+  
+  let winner, loser;
+  if(s1 > s2) { winner = p1; loser = p2; }
+  else if(s2 > s1) { winner = p2; loser = p1; }
+  else { winner = t1 < t2 ? p1 : (t2 < t1 ? p2 : null); loser = winner === p1 ? p2 : p1; }
+
+  const xpStake = Math.max(20, Math.floor(loser.xp * 0.15));
+  if(winner) {
+    const wasW = winner.lvl, wasL = loser.lvl;
+    winner.xp += xpStake; winner.hp = winner.mhp; winner.streak += 3;
+    loser.xp = Math.max(0, loser.xp - xpStake); loser.hp = Math.max(1, loser.hp - 40);
+    const dx = loser.x - winner.x, dy = loser.y - winner.y, d = Math.hypot(dx,dy) || 1;
+    loser.x += (dx/d) * 200; loser.y += (dy/d) * 200;
+    loser.inv = 2.5; loser.streak = 0;
+    updateLvl(winner, wasW); updateLvl(loser, wasL);
+    sendTo(winner.id, {t:'duel_end', res:'win', xp: xpStake, oppName: loser.name});
+    sendTo(loser.id, {t:'duel_end', res:'lose', xp: -xpStake, oppName: winner.name});
+  } else {
+    sendTo(p1.id, {t:'duel_end', res:'draw'});
+    sendTo(p2.id, {t:'duel_end', res:'draw'});
+  }
+  
+  p1.duel = null; p2.duel = null;
+  p1.duelLock = false; p2.duelLock = false;
+  p1.quiz = false; p2.quiz = false;
+}
+
+function tick(dt){
+  const now=performance.now();
+  for(const p of players.values()){
+    if(p.deadT>0){p.deadT-=dt;if(p.deadT<=0)respawn(p);continue;}
+    p.inv=Math.max(0,p.inv-dt);
+    p.hp=Math.min(p.mhp,p.hp+2.2*dt);
+    p.oa+=dt*2.6;
+    if(p.bot && !p.duelLock)botThink(p,dt);
+    if(!p.quiz && !p.duelLock){
+      const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
+      if(d>4){const sp=Math.min(d,280)*dt;p.x+=dx/d*sp;p.y+=dy/d*sp;}
+    }
+    p.x=Math.max(p.r,Math.min(W-p.r,p.x));p.y=Math.max(p.r,Math.min(H-p.r,p.y));
+  }
+  for(const o of orbs)updateMob(o,dt);
+  
+  for(const p of players.values()){
+    if(p.deadT>0||p.quiz||p.duelLock)continue;
+    for(const o of orbs){
+      if(!o.free)continue;
+      const d=Math.hypot(o.x-p.x,o.y-p.y);
+      if(o.kind==='bomb'){
+        if(d<p.r+o.r&&p.inv<=0){p.hp-=20;p.inv=.7;p.x+=(p.x-o.x)*.6;p.y+=(p.y-o.y)*.6;o.free=false;o.rs=3;fx('boom',o.x,o.y);}
+      }else if(d<p.r+o.r+4){
+        o.free=false;const word=pool().find(x=>x.w===o.word)||pool()[0];const qz=makeQuiz(word);
+        pending[o.id]={pid:p.id,ans:qz.ans,dl:Date.now()+15000};p.quiz=true;sendTo(p.id,{t:'quiz',oid:o.id,q:qz});
+      }
+    }
+  }
+  
+  // ★ 玩家互撞 (决斗触发) ★
+  const arr=[...players.values()];
+  for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+    const a=arr[i],b=arr[j];if(a.deadT>0||b.deadT>0)continue;
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,min=a.r+b.r;
+    if(d < min + 15) { // 靠近即触发
+      if(!a.duel && !b.duel && !a.quiz && !b.quiz && a.inv<=0 && b.inv<=0) {
+        if(isHost) startDuel(a, b);
+      } else if(d < min) {
+        // 已经在决斗或答题中，只做物理推开
+        const push=(min-d)/2,nx=dx/d,ny=dy/d;
+        if(!a.duelLock){a.x-=nx*push;a.y-=ny*push;}
+        if(!b.duelLock){b.x+=nx*push;b.y+=ny*push;}
+      }
+    }
+  }
+  
+  for(const p of players.values())if(p.hp<=0&&p.deadT<=0)kill(p);
+  for(const oid in pending)if(Date.now()>pending[oid].dl){const pid=pending[oid].pid;resolveAnswer(+oid,-1,false);sendTo(pid,{t:'res',oid:+oid,to:true});}
+}
+
+function resolveAnswer(oid,idx,due){const pd=pending[oid];if(!pd)return;delete pending[oid];const p=players.get(pd.pid),o=orbs.find(o=>o.id===oid);if(!p){if(o){o.x=rand(120,W-120);o.y=rand(120,H-120);o.free=true;o.vx=0;o.vy=0;}return;}p.quiz=false;if(idx===pd.ans){p.streak++;const mult=Math.min(5,1+((p.streak/3)|0));const gain=12*mult*(o&&o.gold?2:1)*(due?2:1);const was=p.lvl;p.xp+=gain;updateLvl(p,was);if(o){fx('pop',o.x,o.y,'+'+gain+(due?' ⭐复习':''));consumeOrb(o);}}else{p.streak=0;p.hp=Math.max(1,p.hp-10);if(o){fx('miss',o.x,o.y);o.x=rand(120,W-120);o.y=rand(120,H-120);o.free=true;o.vx=0;o.vy=0;}}}
 
 /* ============ 6. 快照 ============ */
-function buildSnap(){return {t:'st',ps:[...players.values()].map(p=>({i:p.id,n:p.name,x:p.x|0,y:p.y|0,r:p.r|0,h:p.hp|0,mh:p.mhp,xp:p.xp,c:p.col,l:p.lvl,k:p.streak,q:p.quiz,d:p.deadT>0,tx:p.tx|0,ty:p.ty|0})),os:orbs.map(o=>({i:o.id,x:o.x|0,y:o.y|0,r:o.r|0}))};}
-function applySnap(s){const seenP=new Set(),seenO=new Set();for(const sp of s.ps){seenP.add(sp.i);let v=view.p.get(sp.i);if(!v){v={x:sp.x,y:sp.y};view.p.set(sp.i,v);}v.txp=sp.x;v.typ=sp.y;Object.assign(v,{n:sp.n,r:sp.r,h:sp.h,mh:sp.mh,xp:sp.xp,c:sp.c,l:sp.l,k:sp.k,q:sp.q,d:sp.d,tx:sp.tx,ty:sp.ty});}for(const[id]of view.p)if(!seenP.has(id))view.p.delete(id);for(const so of s.os){seenO.add(so.i);let v=view.o.get(so.i);if(!v){v={x:so.x,y:so.y};view.o.set(so.i,v);}v.txp=so.x;v.typ=so.y;v.r=so.r;}for(const[id]of view.o)if(!seenO.has(id))view.o.delete(id);}
+function buildSnap(){return {t:'st',ps:[...players.values()].map(p=>({i:p.id,n:p.name,x:p.x|0,y:p.y|0,r:p.r|0,h:p.hp|0,mh:p.mhp,xp:p.xp,c:p.col,l:p.lvl,k:p.streak,q:p.quiz,d:p.deadT>0,tx:p.tx|0,ty:p.ty|0,dl:p.duelLock})),os:orbs.map(o=>({i:o.id,x:o.x|0,y:o.y|0,r:o.r|0,a:(o.angle||0)*100|0,vx:o.vx|0,vy:o.vy|0,pt:o.pauseTime||0}))};}
+function applySnap(s){const seenP=new Set(),seenO=new Set();for(const sp of s.ps){seenP.add(sp.i);let v=view.p.get(sp.i);if(!v){v={x:sp.x,y:sp.y};view.p.set(sp.i,v);}v.txp=sp.x;v.typ=sp.y;Object.assign(v,{n:sp.n,r:sp.r,h:sp.h,mh:sp.mh,xp:sp.xp,c:sp.c,l:sp.l,k:sp.k,q:sp.q,d:sp.d,tx:sp.tx,ty:sp.ty,dl:sp.dl});}for(const[id]of view.p)if(!seenP.has(id))view.p.delete(id);for(const so of s.os){seenO.add(so.i);let v=view.o.get(so.i);if(!v){v={x:so.x,y:so.y};view.o.set(so.i,v);}v.txp=so.x;v.typ=so.y;v.r=so.r;v.a=so.a/100;v.vx=so.vx;v.vy=so.vy;v.pt=so.pt;}for(const[id]of view.o)if(!seenO.has(id))view.o.delete(id);}
 
-/* ============ 7. 渲染 (Florr风格) ============ */
+/* ============ 7. 渲染 ============ */
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 function resize(){cv.width=innerWidth;cv.height=innerHeight;}
 addEventListener('resize',resize);resize();
 
 function label(txt,x,y,size){ctx.font=`800 ${size}px Fredoka,Nunito,sans-serif`;ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='rgba(255,255,255,.9)';ctx.strokeText(txt,x,y);ctx.fillStyle='#1E293B';ctx.fillText(txt,x,y);}
-
-function drawHexGrid(){
-  const size=45;const w=size*1.5;const h=Math.sqrt(3)*size;
-  ctx.strokeStyle='#E2E8F0';ctx.lineWidth=2;ctx.beginPath();
-  for(let x=0;x<=W+w;x+=w){for(let y=0;y<=H+h;y+=h){
-    const offsetX=(Math.round(x/w)%2!==0)?h/2:0;
-    ctx.moveTo(x+size,y+offsetX);
-    for(let i=1;i<=6;i++){const angle=i*Math.PI/3;ctx.lineTo(x+size*Math.cos(angle),y+offsetX+size*Math.sin(angle));}
-  }}ctx.stroke();
-}
-
-function drawFlower(p){
-  const {x,y,r,c,l,oa,tx,ty}=p;
-  const petalCount=Math.min(8,3+Math.floor(l/2));
-  const petalColor=RAR_COLORS[rarIdx(l)];
-  ctx.save();ctx.translate(x,y);
-  ctx.rotate(oa*0.5);
-  for(let i=0;i<petalCount;i++){
-    ctx.save();ctx.rotate(i*(Math.PI*2/petalCount));ctx.translate(0,-r*0.9);
-    ctx.fillStyle=petalColor;ctx.strokeStyle='rgba(0,0,0,0.05)';ctx.lineWidth=2;
-    ctx.beginPath();ctx.ellipse(0,0,r*0.45,r*0.8,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.restore();
-  }
-  ctx.fillStyle='#ffffff';ctx.strokeStyle='rgba(0,0,0,0.1)';ctx.lineWidth=3;
-  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();
-  const angle=Math.atan2(ty-y,tx-x);
-  const eyeDist=r*0.35,eyeR=r*0.28,pupilR=r*0.15;
-  const ex1=Math.cos(angle-0.5)*eyeDist,ey1=Math.sin(angle-0.5)*eyeDist;
-  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex1,ey1,eyeR,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#0F172A';ctx.beginPath();ctx.arc(ex1+Math.cos(angle)*pupilR*0.5,ey1+Math.sin(angle)*pupilR*0.5,pupilR,0,Math.PI*2);ctx.fill();
-  const ex2=Math.cos(angle+0.5)*eyeDist,ey2=Math.sin(angle+0.5)*eyeDist;
-  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex2,ey2,eyeR,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#0F172A';ctx.beginPath();ctx.arc(ex2+Math.cos(angle)*pupilR*0.5,ey2+Math.sin(angle)*pupilR*0.5,pupilR,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=c;ctx.beginPath();ctx.arc(0,r*0.4,r*0.15,0,Math.PI*2);ctx.fill();
-  ctx.restore();
-}
-
-function drawMob(o,inf){
-  const {x,y,r}=o;
-  ctx.save();ctx.translate(x,y);
-  if(inf.k==='bomb'){ 
-    ctx.fillStyle='#EF4444';ctx.strokeStyle='#B91C1C';ctx.lineWidth=3;ctx.beginPath();
-    const spikes=12;for(let i=0;i<spikes*2;i++){const angle=i*Math.PI/spikes;const rad=i%2===0?r*1.3:r*0.7;ctx.lineTo(Math.cos(angle)*rad,Math.sin(angle)*rad);}
-    ctx.closePath();ctx.fill();ctx.stroke();
-  } 
-  else if(inf.k==='v2c'){ 
-    ctx.fillStyle='#92400E';ctx.strokeStyle='#78350F';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(-r*0.8,0,r*0.5,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.arc(0,0,r*0.6,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.arc(r*0.9,0,r*0.8,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.moveTo(-r*0.4,r*0.5);ctx.lineTo(-r*0.6,r*1.2);ctx.moveTo(0,r*0.6);ctx.lineTo(0,r*1.3);ctx.moveTo(r*0.5,r*0.7);ctx.lineTo(r*0.7,r*1.4);ctx.stroke();
-  }
-  else if(inf.k==='c2v'){ 
-    ctx.fillStyle='#FBBF24';ctx.strokeStyle='#B45309';ctx.lineWidth=2;
-    ctx.beginPath();ctx.ellipse(0,0,r*1.2,r*0.8,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#1F2937';ctx.fillRect(-r*0.3,-r*0.8,r*0.2,r*1.6);ctx.fillRect(r*0.2,-r*0.8,r*0.2,r*1.6);
-    ctx.fillStyle='rgba(255,255,255,0.8)';ctx.beginPath();ctx.ellipse(-r*0.2,-r*0.9,r*0.5,r*0.3,-0.2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(r*0.2,-r*0.9,r*0.5,r*0.3,0.2,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(r*0.8,-r*0.2,r*0.2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.arc(r*0.85,-r*0.2,r*0.1,0,Math.PI*2);ctx.fill();
-  }
-  else if(inf.k==='cloze'){ 
-    ctx.fillStyle='#374151';ctx.strokeStyle='#111827';ctx.lineWidth=2;
-    ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.beginPath();for(let i=0;i<8;i++){const a=i*Math.PI/4;ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);ctx.lineTo(Math.cos(a)*r*1.8,Math.sin(a)*r*1.8);}ctx.stroke();
-    ctx.fillStyle='#EF4444';ctx.beginPath();ctx.arc(-r*0.3,-r*0.3,r*0.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*0.3,-r*0.3,r*0.15,0,Math.PI*2);ctx.fill();
-  }
-  if(inf.g){ 
-    ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(251,191,36,0.4)';ctx.beginPath();ctx.arc(0,0,r*1.5,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='source-over';
-    ctx.fillStyle='#F59E0B';ctx.beginPath();ctx.moveTo(-r*0.5,-r*1.2);ctx.lineTo(-r*0.3,-r*0.8);ctx.lineTo(0,-r*1.4);ctx.lineTo(r*0.3,-r*0.8);ctx.lineTo(r*0.5,-r*1.2);ctx.lineTo(r*0.4,-r*0.6);ctx.lineTo(-r*0.4,-r*0.6);ctx.closePath();ctx.fill();
-  }
-  ctx.restore();
-}
-
-function render(dt){
-  view.p.forEach(v=>{v.x+=(v.txp-v.x)*Math.min(1,dt*11);v.y+=(v.typ-v.y)*Math.min(1,dt*11);});
-  view.o.forEach(v=>{v.x+=(v.txp-v.x)*Math.min(1,dt*9);v.y+=(v.typ-v.y)*Math.min(1,dt*9);});
-  const me=view.p.get(myPid);
-  if(me){cam.x+=(me.x-cam.x)*Math.min(1,dt*6);cam.y+=(me.y-cam.y)*Math.min(1,dt*6);const tz=Math.max(.72,Math.min(1.08,36/me.r));cam.z+=(tz-cam.z)*dt*3;}
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#F8FAFC';ctx.fillRect(0,0,cv.width,cv.height);
-  ctx.setTransform(cam.z,0,0,cam.z,cv.width/2-cam.x*cam.z,cv.height/2-cam.y*cam.z);
-  drawHexGrid();
-  ctx.strokeStyle='#EF4444';ctx.lineWidth=12;ctx.strokeRect(0,0,W,H);
-  for(const[id,o]of view.o){
-    const inf=orbInfo.get(id)||{k:'v2c',tx:'',g:false};
-    drawMob(o,inf);
-    if(inf.tx)label(inf.tx.length>9?inf.tx.slice(0,9)+'…':inf.tx,o.x,o.y+o.r+20,Math.max(13,o.r*.75));
-  }
-  for(const[id,p]of view.p){
-    if(p.d)continue;
-    ctx.save();ctx.globalAlpha=(p.inv>0&&!p.q)?.55:1;
-    drawFlower(p);
-    ctx.restore();
-    if(p.q){ctx.strokeStyle='rgba(59,130,246,.8)';ctx.lineWidth=4;ctx.setLineDash([6,8]);ctx.beginPath();ctx.arc(p.x,p.y,p.r+26,Date.now()/300,Date.now()/300+Math.PI*1.5);ctx.stroke();ctx.setLineDash([]);label('💭 答题中…',p.x,p.y-p.r-36,14);}
-    if(p.h<p.mh){const bw=p.r*2.6,pct=Math.max(0,p.h/p.mh);ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(p.x-bw/2,p.y+p.r+12,bw,8);ctx.fillStyle=pct>.35?'#10B981':'#EF4444';ctx.fillRect(p.x-bw/2,p.y+p.r+12,bw*pct,8);}
-    label(p.n,p.x,p.y-p.r-16,15);
-  }
-  for(let i=FX.length-1;i>=0;i--){
-    const f=FX[i];f.t+=dt;
-    if(f.k==='pop'||f.k==='miss'||f.k==='lvl'){
-      const col=f.k==='pop'?'#FBBF24':f.k==='lvl'?'#8B5CF6':'#94A3B8';
-      ctx.strokeStyle=col;ctx.globalAlpha=Math.max(0,1-f.t*1.4);ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,10+f.t*95,0,7);ctx.stroke();ctx.globalAlpha=1;
-      if(f.v)label(f.v,f.x,f.y-f.t*46,18);
-      if(f.k==='lvl')label('LEVEL UP!',f.x,f.y-f.t*46-24,22);
-      if(f.t>1.1)FX.splice(i,1);
-    }else if(f.k==='boom'||f.k==='hit'){
-      ctx.globalAlpha=Math.max(0,1-f.t*2);
-      for(let j=0;j<8;j++){const a=j*Math.PI/4,d=f.t*130;ctx.fillStyle=f.k==='boom'?'#EF4444':'#F59E0B';ctx.beginPath();ctx.arc(f.x+Math.cos(a)*d,f.y+Math.sin(a)*d,6-f.t*4,0,7);ctx.fill();}
-      ctx.globalAlpha=1;if(f.t>.6)FX.splice(i,1);
-    }
-  }
-}
+function drawHexGrid(){const size=45;const w=size*1.5;const h=Math.sqrt(3)*size;ctx.strokeStyle='#E2E8F0';ctx.lineWidth=2;ctx.beginPath();for(let x=0;x<=W+w;x+=w){for(let y=0;y<=H+h;y+=h){const offsetX=(Math.round(x/w)%2!==0)?h/2:0;ctx.moveTo(x+size,y+offsetX);for(let i=1;i<=6;i++){const angle=i*Math.PI/3;ctx.lineTo(x+size*Math.cos(angle),y+offsetX+size*Math.sin(angle));}}}ctx.stroke();}
+function drawFlower(p){const {x,y,r,c,l,oa,tx,ty}=p;const petalCount=Math.min(8,3+Math.floor(l/2));const petalColor=RAR_COLORS[rarIdx(l)];ctx.save();ctx.translate(x,y);ctx.rotate(oa*0.5);for(let i=0;i<petalCount;i++){ctx.save();ctx.rotate(i*(Math.PI*2/petalCount));ctx.translate(0,-r*0.9);ctx.fillStyle=petalColor;ctx.strokeStyle='rgba(0,0,0,0.05)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,r*0.45,r*0.8,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();}ctx.fillStyle='#ffffff';ctx.strokeStyle='rgba(0,0,0,0.1)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();const angle=Math.atan2(ty-y,tx-x);const eyeDist=r*0.35,eyeR=r*0.28,pupilR=r*0.15;const ex1=Math.cos(angle-0.5)*eyeDist,ey1=Math.sin(angle-0.5)*eyeDist;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex1,ey1,eyeR,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0F172A';ctx.beginPath();ctx.arc(ex1+Math.cos(angle)*pupilR*0.5,ey1+Math.sin(angle)*pupilR*0.5,pupilR,0,Math.PI*2);ctx.fill();const ex2=Math.cos(angle+0.5)*eyeDist,ey2=Math.sin(angle+0.5)*eyeDist;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ex2,ey2,eyeR,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0F172A';ctx.beginPath();ctx.arc(ex2+Math.cos(angle)*pupilR*0.5,ey2+Math.sin(angle)*pupilR*0.5,pupilR,0,Math.PI*2);ctx.fill();ctx.fillStyle=c;ctx.beginPath();ctx.arc(0,r*0.4,r*0.15,0,Math.PI*2);ctx.fill();ctx.restore();}
+function drawMob(o,inf){const {x,y,r}=o;const angle=(view.o.get(o.id)?.a)||0;ctx.save();ctx.translate(x,y);const paused=view.o.get(o.id)?.pt>0;if(paused){const breath=1+Math.sin(Date.now()/200)*0.03;ctx.scale(breath,breath);}if(inf.k==='bomb'){ctx.rotate(angle);ctx.fillStyle='#EF4444';ctx.strokeStyle='#B91C1C';ctx.lineWidth=3;ctx.beginPath();const spikes=12;for(let i=0;i<spikes*2;i++){const a=i*Math.PI/spikes;const rad=i%2===0?r*1.3:r*0.7;ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(r*0.5,0,r*0.2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.arc(r*0.55,0,r*0.1,0,Math.PI*2);ctx.fill();}else if(inf.k==='v2c'){ctx.rotate(angle);ctx.fillStyle='#92400E';ctx.strokeStyle='#78350F';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-r*0.9,0,r*0.5,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,0,r*0.6,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(r*0.9,0,r*0.7,0,Math.PI*2);ctx.fill();ctx.stroke();const legPhase=Date.now()/150;ctx.strokeStyle='#78350F';ctx.lineWidth=2;ctx.beginPath();for(let i=-1;i<=1;i++){const lx=i*r*0.5;const swing=Math.sin(legPhase+i)*r*0.3;ctx.moveTo(lx,-r*0.5);ctx.lineTo(lx+swing,-r*1.2);ctx.moveTo(lx,r*0.5);ctx.lineTo(lx-swing,r*1.2);}ctx.stroke();ctx.beginPath();ctx.moveTo(r*1.2,-r*0.3);ctx.lineTo(r*1.8,-r*0.8);ctx.moveTo(r*1.2,r*0.3);ctx.lineTo(r*1.8,r*0.8);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(r*1.1,-r*0.3,r*0.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*1.1,r*0.3,r*0.15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.arc(r*1.2,-r*0.3,r*0.08,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*1.2,r*0.3,r*0.08,0,Math.PI*2);ctx.fill();}else if(inf.k==='c2v'){ctx.rotate(angle);const wingFlap=Math.sin(Date.now()/30)*0.4;ctx.save();ctx.rotate(-0.3+wingFlap);ctx.fillStyle='rgba(220,230,255,0.7)';ctx.beginPath();ctx.ellipse(-r*0.2,-r*0.9,r*0.7,r*0.35,0,0,Math.PI*2);ctx.fill();ctx.restore();ctx.save();ctx.rotate(0.3-wingFlap);ctx.fillStyle='rgba(220,230,255,0.7)';ctx.beginPath();ctx.ellipse(-r*0.2,r*0.9,r*0.7,r*0.35,0,0,Math.PI*2);ctx.fill();ctx.restore();ctx.fillStyle='#FBBF24';ctx.strokeStyle='#B45309';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,r*1.2,r*0.8,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#1F2937';ctx.fillRect(-r*0.4,-r*0.8,r*0.25,r*1.6);ctx.fillRect(r*0.15,-r*0.8,r*0.25,r*1.6);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(r*0.9,-r*0.2,r*0.22,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*0.9,r*0.2,r*0.22,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.arc(r*1.0,-r*0.2,r*0.1,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*1.0,r*0.2,r*0.1,0,Math.PI*2);ctx.fill();}else if(inf.k==='cloze'){ctx.rotate(angle);ctx.strokeStyle='#111827';ctx.lineWidth=2.5;const legPhase=Date.now()/400;ctx.beginPath();for(let i=0;i<4;i++){const a=-Math.PI/2+i*(Math.PI/3)-Math.PI/6;const swing=Math.sin(legPhase+i)*r*0.3;const sx=Math.cos(a)*r,sy=Math.sin(a)*r;const ex=Math.cos(a)*(r*1.8)+swing,ey=Math.sin(a)*(r*1.8);ctx.moveTo(sx,sy);ctx.lineTo(sx+(ex-sx)*0.5,sy+(ey-sy)*0.5-r*0.3);ctx.lineTo(ex,ey);}for(let i=0;i<4;i++){const a=Math.PI/2+i*(Math.PI/3)+Math.PI/6;const swing=Math.sin(legPhase+i+4)*r*0.3;const sx=Math.cos(a)*r,sy=Math.sin(a)*r;const ex=Math.cos(a)*(r*1.8)+swing,ey=Math.sin(a)*(r*1.8);ctx.moveTo(sx,sy);ctx.lineTo(sx+(ex-sx)*0.5,sy+(ey-sy)*0.5+r*0.3);ctx.lineTo(ex,ey);}ctx.stroke();ctx.fillStyle='#374151';ctx.strokeStyle='#111827';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#EF4444';ctx.beginPath();ctx.arc(r*0.4,-r*0.3,r*0.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*0.4,r*0.3,r*0.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*0.2,-r*0.5,r*0.1,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(r*0.2,r*0.5,r*0.1,0,Math.PI*2);ctx.fill();}if(inf.g){ctx.rotate(-angle);ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(251,191,36,0.4)';ctx.beginPath();ctx.arc(0,0,r*1.5,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='source-over';ctx.fillStyle='#F59E0B';ctx.beginPath();ctx.moveTo(-r*0.5,-r*1.2);ctx.lineTo(-r*0.3,-r*0.8);ctx.lineTo(0,-r*1.4);ctx.lineTo(r*0.3,-r*0.8);ctx.lineTo(r*0.5,-r*1.2);ctx.lineTo(r*0.4,-r*0.6);ctx.lineTo(-r*0.4,-r*0.6);ctx.closePath();ctx.fill();}ctx.restore();}
+function render(dt){view.p.forEach(v=>{v.x+=(v.txp-v.x)*Math.min(1,dt*11);v.y+=(v.typ-v.y)*Math.min(1,dt*11);});view.o.forEach(v=>{v.x+=(v.txp-v.x)*Math.min(1,dt*9);v.y+=(v.typ-v.y)*Math.min(1,dt*9);});const me=view.p.get(myPid);if(me){cam.x+=(me.x-cam.x)*Math.min(1,dt*6);cam.y+=(me.y-cam.y)*Math.min(1,dt*6);const tz=Math.max(.72,Math.min(1.08,36/me.r));cam.z+=(tz-cam.z)*dt*3;}ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#F8FAFC';ctx.fillRect(0,0,cv.width,cv.height);ctx.setTransform(cam.z,0,0,cam.z,cv.width/2-cam.x*cam.z,cv.height/2-cam.y*cam.z);drawHexGrid();ctx.strokeStyle='#EF4444';ctx.lineWidth=12;ctx.strokeRect(0,0,W,H);for(const[id,o]of view.o){const inf=orbInfo.get(id)||{k:'v2c',tx:'',g:false};drawMob(o,inf);if(inf.tx)label(inf.tx.length>9?inf.tx.slice(0,9)+'…':inf.tx,o.x,o.y+o.r+20,Math.max(13,o.r*.75));}for(const[id,p]of view.p){if(p.d)continue;ctx.save();ctx.globalAlpha=(p.inv>0&&!p.q)?.55:1;drawFlower(p);ctx.restore();if(p.dl){ctx.strokeStyle='rgba(239,68,68,.8)';ctx.lineWidth=4;ctx.setLineDash([6,8]);ctx.beginPath();ctx.arc(p.x,p.y,p.r+26,Date.now()/300,Date.now()/300+Math.PI*1.5);ctx.stroke();ctx.setLineDash([]);label('⚔️ 决斗中',p.x,p.y-p.r-36,14);}else if(p.q){ctx.strokeStyle='rgba(59,130,246,.8)';ctx.lineWidth=4;ctx.setLineDash([6,8]);ctx.beginPath();ctx.arc(p.x,p.y,p.r+26,Date.now()/300,Date.now()/300+Math.PI*1.5);ctx.stroke();ctx.setLineDash([]);label('💭 答题中…',p.x,p.y-p.r-36,14);}if(p.h<p.mh){const bw=p.r*2.6,pct=Math.max(0,p.h/p.mh);ctx.fillStyle='rgba(0,0,0,.1)';ctx.fillRect(p.x-bw/2,p.y+p.r+12,bw,8);ctx.fillStyle=pct>.35?'#10B981':'#EF4444';ctx.fillRect(p.x-bw/2,p.y+p.r+12,bw*pct,8);}label(p.n,p.x,p.y-p.r-16,15);}for(let i=FX.length-1;i>=0;i--){const f=FX[i];f.t+=dt;if(f.k==='pop'||f.k==='miss'||f.k==='lvl'){const col=f.k==='pop'?'#FBBF24':f.k==='lvl'?'#8B5CF6':'#94A3B8';ctx.strokeStyle=col;ctx.globalAlpha=Math.max(0,1-f.t*1.4);ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,10+f.t*95,0,7);ctx.stroke();ctx.globalAlpha=1;if(f.v)label(f.v,f.x,f.y-f.t*46,18);if(f.k==='lvl')label('LEVEL UP!',f.x,f.y-f.t*46-24,22);if(f.t>1.1)FX.splice(i,1);}else if(f.k==='boom'||f.k==='hit'){ctx.globalAlpha=Math.max(0,1-f.t*2);for(let j=0;j<8;j++){const a=j*Math.PI/4,d=f.t*130;ctx.fillStyle=f.k==='boom'?'#EF4444':'#F59E0B';ctx.beginPath();ctx.arc(f.x+Math.cos(a)*d,f.y+Math.sin(a)*d,6-f.t*4,0,7);ctx.fill();}ctx.globalAlpha=1;if(f.t>.6)FX.splice(i,1);}}}
 function addFx(k,x,y,v){FX.push({k,x,y,v,t:0});}
 function fx(k,x,y,v){addFx(k,x,y,v);broadcast({t:'fx',k,x,y,v});}
 
-/* ============ 8. 答题卡 (★已修复语法错误) ============ */
+/* ============ 8. 答题卡 & 决斗 UI ============ */
 let quizState=null;
 const $=id=>document.getElementById(id);
-function openQuiz(oid,q){quizState={oid,q,done:false,end:Date.now()+15000};const kind=q.t==='v2c'?'看词选义':q.t==='c2v'?'看义选词':'句子填空';$('qKind').textContent=kind+' · 答对进化,答错掉血';$('qPrompt').innerHTML=q.t==='cloze'?q.q.replace('_','<span class="blank">____</span>'):q.q;$('qOpts').innerHTML='';$('qFb').classList.add('hide');$('qOpts').classList.remove('hide');q.opts.forEach((o,i)=>{const b=document.createElement('button');b.className='opt';b.innerHTML=`<span class="key">${i+1}</span><span>${o}</span>`;b.onclick=()=>choose(i);$('qOpts').appendChild(b);});$('qFill').style.width='100%';$('quizWrap').classList.remove('hide');}
+
+function openQuiz(oid,q){
+  quizState={oid,q,done:false,end:Date.now()+15000,type:'normal'};
+  $('quizCard').classList.remove('duel');
+  $('duelBanner').style.display='none';
+  const kind=q.t==='v2c'?'看词选义':q.t==='c2v'?'看义选词':'句子填空';
+  $('qKind').textContent=kind+' · 答对进化,答错掉血';
+  $('qPrompt').innerHTML=q.t==='cloze'?q.q.replace('_','<span class="blank">____</span>'):q.q;
+  $('qOpts').innerHTML='';$('qFb').classList.add('hide');$('qOpts').classList.remove('hide');
+  q.opts.forEach((o,i)=>{const b=document.createElement('button');b.className='opt';b.innerHTML=`<span class="key">${i+1}</span><span>${o}</span>`;b.onclick=()=>choose(i);$('qOpts').appendChild(b);});
+  $('qFill').style.width='100%';$('quizWrap').classList.remove('hide');
+}
+
+function openDuelQuiz(data){
+  const {oppName, idx, total, q} = data;
+  quizState={q, done:false, end:Date.now()+12000, type:'duel', idx, total, oppName, start:Date.now()};
+  $('quizCard').classList.add('duel');
+  $('duelBanner').style.display='block';
+  $('duelBanner').innerHTML=`⚔️ DUEL VS ${oppName} ⚔️<div id="duelScore">第 ${idx+1} / ${total} 题</div>`;
+  $('qKind').textContent='决斗模式 · 拼手速与准确率';
+  $('qPrompt').innerHTML=q.t==='cloze'?q.q.replace('_','<span class="blank">____</span>'):q.q;
+  $('qOpts').innerHTML='';$('qFb').classList.add('hide');$('qOpts').classList.remove('hide');
+  q.opts.forEach((o,i)=>{const b=document.createElement('button');b.className='opt';b.innerHTML=`<span class="key">${i+1}</span><span>${o}</span>`;b.onclick=()=>choose(i);$('qOpts').appendChild(b);});
+  $('qFill').style.width='100%';$('quizWrap').classList.remove('hide');
+}
 
 function choose(i){
   const qs=quizState;if(!qs||qs.done)return;qs.done=true;
+  const timeTaken = Date.now() - qs.start;
+  
+  if(qs.type === 'duel') {
+    // 决斗答题
+    s2h({t:'duel_ans', idx: qs.idx, choice: i, time: timeTaken});
+    const btns=$('qOpts').children;
+    btns[qs.q.ans].classList.add('ok');
+    if(i!==qs.q.ans)btns[i].classList.add('no');
+    $('qOpts').classList.add('hide');
+    const correct = (i === qs.q.ans);
+    srReview(qs.q.w, correct);
+    speak(qs.q.w);
+    $('qFb').innerHTML=`<div class="fbt ${correct?'good':'bad'}">${correct?'✓ 回答正确! 等待对手...':'✗ 答错了! 等待对手...'}</div>`;
+    $('qFb').classList.remove('hide');
+    return;
+  }
+
+  // 普通答题
   const ok=(i===qs.q.ans),wasDue=isDue(qs.q.w);
   srReview(qs.q.w,ok);
   if(ok){stats.today++;saveStats();}
   if(isHost)resolveAnswer(qs.oid,i,ok&&wasDue);
   else s2h({t:'ans',oid:qs.oid,i,due:ok&&wasDue});
-  
   const btns=$('qOpts').children;
   btns[qs.q.ans].classList.add('ok');
   if(!ok&&i>=0)btns[i].classList.add('no');
   const s=qs.q.s?qs.q.s.replace('_',`<b>${qs.q.w}</b>`):'';
-  
-  // ★★★ 修复点：补全了 wasDue 三元表达式的 `:''` ★★★
   $('qFb').innerHTML=`
     <div class="fbt ${ok?'good':'bad'}">
       ${ok ? '✓ 正确!' + (wasDue ? ' ⭐ 复习命中 双倍经验!' : '') : '✗ 正确答案: ' + qs.q.opts[qs.q.ans]}
@@ -440,10 +582,22 @@ function choose(i){
     <div class="fbm">${qs.q.m}</div>
     ${s ? `<div class="fbs">${s}</div>` : ''}
   `;
-  
   $('qOpts').classList.add('hide');$('qFb').classList.remove('hide');
   speak(qs.q.w);
   setTimeout(closeQuiz,ok?2000:3600);
+}
+
+function handleDuelRoundRes(idx) {
+  if(!quizState || quizState.type !== 'duel' || quizState.idx !== idx) return;
+  // 短暂显示结果后关闭，等待下一题
+  setTimeout(closeQuiz, 800);
+}
+
+function handleDuelEnd(data) {
+  closeQuiz();
+  if(data.res === 'win') toast(`🏆 决斗胜利! 掠夺 ${data.oppName} ${data.xp} 经验`, 4000, 'win');
+  else if(data.res === 'lose') toast(`💀 决斗败北! 被 ${data.oppName} 夺走 ${-data.xp} 经验`, 4000, 'lose');
+  else toast('🤝 决斗平局! 双方各自退开', 3000);
 }
 
 function quizTimeout(oid,q){if(!quizState||quizState.oid!==oid||quizState.done)return;quizState.done=true;srReview(q.w,false);const s=q.s?q.s.replace('_',`<b>${q.w}</b>`):'';$('qFb').innerHTML=`<div class="fbt bad">⏰ 超时!正确答案:${q.opts[q.ans]}</div><div class="fbw">${q.w} <span class="fbp">${q.p||''}</span></div><div class="fbm">${q.m}</div>${s?`<div class="fbs">${s}</div>`:''}`;$('qOpts').classList.add('hide');$('qFb').classList.remove('hide');setTimeout(closeQuiz,3200);}
@@ -451,7 +605,7 @@ function closeQuiz(){$('quizWrap').classList.add('hide');quizState=null;}
 addEventListener('keydown',e=>{if(quizState&&!quizState.done){const n=+e.key;if(n>=1&&n<=4)choose(n-1);}});
 
 /* ============ 9. HUD ============ */
-function toast(msg,ms=2600){const d=document.createElement('div');d.className='toast';d.textContent=msg;$('toasts').appendChild(d);setTimeout(()=>d.remove(),ms);}
+function toast(msg,ms=2600,cls=''){const d=document.createElement('div');d.className='toast '+(cls||'');d.textContent=msg;$('toasts').appendChild(d);setTimeout(()=>d.remove(),ms);}
 function updHUD(){const me=view.p.get(myPid);if(!me)return;$('meName').textContent=me.n;const l=lvlOf(me.xp),lo=xpFor(l),hi=xpFor(l+1);$('xpfill').style.width=Math.min(100,(me.xp-lo)/(hi-lo)*100)+'%';$('meInfo').textContent=`Lv.${l} ${RAR_NAMES[rarIdx(l)]}花瓣 · 🔥连击${me.k||0} · 今日${stats.today}词`;$('srChip').textContent=`📌 待复习 ${dueWords().length} · 🆕 新词 ${newWords().length}`;$('roomChip').textContent=`房间 ${roomCode} · ${LEVELS[roomLevel].name} · ${view.p.size}人`;const rows=[...view.p.values()].sort((a,b)=>b.xp-a.xp).slice(0,8);$('lbRows').innerHTML=rows.map(p=>`<div class="lbr ${p.i===myPid?'self':''}"><span class="dot" style="background:${p.c}"></span><span>${p.n}</span><span class="xp">Lv.${p.l} · ${p.xp}</span></div>`).join('');}
 
 /* ============ 10. 网络 ============ */
@@ -460,9 +614,30 @@ const broadcast=m=>{for(const pid in connMap)try{connMap[pid].send(m);}catch(e){
 const s2h=m=>{if(conn&&conn.open)try{conn.send(m);}catch(e){}};
 function ensurePeer(ms=8000){return new Promise(res=>{if(window.Peer)return res(true);if(window.__peerFailed)return res(false);const t0=Date.now();const iv=setInterval(()=>{if(window.Peer){clearInterval(iv);res(true);}else if(window.__peerFailed||Date.now()-t0>ms){clearInterval(iv);res(false);}},100);});}
 function sendTo(pid,m){if(pid===0){localMsg(m);return;}if(pid<0){if(m.t==='quiz')setTimeout(()=>{const pd=pending[m.oid];if(!pd)return;const ok=Math.random()<.55;resolveAnswer(m.oid,ok?pd.ans:(pd.ans+1+((Math.random()*3)|0))%4,false);},1200+Math.random()*2000);return;}const c=connMap[pid];if(c)try{c.send(m);}catch(e){}}
-function localMsg(m){if(m.t==='quiz')openQuiz(m.oid,m.q);else if(m.t==='res'&&m.to&&quizState&&quizState.oid===m.oid)quizTimeout(m.oid,quizState.q);}
-function clientMsg(m){if(m.t==='init'){myPid=m.pid;roomLevel=m.lv;enterGame();}else if(m.t==='st')applySnap(m);else if(m.t==='oa')orbInfo.set(m.o.i,m.o);else if(m.t==='quiz')openQuiz(m.oid,m.q);else if(m.t==='res'&&m.to&&quizState&&quizState.oid===m.oid)quizTimeout(m.oid,quizState.q);else if(m.t==='fx')addFx(m.k,m.x,m.y,m.v);}
-function hostRecv(c,d){if(d.t==='join'){const pid=++pidSeq;connMap[pid]=c;c.pid=pid;spawnPlayer(pid,(d.n||'词友').slice(0,10));c.send({t:'init',pid,lv:roomLevel});for(const[,info]of orbInfo)c.send({t:'oa',o:info});toast(`👋 ${players.get(pid).name} 加入了房间`);}else if(d.t==='in'){const p=players.get(c.pid);if(p&&!p.quiz){p.tx=d.x;p.ty=d.y;}}else if(d.t==='ans')resolveAnswer(d.oid,d.i,!!d.due);}
+function localMsg(m){
+  if(m.t==='quiz')openQuiz(m.oid,m.q);
+  else if(m.t==='res'&&m.to&&quizState&&quizState.oid===m.oid)quizTimeout(m.oid,quizState.q);
+  else if(m.t==='duel_q')openDuelQuiz(m);
+  else if(m.t==='duel_round_res')handleDuelRoundRes(m.idx);
+  else if(m.t==='duel_end')handleDuelEnd(m);
+}
+function clientMsg(m){
+  if(m.t==='init'){myPid=m.pid;roomLevel=m.lv;enterGame();}
+  else if(m.t==='st')applySnap(m);
+  else if(m.t==='oa')orbInfo.set(m.o.i,m.o);
+  else if(m.t==='quiz')openQuiz(m.oid,m.q);
+  else if(m.t==='res'&&m.to&&quizState&&quizState.oid===m.oid)quizTimeout(m.oid,quizState.q);
+  else if(m.t==='fx')addFx(m.k,m.x,m.y,m.v);
+  else if(m.t==='duel_q')openDuelQuiz(m);
+  else if(m.t==='duel_round_res')handleDuelRoundRes(m.idx);
+  else if(m.t==='duel_end')handleDuelEnd(m);
+}
+function hostRecv(c,d){
+  if(d.t==='join'){const pid=++pidSeq;connMap[pid]=c;c.pid=pid;spawnPlayer(pid,(d.n||'词友').slice(0,10));c.send({t:'init',pid,lv:roomLevel});for(const[,info]of orbInfo)c.send({t:'oa',o:info});toast(`👋 ${players.get(pid).name} 加入了房间`);}
+  else if(d.t==='in'){const p=players.get(c.pid);if(p&&!p.quiz&&!p.duelLock){p.tx=d.x;p.ty=d.y;}}
+  else if(d.t==='ans')resolveAnswer(d.oid,d.i,!!d.due);
+  else if(d.t==='duel_ans'){const p=players.get(c.pid);if(p)handleDuelAns(p,d.idx,d.choice,d.time);}
+}
 async function createRoom(){toast('正在准备联机组件…');const ok=await ensurePeer();if(!ok){toast('PeerJS加载失败:检查网络后刷新,或先玩单人模式',4000);return;}isHost=true;solo=false;roomCode=Array.from({length:4},()=>'ABCDEFGHJKMNPQRSTUVWXYZ'[Math.random()*24|0]).join('');peer=new Peer('wordrio-'+roomCode);peer.on('open',()=>{startHost();toast(`房间已创建!代码 ${roomCode},快分享给同学`);});peer.on('connection',c=>{c.on('data',d=>hostRecv(c,d));c.on('close',()=>{if(c.pid){players.delete(c.pid);delete connMap[c.pid];toast('一位同学离开了');}});});peer.on('disconnected',()=>{try{peer.reconnect();}catch(e){}});peer.on('error',e=>toast('联机错误:'+e.type));}
 function startSolo(){isHost=true;solo=true;roomCode='SOLO';startHost();}
 function startHost(){enterGame();myPid=0;spawnPlayer(0,myName);if(solo){spawnPlayer(-1,'小明🤖',true);spawnPlayer(-2,'小红🤖',true);spawnPlayer(-3,'Alex🤖',true);}for(let i=0;i<ORB_N;i++)spawnOrb();for(let i=0;i<BOMB_N;i++)spawnBomb();if(!solo)setInterval(()=>broadcast(buildSnap()),85);}
@@ -471,12 +646,12 @@ function enterGame(){inGame=true;$('menu').classList.add('hide');$('hud').classL
 
 /* ============ 11. 输入 & 循环 ============ */
 let myName=(localStorage.getItem('wr_name')||'');
-function setTarget(mx,my){if(!inGame)return;const wx=cam.x+(mx-cv.width/2)/cam.z,wy=cam.y+(my-cv.height/2)/cam.z;if(isHost){const p=players.get(myPid);if(p){p.tx=wx;p.ty=wy;}}else s2h({t:'in',x:wx,y:wy});}
+function setTarget(mx,my){if(!inGame)return;const wx=cam.x+(mx-cv.width/2)/cam.z,wy=cam.y+(my-cv.height/2)/cam.z;if(isHost){const p=players.get(myPid);if(p&&!p.duelLock){p.tx=wx;p.ty=wy;}}else s2h({t:'in',x:wx,y:wy});}
 let lastIn=0;
 cv.addEventListener('pointermove',e=>{const n=performance.now();if(n-lastIn>50){lastIn=n;setTarget(e.clientX,e.clientY);}});
 cv.addEventListener('pointerdown',e=>setTarget(e.clientX,e.clientY));
 let last=performance.now(),loopBroken=false;
-function loop(t){if(loopBroken)return;try{const dt=Math.min(.05,(t-last)/1000);last=t;if(inGame){if(isHost){tick(dt);applySnap(buildSnap());}if(quizState&&!quizState.done){const rem=Math.max(0,quizState.end-Date.now());$('qFill').style.width=(rem/150)+'%';if(rem<=0)choose(-1);}render(dt);if(++frame%12===0)updHUD();}}catch(e){loopBroken=true;console.error('[词域] 主循环出错:',e);toast('发生错误,请打开F12控制台查看');}requestAnimationFrame(loop);}
+function loop(t){if(loopBroken)return;try{const dt=Math.min(.05,(t-last)/1000);last=t;if(inGame){if(isHost){tick(dt);applySnap(buildSnap());}if(quizState&&!quizState.done&&quizState.type==='normal'){const rem=Math.max(0,quizState.end-Date.now());$('qFill').style.width=(rem/150)+'%';if(rem<=0)choose(-1);}else if(quizState&&!quizState.done&&quizState.type==='duel'){const rem=Math.max(0,quizState.end-Date.now());$('qFill').style.width=(rem/120)+'%';if(rem<=0)choose(-1);}render(dt);if(++frame%12===0)updHUD();}}catch(e){loopBroken=true;console.error('[词域] 主循环出错:',e);toast('发生错误,请打开F12控制台查看');}requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 
 /* ============ 12. 菜单 ============ */
