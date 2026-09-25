@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>符文密室 · 密室逃脱消除解谜</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗝️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 字体改为非阻塞加载:加载失败(离线/墙)时不影响游戏 -->
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style id="fb">
+  /* 字体兜底:未加载网络字体时改用系统字体 */
+  h1,.brand,.panel h2,.float-txt.combo{font-family:'Ma Shan Zheng','Kaiti SC','STKaiti','KaiTi',serif}
+  .kicker,.btn,.room-chip,.targets-title,.ov-kicker{font-family:'ZCOOL XiaoWei','Kaiti SC','STKaiti','KaiTi',serif}
+  body{font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
+</style>
+<style>
+:root{
+  --ink:#0b151c; --panel:#101f28; --panel2:#0d1a22;
+  --brass:#e0a63f; --brass-hi:#ffd98a; --brass-dim:rgba(201,162,90,.35);
+  --ember:#ff9d5c; --jade:#58e6a8; --ice:#5bc9ff; --rose:#ff7a52;
+  --text:#e9e4d6; --dim:#8fa3a6;
+  --f-disp:'Ma Shan Zheng','Kaiti SC','STKaiti','KaiTi',serif;
+  --f-sub:'ZCOOL XiaoWei','Noto Serif SC','Kaiti SC',serif;
+  --f-body:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  font-family:var(--f-body); color:var(--text); overflow-x:hidden;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 46px, rgba(255,255,255,.013) 46px 47px),
+    radial-gradient(1100px 680px at 80% -12%, rgba(224,166,63,.11), transparent 62%),
+    radial-gradient(900px 620px at 8% 112%, rgba(88,230,168,.06), transparent 60%),
+    linear-gradient(165deg,#0d1820 0%, #0a1218 55%, #0c1218 100%);
+}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:3;
+  background:radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.55) 100%)}
+/* ---------- 环境光与尘埃 ---------- */
+.glow{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(10px)}
+.glow-a{width:520px;height:520px;left:-140px;top:-120px;
+  background:radial-gradient(circle,rgba(255,170,80,.20),transparent 65%);animation:flick 3.4s ease-in-out infinite}
+.glow-b{width:460px;height:460px;right:-130px;bottom:-140px;
+  background:radial-gradient(circle,rgba(224,166,63,.13),transparent 65%);animation:flick 4.6s ease-in-out infinite reverse}
+@keyframes flick{0%,100%{opacity:.85;transform:scale(1)}23%{opacity:.55}47%{opacity:.95;transform:scale(1.05)}71%{opacity:.65}}
+#dust{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+#dust span{position:absolute;bottom:-6vh;border-radius:50%;background:#ffdf9e;
+  box-shadow:0 0 8px rgba(255,220,150,.8);animation:dustUp linear infinite}
+@keyframes dustUp{0%{transform:translateY(0) translateX(0);opacity:0}
+  12%{opacity:.65}80%{opacity:.35}100%{transform:translateY(-112vh) translateX(34px);opacity:0}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:80}
+/* ---------- 屏幕切换 ---------- */
+.screen{display:none;position:relative;z-index:2}
+.screen.active{display:block}
+/* ---------- 序章 ---------- */
+#screen-intro{min-height:100vh;min-height:100dvh}
+.intro-wrap{max-width:1160px;margin:0 auto;min-height:100vh;min-height:100dvh;
+  padding:clamp(24px,5vw,64px);
+  display:grid;grid-template-columns:1.08fr .92fr;gap:clamp(24px,4vw,72px);align-items:center}
+.kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--f-sub);
+  color:var(--brass);letter-spacing:.42em;font-size:14px;margin-bottom:18px}
+.kicker::before{content:'';width:36px;height:1px;background:var(--brass)}
+h1{font-family:var(--f-disp);font-weight:400;font-size:clamp(58px,9vw,112px);line-height:1.02;
+  color:#f4e9cf;text-shadow:0 0 26px rgba(224,166,63,.4),0 4px 18px rgba(0,0,0,.6)}
+h1 em{font-style:normal;color:var(--brass-hi)}
+.lead{margin:22px 0 26px;max-width:34em;color:#c9cec6;font-size:16px;line-height:1.95}
+.lead b{color:var(--brass-hi);font-weight:700}
+.rules{list-style:none;display:grid;gap:10px;margin-bottom:32px}
+.rules li{position:relative;padding-left:24px;color:#aebbb6;font-size:14.5px;line-height:1.7}
+.rules li::before{content:'◆';position:absolute;left:2px;color:var(--brass);font-size:11px;top:3px}
+.rules b{color:#e6d9b8}
+.btn{position:relative;overflow:hidden;cursor:pointer;font-family:var(--f-sub);
+  font-size:17px;letter-spacing:.22em;color:var(--brass-hi);
+  background:linear-gradient(170deg,#241c12,#171208);
+  border:1px solid rgba(201,162,90,.55);border-radius:8px;padding:14px 30px;
+  transition:transform .2s,box-shadow .25s,border-color .25s}
+.btn::after{content:'';position:absolute;top:0;left:-70%;width:44%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,225,160,.28),transparent);
+  transform:skewX(-20deg);transition:left .45s ease}
+.btn:hover{transform:translateY(-2px);border-color:var(--brass-hi);
+  box-shadow:0 8px 26px rgba(224,166,63,.28)}
+.btn:hover::after{left:130%}
+.btn:active{transform:translateY(0)}
+.btn:focus-visible{outline:2px solid var(--brass-hi);outline-offset:3px}
+.btn.primary{font-size:19px;padding:16px 40px}
+.journey{margin-top:20px;font-size:13px;color:var(--dim);letter-spacing:.12em}
+.journey b{color:#d8c79a;font-weight:500}
+/* 序章大门 */
+.intro-right{position:relative;display:flex;justify-content:center;align-items:center;min-height:420px}
+.door-glow{position:absolute;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,180,90,.18),transparent 65%);animation:flick 3s ease-in-out infinite}
+.door{position:relative;z-index:2;border:10px solid #221910;
+  box-shadow:inset 0 0 46px rgba(0,0,0,.65),0 34px 70px rgba(0,0,0,.55)}
+.door.big{width:min(300px,72vw);aspect-ratio:300/420;border-radius:150px 150px 10px 10px;
+  animation:doorFloat 6s ease-in-out infinite}
+@keyframes doorFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.wood{background:
+  linear-gradient(180deg,rgba(255,236,200,.09),rgba(0,0,0,.32)),
+  repeating-linear-gradient(90deg,#4a3421 0 6px,#422d1c 6px 40px,#37261a 40px 45px)}
+.band{position:absolute;left:-14px;right:-14px;height:15px;border-radius:3px;z-index:3;
+  background:linear-gradient(#7a5f34,#3c2d16);box-shadow:0 2px 5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,230,170,.35)}
+.b1{top:30%}.b2{top:68%}
+.lock-row{position:absolute;left:0;right:0;top:45%;display:flex;justify-content:center;gap:22px;z-index:4}
+.lock{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:24px;
+  background:radial-gradient(circle at 35% 30%,#2e3c44,#131c21);
+  border:2px solid var(--brass-dim);box-shadow:0 5px 12px rgba(0,0,0,.55);
+  transition:.35s;position:relative}
+.lock.static{animation:lockSway 3.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes lockSway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.lock.open{border-color:var(--brass-hi);box-shadow:0 0 22px rgba(255,217,138,.55);animation:lockPop .55s cubic-bezier(.3,1.6,.5,1)}
+@keyframes lockPop{0%{transform:scale(1)}45%{transform:scale(1.3) rotate(8deg)}100%{transform:scale(1)}}
+.keyhole{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);width:20px;height:32px;background:#080c0f;z-index:4;
+  clip-path:polygon(0 0,100% 0,100% 34%,62% 34%,88% 100%,12% 100%,38% 34%,0 34%);
+  box-shadow:0 0 14px rgba(0,0,0,.8)}
+.rune-float{position:absolute;z-index:1;font-size:26px;color:rgba(224,166,63,.6);
+  text-shadow:0 0 12px rgba(224,166,63,.7);animation:runeF 5.5s ease-in-out infinite}
+@keyframes runeF{0%,100%{transform:translateY(0);opacity:.25}50%{transform:translateY(-22px);opacity:.85}}
+/* ---------- 游戏页 ---------- */
+#screen-game{padding:18px clamp(12px,3vw,32px) 40px}
+.hud{max-width:1180px;margin:0 auto 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.hud-left{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.brand{font-family:var(--f-disp);font-size:32px;color:#f0e5c8;text-shadow:0 0 16px rgba(224,166,63,.4)}
+.room-chip{font-family:var(--f-sub);font-size:16px;color:var(--brass-hi);letter-spacing:.16em;
+  border:1px solid var(--brass-dim);border-radius:999px;padding:5px 16px;background:rgba(224,166,63,.06)}
+.hud-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.moves-badge{display:flex;flex-direction:column;align-items:center;min-width:78px;padding:7px 12px;
+  border:1px solid var(--brass-dim);border-radius:12px;background:linear-gradient(160deg,#1a2c35,#101d24)}
+.moves-badge .num{font-size:27px;font-weight:900;color:var(--brass-hi);line-height:1;font-variant-numeric:tabular-nums}
+.moves-badge .lbl{font-size:10.5px;color:var(--dim);letter-spacing:.3em;margin-top:3px}
+.moves-badge.low .num{color:var(--rose);animation:lowP 1s infinite}
+@keyframes lowP{0%,100%{opacity:1}50%{opacity:.45}}
+.moves-badge.flash{animation:bFlash .4s}
+@keyframes bFlash{30%{transform:scale(1.12);border-color:var(--brass-hi)}}
+.score-box{display:flex;flex-direction:column;align-items:flex-end;min-width:86px}
+.score-box .lbl{font-size:10.5px;color:var(--dim);letter-spacing:.3em}
+.score-box .num{font-size:24px;font-weight:900;color:#f0e5c8;font-variant-numeric:tabular-nums;line-height:1.1}
+.icon-btn{width:42px;height:42px;border-radius:10px;border:1px solid var(--brass-dim);cursor:pointer;
+  background:linear-gradient(160deg,#17262e,#0f1b22);color:var(--brass-hi);font-size:18px;
+  transition:.2s;display:grid;place-items:center}
+.icon-btn:hover{border-color:var(--brass-hi);transform:translateY(-2px);box-shadow:0 6px 16px rgba(224,166,63,.22)}
+.game-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr);gap:26px;align-items:start}
+/* 侧栏 */
+.side{display:flex;flex-direction:column;gap:16px}
+.door.small{width:200px;aspect-ratio:190/280;border-radius:95px 95px 8px 8px;margin:0 auto;border-width:8px}
+.door.small .b1{top:26%}.door.small .b2{top:74%}
+.lock-col{position:absolute;left:0;right:0;top:26%;bottom:22%;display:flex;flex-direction:column;
+  justify-content:space-around;align-items:center;z-index:4}
+.lock .tag{position:absolute;right:-16px;bottom:-4px;font-size:13px;filter:drop-shadow(0 1px 2px #000)}
+.story{font-size:13.5px;line-height:1.9;color:#a7b5b0;border-left:2px solid var(--brass-dim);
+  padding:4px 0 4px 14px;background:linear-gradient(90deg,rgba(224,166,63,.05),transparent)}
+.targets{background:var(--panel2);border:1px solid rgba(140,180,190,.14);border-radius:14px;padding:14px}
+.targets-title{font-family:var(--f-sub);letter-spacing:.3em;font-size:13px;color:var(--brass);margin-bottom:10px}
+.chips{display:grid;gap:8px}
+.chip{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0f1e26;
+  border:1px solid rgba(140,180,190,.14);border-radius:10px;position:relative;overflow:hidden;transition:.3s}
+.chip .ico{font-size:22px}
+.chip .nm{font-size:12.5px;color:#b9c4bf;flex:1}
+.chip .cnt{font-weight:700;font-size:14px;color:#f0e5c8;font-variant-numeric:tabular-nums}
+.chip .bar{position:absolute;left:0;bottom:0;height:3px;width:0;transition:width .35s;
+  background:linear-gradient(90deg,var(--brass),var(--brass-hi))}
+.chip.done{border-color:rgba(255,217,138,.55);background:#14222a}
+.chip.done .cnt{color:var(--jade)}
+.chip.bump{animation:chipB .32s}
+@keyframes chipB{35%{transform:scale(1.05)}}
+/* 棋盘 —— 已改为确定性宽度,避免父容器循环依赖 */
+.stage{display:flex;justify-content:center;min-width:0}
+.stage.shake{animation:shakeS .35s}
+@keyframes shakeS{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-2px)}}
+.board-frame{position:relative;display:inline-block;width:min(548px,100%);padding:12px;border-radius:18px;
+  background:linear-gradient(160deg,#182a33,#0d1a21);
+  border:2px solid rgba(201,162,90,.4);
+  box-shadow:inset 0 0 30px rgba(0,0,0,.55),0 22px 55px rgba(0,0,0,.5)}
+.rivet{position:absolute;width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffe9b0,#8a6a2f);box-shadow:0 1px 3px #000}
+.rivet.r1{top:6px;left:6px}.rivet.r2{top:6px;right:6px}.rivet.r3{bottom:6px;left:6px}.rivet.r4{bottom:6px;right:6px}
+#board{position:relative;width:100%;min-width:240px;aspect-ratio:1;
+  touch-action:none;user-select:none;-webkit-user-select:none}
+@supports not (aspect-ratio:1){#board{height:60vw;max-height:520px}}
+.tile{position:absolute;top:0;left:0;width:var(--cell,60px);height:var(--cell,60px);padding:3px;
+  transition:transform .32s cubic-bezier(.3,.75,.35,1.12);will-change:transform;cursor:pointer}
+.tile .face{position:relative;width:100%;height:100%;display:grid;place-items:center;
+  font-size:calc(var(--cell,60px)*.52);border-radius:15%;
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.1),rgba(0,0,0,.3) 72%),linear-gradient(160deg,#1d3540,#12242c);
+  border:1px solid rgba(140,180,190,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 4px 10px rgba(0,0,0,.35);
+  text-shadow:0 0 13px var(--tg,transparent);transition:transform .15s,box-shadow .2s}
+.tile:hover .face{transform:scale(1.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 7px 16px rgba(0,0,0,.45)}
+.tile.sel{z-index:4}
+.tile.sel .face{border-color:var(--brass-hi);box-shadow:0 0 0 2px var(--brass),0 0 18px rgba(224,166,63,.6);animation:selP 1s ease-in-out infinite}
+@keyframes selP{50%{transform:scale(1.07)}}
+.tile.hint .face{animation:hintP 1s ease-in-out infinite}
+@keyframes hintP{50%{transform:scale(1.08);box-shadow:0 0 0 2px rgba(88,230,168,.7),0 0 20px rgba(88,230,168,.45)}}
+.tile.bomb .face{border-color:rgba(255,122,82,.85);animation:bombP 1s infinite}
+.tile.bomb .face::after{content:'💣';position:absolute;right:5%;bottom:3%;font-size:calc(var(--cell,60px)*.23)}
+@keyframes bombP{0%,100%{box-shadow:inset 0 0 0 1px rgba(255,122,82,.5),0 0 7px rgba(255,122,82,.3)}
+  50%{box-shadow:inset 0 0 0 2px rgba(255,122,82,.95),0 0 20px rgba(255,122,82,.6)}}
+.tile.rainbow .face{border-color:var(--brass-hi);
+  background:conic-gradient(#ff9d5c,#f2c14e,#58e6a8,#5bc9ff,#c09bff,#ff9d5c);
+  animation:hueR 3s linear infinite}
+@keyframes hueR{to{filter:hue-rotate(360deg)}}
+.tile.spawnFlash .face{animation:spF .5s}
+@keyframes spF{30%{transform:scale(1.25);filter:brightness(1.8)}}
+.tile.pop{z-index:5}
+.tile.pop .face{animation:popA .24s ease-out forwards}
+@keyframes popA{40%{transform:scale(1.2);filter:brightness(1.6)}100%{transform:scale(.15);opacity:0}}
+.tile.wiggle .face{animation:wigA .32s}
+@keyframes wigA{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+/* ---------- 浮层 ---------- */
+.overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;
+  background:rgba(6,10,13,.8);backdrop-filter:blur(5px);
+  opacity:0;pointer-events:none;transition:opacity .4s}
+.overlay.show{opacity:1;pointer-events:auto}
+.panel{position:relative;z-index:5;max-width:520px;width:100%;text-align:center;
+  background:linear-gradient(165deg,#14242e,#0c171e);
+  border:1px solid rgba(201,162,90,.45);border-radius:18px;
+  padding:clamp(28px,5vw,48px) clamp(22px,5vw,52px);
+  box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);
+  transform:translateY(14px) scale(.97);transition:.45s cubic-bezier(.2,.9,.3,1.2)}
+.overlay.show .panel{transform:none}
+.ov-kicker{font-family:var(--f-sub);letter-spacing:.5em;font-size:13px;color:var(--brass);margin-bottom:12px}
+.ov-kicker.bad{color:var(--rose)}
+.panel h2{font-family:var(--f-disp);font-weight:400;font-size:clamp(38px,6vw,54px);color:#f4e9cf;
+  text-shadow:0 0 20px rgba(224,166,63,.35);margin-bottom:14px}
+.panel p{color:#b6c1bb;font-size:15px;line-height:2;margin-bottom:26px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px}
+.stats div{background:#0e1c24;border:1px solid rgba(140,180,190,.16);border-radius:12px;padding:12px 6px}
+.stats span{display:block;font-size:11px;color:var(--dim);letter-spacing:.2em;margin-bottom:6px}
+.stats b{font-size:21px;color:var(--brass-hi);font-variant-numeric:tabular-nums}
+#ovWin{background:radial-gradient(circle at 50% 46%,rgba(255,224,150,.5),rgba(20,26,30,.96) 70%)}
+.gate{position:absolute;inset:0;display:flex;z-index:2;pointer-events:none}
+.gate i{flex:1;background:linear-gradient(180deg,rgba(255,236,200,.06),rgba(0,0,0,.3)),
+  repeating-linear-gradient(90deg,#3c2b1b 0 8px,#33241668 8px 60px),#33241699;
+  border-top:6px solid #221910;transition:transform 1.5s cubic-bezier(.7,0,.25,1)}
+.gate i:first-child{border-right:5px solid #191008;box-shadow:inset -30px 0 40px rgba(0,0,0,.5)}
+.gate i:last-child{border-left:5px solid #191008;box-shadow:inset 30px 0 40px rgba(0,0,0,.5)}
+#ovWin.open .gate i:first-child{transform:translateX(-101%)}
+#ovWin.open .gate i:last-child{transform:translateX(101%)}
+/* 提示条 / 浮字 */
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);z-index:90;
+  background:#14242e;border:1px solid var(--brass-dim);border-radius:999px;padding:10px 26px;
+  font-size:14px;color:var(--brass-hi);letter-spacing:.1em;opacity:0;pointer-events:none;transition:.35s}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.float-txt{position:fixed;z-index:65;pointer-events:none;transform:translate(-50%,-50%);
+  animation:floatUp .95s ease-out forwards;font-weight:900}
+@keyframes floatUp{to{transform:translate(-50%,-50%) translateY(-52px);opacity:0}}
+.float-txt.pts{color:var(--brass-hi);font-size:18px;text-shadow:0 2px 8px #000}
+.float-txt.combo{font-family:var(--f-disp);font-size:38px;font-weight:400;color:#ffb84d;
+  text-shadow:0 0 20px rgba(255,160,60,.7),0 3px 8px #000}
+@media (max-width:980px){
+  .intro-wrap{grid-template-columns:1fr;text-align:left;gap:34px;padding-top:44px}
+  .intro-right{min-height:340px;order:-1}
+  .game-grid{grid-template-columns:1fr}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px}
+  .door.small{width:132px;aspect-ratio:132/196;border-radius:66px 66px 6px 6px}
+  .lock{width:36px;height:36px;font-size:17px}
+  .story{flex:1 1 240px;border-left:none;border-top:2px solid var(--brass-dim);padding:10px 0 0}
+  .targets{flex:1 1 240px}
+}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="glow glow-a"></div><div class="glow glow-b"></div>
+<div id="dust" aria-hidden="true"></div>
+
+<!-- ═══════ 序章 ═══════ -->
+<section id="screen-intro" class="screen active">
+  <div class="intro-wrap">
+    <div class="intro-left">
+      <div class="kicker">密室逃脱 · 消除解谜</div>
+      <h1>符文<em>密室</em></h1>
+      <p class="lead">你在一间陌生的书房中醒来。烛火将熄,木门上三道符锁泛着幽光。墙上的古老阵法低声提示:<b>「三三相连,符力自生。」</b> 消除符文、收集开锁之物,在步数耗尽之前,一层一层逃出去。</p>
+      <ul class="rules">
+        <li><b>点击或拖动</b>,交换相邻的两枚符文</li>
+        <li>三个及以上同色符文相连即可消除,<b>步数有限</b></li>
+        <li>四连铸成 <b>💣 炸弹</b>,五连唤出 <b>🌟 星盘</b>,连锁越多得分越高</li>
+        <li>集齐每道符锁所需之物,逐室逃脱密室</li>
+      </ul>
+      <button class="btn primary" id="btnStart">点亮烛火 · 开始逃脱</button>
+      <div class="journey">🕯 <b>尘封书房</b> &nbsp;→&nbsp; ⚗️ <b>炼金暗窟</b> &nbsp;→&nbsp; 🚪 <b>青铜大门</b></div>
+    </div>
+    <div class="intro-right">
+      <div class="door-glow"></div>
+      <div class="door big wood">
+        <div class="band b1"></div><div class="band b2"></div>
+        <div class="lock-row">
+          <span class="lock static" style="--d:0s">🔒</span>
+          <span class="lock static" style="--d:1.2s">🔒</span>
+          <span class="lock static" style="--d:2.1s">🔒</span>
+        </div>
+        <div class="keyhole"></div>
+      </div>
+      <span class="rune-float" style="left:6%;top:14%;animation-delay:.4s">ᚠ</span>
+      <span class="rune-float" style="right:4%;top:30%;animation-delay:1.6s">ᚱ</span>
+      <span class="rune-float" style="left:10%;bottom:12%;animation-delay:2.6s">ᛗ</span>
+      <span class="rune-float" style="right:10%;bottom:22%;animation-delay:3.4s">ᚹ</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 游戏 ═══════ -->
+<section id="screen-game" class="screen">
+  <header class="hud">
+    <div class="hud-left">
+      <div class="brand">符文密室</div>
+      <div class="room-chip" id="roomName">—</div>
+    </div>
+    <div class="hud-right">
+      <div class="moves-badge" id="movesBadge"><span class="num" id="movesVal">0</span><span class="lbl">剩余步数</span></div>
+      <div class="score-box"><span class="lbl">得分</span><span class="num" id="scoreVal">0</span></div>
+      <button class="icon-btn" id="btnRestart" title="重开本关">↻</button>
+      <button class="icon-btn" id="btnSound" title="音效开关">🔊</button>
+    </div>
+  </header>
+  <div class="game-grid">
+    <aside class="side">
+      <div class="door small wood">
+        <div class="band b1"></div><div class="band b2"></div>
+        <div class="lock-col" id="doorLocks"></div>
+        <div class="keyhole"></div>
+      </div>
+      <p class="story" id="roomStory"></p>
+      <div class="targets">
+        <div class="targets-title">开锁所需 · 集齐破锁</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </aside>
+    <div class="stage" id="stage">
+      <div class="board-frame">
+        <span class="rivet r1"></span><span class="rivet r2"></span>
+        <span class="rivet r3"></span><span class="rivet r4"></span>
+        <div id="board"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ 浮层 ═══════ -->
+<div class="overlay" id="ovUnlock">
+  <div class="panel">
+    <div class="ov-kicker">符锁已解</div>
+    <h2 id="unlockTitle"></h2>
+    <p id="unlockText"></p>
+    <button class="btn primary" id="btnNext">踏入下一室 →</button>
+  </div>
+</div>
+<div class="overlay" id="ovFail">
+  <div class="panel">
+    <div class="ov-kicker bad">逃脱失败</div>
+    <h2>符力耗尽</h2>
+    <p>烛火熄灭了。黑暗里,符锁的幽光愈发冰冷——也许换一种消除的思路,再来一次?</p>
+    <button class="btn primary" id="btnRetry">重整旗鼓 · 重试本关</button>
+  </div>
+</div>
+<div class="overlay" id="ovWin">
+  <div class="gate"><i></i><i></i></div>
+  <div class="panel">
+    <div class="ov-kicker">密室开启</div>
+    <h2>逃出生天</h2>
+    <p>青铜大门轰然洞开,晨光如潮水涌入。符文黯淡下去,锁链静静垂落——你自由了。</p>
+    <div class="stats">
+      <div><span>总得分</span><b id="stScore">0</b></div>
+      <div><span>消耗步数</span><b id="stMoves">0</b></div>
+      <div><span>逃脱用时</span><b id="stTime">0:00</b></div>
+    </div>
+    <button class="btn primary" id="btnAgain">再入密室 · 重新开始</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(()=>{'use strict';
+/* ============ 基础数据 ============ */
+const ROWS=8, COLS=8;
+const TYPES=[
+  {id:'key',   icon:'🔑', name:'黄铜钥匙', color:'#f2c14e', glow:'rgba(242,193,78,.55)'},
+  {id:'gem',   icon:'💎', name:'幽蓝晶簇', color:'#5bc9ff', glow:'rgba(91,201,255,.55)'},
+  {id:'gear',  icon:'⚙️', name:'机关齿轮', color:'#aabfc9', glow:'rgba(170,191,201,.5)'},
+  {id:'potion',icon:'🧪', name:'翡翠药剂', color:'#58e6a8', glow:'rgba(88,230,168,.55)'},
+  {id:'candle',icon:'🕯️', name:'摇曳残烛', color:'#ff9d5c', glow:'rgba(255,157,92,.55)'},
+  {id:'rune',  icon:'🔮', name:'占卜水晶', color:'#c09bff', glow:'rgba(192,155,255,.55)'},
+];
+const TIDX={}; TYPES.forEach((t,i)=>TIDX[t.id]=i);
+const LEVELS=[
+  {name:'第一室 · 尘封书房',
+   story:'烛火摇曳,橡木书柜后传来细微的齿轮声。让符文三三相连,撬开第一道符锁。',
+   moves:24, targets:[{type:'key',need:14},{type:'gear',need:16}],
+   clearLine:'咔哒——第一道锁簧弹开。书柜缓缓移开,露出一条潮湿的石阶。'},
+  {name:'第二室 · 炼金暗窟',
+   story:'铜锈味弥漫,蒸馏器尚有余温。墙上的阵法,似乎与书房一脉相承……',
+   moves:26, targets:[{type:'potion',need:16},{type:'rune',need:16},{type:'candle',need:12}],
+   clearLine:'蒸馏器哐当坠地。暗室墙壁裂开缝隙,青铜的冷光从缝里漫了出来。'},
+  {name:'第三室 · 青铜大门',
+   story:'最后的门扉刻满星纹。钥匙孔深处,是锁屏息以待的寂静。',
+   moves:28, targets:[{type:'key',need:18},{type:'gem',need:18},{type:'gear',need:14}],
+   clearLine:''},
+];
+const LOCK_NAMES=['一','二','三'];
+/* ============ 状态 ============ */
+let board=[], cellPx=60, busy=true, sel=null, drag=null;
+let levelIdx=0, moves=0, score=0, totalMoves=0, startTime=0, levelStartScore=0;
+let progress=[], chipEls=[], lockEls=[], overlayOpen=false, muted=false;
+let hintTimer=null, hintEls=[];
+const $=s=>document.querySelector(s);
+const boardEl=$('#board'), stageEl=$('#stage');
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const pk=k=>k.split(',').map(Number);
+const key=(r,c)=>r+','+c;
+const randT=()=>Math.floor(Math.random()*TYPES.length);
+const adjacent=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
+/* 兜底:任何异常都不允许把棋盘锁死 */
+window.addEventListener('error',()=>{ if($('#screen-game').classList.contains('active')&&!overlayOpen){busy=false;} });
+/* ============ 音效 ============ */
+let AC=null;
+function ac(){ if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended')AC.resume(); return AC; }
+function tone(f,dur=.15,type='sine',g=.11,delay=0,slide=0){
+  if(muted)return; try{ const a=ac(),o=a.createOscillator(),v=a.createGain(),t=a.currentTime+delay;
+  o.type=type; o.frequency.setValueAtTime(f,t);
+  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+dur);
+  v.gain.setValueAtTime(g,t); v.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(v).connect(a.destination); o.start(t); o.stop(t+dur+.03);}catch(e){} }
+const sfx={
+  swap(){tone(340,.07,'triangle',.05)},
+  bad(){tone(150,.2,'sawtooth',.07,0,-70)},
+  match(c){const b=392*(1+(c-1)*.22);tone(b,.13,'triangle',.09);tone(b*1.5,.13,'sine',.05,.06)},
+  bomb(){tone(95,.4,'sawtooth',.16,0,-55);tone(60,.3,'square',.1,.02)},
+  rainbow(){[660,830,990,1320].forEach((f,i)=>tone(f,.14,'sine',.08,i*.06))},
+  spawn(){tone(1180,.1,'sine',.06)},
+  unlock(){tone(660,.16,'sine',.1);tone(990,.28,'sine',.09,.13)},
+  fail(){tone(220,.3,'sine',.1);tone(165,.45,'sine',.1,.22)},
+  win(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,.22,'triangle',.1,i*.13))},
+  shuffle(){tone(500,.08,'triangle',.06);tone(430,.08,'triangle',.06,.07)},
+};
+document.addEventListener('pointerdown',()=>{try{ac()}catch(e){}},{once:true});
+/* ============ 粒子特效 ============ */
+const fx=$('#fx'), fctx=fx.getContext('2d'); let parts=[];
+function sizeFx(){fx.width=innerWidth;fx.height=innerHeight}
+sizeFx();
+function burst(x,y,color,n=10,sp=3.4){
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=sp*(.4+Math.random());
+    parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.1,g:.09,life:32+Math.random()*24,age:0,color,size:1.6+Math.random()*2.6});}
+  if(parts.length>520)parts.splice(0,parts.length-520);
+}
+function confettiRain(n=70){
+  const cols=['#f2c14e','#ff9d5c','#58e6a8','#5bc9ff','#c09bff','#ffd98a'];
+  for(let i=0;i<n;i++)parts.push({x:Math.random()*innerWidth,y:-20-Math.random()*80,
+    vx:(Math.random()-.5)*1.4,vy:1.6+Math.random()*2.4,g:.02,life:180+Math.random()*90,age:0,
+    color:cols[Math.floor(Math.random()*cols.length)],size:3+Math.random()*4,rect:true,rot:Math.random()*6,vr:(Math.random()-.5)*.25});
+}
+(function loop(){
+  fctx.clearRect(0,0,fx.width,fx.height);
+  parts=parts.filter(p=>{
+    p.age++; if(p.age>p.life)return false;
+    p.vy+=p.g; p.x+=p.vx; p.y+=p.vy;
+    const al=Math.max(0,1-p.age/p.life);
+    fctx.globalAlpha=al; fctx.fillStyle=p.color;
+    if(p.rect){p.rot+=p.vr;fctx.save();fctx.translate(p.x,p.y);fctx.rotate(p.rot);fctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*1.6);fctx.restore();}
+    else{fctx.beginPath();fctx.arc(p.x,p.y,p.size,0,7);fctx.fill();}
+    return true;
+  });
+  fctx.globalAlpha=1; requestAnimationFrame(loop);
+})();
+function burstTile(cell){ if(!cell.el)return; const rc=cell.el.getBoundingClientRect();
+  burst(rc.left+rc.width/2,rc.top+rc.height/2,TYPES[cell.t].color,9,3.2); }
+function goldBurstEl(el,n=18){ const rc=el.getBoundingClientRect();
+  burst(rc.left+rc.width/2,rc.top+rc.height/2,'#ffd98a',n,4.6); }
+function floatText(x,y,txt,cls){ const d=document.createElement('div');
+  d.className='float-txt '+cls; d.textContent=txt; d.style.left=x+'px'; d.style.top=y+'px';
+  document.body.appendChild(d); setTimeout(()=>d.remove(),980); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2300); }
+function shakeStage(){ stageEl.classList.add('shake'); setTimeout(()=>stageEl.classList.remove('shake'),380); }
+/* ============ 尘埃氛围 ============ */
+(function(){ const d=$('#dust');
+  for(let i=0;i<26;i++){ const s=document.createElement('span');
+    const sz=1.5+Math.random()*3.5; s.style.width=s.style.height=sz+'px';
+    s.style.left=Math.random()*100+'vw';
+    s.style.animationDuration=(14+Math.random()*18)+'s';
+    s.style.animationDelay=(-Math.random()*24)+'s';
+    s.style.opacity=.25+Math.random()*.5; d.appendChild(s); }
+})();
+/* ============ 棋盘核心 ============ */
+function tr(c,r){return `translate(${(c*cellPx).toFixed(1)}px,${(r*cellPx).toFixed(1)}px)`}
+function placeCell(cell,r,c){ if(cell&&cell.el)cell.el.style.transform=tr(c,r); }
+function layoutAll(){ if(!board.length)return;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)placeCell(board[r][c],r,c); }
+function dropIn(el,c,fromR,toR){
+  el.style.transition='none'; el.style.transform=tr(c,fromR);
+  void el.offsetWidth; el.style.transition=''; el.style.transform=tr(c,toR);
+}
+function setCellVisual(cell){
+  const el=cell.el; if(!el)return; const face=el.firstChild;
+  el.classList.remove('bomb','rainbow');
+  if(cell.special==='rainbow'){ el.classList.add('rainbow'); face.textContent='🌟';
+    el.style.setProperty('--tg','rgba(255,217,138,.7)'); }
+  else{ const T=TYPES[cell.t]; face.textContent=T.icon;
+    el.style.setProperty('--tg',T.glow);
+    if(cell.special==='bomb')el.classList.add('bomb'); }
+}
+function createTileEl(cell){ const el=document.createElement('div'); el.className='tile';
+  const face=document.createElement('div'); face.className='face'; el.appendChild(face);
+  cell.el=el; setCellVisual(cell); return el; }
+function genBoard(){
+  board=[];
+  for(let r=0;r<ROWS;r++){ board.push([]);
+    for(let c=0;c<COLS;c++){ let t;
+      do{ t=randT(); }while(
+        (c>=2&&board[r][c-1].t===t&&board[r][c-2].t===t)||
+        (r>=2&&board[r-1][c].t===t&&board[r-2][c].t===t));
+      board[r][c]={t,special:null,el:null}; } }
+}
+function buildBoard(){
+  let tries=0;
+  do{ genBoard(); tries++; }while((findGroups().length||!findPossibleMove())&&tries<99);
+  boardEl.innerHTML='';
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const cell=board[r][c]; const el=createTileEl(cell); boardEl.appendChild(el);
+    dropIn(el,c,r-(ROWS+1+Math.random()*4),r); }
+}
+function findGroups(){
+  const groups=[];
+  for(let r=0;r<ROWS;r++){ let c=0;
+    while(c<COLS){ const cell=board[r][c];
+      if(!cell||cell.t<0){c++;continue;}
+      let len=1; while(c+len<COLS&&board[r][c+len]&&board[r][c+len].t===cell.t)len++;
+      if(len>=3){ const arr=[]; for(let k=0;k<len;k++)arr.push([r,c+k]); groups.push(arr); }
+      c+=len; } }
+  for(let c=0;c<COLS;c++){ let r=0;
+    while(r<ROWS){ const cell=board[r][c];
+      if(!cell||cell.t<0){r++;continue;}
+      let len=1; while(r+len<ROWS&&board[r+len][c]&&board[r+len][c].t===cell.t)len++;
+      if(len>=3){ const arr=[]; for(let k=0;k<len;k++)arr.push([r+k,c]); groups.push(arr); }
+      r+=len; } }
+  return groups;
+}
+function expandClear(clear){
+  const q=[...clear];
+  while(q.length){ const [r,c]=pk(q.pop()); const cell=board[r][c]; if(!cell)continue;
+    if(cell.special==='bomb'){
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        const nr=r+dr,nc=c+dc; if(nr<0||nr>=ROWS||nc<0||nc>=COLS)continue;
+        const nk=key(nr,nc); if(!clear.has(nk)){clear.add(nk);q.push(nk);} }
+    }else if(cell.special==='rainbow'){
+      for(let i=0;i<COLS;i++){const nk=key(r,i);if(!clear.has(nk)){clear.add(nk);q.push(nk);}}
+      for(let i=0;i<ROWS;i++){const nk=key(i,c);if(!clear.has(nk)){clear.add(nk);q.push(nk);}}
+    } }
+}
+function addProgress(t){
+  const L=LEVELS[levelIdx];
+  L.targets.forEach((tg,i)=>{
+    if(TIDX[tg.type]===t&&progress[i]<tg.need){
+      progress[i]++; updateChip(i);
+      if(progress[i]===tg.need)unlockLock(i);
+    } });
+}
+async function clearCells(clear,combo,spawn){
+  if(!clear.size&&!spawn.size)return;
+  const ptsBase=10*combo; let pts=0,bombs=0,cx=0,cy=0,n=0;
+  clear.forEach(k=>{ const [r,c]=pk(k); const cell=board[r][c]; if(!cell)return;
+    if(cell.el){const rc=cell.el.getBoundingClientRect();cx+=rc.left+rc.width/2;cy+=rc.top+rc.height/2;n++;}
+    if(cell.t>=0){ pts+=ptsBase; addProgress(cell.t); burstTile(cell); }
+    if(cell.special==='bomb')bombs++;
+    if(cell.special)pts+=20; });
+  spawn.forEach((v,k)=>{ const [r,c]=pk(k); const cell=board[r][c]; if(!cell)return;
+    cell.special=v.special; if(v.special==='rainbow')cell.t=-1;
+    setCellVisual(cell); sfx.spawn();
+    if(cell.el){cell.el.classList.add('spawnFlash');setTimeout(()=>cell.el.classList.remove('spawnFlash'),520);} });
+  score+=pts; updateHUD();
+  if(bombs){shakeStage();sfx.bomb();} else sfx.match(combo);
+  if(n)floatText(cx/n,cy/n,'+'+pts,'pts');
+  clear.forEach(k=>{ const cell=board[pk(k)[0]][pk(k)[1]]; if(cell&&cell.el)cell.el.classList.add('pop'); });
+  await wait(240);
+  clear.forEach(k=>{ const [r,c]=pk(k); const cell=board[r][c];
+    if(cell){ if(cell.el)cell.el.remove(); board[r][c]=null; } });
+  collapseAndRefill();
+  await wait(310);
+}
+function collapseAndRefill(){
+  for(let c=0;c<COLS;c++){
+    let write=ROWS-1;
+    for(let r=ROWS-1;r>=0;r--){ const cell=board[r][c];
+      if(cell){ if(write!==r){board[write][c]=cell;board[r][c]=null;} write--; } }
+    const spawnCount=write+1;
+    for(let r=write;r>=0;r--){
+      const cell={t:randT(),special:null,el:null}; board[r][c]=cell;
+      const el=createTileEl(cell); boardEl.appendChild(el); dropIn(el,c,r-spawnCount,r); }
+  }
+  layoutAll();
+}
+async function resolveBoard(bias){
+  let combo=0;
+  for(;;){
+    const groups=findGroups(); if(!groups.length)break;
+    combo++;
+    if(combo>1){ const rc=boardEl.getBoundingClientRect();
+      floatText(rc.left+rc.width/2,rc.top+rc.height*.42,'连锁 ×'+combo,'combo'); }
+    const clear=new Set(), spawn=new Map(), count={};
+    groups.forEach(g=>g.forEach(([r,c])=>{const k=key(r,c);clear.add(k);count[k]=(count[k]||0)+1;}));
+    for(const k in count)if(count[k]>=2&&!spawn.has(k))spawn.set(k,{special:'bomb'});
+    for(const g of groups){
+      if(g.length>=4){
+        let pick=null;
+        if(combo===1&&bias)for(const p of bias){
+          const k=key(p.r,p.c);
+          if(!spawn.has(k)&&g.some(([r,c])=>r===p.r&&c===p.c)){pick=p;break;} }
+        if(!pick){const m=g[Math.floor(g.length/2)];pick={r:m[0],c:m[1]};}
+        const k=key(pick.r,pick.c);
+        if(!spawn.has(k))spawn.set(k,{special:g.length>=5?'rainbow':'bomb'});
+      } }
+    spawn.forEach((v,k)=>clear.delete(k));
+    expandClear(clear);
+    spawn.forEach((v,k)=>clear.delete(k));
+    await clearCells(clear,combo,spawn);
+    if(!findPossibleMove())reshuffleBoard();
+  }
+}
+function hasMatchAt(r,c){
+  const cell=board[r][c]; if(!cell||cell.t<0)return false; const t=cell.t;
+  let n=1; for(let i=c-1;i>=0&&board[r][i]&&board[r][i].t===t;i--)n++;
+  for(let i=c+1;i<COLS&&board[r][i]&&board[r][i].t===t;i++)n++;
+  if(n>=3)return true;
+  n=1; for(let i=r-1;i>=0&&board[i][c]&&board[i][c].t===t;i--)n++;
+  for(let i=r+1;i<ROWS&&board[i][c]&&board[i][c].t===t;i++)n++;
+  return n>=3;
+}
+function findPossibleMove(){
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const cell=board[r][c];
+    if(cell&&cell.special){ const nb=c+1<COLS?[r,c+1]:[r,c-1];
+      return [{r,c},{r:nb[0],c:nb[1]}]; } }
+  const dirs=[[0,1],[1,0]];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)for(const [dr,dc] of dirs){
+    const r2=r+dr,c2=c+dc; if(r2>=ROWS||c2>=COLS)continue;
+    const A=board[r][c],B=board[r2][c2]; if(!A||!B)continue;
+    const tmp=A.t; A.t=B.t; B.t=tmp;
+    const ok=hasMatchAt(r,c)||hasMatchAt(r2,c2);
+    B.t=A.t; A.t=tmp;
+    if(ok)return [{r,c},{r:r2,c:c2}];
+  }
+  return null;
+}
+function reshuffleBoard(){
+  toast('无可消除的组合 · 符文重新排列');
+  const cells=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const cl=board[r][c];if(cl&&!cl.special)cells.push(cl);}
+  const ts=cells.map(c=>c.t); let tries=0;
+  do{ for(let i=ts.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ts[i],ts[j]]=[ts[j],ts[i]];}
+    cells.forEach((c,i)=>c.t=ts[i]); tries++;
+  }while(tries<80&&(findGroups().length||!findPossibleMove()));
+  cells.forEach(c=>setCellVisual(c)); sfx.shuffle();
+}
+/* ============ 提示 ============ */
+function clearHint(){ hintEls.forEach(el=>el.classList.remove('hint')); hintEls=[]; clearTimeout(hintTimer); }
+function resetHint(){
+  clearHint();
+  if(busy||overlayOpen)return;
+  hintTimer=setTimeout(()=>{
+    const p=findPossibleMove(); if(!p)return;
+    p.forEach(pos=>{const cl=board[pos.r][pos.c];if(cl&&cl.el){cl.el.classList.add('hint');hintEls.push(cl.el);}});
+  },7000);
+}
+/* ============ HUD / 门与锁 ============ */
+function updateHUD(){
+  $('#movesVal').textContent=moves; $('#scoreVal').textContent=score;
+  const b=$('#movesBadge'); b.classList.toggle('low',moves<=5&&moves>0);
+}
+function flashMoves(){ const b=$('#movesBadge'); b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
+function buildChips(){
+  const box=$('#chips'); box.innerHTML=''; chipEls=[];
+  LEVELS[levelIdx].targets.forEach(tg=>{
+    const T=TYPES[TIDX[tg.type]]; const d=document.createElement('div'); d.className='chip';
+    d.innerHTML=`<span class="ico">${T.icon}</span><span class="nm">${T.name}</span><span class="cnt">0/${tg.need}</span><i class="bar"></i>`;
+    box.appendChild(d); chipEls.push(d); });
+}
+function updateChip(i){
+  const tg=LEVELS[levelIdx].targets[i], el=chipEls[i]; if(!el)return;
+  const have=Math.min(progress[i],tg.need);
+  el.querySelector('.cnt').textContent=have+'/'+tg.need;
+  el.querySelector('.bar').style.width=(have/tg.need*100)+'%';
+  el.classList.toggle('done',have>=tg.need);
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
+function buildLocks(){
+  const box=$('#doorLocks'); box.innerHTML=''; lockEls=[];
+  LEVELS[levelIdx].targets.forEach(tg=>{
+    const d=document.createElement('div'); d.className='lock';
+    d.innerHTML=`🔒<span class="tag">${TYPES[TIDX[tg.type]].icon}</span>`;
+    box.appendChild(d); lockEls.push(d); });
+}
+function unlockLock(i){
+  const el=lockEls[i]; if(!el||el.classList.contains('open'))return;
+  el.classList.add('open'); el.firstChild.textContent='🔓';
+  sfx.unlock(); goldBurstEl(el);
+}
+/* ============ 交互 ============ */
+function cellFromEvent(e){
+  const rc=boardEl.getBoundingClientRect();
+  const c=Math.floor((e.clientX-rc.left)/cellPx), r=Math.floor((e.clientY-rc.top)/cellPx);
+  if(r<0||r>=ROWS||c<0||c>=COLS)return null; return {r,c};
+}
+function setSel(r,c){ clearSel(); sel={r,c}; const cl=board[r][c]; if(cl&&cl.el)cl.el.classList.add('sel'); }
+function clearSel(){ if(sel&&board[sel.r]&&board[sel.r][sel.c]){const cl=board[sel.r][sel.c]; if(cl&&cl.el)cl.el.classList.remove('sel');} sel=null; }
+function useMove(){ moves--; totalMoves++; updateHUD(); flashMoves(); }
+function swapCells(a,b){ const t=board[a.r][a.c]; board[a.r][a.c]=board[b.r][b.c]; board[b.r][b.c]=t; }
+function checkWin(){ return LEVELS[levelIdx].targets.every((tg,i)=>progress[i]>=tg.need); }
+
+async function attemptSwap(a,b){
+  if(busy||overlayOpen||!adjacent(a,b))return;
+  busy=true; clearSel(); clearHint();
+  try{
+    const A=board[a.r][a.c], B=board[b.r][b.c];
+    if(!A||!B)return;
+    /* 星盘(万能) */
+    if(A.special==='rainbow'||B.special==='rainbow'){
+      useMove(); sfx.rainbow();
+      const set=new Set();
+      if(A.special==='rainbow'&&B.special==='rainbow'){
+        for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)set.add(key(r,c));
+      }else{
+        const rp=A.special==='rainbow'?a:b, op=A.special==='rainbow'?b:a;
+        set.add(key(rp.r,rp.c));
+        const ot=board[op.r][op.c].t;
+        if(ot>=0){ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)
+          if(board[r][c]&&board[r][c].t===ot)set.add(key(r,c)); }
+        else set.add(key(op.r,op.c));
+        const re=board[rp.r][rp.c].el;
+        if(re){const rc0=re.getBoundingClientRect();
+          burst(rc0.left+rc0.width/2,rc0.top+rc0.height/2,'#ffd98a',22,5);}
+      }
+      expandClear(set);
+      await clearCells(set,1,new Map());
+      await resolveBoard(null);
+      return afterMove();
+    }
+    /* 炸弹 */
+    if(A.special==='bomb'||B.special==='bomb'){
+      useMove();
+      const set=new Set();
+      if(A.special==='bomb')set.add(key(a.r,a.c));
+      if(B.special==='bomb')set.add(key(b.r,b.c));
+      expandClear(set);
+      await clearCells(set,1,new Map());
+      await resolveBoard(null);
+      return afterMove();
+    }
+    /* 普通交换 */
+    swapCells(a,b); layoutAll(); sfx.swap();
+    await wait(290);
+    if(findGroups().length){
+      useMove();
+      await resolveBoard([a,b]);
+      return afterMove();
+    }else{
+      swapCells(a,b); layoutAll(); sfx.bad();
+      [A,B].forEach(cl=>{ if(cl.el){cl.el.classList.add('wiggle');setTimeout(()=>cl.el.classList.remove('wiggle'),360);} });
+      await wait(240);
+      busy=false; resetHint();
+    }
+  }finally{
+    /* 无论流程中发生什么,都保证棋盘回到可操作状态(levelClear/levelFail 会接管覆盖) */
+    if(!overlayOpen&&!checkWin()&&moves>0){ busy=false; }
+  }
+}
+function afterMove(){
+  updateHUD();
+  if(checkWin())return levelClear();
+  if(moves<=0)return levelFail();
+  busy=false; resetHint();
+}
+boardEl.addEventListener('pointerdown',e=>{
+  if(busy||overlayOpen)return; e.preventDefault();
+  const p=cellFromEvent(e); if(!p)return;
+  drag={x:e.clientX,y:e.clientY,r:p.r,c:p.c,done:false};
+  if(sel){
+    if(sel.r===p.r&&sel.c===p.c){clearSel();drag=null;return;}
+    if(adjacent(sel,p)){attemptSwap(sel,p);drag=null;return;}
+  }
+  setSel(p.r,p.c); resetHint();
+});
+window.addEventListener('pointermove',e=>{
+  if(!drag||drag.done||busy||overlayOpen)return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<Math.min(24,cellPx*.4))return;
+  let trr=drag.r, tcc=drag.c;
+  if(Math.abs(dx)>Math.abs(dy))tcc+=dx>0?1:-1; else trr+=dy>0?1:-1;
+  drag.done=true;
+  if(trr<0||trr>=ROWS||tcc<0||tcc>=COLS)return;
+  clearSel(); attemptSwap({r:drag.r,c:drag.c},{r:trr,c:tcc});
+});
+window.addEventListener('pointerup',()=>{drag=null});
+window.addEventListener('pointercancel',()=>{drag=null});
+boardEl.addEventListener('contextmenu',e=>e.preventDefault());
+/* ============ 关卡流程 ============ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('#'+id).classList.add('active');
+}
+function hideOverlays(){ document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show')); $('#ovWin').classList.remove('open'); }
+function loadLevel(i){
+  levelIdx=i; const L=LEVELS[i];
+  moves=L.moves; progress=L.targets.map(()=>0); levelStartScore=score;
+  $('#roomName').textContent=L.name; $('#roomStory').textContent=L.story;
+  hideOverlays(); overlayOpen=false;
+  buildChips(); buildLocks();
+  measure(); buildBoard(); updateHUD();
+  sel=null; clearHint(); busy=false; resetHint();
+  toast(L.name+' · 剩余 '+L.moves+' 步');
+}
+function measure(){
+  let w=boardEl.clientWidth;
+  if(w>0)applyCell(w);
+  /* 布局尚未就绪时重试,绝不允许 --cell 为 0 */
+  setTimeout(()=>{ w=boardEl.clientWidth;
+    if(w>0&&(cellPx<=0||Math.abs(w-cellPx*COLS)>1))applyCell(w); },80);
+  function applyCell(wd){
+    cellPx=wd/COLS;
+    boardEl.style.setProperty('--cell',cellPx+'px');
+    layoutAll();
+  }
+}
+async function levelClear(){
+  overlayOpen=true; busy=true; clearHint();
+  const bonus=moves*30; score+=bonus; updateHUD();
+  await wait(560);
+  if(levelIdx===LEVELS.length-1){
+    $('#stScore').textContent=score;
+    $('#stMoves').textContent=totalMoves;
+    const s=Math.floor((Date.now()-startTime)/1000);
+    $('#stTime').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    const ov=$('#ovWin'); ov.classList.add('show'); sfx.win();
+    setTimeout(()=>ov.classList.add('open'),200);
+    let n=0; const it=setInterval(()=>{confettiRain(60);if(++n>5)clearInterval(it);},480);
+  }else{
+    $('#unlockTitle').textContent='第'+LOCK_NAMES[levelIdx]+'道锁 · 开启';
+    $('#unlockText').textContent=LEVELS[levelIdx].clearLine+' 剩余步数化作符力:+'+bonus+' 分。';
+    $('#ovUnlock').classList.add('show'); sfx.unlock();
+    confettiRain(50);
+  }
+}
+function levelFail(){
+  overlayOpen=true; busy=true; clearHint(); sfx.fail();
+  setTimeout(()=>$('#ovFail').classList.add('show'),420);
+}
+function startGame(){
+  score=0; totalMoves=0; startTime=Date.now();
+  showScreen('screen-game'); loadLevel(0);
+}
+/* ============ 按钮 ============ */
+$('#btnStart').onclick=()=>{startGame();};
+$('#btnNext').onclick=()=>{overlayOpen=false;loadLevel(levelIdx+1);};
+$('#btnRetry').onclick=()=>{overlayOpen=false;score=levelStartScore;loadLevel(levelIdx);};
+$('#btnAgain').onclick=()=>{overlayOpen=false;startGame();};
+$('#btnRestart').onclick=()=>{
+  if(busy||overlayOpen)return;
+  score=levelStartScore; loadLevel(levelIdx); toast('已重开本关');
+};
+$('#btnSound').onclick=e=>{
+  muted=!muted; e.currentTarget.textContent=muted?'🔇':'🔊';
+};
+window.addEventListener('resize',()=>{sizeFx();
+  if($('#screen-game').classList.contains('active'))requestAnimationFrame(measure);});
+})();
+</script>
+</body>
+</html>
