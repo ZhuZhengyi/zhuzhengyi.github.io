@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>学林杀 · 知识为牌</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<style>
+:root{
+ --ink:#0e1219;--ink2:#161d2b;--ink3:#212b3e;--line:#3a465c;
+ --paper:#efe3c4;--paper2:#d8c69d;--verm:#b03a2a;--verm2:#8f2b1e;
+ --gold:#c9a227;--gold2:#ecd07a;--jade:#3e8f6b;--azure:#5b8fc9;--purple:#9a7fd0;
+ --tx:#e9e3d2;--tx2:#9aa3b5;
+ --k-wen:#c95a4a;--k-li:#5b8fc9;--k-gong:#c9a227;--k-si:#4aa58a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Noto Serif SC',serif;background:var(--ink);color:var(--tx);overflow:hidden;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#3a465c;border-radius:4px}
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;
+ background:radial-gradient(1100px 520px at 80% -8%,#2a3a5a55,transparent 60%),radial-gradient(800px 460px at 8% 108%,#5a3a2a2e,transparent 60%),linear-gradient(180deg,#101623,#0c1018 55%,#090c12)}
+.stars{position:absolute;inset:0;background-image:
+ radial-gradient(1.5px 1.5px at 12% 22%,#fff9,transparent),radial-gradient(1px 1px at 34% 12%,#ffd98055,transparent),
+ radial-gradient(1.5px 1.5px at 58% 30%,#fff7,transparent),radial-gradient(1px 1px at 78% 16%,#ffd98066,transparent),
+ radial-gradient(1.5px 1.5px at 88% 42%,#fff6,transparent),radial-gradient(1px 1px at 22% 48%,#fff5,transparent),
+ radial-gradient(1.5px 1.5px at 46% 8%,#fff8,transparent),radial-gradient(1px 1px at 66% 52%,#ffd98044,transparent);
+ animation:tw 6s ease-in-out infinite alternate}
+@keyframes tw{from{opacity:.5}to{opacity:1}}
+.cloud{position:absolute;width:64vw;height:22vh;border-radius:50%;filter:blur(46px);opacity:.11;
+ background:radial-gradient(closest-side,#e8d9b0,transparent 70%);animation:drift 32s ease-in-out infinite alternate}
+.c1{top:6%;left:-14%}.c2{top:46%;right:-20%;animation-duration:42s}.c3{bottom:-6%;left:12%;opacity:.07;animation-duration:50s}
+@keyframes drift{from{transform:translateX(-5vw)}to{transform:translateX(8vw)}}
+.mtn{position:absolute;left:0;right:0;bottom:0;height:40%;opacity:.85;background-size:cover;background-position:bottom;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 380'%3E%3Cpath d='M0 380 L0 250 L160 130 L310 240 L450 80 L620 230 L780 110 L940 250 L1080 160 L1200 270 L1200 380 Z' fill='%23ffffff' fill-opacity='0.04'/%3E%3Cpath d='M0 380 L0 310 L230 210 L430 300 L650 180 L870 300 L1060 230 L1200 320 L1200 380 Z' fill='%23ffffff' fill-opacity='0.03'/%3E%3C/svg%3E")}
+
+#app{position:relative;z-index:2;height:100vh;display:flex;flex-direction:column;padding:10px 14px 12px}
+header{display:flex;align-items:center;gap:14px;padding:2px 6px 10px}
+.logo{font-family:'Ma Shan Zheng';font-size:29px;color:var(--paper);letter-spacing:.08em;text-shadow:0 2px 0 #000}
+.logo i{font-style:normal;color:#ffe9c9;background:var(--verm);border-radius:4px;padding:1px 6px;font-size:12px;letter-spacing:.2em;margin-left:8px;transform:translateY(-4px);display:inline-block}
+#hStatus{font-size:12px;color:#0e1219;background:var(--gold2);border-radius:12px;padding:3px 12px;letter-spacing:.1em;font-weight:700;box-shadow:0 0 14px #c9a22744}
+#hinfo{display:flex;gap:12px;color:var(--tx2);font-size:12.5px;letter-spacing:.06em;align-items:center}
+#hinfo b{color:var(--gold2)}
+.spacer{flex:1}
+.btn{background:linear-gradient(180deg,#c2452f,#8f2b1e);color:#ffe9c9;border:1px solid #e2b25a80;border-radius:8px;
+ padding:.5em 1.3em;font-size:14px;letter-spacing:.18em;font-weight:600;box-shadow:0 3px 0 #5c1a10,0 8px 16px #0006;transition:.15s}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #5c1a10}
+.btn.ghost{background:linear-gradient(180deg,#2c3a52,#1b2436);border-color:#5b8fc955;color:#cfe0f5;box-shadow:0 3px 0 #0a0e16}
+.btn.gold{background:linear-gradient(180deg,#caa23a,#8f6f1a);color:#241a05;border-color:#ffe08a88;box-shadow:0 3px 0 #5c4a10}
+.btn.sm{font-size:12px;padding:.35em .9em;letter-spacing:.1em}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+main{flex:1;display:grid;grid-template-columns:1fr 316px;gap:12px;min-height:0}
+#table{position:relative;border-radius:20px;overflow:hidden;
+ background:radial-gradient(ellipse at 50% 42%,#3a3220 0%,#2e251700 62%),radial-gradient(ellipse at center,#26221a 0%,#1c1810 74%,#131008 100%);
+ border:1px solid #8a744d33;box-shadow:inset 0 0 90px #000b,0 18px 40px #0007}
+#table::before{content:"";position:absolute;inset:7%;border-radius:50%;border:2px solid #c9a22722;box-shadow:inset 0 0 60px #0006}
+#table::after{content:"博 学 笃 行";position:absolute;inset:0;display:grid;place-items:center;font-family:'Ma Shan Zheng';
+ font-size:104px;letter-spacing:.4em;color:#c9a22709;pointer-events:none;white-space:nowrap}
+#playArea{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
+#paCaption{font-size:13.5px;letter-spacing:.12em;color:var(--paper);background:#00000088;padding:4px 14px;border-radius:14px}
+#paCards{display:flex;gap:10px}
+#paCards .card{animation:popIn .35s cubic-bezier(.2,1.5,.4,1) both;box-shadow:0 12px 26px #000a}
+@keyframes popIn{from{transform:scale(.3) rotate(-14deg);opacity:0}}
+.seat{position:absolute;width:160px;transform:translate(-50%,-50%);text-align:center;z-index:4;transition:filter .4s}
+.seat.dead{filter:grayscale(1) brightness(.55)}
+.seat .box{background:linear-gradient(180deg,#242015dd,#171309ee);border:1px solid #8a744d55;border-radius:12px;padding:8px 6px 7px;box-shadow:0 10px 24px #0009;position:relative;transition:.25s}
+.seat.turn .box{border-color:var(--gold);box-shadow:0 0 0 2px #c9a22755,0 0 34px #c9a22733,0 10px 24px #0009}
+.seat.tgtOK .box{cursor:pointer;border-color:#7ec98f}
+.seat.tgtOK:hover .box{transform:translateY(-4px);box-shadow:0 0 0 2px #7ec98f,0 14px 28px #000b}
+.seat.tgtSel .box{box-shadow:0 0 0 3px var(--gold2),0 14px 28px #000b;transform:translateY(-4px)}
+.ava{width:56px;height:56px;margin:0 auto;border-radius:50%;display:grid;place-items:center;font-family:'Ma Shan Zheng';font-size:26px;color:#fff;
+ background:radial-gradient(circle at 32% 28%,transparent,#0007),var(--kc,#888);box-shadow:inset 0 0 0 3px #ffffff2e,0 4px 10px #000a;text-shadow:0 2px 3px #000c}
+.sname{margin-top:5px;font-size:13px;letter-spacing:.04em;white-space:nowrap}
+.sname .rn{font-size:10.5px;color:var(--gold2);border:1px solid #c9a22755;border-radius:4px;padding:0 4px;margin-left:4px}
+.sname .rn.hid{color:#8d8168;border-color:#8d816855}
+.hpbar{display:flex;justify-content:center;gap:3px;margin-top:4px;min-height:12px}
+.hpbar i{width:11px;height:11px;background:linear-gradient(135deg,#ff8f6a,#b03a2a);transform:rotate(45deg);border-radius:2px;box-shadow:0 0 5px #b03a2a88}
+.hpbar i.lost{background:#3a3125;box-shadow:none}
+.subrow{display:flex;justify-content:center;gap:6px;margin-top:4px;font-size:11px;color:var(--tx2);align-items:center}
+.learn{background:#14251c;border:1px solid #3e8f6b66;color:#8fd6a8;border-radius:10px;padding:0 7px;font-size:10.5px;letter-spacing:.05em}
+.backs{display:inline-flex}
+.backs b{width:11px;height:15px;border-radius:2px;background:linear-gradient(160deg,#7a3b2c,#4a2118);border:1px solid #d8c69d55;margin-left:-5px}
+.eqs{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:4px;max-width:152px;margin-inline:auto}
+.eqs span{font-size:10px;padding:0 5px;border-radius:4px;background:#12100c;border:1px solid #8a744d44;color:var(--tx2)}
+.eqs span.w{color:#ffd88a;border-color:#c9a22755}.eqs span.a{color:#9cc4ee}.eqs span.h{color:#c9a58a}
+.think{position:absolute;top:-9px;right:-6px;background:var(--gold);color:#241a05;font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:700;animation:blink 1s infinite alternate;z-index:5}
+@keyframes blink{from{opacity:.55}to{opacity:1;transform:translateY(-2px)}}
+.dmgfx{position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);font-family:'Ma Shan Zheng';font-size:38px;color:#ff5f3c;text-shadow:0 0 14px #b03a2a,0 2px 0 #000;animation:dmgUp 1s both;pointer-events:none;z-index:9}
+.dmgfx.heal{color:#7ee0a2;text-shadow:0 0 14px var(--jade),0 2px 0 #000}
+@keyframes dmgUp{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}25%{opacity:1;transform:translate(-50%,-6px) scale(1.25)}100%{opacity:0;transform:translate(-50%,-46px) scale(1)}}
+.seat.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(calc(-50% - 6px),-50%)}75%{transform:translate(calc(-50% + 6px),-50%)}}
+#banner{position:absolute;left:50%;top:13%;transform:translateX(-50%);z-index:8;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0}
+#banner.show{animation:bannerIn 1.8s both}
+#banner .bt{font-family:'Ma Shan Zheng';font-size:42px;color:var(--paper);letter-spacing:.25em;text-shadow:0 0 24px #c9a22766,0 3px 0 #000;background:linear-gradient(90deg,transparent,#000000a0 18%,#000000a0 82%,transparent);padding:2px 60px}
+#banner .bs{font-size:12.5px;letter-spacing:.5em;color:var(--gold2)}
+@keyframes bannerIn{0%{opacity:0;transform:translateX(-50%) translateY(-24px)}12%{opacity:1;transform:translateX(-50%)}80%{opacity:1}100%{opacity:0}}
+
+aside{display:flex;flex-direction:column;background:linear-gradient(180deg,#1c2333ee,#121827ee);border:1px solid #3a465c66;border-radius:14px;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid #3a465c66}
+.tabs button{flex:1;background:none;border:none;color:var(--tx2);padding:10px 0;letter-spacing:.25em;font-size:12.5px;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--gold2);border-bottom-color:var(--gold)}
+.tabpane{flex:1;overflow:auto;padding:10px 12px;display:none;flex-direction:column;gap:5px}
+.tabpane.on{display:flex}
+#logBox div{font-size:12.5px;line-height:1.55;color:var(--tx2);border-bottom:1px dashed #3a465c44;padding:3px 0;animation:rowIn .25s both}
+@keyframes rowIn{from{opacity:0;transform:translateX(-8px)}}
+#logBox .l-turn{color:var(--gold2);font-weight:600}
+#logBox .l-dmg{color:#ff9d84}#logBox .l-sys{color:#7d8698;font-style:italic}#logBox .l-skill{color:#9cc4ee}#logBox .l-death{color:#ff6a4d;font-weight:700}
+#logBox .l-ok{color:#8fd6a8}#logBox .l-bad{color:#e08a6a}
+.rep{background:#141b29;border:1px solid #3a465c66;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.55;color:var(--tx2)}
+.rep b{color:var(--paper)}.rep .ok{color:#8fd6a8}.rep .bad{color:#e08a6a}
+.rep .tag{font-size:10px;border-radius:3px;padding:0 5px;margin-right:4px;color:#fff}
+.rep .ans{color:var(--gold2)}
+
+footer{display:grid;grid-template-columns:212px 1fr 316px;gap:12px;padding-top:10px;align-items:stretch}
+#myPanel{background:linear-gradient(180deg,#242015ee,#171309ee);border:1px solid #8a744d55;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+#myPanel .ava{width:50px;height:50px;font-size:24px;margin:0}
+#mpName{font-size:13.5px}#mpHero{font-size:11.5px;color:var(--tx2)}#mpLearn{font-size:11px;color:#8fd6a8;margin-top:2px}
+#handWrap{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:130px}
+#hand{display:flex;align-items:flex-end;padding:0 30px 4px}
+#hand .card{margin-left:-32px;transition:transform .16s;cursor:pointer}
+#hand .card:first-child{margin-left:0}
+#hand .card:hover{transform:translateY(-16px);z-index:20}
+#hand .card.sel{transform:translateY(-20px);box-shadow:0 0 0 3px var(--gold2),0 14px 26px #000c;z-index:21}
+#hand .card.dim{opacity:.45}
+#promptBox{background:linear-gradient(180deg,#242015ee,#171309ee);border:1px solid #8a744d55;border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:8px;justify-content:center;min-height:116px}
+#pmsg{font-size:13.5px;letter-spacing:.05em;line-height:1.5}
+#pmsg .cd{color:var(--gold2);font-size:12px;margin-left:6px}
+#pbtns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2)}
+
+.card{width:72px;height:102px;border-radius:8px;position:relative;flex:none;
+ background:linear-gradient(165deg,#f6edcf,#e3d0a2 70%,#d4bd8a);border:1px solid #8a744d;box-shadow:0 5px 12px #0008;color:#2b2013}
+.card .cn{position:absolute;top:5px;left:7px;font-size:13px;font-weight:900;line-height:1.05;text-align:center}
+.card .nm{position:absolute;inset:0;display:grid;place-items:center;font-family:'Ma Shan Zheng';font-size:30px;padding-top:8px}
+.card .nm.two{font-size:17px}
+.card .tp{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:9.5px;letter-spacing:.18em;color:#6d5a37}
+.card.t-basic .nm{color:#7c2418}.card.t-trick .nm{color:#1f4d38}.card.t-equip .nm{color:#7a5a10}
+.card.red .cn{color:#a5271c}.card.black .cn{color:#211a12}
+.card.mini{width:52px;height:74px}.card.mini .nm{font-size:21px}.card.mini .tp{display:none}
+
+.ov{position:fixed;inset:0;z-index:40;background:#080705d9;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.panel{background:linear-gradient(170deg,#241d10,#161108);border:1px solid #c9a22766;border-radius:16px;padding:28px 34px;width:min(780px,94vw);max-height:92vh;overflow:auto;
+ box-shadow:0 40px 80px #000c;animation:popIn .3s both}
+.panel h2{font-family:'Ma Shan Zheng';font-weight:400;font-size:32px;color:var(--gold2);letter-spacing:.2em;text-align:center}
+.panel .psub{text-align:center;color:var(--tx2);font-size:12.5px;letter-spacing:.25em;margin:4px 0 18px}
+#heroGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.hpick{background:#171208;border:1px solid #3a465c;border-radius:12px;padding:16px;cursor:pointer;transition:.18s}
+.hpick:hover{transform:translateY(-5px);border-color:var(--gold);box-shadow:0 14px 30px #000a}
+.hpick .big{font-family:'Ma Shan Zheng';font-size:48px;line-height:1;color:var(--kc);text-shadow:0 3px 0 #0008}
+.hpick .hn{font-size:16px;letter-spacing:.12em;margin-top:8px}.hpick .ht{font-size:11.5px;color:var(--tx2);margin:2px 0 8px}
+.hpick .sk{font-size:12px;line-height:1.6;color:#cfc19e;border-top:1px dashed #3a465c;padding-top:8px}
+.hpick .sk b{color:var(--gold2)}
+
+#qPanel{width:min(560px,94vw);position:relative}
+#qDiffBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
+.diffBtn{background:#0f0c07;border:1px solid #3a465c;border-radius:12px;padding:16px 8px;color:var(--tx);transition:.18s}
+.diffBtn:hover{border-color:var(--gold);transform:translateY(-3px)}
+.diffBtn b{display:block;font-family:'Ma Shan Zheng';font-size:24px;letter-spacing:.2em;color:var(--paper)}
+.diffBtn span{font-size:11.5px;color:var(--tx2);display:block;margin-top:6px;line-height:1.5}
+.diffBtn i{font-style:normal;color:var(--gold2);font-size:12px}
+#qTimerWrap{height:7px;background:#0a0908;border-radius:4px;overflow:hidden;margin:12px 0;border:1px solid #5a4a2a}
+#qTimer{height:100%;width:100%;background:linear-gradient(90deg,#8f2b1e,#eca227);transition:width 1s linear}
+#qMeta{display:flex;gap:8px;margin-bottom:9px}
+#qMeta .tg{font-size:11px;border-radius:4px;padding:2px 8px;letter-spacing:.12em;color:#fff}
+#qText{font-size:17px;line-height:1.7;font-weight:600;color:var(--paper)}
+#qOpts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.qopt{display:flex;align-items:center;gap:10px;background:#0f0c07;border:1.5px solid #3a465c;border-radius:9px;padding:10px 12px;font-size:14.5px;color:var(--tx);transition:.15s;text-align:left}
+.qopt:hover{border-color:var(--gold);transform:translateY(-2px)}
+.qopt .ol{width:27px;height:27px;flex:none;border-radius:6px;background:var(--verm);color:#ffe9c9;display:grid;place-items:center;font-size:13px;font-weight:900}
+.qopt.right{border-color:#2e7d52;background:#12281c;box-shadow:0 0 0 2px #2e7d5255}
+.qopt.wrongpick{border-color:#b03a2a;background:#2a1410}
+.qopt.dis{pointer-events:none;opacity:.6}
+#qExplain{margin-top:12px;border-top:1px dashed #5a4a2a;padding-top:10px;font-size:13px;line-height:1.65;color:#cfc19e;display:none}
+#qStamp{position:absolute;top:14px;right:20px;font-family:'Ma Shan Zheng';font-size:30px;border:3px solid;border-radius:10px;padding:2px 12px;transform:rotate(12deg);opacity:0}
+#qStamp.ok{color:#7ee0a2;border-color:#7ee0a2;text-shadow:0 0 18px #3e8f6b}
+#qStamp.bad{color:#ff7a5c;border-color:#ff7a5c;text-shadow:0 0 18px #b03a2a}
+#qStamp.show{animation:stampIn .4s cubic-bezier(.2,1.8,.4,1) both}
+@keyframes stampIn{from{transform:rotate(30deg) scale(2.2);opacity:0}to{transform:rotate(12deg) scale(1);opacity:1}}
+#endRows{display:grid;gap:7px;margin:14px 0}
+#endRows .rr{display:flex;justify-content:space-between;background:#0f0c07;border:1px solid #3a465c66;border-radius:8px;padding:8px 14px;font-size:13.5px}
+#endRows .rr b{color:var(--gold2)}
+#endRoles{display:grid;gap:6px;margin-bottom:16px}
+#endRoles .prow{display:flex;gap:10px;align-items:center;background:#0f0c07;border:1px solid #3a465c66;border-radius:8px;padding:7px 12px;font-size:13px}
+#endRoles .prow .nm{flex:1}
+#toast{position:fixed;top:66px;left:50%;transform:translateX(-50%);z-index:60;background:#000000d0;border:1px solid var(--gold);color:var(--paper);
+ padding:8px 22px;border-radius:20px;font-size:13px;letter-spacing:.08em;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1}
+#fatal{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:999;background:#3a1210;border:1px solid #ff6a4d;color:#ffd7c9;
+ padding:10px 18px;border-radius:10px;font-size:12.5px;max-width:92vw;display:none;box-shadow:0 14px 40px #000a;line-height:1.6}
+#ruleList{font-size:13px;line-height:2;color:#d8cba9}
+#ruleList b{color:var(--gold2)}
+@media(max-width:1080px){main{grid-template-columns:1fr 250px}footer{grid-template-columns:180px 1fr 250px}}
+</style>
+</head>
+<body>
+<div id="bg"><div class="stars"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div><div class="mtn"></div></div>
+<div id="fatal"></div>
+
+<div id="app">
+ <header>
+  <div class="logo">学林杀<i>知识为牌</i></div>
+  <span id="hStatus">加载中…</span>
+  <div id="hinfo"><span>功名 <b id="hTitle">蒙学童生</b></span><span>累计答对 <b id="hOk">0</b></span><span>牌堆 <b id="hDeck">0</b></span><span>阶段 <b id="hPhase">—</b></span></div>
+  <div class="spacer"></div>
+  <button class="btn ghost sm" id="btnSound">♪ 音效开</button>
+  <button class="btn ghost sm" id="btnRule">规则</button>
+ </header>
+ <main>
+  <div id="table">
+   <div id="banner"><div class="bt"></div><div class="bs"></div></div>
+   <div id="playArea"><div id="paCaption"></div><div id="paCards"></div></div>
+  </div>
+  <aside>
+   <div class="tabs">
+    <button data-tab="logBox" class="on">战 报</button>
+    <button data-tab="repBox">学问簿</button>
+    <button data-tab="errBox">错题笺</button>
+   </div>
+   <div class="tabpane on" id="logBox"></div>
+   <div class="tabpane" id="repBox"></div>
+   <div class="tabpane" id="errBox"></div>
+  </aside>
+ </main>
+ <footer>
+  <div id="myPanel"><div class="ava" id="mpAva">?</div><div><div id="mpName">—</div><div id="mpHero">—</div><div id="mpLearn"></div></div></div>
+  <div id="handWrap"><div id="hand"></div></div>
+  <div id="promptBox"><div id="pmsg">正在备牌…</div><div id="pbtns"></div></div>
+ </footer>
+</div>
+
+<!-- 点将 -->
+<div class="ov hidden" id="ovHero"><div class="panel"><h2>拜 帅 台</h2><div class="psub">你为主公 · 择一位大贤领衔（点击即开局）</div><div id="heroGrid"></div></div></div>
+<!-- 问答卷轴 -->
+<div class="ov hidden" id="ovQ"><div class="panel" id="qPanel">
+ <h2>摸牌 · 求学问道</h2><div class="psub">答题取材：答对按难度得牌，答错仅得 1 张</div>
+ <div id="qStep1"><div id="qDiffBtns"></div></div>
+ <div id="qStep2" class="hidden">
+  <div id="qTimerWrap"><div id="qTimer"></div></div>
+  <div id="qMeta"></div><div id="qText"></div><div id="qOpts"></div>
+  <div id="qExplain"></div>
+  <div style="text-align:right;margin-top:10px"><button class="btn sm hidden" id="qNext">继续 ▸</button></div>
+ </div>
+ <div id="qStamp"></div>
+</div></div>
+<!-- 结算 -->
+<div class="ov hidden" id="ovEnd"><div class="panel" style="width:min(460px,94vw)">
+ <h2 id="endTitle">—</h2><div class="psub" id="endSub"></div>
+ <div id="endRows"></div><div id="endRoles"></div>
+ <div style="display:flex;gap:10px;justify-content:center"><button class="btn gold" id="btnAgain">再 战 一 局</button><button class="btn ghost" onclick="location.reload()">返回</button></div>
+</div></div>
+<!-- 规则 -->
+<div class="ov hidden" id="ovRule"><div class="panel"><h2>规 则 要 略</h2><div id="ruleList"></div>
+<div style="text-align:center;margin-top:16px"><button class="btn" onclick="document.getElementById('ovRule').classList.add('hidden')">知道了</button></div></div></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- 错误可视化（绝不再静默卡死） ---------- */
+function showFatal(msg){ console.error(msg); const d=document.getElementById('fatal'); if(!d)return;
+ d.style.display='block'; d.textContent='⚠ '+msg; const st=document.getElementById('hStatus'); if(st)st.textContent='出错·见顶部红条'; }
+window.addEventListener('error',function(e){ showFatal('脚本错误：'+e.message+(e.lineno?('（行'+e.lineno+'）'):'')); });
+window.addEventListener('unhandledrejection',function(e){ showFatal('引擎错误：'+(e.reason&&e.reason.message?e.reason.message:String(e.reason))); });
+
+const $=s=>document.querySelector(s), $$=s=>Array.prototype.slice.call(document.querySelectorAll(s));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=n=>Math.floor(Math.random()*n);
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=rnd(i+1);const t=a[i];a[i]=a[j];a[j]=t;} return a; }
+const numTxt=n=>({1:'A',11:'J',12:'Q',13:'K'}[n]||String(n));
+const isRed=c=>c.suit==='♥'||c.suit==='♦';
+const isBlackCard=c=>c.suit==='♠'||c.suit==='♣';
+function stat(t){ const el=document.getElementById('hStatus'); if(el)el.textContent=t; }
+let AC=null,soundOn=true;
+function sfx(k){ if(!soundOn)return; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+ const t=AC.currentTime; const notes={card:[[520,0]],hit:[[120,0]],ok:[[660,0],[880,.09]],bad:[[220,0],[160,.12]],turn:[[660,0],[880,.1]],win:[[523,0],[659,.12],[784,.24],[1047,.36]],die:[[88,0]]}[k]||[[500,0]];
+ notes.forEach(function(nd){const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type=(k==='hit'||k==='die')?'sawtooth':'sine';o.frequency.value=nd[0];
+ g.gain.setValueAtTime(.12,t+nd[1]);g.gain.exponentialRampToValueAtTime(.001,t+nd[1]+.18);o.start(t+nd[1]);o.stop(t+nd[1]+.2);});}catch(e){} }
+
+/* ================= 题库 ================= */
+function Q(q,ch,x,g){ return {q:q,ch:ch,x:x,g:g}; }
+const BANK={
+'数学':{'初中':[Q('(−3)+5 的结果是？',['2','−8','−2','8'],'异号相加：5−3=2',7),Q('40° 角的补角是？',['140°','50°','130°','40°'],'两角之和为 180°',7),Q('掷一枚骰子，点数为偶数的概率是？',['1/2','1/3','1/6','2/3'],'偶数面 3 个 / 共 6 面',7),Q('16 的算术平方根是？',['4','−4','±4','2'],'算术平方根非负',8),Q('直角三角形两直角边为 3、4，斜边为？',['5','6','7','√7'],'勾股定理 3²+4²=5²',8),Q('方程 2x−3=7 的解是？',['x=5','x=2','x=−5','x=10'],'移项 2x=10',8),Q('x²−5x+6=0 的两根是？',['2 和 3','−2 和 −3','1 和 6','−1 和 6'],'(x−2)(x−3)=0',9),Q('y=x²−4x+3 的顶点是？',['(2,−1)','(−2,3)','(2,3)','(0,3)'],'x=−b/2a=2，y=−1',9),Q('sin30° 的值是？',['1/2','√3/2','√2/2','1'],'特殊角三角函数值',9),Q('反比例函数 y=2/x 的图象在？',['一、三象限','二、四象限','一、二象限','三、四象限'],'k>0 时位于一三象限',9)],
+'高中':[Q('A={1,2}，B={2,3}，A∪B=？',['{1,2,3}','{2}','{1,3}','{1,2}'],'并集合并所有元素',10),Q('{a,b} 的子集个数是？',['4','2','3','8'],'2ⁿ=4（含空集）',10),Q('y=√(x−1) 的定义域是？',['x≥1','x>1','x≥0','x≤1'],'被开方数 ≥0',10),Q('log₂8=？',['3','2','4','8'],'2³=8',10),Q('等差数列 2,5,8,… 的公差是？',['3','2','5','1'],'后项减前项恒为 3',11),Q('sin²α+cos²α=？',['1','0','2','α'],'同角三角基本关系',11),Q('六边形的内角和是？',['720°','540°','360°','900°'],'(n−2)×180°',11),Q('导数 f′(x) 的几何意义是？',['切线斜率','曲线下面积','纵截距','弧长'],'导数即切线斜率',12),Q('f(x)=x²，则 f′(2)=？',['4','2','8','1'],'f′(x)=2x',12),Q('过 (0,0) 与 (2,4) 的直线斜率是？',['2','4','1/2','0'],'k=Δy/Δx',12)],
+'大学':[Q('d/dx(x²)=？',['2x','x²','x','2'],'幂函数求导 nxⁿ⁻¹',1),Q('lim(x→0) sinx/x=？',['1','0','∞','−1'],'重要极限',1),Q('∫2x dx=？',['x²+C','2x²+C','x+C','2+C'],'x² 的导数为 2x',2),Q('d/dx(eˣ)=？',['eˣ','x·eˣ⁻¹','lnx','1'],'自然指数导数是其自身',2),Q('∫₀¹ x dx=？',['1/2','1','2','0'],'三角形面积',3),Q('f′(x₀)=0，则 x₀ 一定是？',['驻点','极大值点','极小值点','拐点'],'驻点未必是极值点',3),Q('Σ(1/2)ⁿ（n 从 0 起）的和是？',['2','1','1/2','发散'],'1/(1−1/2)=2',4),Q('d/dx(ln x)=？',['1/x','lnx','x','−1/x²'],'对数求导公式',4)]},
+'语文':{'初中':[Q('「王师北定中原日，家祭无忘告乃翁」的作者是？',['陆游','杜甫','李白','苏轼'],'陆游绝笔《示儿》',7),Q('海内存知己，________。',['天涯若比邻','悠然见南山','低头思故乡','西出阳关无故人'],'王勃《送杜少府之任蜀州》',7),Q('「温故而知新」出自？',['《论语》','《孟子》','《大学》','《诗经》'],'孔子论学习',7),Q('被称为「诗圣」的是？',['杜甫','李白','王维','白居易'],'李白为诗仙',8),Q('《西游记》的作者是？',['吴承恩','罗贯中','施耐庵','曹雪芹'],'明代神魔小说',8),Q('「落红不是无情物，化作春泥更护花」的作者是？',['龚自珍','李商隐','杜牧','纳兰性德'],'《己亥杂诗》',8),Q('《世说新语》是？',['志人小说集','编年体史书','词集','戏曲'],'南朝刘义庆组织编纂',9),Q('「春蚕到死丝方尽」的下一句？',['蜡炬成灰泪始干','化作春泥更护花','柳暗花明又一村','疑是银河落九天'],'李商隐《无题》',9)],
+'高中':[Q('《阿Q正传》的作者是？',['鲁迅','老舍','巴金','茅盾'],'收入《呐喊》',10),Q('「大江东去，浪淘尽」的作者是？',['苏轼','辛弃疾','柳永','李清照'],'《念奴娇·赤壁怀古》',10),Q('《红楼梦》的作者是？',['曹雪芹','施耐庵','吴敬梓','蒲松龄'],'古典小说巅峰',10),Q('莎士比亚四大悲剧之一是？',['《哈姆雷特》','《仲夏夜之梦》','《威尼斯商人》','《暴风雨》'],'其余为喜剧',11),Q('我国古代最长的抒情诗是？',['《离骚》','《关雎》','《孔雀东南飞》','《天问》'],'屈原所作',11),Q('《围城》的作者是？',['钱锺书','沈从文','郁达夫','林语堂'],'「城里的人想逃出来」',11),Q('《雷雨》的体裁是？',['话剧','小说','散文','词'],'曹禺代表作',12),Q('辛弃疾「金戈铁马，气吞万里如虎」的词牌是？',['永遇乐','念奴娇','水调歌头','满江红'],'京口北固亭怀古',12)]},
+'英语':{'初中':[Q('She ____ to school every day.',['goes','go','going','gone'],'三单一般现在时',7),Q('"child" 的复数是？',['children','childs','childes','childrens'],'不规则变化',7),Q('"big" 的反义词是？',['small','tall','long','heavy'],'基础反义词',7),Q('I have lived here ____ 2010.',['since','for','at','on'],'since+时间点',8),Q('The capital of the UK is ____.',['London','Paris','New York','Sydney'],'伦敦',8),Q('"go" 的过去式是？',['went','gone','goed','goes'],'不规则动词',8),Q('There ____ a lot of sheep on the farm.',['are','is','be','am'],'sheep 单复同形',9),Q('Tom runs ____ than Mike.',['faster','fast','fastest','more fast'],'比较级加 -er',9)],
+'高中':[Q('The book ____ I bought is interesting.',['which','who','where','what'],'先行词为物',10),Q('If I ____ you, I would apologize.',['were','am','was','be'],'虚拟语气用 were',10),Q('"decide" 的名词是？',['decision','decisive','decided','deciding'],'-sion 后缀',10),Q('Neither of the answers ____ correct.',['is','are','were','being'],'neither of 单数',11),Q('"abundant" 意为？',['丰富的','稀少的','昂贵的','迅速的'],'词义辨析',11),Q('Had I known, I ____ have helped.',['would','will','do','did'],'倒装虚拟',11),Q('"He wrote the letter" 的被动语态？',['The letter was written by him','The letter is writing','The letter wrote him','He was written'],'was+过去分词',12),Q('下列哪个是连词？',['although','quickly','beautiful','run'],'引导让步从句',12)]},
+'物理':{'初中':[Q('力的国际单位是？',['牛顿','焦耳','瓦特','帕斯卡'],'符号 N',8),Q('平面镜成的是？',['等大正立的虚像','缩小的实像','放大的实像','等大的实像'],'平面镜成像特点',8),Q('15℃ 空气中声速约为？',['340 m/s','3×10⁸ m/s','1500 m/s','9.8 m/s'],'光速才是 3×10⁸',8),Q('水结冰后质量？',['不变','变大','变小','变为零'],'质量不随状态变',8),Q('密度公式是？',['ρ=m/V','ρ=mV','ρ=V/m','ρ=mg'],'单位体积的质量',9),Q('电流的单位是？',['安培','伏特','欧姆','瓦特'],'电压是伏特',9),Q('我国家庭电路电压是？',['220V','110V','380V','36V'],'36V 以下为安全电压',9),Q('浮力的方向是？',['竖直向上','竖直向下','水平方向','无法确定'],'恒竖直向上',9)],
+'高中':[Q('牛顿第一定律又称？',['惯性定律','加速度定律','作用反作用定律','万有引力定律'],'力改变运动状态',10),Q('匀速直线运动的物体合外力？',['为零','恒为重力','不断增大','与速度同向'],'平衡态合力为零',10),Q('动能的表达式是？',['½mv²','mv','mgh','Fs'],'mgh 是重力势能',10),Q('重力加速度 g≈？',['9.8 m/s²','9.8 m/s','340 m/s²','6.67 m/s²'],'方向竖直向下',11),Q('判断安培力方向用？',['左手定则','右手定则','安培定则','楞次定律'],'「力」用左手',11),Q('欧姆定律是？',['I=U/R','U=IR²','I=UR','R=UI'],'电流与电压成正比',11),Q('磁通量的单位是？',['韦伯','特斯拉','亨利','法拉'],'特斯拉是磁感应强度',12),Q('自由落体 2s 末速度约为？',['19.6 m/s','9.8 m/s','4.9 m/s','39.2 m/s'],'v=gt',12)]},
+'化学':{'初中':[Q('氧元素的符号是？',['O','C','N','H'],'Oxygenium',9),Q('空气中含量最多的气体是？',['氮气','氧气','二氧化碳','稀有气体'],'约占 78%',9),Q('使澄清石灰水变浑浊的气体是？',['CO₂','O₂','H₂','N₂'],'检验二氧化碳',9),Q('燃烧三要素：可燃物、氧气与？',['温度达到着火点','催化剂','充足的水','光照'],'缺一不可',9),Q('2H 表示？',['2 个氢原子','2 个氢分子','氢元素','氢气'],'符号前数字表原子数',9),Q('铁钉生锈属于？',['化学变化','物理变化','形态变化','无变化'],'生成新物质',9),Q('水的化学式是？',['H₂O','HO₂','H₂O₂','OH'],'H₂O₂ 是过氧化氢',9),Q('地壳中含量最高的金属是？',['铝','铁','钙','钠'],'氧硅铝铁',9)],
+'高中':[Q('阿伏加德罗常数约为？',['6.02×10²³/mol','6.02×10²²/mol','9.8×10²³/mol','3×10⁸/mol'],'1 mol 的粒子数',10),Q('酸性溶液的 pH？',['小于 7','等于 7','大于 7','等于 14'],'常温中性为 7',10),Q('烧碱的化学式是？',['NaOH','NaCl','Na₂CO₃','Ca(OH)₂'],'氢氧化钠',10),Q('使 KSCN 变血红色的是？',['Fe³⁺','Fe²⁺','Na⁺','Cu²⁺'],'三价铁特征反应',11),Q('电解水生成？',['氢气和氧气','氧气和氮气','二氧化碳','氢气'],'正氧负氢',11),Q('平衡移动遵循？',['勒夏特列原理','能量守恒','阿伏加德罗定律','定比定律'],'向减弱改变的方向',12),Q('聚乙烯的单体是？',['乙烯','乙炔','乙醇','乙烷'],'加聚反应',12),Q('碱金属位于周期表？',['第ⅠA族','第ⅦA族','0 族','第ⅡA族'],'最外层 1 电子',12)]},
+'生物':{'高中':[Q('遗传信息的主要载体是？',['DNA','蛋白质','脂肪','糖类'],'少数病毒为 RNA',10),Q('DNA 中 A 与谁配对？',['T','C','G','U'],'A-T、C-G',10),Q('孟德尔选用的实验材料是？',['豌豆','果蝇','小鼠','玉米'],'自花传粉、性状分明',10),Q('有氧呼吸的主要场所是？',['线粒体','叶绿体','核糖体','细胞核'],'动力车间',11),Q('人的生殖细胞染色体数是？',['23 条','46 条','23 对','22 条'],'体细胞 46 条',11),Q('降低血糖的激素是？',['胰岛素','肾上腺素','甲状腺激素','生长激素'],'胰岛 B 细胞分泌',11),Q('能量流动的特点是？',['单向流动、逐级递减','循环利用','双向流动','逐级递增'],'传递效率 10%~20%',12),Q('产生生殖细胞的分裂方式是？',['减数分裂','有丝分裂','无丝分裂','二分裂'],'复制一次分裂两次',12)]},
+'历史':{'初中':[Q('统一六国建立秦朝的是？',['嬴政','刘邦','项羽','曹操'],'公元前 221 年',7),Q('张骞出使西域的意义是？',['奠定丝绸之路','发现美洲','修筑长城','开凿运河'],'沟通东西文明',7),Q('唐朝的都城是？',['长安','开封','北京','南京'],'今西安',7),Q('改进造纸术的是？',['蔡伦','毕昇','张衡','华佗'],'东汉时期',7),Q('发明活字印刷的是？',['毕昇','蔡伦','沈括','祖冲之'],'北宋泥活字',8),Q('鸦片战争爆发于？',['1840 年','1860 年','1894 年','1900 年'],'近代史开端',8),Q('中华民国成立于？',['1912 年','1911 年','1919 年','1949 年'],'辛亥次年',9),Q('七下西洋的是？',['郑和','戚继光','玄奘','鉴真'],'最远东非',9)]},
+'线性代数':{'大学':[Q('|1 2;3 4| 的行列式值是？',['−2','2','10','−10'],'4−6=−2',2),Q('若 AB=I，则 B 是 A 的？',['逆矩阵','转置','零矩阵','伴随矩阵'],'逆矩阵定义',2),Q('I·A=？',['A','I','0','A²'],'单位阵如数 1',2),Q('Av=λv 中 λ 称为？',['特征值','特征向量','行列式','秩'],'v 是特征向量',3),Q('r(A)<n 的齐次方程组？',['有非零解','只有零解','无解','唯一解'],'存在基础解系',3),Q('矩阵的秩是？',['最高阶非零子式的阶数','行数','列数','行列式值'],'初等变换不变',4)]},
+'大学物理':{'大学':[Q('真空中光速约为？',['3×10⁸ m/s','340 m/s','3×10⁶ m/s','9.8 m/s'],'各惯性系不变',1),Q('洛伦兹变换属于？',['狭义相对论','广义相对论','量子力学','热力学'],'惯性系时空坐标变换',2),Q('测不准原理的提出者是？',['海森堡','牛顿','麦克斯韦','玻意耳'],'位置动量不可同时精确',2),Q('麦克斯韦方程组描述？',['电磁现象','机械运动','热传导','光的衍射'],'预言电磁波',3),Q('薛定谔方程是哪门学科的基石？',['量子力学','经典力学','流体力学','声学'],'微观态演化',3),Q('孤立系统熵不减是？',['热力学第二定律','热力学第一定律','牛顿第三定律','能量守恒'],'时间之矢',4)]},
+'程序设计':{'大学':[Q('Python 输出函数是？',['print()','input()','len()','open()'],'最基础的输出',1),Q('FIFO 对应哪种结构？',['队列','栈','树','图'],'栈是先进后出',1),Q('int 类型表示？',['整数','小数','字符串','布尔值'],'integer',1),Q('二分查找的复杂度是？',['O(log n)','O(n)','O(n²)','O(1)'],'每次减半',2),Q('递归函数的特征是？',['调用自身','无返回值','只能循环一次','必须是主函数'],'需终止条件',2),Q('下列不是编程语言的是？',['HTTP','Python','Java','C++'],'HTTP 是协议',2),Q('HTML 是？',['超文本标记语言','编程语言','数据库','操作系统'],'描述网页结构',3),Q('循环语句的作用是？',['重复执行代码','定义变量','导入模块','捕获异常'],'for / while',3)]},
+'经济学':{'大学':[Q('需求定律：价格下降，需求量一般？',['增加','减少','不变','先增后减'],'反向变动',1),Q('机会成本是？',['放弃的最高价值替代用途','账面支出','固定成本','边际成本'],'鱼与熊掌',1),Q('GDP 统计的是？',['境内最终产品与劳务','中间产品','二手交易','股票成交额'],'避免重复计算',2),Q('厂商最多的市场结构是？',['完全竞争','完全垄断','寡头','垄断竞争'],'无数买卖者',2),Q('通货膨胀是指？',['物价总水平持续上涨','物价下跌','货币升值','失业率上升'],'购买力下降',3),Q('亚当·斯密把市场喻为？',['看不见的手','看得见的手','铁的手','白象'],'《国富论》',3)]},
+'心理学':{'大学':[Q('需要层次理论的提出者是？',['马斯洛','弗洛伊德','华生','斯金纳'],'生理到自我实现',1),Q('精神分析学派创始人是？',['弗洛伊德','马斯洛','皮亚杰','班杜拉'],'潜意识理论',1),Q('艾宾浩斯遗忘曲线：遗忘？',['先快后慢','先慢后快','匀速','无规律'],'及时复习',2),Q('短时记忆容量约为？',['7±2 个组块','无限','3±1','20±5'],'米勒提出',2),Q('行为主义创始人是？',['华生','冯特','罗杰斯','苛勒'],'研究可观察行为',3),Q('认知失调理论提出者是？',['费斯廷格','海德','凯利','韦纳'],'态度行为冲突',3)]},
+'哲学':{'大学':[Q('「我思故我在」是谁的名言？',['笛卡尔','柏拉图','亚里士多德','休谟'],'近代哲学起点',1),Q('《纯粹理性批判》的作者是？',['康德','黑格尔','尼采','卢梭'],'德国古典哲学',1),Q('哲学的基本问题是？',['思维与存在的关系','善与恶','美与丑','生与死'],'划分唯物唯心',2),Q('「洞穴寓言」出自？',['柏拉图','苏格拉底','培根','霍布斯'],'《理想国》',2),Q('「知识就是力量」出自？',['培根','牛顿','达尔文','伏尔泰'],'经验主义先驱',3),Q('唯物辩证法的核心是？',['对立统一规律','能量守恒','剩余价值规律','质量守恒'],'矛盾规律',3)]}};
+const DIFFN={1:'初中',2:'高中',3:'大学'}, DIFFCARD={1:2,2:3,3:4}, STAGE2N={'初中':1,'高中':2,'大学':3};
+const POOLS={1:[],2:[],3:[]};
+(function(){ for(const subj in BANK){ for(const st in BANK[subj]){ const arr=BANK[subj][st];
+ for(let i=0;i<arr.length;i++){ const q=arr[i]; q.id=subj+'|'+st+'|'+i; q.subj=subj; q.stage=st; POOLS[STAGE2N[st]].push(q); } } } })();
+const SUBJC={'数学':'#5b8fc9','语文':'#c95a4a','英语':'#4aa06a','物理':'#9a7fd0','化学':'#d0803f','生物':'#57a05a','历史':'#b09040','线性代数':'#3d9f9f','大学物理':'#8a6ad0','程序设计':'#4aa06a','经济学':'#d0a03f','心理学':'#d06080','哲学':'#8a8aa0'};
+
+/* ================= 武将 ================= */
+const KCOLOR={'文':'#c95a4a','理':'#5b8fc9','工':'#c9a227','思':'#4aa58a'};
+const HEROES={
+ kongzi:{id:'kongzi',n:'孔子',t:'至圣先师',k:'思',hp:4,sk:[{id:'rende',n:'诲人不倦',d:'出牌阶段，你可将一张手牌交给一名其他角色；本阶段给出≥2张时可回复1点体力'}]},
+ newton:{id:'newton',n:'牛顿',t:'力学之父',k:'理',hp:4,sk:[{id:'longdan',n:'作用反作用',d:'你可将【问题卡】当【解答卡】、【解答卡】当【问题卡】使用或打出'}]},
+ einstein:{id:'einstein',n:'爱因斯坦',t:'相对论之光',k:'理',hp:4,sk:[{id:'paoxiao',n:'光速追击',d:'锁定技，你使用【问题卡】无次数限制'}]},
+ zuchongzhi:{id:'zuchongzhi',n:'祖冲之',t:'圆周率宗师',k:'理',hp:4,sk:[{id:'zhiheng',n:'演算',d:'出牌阶段限一次，弃任意张手牌并摸等量牌'}]},
+ gauss:{id:'gauss',n:'高斯',t:'数学王子',k:'理',hp:4,sk:[{id:'qiuhe',n:'求和',d:'摸牌问答答对时，额外摸一张牌'}]},
+ lishizhen:{id:'lishizhen',n:'李时珍',t:'本草圣手',k:'理',hp:3,sk:[{id:'yingzi',n:'本草',d:'摸牌阶段，你额外摸一张牌'}]},
+ sushi:{id:'sushi',n:'苏轼',t:'东坡居士',k:'文',hp:4,sk:[{id:'wusheng',n:'豪放词心',d:'你的红色手牌可当【问题卡】使用或打出'}]},
+ simaqian:{id:'simaqian',n:'司马迁',t:'太史公',k:'文',hp:3,sk:[{id:'zhushu',n:'著书',d:'你的【问题卡】造成伤害后，摸一张牌'}]},
+ darwin:{id:'darwin',n:'达尔文',t:'进化论主',k:'理',hp:4,sk:[{id:'fankui',n:'适者生存',d:'你受到伤害后，可获得伤害来源的一张牌'}]},
+ curie:{id:'curie',n:'居里夫人',t:'镭光双诺',k:'理',hp:3,sk:[{id:'jianxiong',n:'镭光',d:'你受到伤害后，可获得造成此伤害的牌'}]},
+ turing:{id:'turing',n:'图灵',t:'解码之父',k:'工',hp:4,sk:[{id:'qixi',n:'破译',d:'你的黑色手牌可当【收缴笔记】使用'}]},
+ ada:{id:'ada',n:'阿达·洛芙莱斯',t:'逻辑诗人',k:'工',hp:3,sk:[{id:'luoji',n:'逻辑诗',d:'你需要打出【解答卡】时，可判定：红色视为已解答'}]},
+ cailun:{id:'cailun',n:'蔡伦',t:'造纸宗师',k:'工',hp:4,sk:[{id:'qingnang',n:'改良造纸',d:'出牌阶段限一次，弃一张牌并回复1点体力'}]},
+ zhangheng:{id:'zhangheng',n:'张衡',t:'浑天仪主',k:'工',hp:4,sk:[{id:'didong',n:'候风地动',d:'你受到伤害后判定：若非♥，来源弃两张牌或失去1点体力'}]}};
+const LORDS=['kongzi','newton','einstein'];
+function hasSk(p,id){ return p.hero&&p.hero.sk.some(function(s){return s.id===id}); }
+
+/* ================= 牌堆 ================= */
+const EQUIP_INFO={'快笔':{slot:'weapon',range:1},'望远镜':{slot:'weapon',range:2},'活字版':{slot:'weapon',range:3},'算筹尺':{slot:'weapon',range:3},'教鞭':{slot:'weapon',range:3},'直觉猜':{slot:'armor'},'严谨盾':{slot:'armor'},'负重车':{slot:'plusHorse'},'轻舟':{slot:'minusHorse'}};
+function buildDeck(){ const D=[]; let id=0;
+ function P(name,sub,type,suit,nums){ nums.forEach(function(num){ D.push({id:'c'+(id++),name:name,sub:sub,type:type,suit:suit,num:num}); }); }
+ P('问题卡','sha','basic','♠',[3,4,7,8,8,9,9,10]);P('问题卡','sha','basic','♣',[2,3,4,5,6,7,8,9,10,10]);P('问题卡','sha','basic','♥',[7,10]);
+ P('解答卡','shan','basic','♦',[2,3,4,5,6,7,8,9,10,11,12,13]);P('解答卡','shan','basic','♥',[2,12]);
+ P('顿悟卡','tao','basic','♥',[3,4,5,6,7,8,9]);P('顿悟卡','tao','basic','♦',[12]);
+ P('辩论','juedou','trick','♠',[1]);P('辩论','juedou','trick','♣',[1]);P('辩论','juedou','trick','♦',[1]);
+ P('突击测验','nanman','trick','♠',[7,13]);P('突击测验','nanman','trick','♣',[7]);
+ P('全班考试','wanjian','trick','♠',[1]);P('小组讨论','taoyuan','trick','♥',[1]);
+ P('复习资料','wuzhong','trick','♥',[7,8,9,11]);
+ P('参考','shun','trick','♠',[3,4,11]);P('参考','shun','trick','♦',[3,4]);
+ P('收缴笔记','chai','trick','♠',[12]);P('收缴笔记','chai','trick','♥',[12]);P('收缴笔记','chai','trick','♣',[3,4,12]);
+ P('免检符','wuxie','trick','♠',[11]);P('免检符','wuxie','trick','♣',[12,13]);P('免检符','wuxie','trick','♦',[12]);
+ P('快笔','快笔','equip','♦',[1]);P('快笔','快笔','equip','♣',[1]);
+ P('望远镜','望远镜','equip','♠',[6]);P('活字版','活字版','equip','♠',[5]);P('算筹尺','算筹尺','equip','♠',[2]);P('教鞭','教鞭','equip','♦',[5]);
+ P('直觉猜','直觉猜','equip','♠',[2]);P('直觉猜','直觉猜','equip','♦',[2]);P('严谨盾','严谨盾','equip','♣',[2]);
+ P('负重车','负重车','equip','♠',[5]);P('负重车','负重车','equip','♣',[5]);P('负重车','负重车','equip','♥',[13]);
+ P('轻舟','轻舟','equip','♥',[5]);P('轻舟','轻舟','equip','♦',[13]);P('轻舟','轻舟','equip','♠',[13]);
+ return D; }
+
+/* ================= 功名存档 ================= */
+let META={games:0,wins:0,ans:0,ok:0,d:{1:{a:0,o:0},2:{a:0,o:0},3:{a:0,o:0}},wrong:[]};
+try{ const raw=localStorage.getItem('xuelin_meta'); if(raw){ const m=JSON.parse(raw);
+ META={games:m.games||0,wins:m.wins||0,ans:m.ans||0,ok:m.ok||0,d:m.d||META.d,wrong:m.wrong||[]}; } }catch(e){}
+function saveMeta(){ try{localStorage.setItem('xuelin_meta',JSON.stringify(META))}catch(e){} }
+function metaTitle(){ const t=META.ok; return t>=240?'至圣先师':t>=160?'博学鸿儒':t>=100?'翰苑学士':t>=60?'求知举人':t>=30?'问道秀才':'蒙学童生'; }
+
+/* ================= 引擎 ================= */
+let G=null,PENDING=null,ME={hand:[],prompt:null},selCards=new Set(),selTargets=[],useAsSha=false,lastLogN=0,playTimer=null;
+const effSub=(p,c)=>{ if(hasSk(p,'qixi')&&c.type!=='equip'&&isBlackCard(c))return 'chai'; return c.sub; };
+function shaLike(p,c){ return c.sub==='sha'||(hasSk(p,'longdan')&&c.sub==='shan')||(hasSk(p,'wusheng')&&isRed(c)&&c.type!=='equip'); }
+function shanLike(p,c){ return c.sub==='shan'||(hasSk(p,'longdan')&&c.sub==='sha'); }
+function log(m,c){ G.log.push({m:m,c:c||''}); if(G.log.length>140)G.log.shift(); }
+function sync(){ render(); }
+function sendHand(){ ME.hand=G.players[0].hand; renderHand(); }
+function drawCards(p,n){ for(let i=0;i<n;i++){ if(!G.deck.length){ if(!G.discard.length)return; G.deck=shuffle(G.discard.splice(0)); } p.hand.push(G.deck.pop()); } if(p.seat===0)sendHand(); }
+function nextAlive(f){ let i=f; do{ i=(i+1)%G.players.length; }while(G.players[i].dead&&i!==f); return i; }
+function engineInfos(){ return G.players.filter(p=>!p.dead).map(p=>({seat:p.seat,plus:!!p.equip.plusHorse,minus:!!p.equip.minusHorse,weapon:p.equip.weapon?p.equip.weapon.name:0})); }
+function gDist(a,b){ const inf=engineInfos(),i=inf.findIndex(x=>x.seat===a.seat),j=inf.findIndex(x=>x.seat===b.seat); const n=inf.length;
+ let d=Math.min(Math.abs(i-j),n-Math.abs(i-j)); if(inf[i].minus)d--; if(inf[j].plus)d++; return Math.max(1,d); }
+function gRange(p){ return p.equip.weapon?EQUIP_INFO[p.equip.weapon.name].range:1; }
+function orderFrom(p){ const o=[]; let i=p.seat; do{o.push(G.players[i]);i=(i+1)%G.players.length}while(i!==p.seat); return o; }
+const isQinggang=p=>p.equip.weapon&&p.equip.weapon.name==='望远镜';
+function drawJudge(){ if(!G.deck.length)G.deck=shuffle(G.discard.splice(0)); const c=G.deck.pop(); G.discard.push(c); return c; }
+const hasStuff=p=>p.hand.length>0||Object.values(p.equip).some(v=>v);
+
+async function startGame(lordPick){
+ META.games++; saveMeta();
+ document.getElementById('ovEnd').classList.add('hidden');
+ document.getElementById('logBox').innerHTML=''; document.getElementById('repBox').innerHTML=''; lastLogN=0;
+ PENDING=null; ME.prompt=null; selCards=new Set(); selTargets=[]; useAsSha=false; clearTimeout(playTimer);
+ const pool=shuffle(Object.keys(HEROES).filter(k=>LORDS.indexOf(k)<0));
+ G={players:[],deck:shuffle(buildDeck()),discard:[],turnSeat:0,over:false,endShown:false,winner:null,log:[],openSeat:-1,playResolvers:{},phaseName:'开局',report:[]};
+ G.players.push({seat:0,id:'me',name:'你',isAI:false,dead:false,hp:0,maxhp:0,hero:HEROES[lordPick],role:'主公',revealed:true,isLord:true,hand:[],equip:{weapon:null,armor:null,plusHorse:null,minusHorse:null},shaUsed:0,flags:{},learn:0,qstreak:0,rendeN:0});
+ const roles=shuffle(['忠臣','反贼','反贼','内奸']);
+ for(let i=0;i<4;i++){ const h=HEROES[pool[i]];
+  G.players.push({seat:i+1,id:'ai'+i,name:h.n,isAI:true,know:.5+Math.random()*.3,dead:false,hp:0,maxhp:0,hero:h,role:roles[i],revealed:false,isLord:false,hand:[],equip:{weapon:null,armor:null,plusHorse:null,minusHorse:null},shaUsed:0,flags:{},learn:0,qstreak:0,rendeN:0}); }
+ G.players.forEach(p=>{ p.maxhp=p.hero.hp+(p.isLord?1:0); p.hp=p.maxhp; drawCards(p,4); });
+ log('═══ 学林开局：牌由学问来 ═══','l-turn');
+ log('主公「'+G.players[0].hero.n+'」领衔，四人各怀身份','l-sys');
+ sync(); banner('学林开局','摸牌须答题 · 答对多得牌'); sfx('turn');
+ await sleep(1400);
+ runLoop().catch(e=>showFatal('引擎错误：'+(e&&e.message?e.message:String(e))));
+}
+async function runLoop(){ while(!G.over){
+ try{ await playTurn(G.players[G.turnSeat]); }
+ catch(e){ showFatal('回合出错：'+(e&&e.message?e.message:String(e))); return; }
+ if(G.over)break; G.turnSeat=nextAlive(G.turnSeat); } }
+async function playTurn(p){
+ if(G.over||p.dead)return; p.shaUsed=0; p.flags={}; p.rendeN=0; G.openSeat=-1; G.phaseName='摸牌'; sync();
+ stat(p.seat===0?'你的回合 · 答题摸牌':p.name+' 行动中');
+ banner(p.seat===0?'你的回合':p.hero.n+' 的回合', p.name+(p.isLord?' · 主公':'')); sfx('turn');
+ await sleep(700); if(G.over)return;
+ await phaseDraw(p); if(G.over)return;
+ G.phaseName='出牌'; sync();
+ if(p.isAI){ await aiPlayPhase(p); }
+ else{ G.openSeat=0; ME.prompt={kind:'play'}; armPlayTimer(); renderPrompt();
+  stat('你的出牌阶段');
+  await new Promise(r=>{ G.playResolvers[0]=r; }); G.openSeat=-1; }
+ if(G.over)return;
+ G.phaseName='弃牌'; sync();
+ const over=p.hand.length-p.hp;
+ if(over>0){ const a=await ask(p.seat,{kind:'discard',n:over},15000);
+  let ids=((a&&a.ids)||[]).filter(id=>p.hand.some(c=>c.id===id)).slice(0,over);
+  while(ids.length<over){ const c=p.hand.find(c=>ids.indexOf(c.id)<0); if(!c)break; ids.push(c.id); }
+  ids.forEach(id=>{const i=p.hand.findIndex(c=>c.id===id); if(i>=0){G.discard.push(p.hand[i]);p.hand.splice(i,1);}});
+  log(p.name+' 弃 '+ids.length+' 张牌'); }
+ if(p.seat===0)sendHand(); sync(); await sleep(260);
+}
+function armPlayTimer(){ clearTimeout(playTimer); playTimer=setTimeout(function(){ if(G&&G.openSeat===0){ log('你超时未出牌，自动结束','l-sys'); onAction(0,{kind:'end'}); } },90000); }
+
+/* ---------- 摸牌问答 ---------- */
+async function phaseDraw(p){
+ let res;
+ if(p.isAI){ res=aiQuestion(p); await sleep(500); }
+ else { stat('答题摸牌中…');
+  try{ res=await humanQuestion(p); }
+  catch(e){ showFatal('答题弹窗出错，按答错处理：'+(e.message||e)); res={diff:1,ok:false,q:POOLS[1][0]}; } }
+ const diff=res.diff,ok=res.ok,q=res.q; let n=ok?DIFFCARD[diff]:1; const parts=[];
+ if(ok){ p.qstreak++; if(p.qstreak%3===0){ n++; parts.push('连对3题·思如泉涌+1'); } } else p.qstreak=0;
+ if(hasSk(p,'yingzi')){ n++; parts.push('本草+1'); }
+ if(ok&&hasSk(p,'qiuhe')){ n++; parts.push('求和+1'); }
+ drawCards(p,n); if(ok)p.learn++;
+ log(p.name+' 挑战【'+DIFFN[diff]+'】知识：'+(ok?'✓ 答对':'✗ 答错')+(q?'（'+q.subj+'）':'')+'，摸 '+n+' 张'+(parts.length?'（'+parts.join('，')+'）':''),ok?'l-ok':'l-bad');
+ G.report.unshift({name:p.name,diff:diff,ok:ok,subj:q?q.subj:'?',qt:q?q.q:'',ans:q?q.ch[0]:''});
+ if(G.report.length>40)G.report.pop(); renderReport(); sync(); await sleep(420);
+}
+function aiQuestion(p){ const K=p.know;
+ function acc(d){ return Math.max(.05,Math.min(.97,K+{1:.25,2:0,3:-.25}[d])); }
+ let best=1,bv=-1; for(const d of [1,2,3]){ const ev=1+(DIFFCARD[d]-1)*acc(d); if(ev>bv){bv=ev;best=d;} }
+ const ok=Math.random()<acc(best); const pool=POOLS[best]; const q=pool.length?pool[rnd(pool.length)]:null;
+ return {diff:best,ok:ok,q:q}; }
+function humanQuestion(p){ return new Promise(res=>openQModal(res)); }
+let qTimerH=null,qRemain=25,qDone=false,qRes=null,qCur=null,qDiff=1;
+function openQModal(res){
+ qDone=false; qRes=res;
+ document.getElementById('ovQ').classList.remove('hidden');
+ document.getElementById('qStep1').classList.remove('hidden');
+ document.getElementById('qStep2').classList.add('hidden');
+ const st=document.getElementById('qStamp'); st.className=''; st.textContent='';
+ const db=document.getElementById('qDiffBtns'); db.innerHTML='';
+ [1,2,3].forEach(d=>{ const b=document.createElement('button'); b.className='diffBtn';
+  b.innerHTML='<b>'+DIFFN[d]+'</b><span>答对摸 <i>'+DIFFCARD[d]+'</i> 张 · 答错仅 1 张</span><span>'+(d===1?'基础题':d===2?'进阶题':'挑战题')+'</span>';
+  b.onclick=function(){ sfx('card'); showQuestion(d); }; db.appendChild(b); });
+}
+function showQuestion(diff){
+ qDiff=diff; const pool=POOLS[diff];
+ if(!pool.length){ finishQ(false,null); return; }
+ qCur=pool[rnd(pool.length)];
+ document.getElementById('qStep1').classList.add('hidden');
+ document.getElementById('qStep2').classList.remove('hidden');
+ document.getElementById('qMeta').innerHTML='<span class="tg" style="background:'+(SUBJC[qCur.subj]||'#666')+'">'+qCur.subj+'</span><span class="tg" style="background:#5a4a2a">'+DIFFN[diff]+' · 答对摸 '+DIFFCARD[diff]+' 张</span>';
+ document.getElementById('qText').textContent=qCur.q;
+ document.getElementById('qExplain').style.display='none';
+ document.getElementById('qNext').classList.add('hidden');
+ const box=document.getElementById('qOpts'); box.innerHTML=''; const L=['甲','乙','丙','丁'];
+ shuffle(qCur.ch.map((t,i)=>({t:t,right:i===0}))).forEach((o,i)=>{ const b=document.createElement('button'); b.className='qopt';
+  b.innerHTML='<span class="ol">'+L[i]+'</span><span>'+o.t+'</span>';
+  b.onclick=function(){ answerQ(o,b); }; box.appendChild(b); });
+ qRemain=25; document.getElementById('qTimer').style.width='100%'; clearInterval(qTimerH);
+ qTimerH=setInterval(function(){ qRemain--; document.getElementById('qTimer').style.width=(100*qRemain/25)+'%';
+  if(qRemain<=0){ clearInterval(qTimerH); if(!qDone)answerQ(null,null); } },1000);
+}
+function answerQ(o,btn){ if(qDone)return; qDone=true; clearInterval(qTimerH);
+ const ok=!!(o&&o.right); finishQ(ok,qCur,btn); }
+function finishQ(ok,q,btn){ if(!qDone){qDone=true;clearInterval(qTimerH);}
+ const st=document.getElementById('qStamp');
+ st.textContent=ok?'正 解':'未 解'; st.className=(ok?'ok':'bad')+' show'; sfx(ok?'ok':'bad');
+ $$('#qOpts .qopt').forEach(el=>{ el.classList.add('dis'); if(q&&el.querySelector('span:last-child').textContent===q.ch[0])el.classList.add('right'); });
+ if(btn&&!ok)btn.classList.add('wrongpick');
+ const ex=document.getElementById('qExplain');
+ ex.innerHTML=q?((ok?'<b style="color:#8fd6a8">✓ 答对了！</b>':'<b style="color:#ff9d84">✗ 正确答案：「'+q.ch[0]+'」</b>')+'<br>析：'+q.x):'题库告罄，按答错处理。';
+ ex.style.display='block';
+ const nx=document.getElementById('qNext'); nx.classList.remove('hidden');
+ META.ans++; META.d[qDiff].a++; if(ok)META.ok++,META.d[qDiff].o++;
+ else if(q&&META.wrong.indexOf(q.id)<0){ META.wrong.push(q.id); if(META.wrong.length>50)META.wrong.shift(); renderErr(); }
+ saveMeta(); topbar();
+ nx.onclick=function(){ document.getElementById('ovQ').classList.add('hidden'); if(qRes)qRes({diff:qDiff,ok:ok,q:q}); qRes=null; };
+}
+
+/* ---------- 询问 / 响应 ---------- */
+function autoResp(pr){ switch(pr.kind){ case 'respond':return{id:null}; case 'save':return{id:null}; case 'wuxie':return{use:false}; case 'axe':return{ids:null}; case 'discard':return{ids:'@auto'}; default:return{}; } }
+function ask(seat,prompt,ms){ ms=ms||15000; return new Promise(res=>{ if(!G||G.over)return res(autoResp(prompt));
+ const p=G.players[seat]; let done=false;
+ function fin(a){ if(done)return; done=true; clearTimeout(tm); if(PENDING&&PENDING.seat===seat)PENDING=null; res(a); }
+ PENDING={seat:seat,done:fin};
+ const tm=setTimeout(function(){ fin(autoResp(prompt)); },ms);
+ prompt.expireAt=Date.now()+ms;
+ if(p.isAI)setTimeout(function(){ fin(aiDecide(p,prompt)); },420+rnd(520));
+ else { ME.prompt=prompt; renderPrompt(); }
+ render(); }); }
+
+/* ---------- 行动 ---------- */
+function onAction(seat,act){ if(!G||G.over||seat<0||!act)return;
+ if(PENDING&&PENDING.seat===seat){ PENDING.done(act); return; }
+ if(G.openSeat===seat)handlePlay(G.players[seat],act); }
+function finishPlay(p){ const r=G.playResolvers[p.seat]; G.playResolvers[p.seat]=null; clearTimeout(playTimer); if(r)r(); }
+function canPlayCard(p,card,asSha){ const sub=asSha?'sha':effSub(p,card);
+ switch(sub){
+  case 'sha':{ const lim=(hasSk(p,'paoxiao')||(p.equip.weapon&&p.equip.weapon.name==='快笔'))?99:1;
+   if(p.shaUsed>=lim)return false; return G.players.some(t=>!t.dead&&t!==p&&gDist(p,t)<=gRange(p)); }
+  case 'chai':return G.players.some(t=>!t.dead&&t!==p&&hasStuff(t));
+  case 'shun':return G.players.some(t=>!t.dead&&t!==p&&gDist(p,t)<=1&&hasStuff(t));
+  case 'juedou':return G.players.some(t=>!t.dead&&t!==p);
+  case 'tao':return p.hp<p.maxhp;
+  case 'taoyuan':return G.players.some(q=>!q.dead&&q.hp<q.maxhp);
+  case 'wuxie':case 'shan':return false; default:return true; } }
+function handlePlay(p,act){
+ clearTimeout(playTimer); const fail=m=>toast(m);
+ if(act.kind==='end'){ finishPlay(p); return; }
+ if(act.kind==='card'){ const card=p.hand.find(c=>c.id===act.id); if(!card)return fail('无此手牌');
+  if(!canPlayCard(p,card,!!act.asSha))return fail('现在不能使用这张牌');
+  const sub=act.asSha?'sha':effSub(p,card);
+  const needT=['sha','chai','shun','juedou'].indexOf(sub)>=0;
+  const tgts=(act.targets||[]).filter(s=>G.players[s]&&!G.players[s].dead&&s!==p.seat);
+  if(needT&&tgts.length!==1)return fail('请选择一个目标');
+  const t=tgts.length?G.players[tgts[0]]:null;
+  if(sub==='sha'&&gDist(p,t)>gRange(p))return fail('距离太远');
+  if(sub==='shun'&&gDist(p,t)>1)return fail('【参考】需距离1以内');
+  removeHand(p,card.id); armPlayTimer();
+  useCard(p,card,sub,t).then(function(){ sendHand(); sync(); }); return; }
+ if(act.kind==='skill'){ doSkill(p,act,fail); } }
+function removeHand(p,id){ const i=p.hand.findIndex(c=>c.id===id); return i<0?null:p.hand.splice(i,1)[0]; }
+async function useCard(p,card,sub,t){
+ G.discard.push(card);
+ if(sub==='sha'){ p.shaUsed++; showPlayed(p,'问题卡',[t]); await resolveSha(p,t,card); return; }
+ if(sub==='tao'){ recover(p,1); log(p.name+' 使用【顿悟卡】，回复1点体力'); return; }
+ if(sub==='wuzhong'){ log(p.name+' 翻开【复习资料】'); showPlayed(p,'复习资料',[]); drawCards(p,2); return; }
+ if(sub==='juedou'||sub==='shun'||sub==='chai'){ showPlayed(p,card.name,[t]);
+  if(await tryWuxie(p,t,card)){ log('【免检符】生效，锦囊被抵消'); return; }
+  if(sub==='juedou')return resolveJuedou(p,t,card);
+  return resolveSteal(p,t,sub); }
+ if(sub==='nanman'||sub==='wanjian'){ showPlayed(p,card.name,[]);
+  for(const q of orderFrom(p)){ if(G.over)break; if(q===p||q.dead)continue;
+   const need=sub==='nanman'?'sha':'shan';
+   if(!(await needResp(q,need,1,p,card))){ log(q.name+' 未能应对'); await damage(p,q,1,card); } } return; }
+ if(sub==='taoyuan'){ showPlayed(p,'小组讨论',[]); for(const q of G.players){ if(q.dead)continue; if(q.hp<q.maxhp){recover(q,1);log(q.name+' 讨论有所得，回复1点体力');} } return; }
+ if(card.type==='equip'){ const slot=EQUIP_INFO[card.name].slot; const old=p.equip[slot]; if(old)G.discard.push(old); p.equip[slot]=card; log(p.name+' 装备【'+card.name+'】'); return; } }
+async function resolveSha(p,t,card){
+ if(!isQinggang(p)&&t.equip.armor&&t.equip.armor.name==='严谨盾'&&isBlackCard(card)){ log(t.name+' 的【严谨盾】挡下黑色问题','l-skill'); return; }
+ if(!isQinggang(p)&&t.equip.armor&&t.equip.armor.name==='直觉猜'){ const j=drawJudge(); log(t.name+' 凭【直觉猜】判定 → '+j.suit+numTxt(j.num),'l-skill'); if(isRed(j)){ log('直觉命中，视为解答','l-skill'); return; } }
+ if(hasSk(t,'luoji')&&!t.flags.luojiUsed){ t.flags.luojiUsed=1; const j=drawJudge(); log(t.name+' 发动〖逻辑诗〗判定 → '+j.suit+numTxt(j.num),'l-skill'); if(isRed(j)){ log('逻辑自洽，视为解答','l-skill'); return; } }
+ const ok=await needResp(t,'shan',1,p,card);
+ if(ok){
+  if(p.equip.weapon&&p.equip.weapon.name==='活字版'&&!G.over){ const a=await ask(p.seat,{kind:'respond',need:'sha',n:1,why:'活字版追加',from:t.name},9000);
+   if(a&&a.id){ const c=p.hand.find(x=>x.id===a.id&&shaLike(p,x)); if(c){ removeHand(p,c.id); G.discard.push(c); log('【活字版】加印发问！','l-skill'); return resolveSha(p,t,c); } } }
+  if(p.equip.weapon&&p.equip.weapon.name==='教鞭'&&!G.over&&p.hand.length>=2){ const a=await ask(p.seat,{kind:'axe',from:t.name},9000);
+   if(a&&a.ids&&a.ids.length>=2){ let n=0; for(const id of a.ids){ if(n>=2)break; if(p.equip.weapon.id===id)continue;
+    const c=removeHand(p,id)||takeEquip(p,id); if(c){G.discard.push(c);n++;} }
+    if(n>=2){ log('【教鞭】敲桌强命！','l-skill'); return damage(p,t,1,card); } } }
+  return; }
+ await damage(p,t,1,card); }
+function takeEquip(p,id){ for(const k of ['weapon','armor','plusHorse','minusHorse']){ if(p.equip[k]&&p.equip[k].id===id){ const c=p.equip[k]; p.equip[k]=null; return c; } } return null; }
+async function needResp(p,need,n,src,card){
+ if(G.over)return false;
+ const a=await ask(p.seat,{kind:'respond',need:need,n:n,from:src?src.name:null,card:card?card.name:null},12000);
+ if(!a||!(a.id||a.ids))return false;
+ const ids=a.ids||[a.id]; let cnt=0;
+ for(const id of ids){ if(cnt>=n)break; const c=p.hand.find(x=>x.id===id&&(need==='shan'?shanLike(p,x):shaLike(p,x))); if(c){removeHand(p,c.id);G.discard.push(c);cnt++;} }
+ if(cnt>=n){ log(p.name+' 打出【'+(need==='sha'?'问题卡':'解答卡')+'】'); return true; } return false; }
+async function resolveJuedou(p,t,card){ log(p.name+' 与 '+t.name+' 展开【辩论】！');
+ let cur=t,other=p;
+ while(!G.over){ if(!(await needResp(cur,'sha',1,other,card))){ log(cur.name+' 词穷落败'); await damage(other,cur,1,card); return; } const tmp=cur;cur=other;other=tmp; } }
+async function resolveSteal(p,t,kind){
+ const eqs=Object.entries(t.equip).filter(kv=>kv[1]);
+ if(eqs.length&&(Math.random()<.5||!t.hand.length)){ const kv=eqs[rnd(eqs.length)]; const c=kv[1]; t.equip[kv[0]]=null;
+  if(kind==='shun'){ p.hand.push(c); log(p.name+'【参考】走了 '+t.name+' 的【'+c.name+'】'); } else { G.discard.push(c); log(p.name+'【收缴】了 '+t.name+' 的【'+c.name+'】'); } }
+ else if(t.hand.length){ const c=t.hand.splice(rnd(t.hand.length),1)[0];
+  if(kind==='shun'){ p.hand.push(c); log(p.name+' 从 '+t.name+' 处借走一张笔记'); } else { G.discard.push(c); log(p.name+' 收缴了 '+t.name+' 一张笔记'); } } }
+async function tryWuxie(p,t,card){ if(!t.hand.some(c=>c.sub==='wuxie'))return false;
+ const a=await ask(t.seat,{kind:'wuxie',trick:card.name,from:p.name},9000);
+ if(a&&a.use){ const i=t.hand.findIndex(c=>c.sub==='wuxie'); if(i>=0){ G.discard.push(t.hand.splice(i,1)[0]); return true; } } return false; }
+
+/* ---------- 伤害 / 濒死 / 阵亡 ---------- */
+function recover(p,n){ p.hp=Math.min(p.maxhp,p.hp+n); fxHeal(p.seat,n); }
+async function damage(src,tgt,n,card){ if(!tgt||tgt.dead)return;
+ tgt.hp-=n; log(tgt.name+' 受到 '+n+' 点伤害（剩 '+Math.max(0,tgt.hp)+'）','l-dmg'); fxDamage(tgt.seat,n); sfx('hit'); sync();
+ if(src&&hasSk(src,'zhushu')&&card&&card.sub==='sha'&&!tgt.dead){ drawCards(src,1); log('〖著书〗笔耕不辍，摸一张牌','l-skill'); }
+ if(!tgt.dead&&hasSk(tgt,'jianxiong')&&card&&card.id){ const i=G.discard.findIndex(c=>c.id===card.id);
+  if(i>=0){ tgt.hand.push(G.discard.splice(i,1)[0]); log('〖镭光〗收得致伤之牌','l-skill'); } }
+ if(!tgt.dead&&hasSk(tgt,'fankui')&&src&&!src.dead&&hasStuff(src)){
+  const grabEq=Object.values(src.equip).some(v=>v)&&(Math.random()<.35||!src.hand.length);
+  if(grabEq){ const ks=Object.keys(src.equip).filter(k=>src.equip[k]); const k=ks[rnd(ks.length)]; const c=src.equip[k]; src.equip[k]=null; tgt.hand.push(c); log('〖适者生存〗夺得 '+src.name+' 的【'+c.name+'】','l-skill'); }
+  else { const c=src.hand.splice(rnd(src.hand.length),1)[0]; tgt.hand.push(c); log('〖适者生存〗夺得 '+src.name+' 一张手牌','l-skill'); } }
+ if(!tgt.dead&&hasSk(tgt,'didong')&&src&&!src.dead&&src!==tgt){ const j=drawJudge(); log('〖候风地动〗判定 → '+j.suit+numTxt(j.num),'l-skill');
+  if(j.suit!=='♥'){ if(src.hand.length>=2){ for(let i=0;i<2;i++){G.discard.push(src.hand.splice(rnd(src.hand.length),1)[0]);} log(src.name+' 弃两张牌'); }
+   else { src.hp-=1; log(src.name+' 失去1点体力','l-dmg'); fxDamage(src.seat,1); if(src.hp<=0)await dying(src); } } }
+ sync();
+ while(tgt.hp<=0&&!tgt.dead&&!G.over){ if(!(await dying(tgt))){ await death(tgt,src); return; } } }
+async function dying(tgt){
+ for(const q of orderFrom(tgt)){ if(tgt.hp>0)break; if(q.dead)continue;
+  if(!q.hand.some(c=>c.sub==='tao'))continue;
+  let use=false;
+  if(q.isAI)use=aiWantsSave(q,tgt);
+  else { const a=await ask(q.seat,{kind:'save',who:tgt.name,hp:tgt.hp},8000); use=!!(a&&a.id); }
+  if(use){ const i=q.hand.findIndex(c=>c.sub==='tao'); G.discard.push(q.hand.splice(i,1)[0]); tgt.hp++; fxHeal(tgt.seat,1); log(q.name+' 使用【顿悟卡】救起 '+tgt.name); sync(); if(tgt.hp>0)return true; } }
+ return tgt.hp>0; }
+async function death(t,killer){ t.dead=true; t.revealed=true; sfx('die');
+ log('☠ '+t.name+'（'+t.role+'）出局','l-death'); banner(t.hero.n+' 出局','身份揭晓 · '+t.role); sync();
+ if(t.isLord){ endByLordDeath(); return; }
+ if(t.role==='反贼'&&killer&&!killer.dead){ drawCards(killer,3); log(killer.name+' 挫败反贼，摸三张牌','l-skill'); }
+ if(t.role==='忠臣'&&killer&&killer.role==='主公'){ killer.hand.forEach(c=>G.discard.push(c)); killer.hand=[]; Object.keys(killer.equip).forEach(k=>{if(killer.equip[k]){G.discard.push(killer.equip[k]);killer.equip[k]=null}}); log('主公痛失忠臣，弃置所有牌','l-sys'); }
+ checkEnd(); }
+function endByLordDeath(){ const alive=G.players.filter(p=>!p.dead); finish((alive.length===1&&alive[0].role==='内奸')?'内奸':'反贼'); }
+function checkEnd(){ const alive=G.players.filter(p=>!p.dead); if(!alive.some(p=>p.role==='反贼'||p.role==='内奸'))finish('主忠'); }
+function finish(f){ G.over=true; G.winner=f; G.players.forEach(p=>p.revealed=true); clearTimeout(playTimer);
+ if(PENDING){PENDING.done(autoResp({kind:'x'}));PENDING=null;}
+ Object.keys(G.playResolvers).forEach(k=>{const r=G.playResolvers[k];G.playResolvers[k]=null;if(r)r();});
+ log('═══ '+(f==='主忠'?'主公与忠臣':f)+' 获胜 ═══','l-turn'); stat('对局结束'); sync(); showEnd(); }
+function showEnd(){ if(!G||G.endShown)return; G.endShown=true;
+ const me=G.players[0],myRole=me.role;
+ let win=G.winner==='主忠'?(myRole==='主公'||myRole==='忠臣'):G.winner==='反贼'?myRole==='反贼':myRole==='内奸';
+ if(win){ META.wins++; saveMeta(); sfx('win'); banner('胜 负 已 分','学无止境 · 再战一局'); } else sfx('die');
+ document.getElementById('endTitle').textContent=win?'大 捷':'败 北';
+ document.getElementById('endTitle').style.color=win?'#ecd07a':'#e08a6a';
+ document.getElementById('endSub').textContent=(G.winner==='主忠'?'主公与忠臣':G.winner)+'阵营获胜 · 你的身份：'+myRole;
+ document.getElementById('endRows').innerHTML='<div class="rr"><span>你的学问（答对摸牌）</span><b>'+me.learn+'</b></div><div class="rr"><span>累计答对 · 功名</span><b>'+META.ok+' · '+metaTitle()+'</b></div><div class="rr"><span>总战绩</span><b>'+META.wins+' 胜 / '+META.games+' 局</b></div>';
+ const box=document.getElementById('endRoles'); box.innerHTML='';
+ G.players.forEach(p=>{ const d=document.createElement('div'); d.className='prow';
+  d.innerHTML='<span style="color:'+KCOLOR[p.hero.k]+'">◈</span><span class="nm">'+p.name+' · '+p.hero.n+'</span><span>'+p.role+(p.dead?' · 出局':'')+'</span>'; box.appendChild(d); });
+ document.getElementById('ovEnd').classList.remove('hidden'); }
+
+/* ---------- 技能（主动） ---------- */
+function doSkill(p,act,fail){ const arm=()=>armPlayTimer();
+ if(act.skill==='zhiheng'){ if(p.flags.zhiheng)return fail('【演算】本回合已发动');
+  const ids=(act.ids||[]).filter(id=>p.hand.some(c=>c.id===id)); if(!ids.length)return fail('请选择要弃置的牌');
+  ids.forEach(id=>{const c=removeHand(p,id);if(c)G.discard.push(c);}); p.flags.zhiheng=1; drawCards(p,ids.length);
+  log('〖演算〗弃 '+ids.length+' 摸 '+ids.length,'l-skill'); arm(); sync(); return; }
+ if(act.skill==='qingnang'){ if(p.flags.qingnang)return fail('【改良造纸】本回合已发动'); if(p.hp>=p.maxhp)return fail('体力已满');
+  const c=removeHand(p,act.id); if(!c)return fail('请选择一张牌'); G.discard.push(c); p.flags.qingnang=1; recover(p,1);
+  log('〖改良造纸〗弃牌回复1点体力','l-skill'); arm(); sync(); return; }
+ if(act.skill==='rende'){ const t=G.players[act.target]; const c=removeHand(p,act.id);
+  if(!t||t.dead||t===p||!c)return fail('目标无效'); t.hand.push(c); p.rendeN=(p.rendeN||0)+1;
+  log('〖诲人不倦〗'+p.name+' 传授 '+t.name+' 一张牌','l-skill');
+  if(p.rendeN>=2&&!p.flags.rendeHeal&&p.hp<p.maxhp){ p.flags.rendeHeal=1; recover(p,1); log('教学相长，回复1点体力'); }
+  if(t.seat===0)sendHand(); arm(); sync(); return; }
+ if(act.skill==='zhangba'){ const ids=(act.ids||[]).slice(0,2); if(ids.length!==2)return fail('需选两张手牌');
+  const t=G.players[act.target]; if(!t||t.dead||t===p)return fail('请选择目标'); if(gDist(p,t)>gRange(p))return fail('距离太远');
+  const lim=(hasSk(p,'paoxiao')||(p.equip.weapon&&p.equip.weapon.name==='快笔'))?99:1;
+  if(p.shaUsed>=lim)return fail('问题卡已用完');
+  const cards=ids.map(id=>removeHand(p,id)).filter(Boolean); if(cards.length!==2)return fail('选牌无效');
+  cards.forEach(c=>G.discard.push(c)); p.shaUsed++; showPlayed(p,'问题卡',[t]); log('【算筹尺】两张草稿化作一问','l-skill');
+  resolveSha(p,t,{name:'问题卡',sub:'sha',suit:'',num:0}).then(function(){arm();sync();}); return; } }
+
+/* ================= AI ================= */
+function aiDecide(p,pr){ switch(pr.kind){
+ case 'respond':{ if(pr.need==='shan'){ const cs=p.hand.filter(c=>shanLike(p,c)); return cs.length?{id:cs[0].id}:{id:null}; }
+  if(pr.need==='sha'){ const cs=p.hand.filter(c=>shaLike(p,c)); if(cs.length)return (pr.why==='活字版追加'&&Math.random()<.4)?{id:null}:{id:cs[0].id}; return{id:null}; } return {}; }
+ case 'axe':{ const t=G.players.find(q=>q.name===pr.from); if(t&&t.hp===1&&p.hand.length>=3)return{ids:p.hand.slice(0,2).map(c=>c.id)}; return{ids:null}; }
+ case 'save':{ const t=G.players.find(q=>q.name===pr.who); if(t&&aiWantsSave(p,t)&&p.hand.some(c=>c.sub==='tao'))return{id:p.hand.find(c=>c.sub==='tao').id}; return{id:null}; }
+ case 'wuxie':return{use:Math.random()<.85};
+ case 'discard':{ const val=c=>(({'tao':10,'wuzhong':9,'shan':8,'sha':7,'juedou':6,'shun':6,'chai':6,'nanman':4,'wanjian':4,'taoyuan':3,'wuxie':5})[c.sub]||2)+(c.type==='equip'?1:0);
+  return{ids:p.hand.slice().sort((a,b)=>val(a)-val(b)).slice(0,pr.n).map(c=>c.id)}; } } return {}; }
+function aiWantsSave(q,t){ if(t===q)return true; return (q.role==='主公'&&t.role==='忠臣')||(q.role==='忠臣'&&(t.role==='主公'||t.role==='忠臣'))||(q.role==='反贼'&&t.role==='反贼'); }
+function enemiesOf(p){ const alive=G.players.filter(q=>!q.dead&&q!==p);
+ if(p.role==='主公'||p.role==='忠臣'){ let e=alive.filter(q=>q.role==='反贼'); return e.length?e:alive.filter(q=>q.role==='内奸'); }
+ if(p.role==='反贼'){ const lord=G.players.find(q=>q.isLord&&!q.dead); return [lord].concat(alive.filter(q=>q.role==='忠臣'||q.role==='内奸')).filter(Boolean); }
+ const loy=alive.filter(q=>q.role==='主公'||q.role==='忠臣'),reb=alive.filter(q=>q.role==='反贼');
+ return loy.length>=reb.length?loy:reb; }
+function alliesOf(p){ const en=new Set(enemiesOf(p).map(q=>q.seat)); return G.players.filter(q=>!q.dead&&q!==p&&!en.has(q.seat)); }
+async function aiPlayPhase(p){ let guard=0;
+ while(!G.over&&guard++<26){ await sleep(400+rnd(320)); const step=aiStep(p); if(!step)break; await step(); if(G.over)return; }
+ if(G.openSeat===p.seat)finishPlay(p); }
+function aiStep(p){ const foes=enemiesOf(p).filter(q=>!q.dead), pals=alliesOf(p);
+ const canSha=t=>gDist(p,t)<=gRange(p); const sorted=p.hand.slice().sort((a,b)=>valC(a)-valC(b));
+ if(p.hp<=Math.max(1,p.maxhp-2)&&p.hand.some(c=>c.sub==='tao')&&(p.hp<=2||p.hand.length>4))
+  return async function(){const c=p.hand.find(c=>c.sub==='tao');removeHand(p,c.id);await useCard(p,c,'tao');};
+ const eq=p.hand.find(c=>c.type==='equip'); if(eq)return async function(){removeHand(p,eq.id);await useCard(p,eq,EQUIP_INFO[eq.name].slot);};
+ if(hasSk(p,'qingnang')&&!p.flags.qingnang&&p.hp<p.maxhp&&p.hand.length>=2)return async function(){doSkill(p,{skill:'qingnang',id:sorted[0].id},function(){})};
+ if(hasSk(p,'zhiheng')&&!p.flags.zhiheng&&p.hand.length>=4)return async function(){doSkill(p,{skill:'zhiheng',ids:sorted.slice(0,2).map(c=>c.id)},function(){})};
+ if(hasSk(p,'rende')&&p.hand.length>=4){ const t=pals.sort((a,b)=>a.hp-b.hp)[0]; if(t)return async function(){doSkill(p,{skill:'rende',id:sorted[0].id,target:t.seat},function(){})}; }
+ const wz=p.hand.find(c=>c.sub==='wuzhong'); if(wz)return async function(){removeHand(p,wz.id);await useCard(p,wz,'wuzhong');};
+ for(const sub of ['chai','shun']){ const c=p.hand.find(x=>effSub(p,x)===sub);
+  if(c){ const t=foes.filter(q=>hasStuff(q)&&(sub==='chai'||gDist(p,q)<=1)).sort((a,b)=>a.hp-b.hp)[0];
+   if(t)return async function(){removeHand(p,c.id);await useCard(p,c,sub,t);}; } }
+ const jd=p.hand.find(c=>c.sub==='juedou'); if(jd&&foes.length&&p.hand.some(c=>shaLike(p,c))){ const t=foes.sort((a,b)=>a.hp-b.hp)[0];
+  return async function(){removeHand(p,jd.id);await useCard(p,jd,'juedou',t);}; }
+ const nm=p.hand.find(c=>c.sub==='nanman'),wj=p.hand.find(c=>c.sub==='wanjian');
+ if(nm&&foes.length>=2)return async function(){removeHand(p,nm.id);await useCard(p,nm,'nanman');};
+ if(wj&&foes.length>=2)return async function(){removeHand(p,wj.id);await useCard(p,wj,'wanjian');};
+ const ty=p.hand.find(c=>c.sub==='taoyuan');
+ if(ty&&pals.filter(q=>q.hp<q.maxhp).length>=foes.filter(q=>q.hp<q.maxhp).length&&pals.some(q=>q.hp<q.maxhp))
+  return async function(){removeHand(p,ty.id);await useCard(p,ty,'taoyuan');};
+ const limOK=p.shaUsed<1||hasSk(p,'paoxiao')||(p.equip.weapon&&p.equip.weapon.name==='快笔');
+ if(limOK){ const sha=p.hand.find(c=>c.sub==='sha')||(hasSk(p,'wusheng')?p.hand.find(c=>isRed(c)&&c.type!=='equip'&&c.sub!=='tao'):null)||(hasSk(p,'longdan')&&p.hand.length>2?p.hand.find(c=>c.sub==='shan'):null);
+  if(sha){ const t=foes.filter(canSha).sort((a,b)=>a.hp-b.hp)[0];
+   if(t)return async function(){removeHand(p,sha.id);await useCard(p,sha,'sha',t);}; } }
+ if(p.equip.weapon&&p.equip.weapon.name==='算筹尺'&&limOK&&p.hand.length>=3){ const t=foes.filter(canSha)[0];
+  if(t)return async function(){doSkill(p,{skill:'zhangba',ids:p.hand.slice(0,2).map(c=>c.id),target:t.seat},function(){})}; }
+ return null; }
+function valC(c){ return ({'tao':10,'wuzhong':9,'shan':8,'sha':7,'juedou':6,'shun':6,'chai':6,'wuxie':5,'nanman':4,'wanjian':4,'taoyuan':3})[c.sub]||2; }
+
+/* ================= UI ================= */
+function topbar(){ document.getElementById('hTitle').textContent=metaTitle(); document.getElementById('hOk').textContent=META.ok;
+ document.getElementById('hDeck').textContent=G?G.deck.length:0; document.getElementById('hPhase').textContent=G?G.phaseName:'—'; }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(function(){t.classList.remove('show')},1800); }
+function banner(t,s){ const b=document.getElementById('banner'); b.querySelector('.bt').textContent=t; b.querySelector('.bs').textContent=s||''; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
+function seatEl(seat){ return document.querySelector('.seat[data-seat="'+seat+'"]'); }
+function fxDamage(seat,n){ const el=seatEl(seat); if(!el)return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+ const d=document.createElement('div'); d.className='dmgfx'; d.textContent='−'+n; el.appendChild(d); setTimeout(function(){d.remove()},1000); }
+function fxHeal(seat,n){ const el=seatEl(seat); if(!el)return; const d=document.createElement('div'); d.className='dmgfx heal'; d.textContent='＋'+n; el.appendChild(d); setTimeout(function(){d.remove()},1000); }
+let paTimer=null;
+function showPlayed(p,name,targets){ document.getElementById('paCaption').textContent=p.name+' ▸ '+name+(targets.length?' ▸ '+targets.map(t=>t.name).join('、'):'');
+ const box=document.getElementById('paCards'); box.innerHTML=''; box.appendChild(buildCardEl({name:name,type:/问题|解答|顿悟/.test(name)?'basic':'trick',suit:'❖',num:13}));
+ clearTimeout(paTimer); paTimer=setTimeout(function(){box.innerHTML='';document.getElementById('paCaption').textContent='';},2200); sfx('card'); }
+function buildCardEl(c,mini){ const d=document.createElement('div');
+ d.className='card t-'+c.type+' '+(isRed(c)?'red':'black')+(mini?' mini':'');
+ d.innerHTML='<div class="cn">'+numTxt(c.num)+'<br>'+c.suit+'</div><div class="nm '+(c.name.length>3?'two':'')+'">'+c.name+'</div><div class="tp">'+(c.type==='basic'?'基本牌':c.type==='trick'?'锦囊牌':'装备牌')+'</div>';
+ return d; }
+function render(){ if(!G)return; try{
+ topbar(); renderSeats(); renderLog(); renderMyPanel(); renderHand(); renderPrompt();
+ document.getElementById('hDeck').textContent=G.deck.length; document.getElementById('hPhase').textContent=G.phaseName;
+}catch(e){ showFatal('渲染错误：'+(e.message||e)); } }
+function renderSeats(){ const table=document.getElementById('table'); table.querySelectorAll('.seat').forEach(e=>e.remove());
+ const n=G.players.length; const selSub=selectedEffSub();
+ G.players.forEach((p,i)=>{ const ang=Math.PI/2+i*(2*Math.PI/n);
+  const el=document.createElement('div'); el.className='seat'+(p.dead?' dead':'')+(G.turnSeat===p.seat&&!G.over?' turn':''); el.dataset.seat=p.seat;
+  const kc=KCOLOR[p.hero.k];
+  const pips=p.maxhp>5?'<span style="font-size:12px;color:#ff9d84">♥ '+p.hp+'/'+p.maxhp+'</span>':Array.from({length:p.maxhp},function(_,k){return '<i class="'+(k<p.hp?'':'lost')+'"></i>';}).join('');
+  const eqch=[]; if(p.equip.weapon)eqch.push('<span class="w">⚔'+p.equip.weapon.name+'</span>'); if(p.equip.armor)eqch.push('<span class="a">🛡'+p.equip.armor.name+'</span>'); if(p.equip.plusHorse)eqch.push('<span class="h">负重车</span>'); if(p.equip.minusHorse)eqch.push('<span class="h">轻舟</span>');
+  const roleTag=p.isLord?'<span class="rn">主公</span>':(p.revealed?'<span class="rn">'+p.role+'</span>':'<span class="rn hid">？</span>');
+  const think=(PENDING&&PENDING.seat===p.seat)||(G.openSeat===p.seat);
+  const avaTxt=p.hero.n.length>3?p.hero.n.slice(0,2):p.hero.n;
+  el.innerHTML='<div class="box">'+(think&&!p.dead?'<div class="think">思考中</div>':'')+
+   '<div class="ava" style="--kc:'+kc+'">'+avaTxt+'</div>'+
+   '<div class="sname">'+p.name+roleTag+'</div>'+
+   '<div class="hpbar">'+pips+'</div>'+
+   '<div class="subrow"><span class="backs">'+'<b></b>'.repeat(Math.min(p.hand.length,5))+'</span><span>'+p.hand.length+'牌</span><span class="learn">学 '+p.learn+'</span></div>'+
+   '<div class="eqs">'+eqch.join('')+'</div></div>';
+  el.style.left=(50+41*Math.cos(ang)*1.02)+'%'; el.style.top=(46+38*Math.sin(ang)*.94)+'%';
+  if(selSub&&canTargetView(p))el.classList.add('tgtOK');
+  if(selTargets.indexOf(p.seat)>=0)el.classList.add('tgtSel');
+  el.onclick=function(){ onSeatClick(p.seat); };
+  table.appendChild(el); }); }
+function renderMyPanel(){ const me=G.players[0]; const kc=KCOLOR[me.hero.k];
+ document.getElementById('mpAva').textContent=me.hero.n.slice(0,2); document.getElementById('mpAva').style.setProperty('--kc',kc);
+ document.getElementById('mpName').innerHTML='你 <span class="rn" style="font-size:10px;color:var(--gold2)">主公</span>';
+ document.getElementById('mpHero').textContent=me.hero.n+' · '+me.hero.t+' · '+me.hp+'/'+me.maxhp;
+ document.getElementById('mpLearn').textContent='学问 '+me.learn+' ｜ 连对 '+me.qstreak; }
+function renderHand(){ const h=document.getElementById('hand'); h.innerHTML=''; const pr=ME.prompt;
+ const respNeed=pr&&pr.kind==='respond'?pr.need:null;
+ ME.hand.forEach(c=>{ const el=buildCardEl(c); el.dataset.id=c.id;
+  if(selCards.has(c.id))el.classList.add('sel');
+  if(respNeed){ const ok=respNeed==='shan'?shanLike(G.players[0],c):shaLike(G.players[0],c); if(!ok)el.classList.add('dim'); }
+  el.onclick=function(){ onHandClick(c); }; h.appendChild(el); }); }
+function renderLog(){ const box=document.getElementById('logBox');
+ G.log.slice(lastLogN).forEach(l=>{ const d=document.createElement('div'); d.className=l.c; d.innerHTML=l.m; box.appendChild(d); });
+ lastLogN=G.log.length; box.scrollTop=box.scrollHeight; }
+function renderReport(){ const box=document.getElementById('repBox'); box.innerHTML='';
+ if(!G||!G.report.length){ box.innerHTML='<p style="color:var(--tx2);text-align:center;padding:20px">尚无答题记录</p>'; return; }
+ G.report.forEach(r=>{ const d=document.createElement('div'); d.className='rep';
+  d.innerHTML='<span class="tag" style="background:'+(SUBJC[r.subj]||'#666')+'">'+r.subj+'</span><b>'+r.name+'</b> 挑战'+DIFFN[r.diff]+' <span class="'+(r.ok?'ok':'bad')+'">'+(r.ok?'✓ 答对':'✗ 答错')+'</span><br><span style="color:#8d8168">'+r.qt.slice(0,34)+(r.qt.length>34?'…':'')+' → <span class="ans">'+r.ans+'</span></span>';
+  box.appendChild(d); }); }
+function renderErr(){ const box=document.getElementById('errBox'); box.innerHTML='';
+ if(!META.wrong.length){ box.innerHTML='<p style="color:var(--tx2);text-align:center;padding:20px">错题笺空空如也</p>'; return; }
+ META.wrong.slice(-12).reverse().forEach(id=>{ let q=null; const parts=id.split('|');
+  if(BANK[parts[0]]){ for(const st in BANK[parts[0]]){ const f=BANK[parts[0]][st].find(x=>x.id===id); if(f){q=f;break;} } }
+  if(!q)return; const d=document.createElement('div'); d.className='rep';
+  d.innerHTML='<span class="tag" style="background:'+(SUBJC[q.subj]||'#666')+'">'+q.subj+'·'+q.stage+'</span>'+q.q+'<br><span class="ans">✔ '+q.ch[0]+'</span> <span style="color:#8d8168">'+q.x+'</span>';
+  box.appendChild(d); }); }
+function renderPrompt(){ if(!G)return; const box=document.getElementById('pmsg'),btns=document.getElementById('pbtns'); btns.innerHTML='';
+ function mkBtn(t,style,fn,en){ const b=document.createElement('button'); b.className='btn sm '+style; b.textContent=t; b.onclick=fn; if(!en)b.disabled=true; btns.appendChild(b); }
+ const pr=ME.prompt; const me=G.players[0];
+ const cd='<span class="cd" id="cdSp"></span>';
+ if(G.over){ box.innerHTML='— 局终 —'; return; }
+ if(pr&&pr.kind==='respond'){
+  box.innerHTML=(pr.from?'<b style="color:#ecd07a">'+pr.from+'</b> 对你使出【'+(pr.card||pr.why||'')+'】，请打出 <b style="color:#ff9d84">【'+(pr.need==='sha'?'问题卡':'解答卡')+'】</b>':'请响应')+cd;
+  const okCards=ME.hand.filter(c=>pr.need==='shan'?shanLike(me,c):shaLike(me,c));
+  mkBtn('打出','',function(){ let ids=Array.from(selCards).filter(id=>okCards.some(c=>c.id===id)); if(!ids.length&&okCards.length)ids=[okCards[0].id];
+   ME.prompt=null; selCards.clear(); onAction(0,pr.n>1?{ids:ids.slice(0,pr.n)}:{id:ids[0]||null}); render(); },okCards.length>0);
+  mkBtn('不出','ghost',function(){ME.prompt=null;selCards.clear();onAction(0,{id:null});render();},true); return; }
+ if(pr&&pr.kind==='save'){ box.innerHTML='你已濒死（体力 '+pr.hp+'），是否使用【顿悟卡】自救？'+cd;
+  mkBtn('使用顿悟','',function(){const c=ME.hand.find(c=>c.sub==='tao');ME.prompt=null;onAction(0,{id:c?c.id:null})},ME.hand.some(c=>c.sub==='tao'));
+  mkBtn('放弃','ghost',function(){ME.prompt=null;onAction(0,{id:null})},true); return; }
+ if(pr&&pr.kind==='discard'){ box.innerHTML='弃牌阶段：请弃置 <b style="color:#ecd07a">'+pr.n+'</b> 张（已选 '+selCards.size+'）'+cd;
+  mkBtn('确认弃牌','gold',function(){ if(selCards.size<pr.n)return toast('还需选 '+(pr.n-selCards.size)+' 张'); ME.prompt=null; const ids=Array.from(selCards); selCards.clear(); onAction(0,{kind:'discard',ids:ids}); render(); },true); return; }
+ if(pr&&pr.kind==='wuxie'){ box.innerHTML=pr.from+' 对你使出【'+pr.trick+'】，是否使用【免检符】？'+cd;
+  mkBtn('免检','',function(){ME.prompt=null;onAction(0,{use:true})},true); mkBtn('过','ghost',function(){ME.prompt=null;onAction(0,{use:false})},true); return; }
+ if(pr&&pr.kind==='axe'){ box.innerHTML='【教鞭】被闪避：弃两张牌可强制命中？'+cd;
+  mkBtn('弃两张强攻','gold',function(){ if(selCards.size<2)return toast('请选择两张牌'); ME.prompt=null; const ids=Array.from(selCards).slice(0,2); selCards.clear(); onAction(0,{ids:ids}); },true);
+  mkBtn('罢了','ghost',function(){ME.prompt=null;onAction(0,{ids:null})},true); return; }
+ const playing=G.openSeat===0&&G.phaseName==='出牌';
+ if(playing){ box.innerHTML='你的出牌阶段'+cd+'<br><span style="font-size:12px;color:#8d8168">点手牌 → 点目标 → 出牌；装备与群体牌点牌即用</span>';
+  if(selCards.size>0){ const sub=selectedEffSub();
+   if(['sha','juedou','chai','shun'].indexOf(sub)>=0)mkBtn('出 牌','gold',function(){confirmPlay()},true);
+   mkBtn('取消','ghost',function(){selCards.clear();selTargets=[];useAsSha=false;render();},true); }
+  else mkBtn('结束回合','ghost',function(){onAction(0,{kind:'end'})},true);
+  const hero=me.hero;
+  if(hero.sk.some(s=>s.id==='zhiheng'))mkBtn('演算','',function(){ if(!selCards.size)return toast('先选择要弃的牌'); onAction(0,{kind:'skill',skill:'zhiheng',ids:Array.from(selCards)}); selCards.clear(); render(); },true);
+  if(hero.sk.some(s=>s.id==='qingnang'))mkBtn('造纸','',function(){ if(selCards.size!==1)return toast('选一张牌弃置'); onAction(0,{kind:'skill',skill:'qingnang',id:Array.from(selCards)[0]}); selCards.clear(); render(); },true);
+  if(hero.sk.some(s=>s.id==='rende')&&selTargets.length===1&&selCards.size===1)mkBtn('传授','',function(){ onAction(0,{kind:'skill',skill:'rende',id:Array.from(selCards)[0],target:selTargets[0]}); selCards.clear(); selTargets=[]; render(); },true);
+  if(me.equip.weapon&&me.equip.weapon.name==='算筹尺'&&selCards.size===2&&selTargets.length===1)mkBtn('算筹·当问','',function(){ onAction(0,{kind:'skill',skill:'zhangba',ids:Array.from(selCards),target:selTargets[0]}); selCards.clear(); selTargets=[]; render(); },true);
+  if(hero.sk.some(s=>s.id==='wusheng')&&selCards.size===1){ const c=ME.hand.find(x=>x.id===Array.from(selCards)[0]);
+   if(c&&isRed(c)&&c.type!=='equip'&&c.sub!=='tao'){ const lb=document.createElement('label'); lb.className='chk';
+    lb.innerHTML='<input type="checkbox" '+(useAsSha?'checked':'')+'> 红牌当【问题卡】';
+    lb.querySelector('input').onchange=function(e){useAsSha=e.target.checked;render();}; btns.appendChild(lb); } }
+  return; }
+ box.innerHTML='等待 '+G.players[G.turnSeat].name+' 行动…'+cd; }
+setInterval(function(){ const el=document.getElementById('cdSp'); if(!el)return; const pr=ME.prompt; if(pr&&pr.expireAt)el.textContent='⏳'+Math.max(0,Math.ceil((pr.expireAt-Date.now())/1000)); },300);
+
+function selectedCards(){ return ME.hand.filter(c=>selCards.has(c.id)); }
+function selectedEffSub(){ const cs=selectedCards(); if(cs.length!==1)return null; const c=cs[0]; const me=G.players[0];
+ if(useAsSha&&hasSk(me,'wusheng')&&isRed(c)&&c.type!=='equip')return 'sha';
+ return effSub(me,c); }
+function canTargetView(p){ const sub=selectedEffSub(); if(!sub)return false; const me=G.players[0];
+ if(p.dead||p===me)return false; if(['sha','juedou','chai','shun'].indexOf(sub)<0)return false;
+ if(sub==='chai'||sub==='juedou')return hasStuff(p);
+ if(sub==='sha')return gDist(me,p)<=gRange(me); if(sub==='shun')return gDist(me,p)<=1&&hasStuff(p); return true; }
+function onHandClick(c){ const pr=ME.prompt;
+ if(pr&&['respond','axe','discard'].indexOf(pr.kind)>=0){ selCards.has(c.id)?selCards.delete(c.id):selCards.add(c.id); render(); return; }
+ if(!(G.openSeat===0&&G.phaseName==='出牌'))return toast('不是你的出牌阶段');
+ if(selCards.has(c.id)){ selCards.delete(c.id); render(); return; }
+ const me=G.players[0];
+ const sub=(useAsSha&&hasSk(me,'wusheng')&&isRed(c)&&c.type!=='equip')?'sha':effSub(me,c);
+ const selfOnly=['wuzhong','tao','taoyuan','nanman','wanjian'].indexOf(sub)>=0||c.type==='equip';
+ if(selfOnly){ selCards.clear(); selTargets=[]; onAction(0,{kind:'card',id:c.id,targets:[],asSha:false}); return; }
+ if(sub==='shan'||sub==='wuxie')return toast('此牌不能主动使用');
+ selCards.clear(); selCards.add(c.id); selTargets=[]; render(); }
+function onSeatClick(seat){ const p=G.players[seat]; if(!canTargetView(p))return; selTargets=[seat]; render(); }
+function confirmPlay(){ const cs=selectedCards(); if(cs.length!==1)return;
+ onAction(0,{kind:'card',id:cs[0].id,targets:selTargets,asSha:useAsSha}); selCards.clear(); selTargets=[]; useAsSha=false; render(); }
+
+/* 页签与按钮 */
+$$('.tabs button').forEach(b=>{ b.onclick=function(){ $$('.tabs button').forEach(x=>x.classList.toggle('on',x===b)); $$('.tabpane').forEach(p=>p.classList.remove('on')); document.getElementById(b.dataset.tab).classList.add('on'); }; });
+document.getElementById('btnSound').onclick=function(e){soundOn=!soundOn;e.target.textContent=soundOn?'♪ 音效开':'∅ 静音'};
+document.getElementById('btnRule').onclick=function(){ document.getElementById('ruleList').innerHTML=
+ '<b>身份</b>：你为公开的主公；余下 4 人暗持 忠臣×1 / 反贼×2 / 内奸×1。主忠灭尽反贼与内奸获胜；反贼阵斩主公；内奸须为最后生还者。<br>'+
+ '<b>★ 知识摸牌</b>：摸牌阶段须答题——选【初中/高中/大学】难度作答：<b>答对摸 2 / 3 / 4 张，答错仅摸 1 张</b>。连对 3 题触发「思如泉涌」额外摸 1。题目涵盖语数英、理化生、史，与高数、线代、大物、编程、经济、心理、哲学。<br>'+
+ '<b>回合</b>：摸牌问答 → 出牌 → 弃牌（手牌≤体力）。【问题卡】每回合限一次（快笔/光速追击除外）。<br>'+
+ '<b>卡牌</b>：问题卡=杀，解答卡=闪，顿悟卡=桃；辩论=决斗，突击测验=南蛮，全班考试=万箭，小组讨论=桃园，复习资料=无中生有，参考=顺手（限距离1），收缴笔记=过河拆桥，免检符=无懈（仅目标可用）。<br>'+
+ '<b>装备</b>：快笔(无限出问·程1)、望远镜(程2·无视防具)、活字版(程3·被闪可追问)、算筹尺(程3·两手牌当问)、教鞭(程3·弃两牌强命)；直觉猜(判定红=解答)、严谨盾(免疫黑色问题)；负重车+1防距、轻舟−1攻距。<br>'+
+ '<b>濒死</b>：体力归零按序求【顿悟卡】；杀反贼摸三张，主公误杀忠臣弃光所有牌。武将技为标准版简化实现。';
+ document.getElementById('ovRule').classList.remove('hidden'); };
+document.getElementById('btnAgain').onclick=function(){ openHeroPick(); };
+
+function openHeroPick(){ stat('请选择主公'); document.getElementById('ovHero').classList.remove('hidden');
+ const g=document.getElementById('heroGrid'); g.innerHTML='';
+ LORDS.forEach(id=>{ const h=HEROES[id]; const d=document.createElement('div'); d.className='hpick'; d.style.setProperty('--kc',KCOLOR[h.k]);
+  d.innerHTML='<div class="big">'+h.n.slice(0,2)+'</div><div class="hn">'+h.n+'</div><div class="ht">'+h.t+' · '+h.k+'家 · 体力 '+(h.hp+1)+'</div><div class="sk"><b>「'+h.sk[0].n+'」</b>'+h.sk[0].d+'</div>';
+  d.onclick=function(){ sfx('turn'); document.getElementById('ovHero').classList.add('hidden'); startGame(id); };
+  g.appendChild(d); }); }
+
+/* 启动 */
+try{ topbar(); renderErr(); openHeroPick(); stat('请选择主公'); }
+catch(e){ showFatal('启动错误：'+(e.message||e)); }
+</script>
+</body>
+</html>
