@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>学堂杀 · 九科争鸣</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{--gold:#f5c542;--gold-dim:#8a6d3b;--parch:#f7f0dd;--parch2:#e8dcc0;--ink:#2a1f0f;--red:#c0392b;--green:#27ae60;--text:#e8e0d0;--muted:#a89880}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(ellipse at 50% 0%,#4a2218,#2a1210 45%,#120604);background-attachment:fixed;color:var(--text);font-family:"PingFang SC","Microsoft YaHei",serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);pointer-events:none;z-index:0}
+h1{font-size:22px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba(245,197,66,.5),0 2px 0 #000;margin-bottom:2px;position:relative;z-index:1}
+.subtitle{font-size:10px;color:var(--gold-dim);letter-spacing:3px;margin-bottom:8px;position:relative;z-index:1}
+.screen{display:none;width:100%;max-width:1180px;position:relative;z-index:1}
+.screen.active{display:block}
+.sound-toggle{position:fixed;top:8px;right:8px;z-index:50;background:linear-gradient(160deg,#2a1a10,#160a06);border:2px solid var(--gold-dim);color:var(--gold);width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.sound-toggle.muted{opacity:.5;color:var(--muted)}
+.panel{background:linear-gradient(160deg,#2a1610,#1a0c08);border:1px solid var(--gold-dim);border-radius:10px;padding:12px;margin-bottom:8px;box-shadow:inset 0 0 30px rgba(0,0,0,.6)}
+.panel h3{font-size:13px;color:var(--gold);margin-bottom:8px;letter-spacing:2px}
+.opt-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.opt-btn{flex:1;min-width:60px;background:linear-gradient(160deg,#2a1a10,#160a06);border:2px solid var(--gold-dim);color:var(--muted);padding:8px 4px;border-radius:7px;cursor:pointer;font-size:12px;transition:all .2s;font-family:inherit;text-align:center}
+.opt-btn:hover{border-color:var(--gold);color:var(--gold)}
+.opt-btn.active{background:linear-gradient(160deg,#5a3a10,#3a1a06);border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.4)}
+.opt-btn small{display:block;font-size:9px;margin-top:2px;opacity:.7}
+.faction-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:8px}
+.faction-card{background:linear-gradient(160deg,#1a1a1a,#0a0a0a);border:2px solid #444;border-radius:8px;padding:7px 4px;cursor:pointer;transition:all .2s;text-align:center}
+.faction-card.selected{box-shadow:0 0 16px currentColor}
+.faction-card .f-icon{font-size:22px;margin-bottom:1px}
+.faction-card .f-name{font-size:13px;font-weight:700;letter-spacing:1px}
+.faction-card .f-desc{font-size:8.5px;opacity:.7;line-height:1.2;margin-top:1px}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;max-height:340px;overflow-y:auto;padding-right:4px}
+.char-card{background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:8px;padding:6px;cursor:pointer;transition:all .2s;position:relative}
+.char-card .faction-badge{position:absolute;top:4px;right:4px;font-size:11px;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid currentColor}
+.char-card .ctop{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.char-card .cavatar{font-size:22px}
+.char-card .cname{font-size:12px;font-weight:600}
+.char-card .ctitle{font-size:9px;color:var(--muted)}
+.char-card .csubject{font-size:9px;margin-bottom:3px}
+.char-card .cskill{font-size:8px;color:#a89880;line-height:1.4;border-top:1px solid #3a2a1a;padding-top:3px}
+.char-card .cskill b{color:var(--gold);font-size:9px}
+.input-row{display:flex;gap:6px;margin-bottom:6px}
+.input-row input{flex:1;background:#0a0402;border:1px solid var(--gold-dim);color:var(--text);border-radius:5px;padding:7px 10px;font-size:12px;font-family:inherit}
+.lobby-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.btn-lg{font-size:14px;padding:10px 24px}
+.btn{background:linear-gradient(160deg,#2a1a10,#160a06);color:#d8c8a8;border:1px solid var(--gold-dim);border-radius:5px;padding:6px 11px;font-size:11.5px;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn-accent{background:linear-gradient(160deg,#8a2018,#5a1008);border-color:#e74c3c;color:#ffe0d0}
+.btn-sm{padding:4px 8px;font-size:11px}
+.btn-skill{background:linear-gradient(160deg,#3a2a50,#1a0a30);border-color:#9b59b6;color:#d8c8ff}
+.btn-lord{background:linear-gradient(160deg,#5a3a10,#3a1a06);border-color:#f5c542;color:#f5e0a0}
+.btn-rules{background:linear-gradient(160deg,#1a3a50,#0a1a30);border-color:#2980b9;color:#8fd0ff}
+#screenGame{max-width:1180px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(180deg,#2a1610,#160a06);border:1px solid var(--gold-dim);border-radius:7px;padding:5px 10px;font-size:11px;margin-bottom:6px;position:relative;z-index:2;flex-wrap:wrap;gap:4px}
+.top-bar .turn-name{color:var(--gold);font-weight:600}
+.game-main{display:flex;gap:8px;margin-bottom:6px;position:relative;z-index:2}
+.table-area{flex:1;position:relative;height:540px;background:radial-gradient(ellipse at 50% 50%,rgba(60,90,45,.55),rgba(15,25,12,.85) 70%),repeating-radial-gradient(circle at 50% 50%,rgba(0,0,0,.15) 0 2px,transparent 2px 6px),linear-gradient(160deg,#2a3a1c,#0f1a0c);border:2px solid #4a5a30;border-radius:50% / 34%;box-shadow:inset 0 0 50px rgba(0,0,0,.75),0 4px 20px rgba(0,0,0,.6);overflow:hidden}
+.table-area::before{content:'';position:absolute;inset:8px;border:1px solid rgba(245,197,66,.12);border-radius:50% / 34%;pointer-events:none}
+.seat{position:absolute;transform:translate(-50%,-50%);transition:left .4s,top .4s;z-index:3}
+.seat-targetable{cursor:pointer;z-index:5}
+.seat-targetable .p-card{border-color:#e74c3c !important;animation:targetPulse 1.2s infinite}
+@keyframes targetPulse{0%,100%{box-shadow:0 0 10px rgba(231,76,60,.5)}50%{box-shadow:0 0 25px rgba(231,76,60,.9)}}
+.p-card{width:118px;border-radius:9px;padding:5px;position:relative;transition:all .25s;border:2px solid var(--faction-color,#8a6d3b);background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%),linear-gradient(160deg,#2a1a10,#0e0603);box-shadow:inset 0 0 20px rgba(0,0,0,.6),0 3px 12px rgba(0,0,0,.5)}
+.p-card.turn{border-width:3px;box-shadow:0 0 24px var(--faction-color),0 0 46px var(--faction-color),inset 0 0 20px rgba(0,0,0,.6);transform:scale(1.06)}
+.p-card.dead{opacity:.28;filter:grayscale(1)}
+.p-card.is-self::before{content:'你';position:absolute;top:-8px;right:-6px;background:var(--gold);color:#1a0c08;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;z-index:5}
+.p-card .faction-icon{position:absolute;top:-10px;left:-8px;width:24px;height:24px;line-height:24px;text-align:center;font-size:13px;border-radius:50%;background:#0a0402;border:2px solid var(--faction-color);z-index:6}
+.p-card .pheader{display:flex;align-items:center;gap:4px;margin-bottom:3px;margin-left:4px}
+.p-card .pavatar{font-size:17px;width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,var(--faction-color),transparent 70%);border-radius:50%;border:1px solid var(--faction-color)}
+.p-card .pname-block{flex:1;min-width:0}
+.p-card .pname{font-size:10.5px;color:var(--gold);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-card .prole{font-size:8px;font-weight:600;margin-top:1px}
+.p-card .pknow{font-size:8px;color:var(--gold);position:absolute;top:4px;right:4px;background:rgba(245,197,66,.15);border:1px solid rgba(245,197,66,.4);border-radius:3px;padding:0 3px}
+.p-card .php-bar{display:flex;justify-content:center;gap:2px;padding:2px 0 3px;background:rgba(0,0,0,.4);border-radius:4px;margin-bottom:3px;flex-wrap:wrap}
+.hp-gem{width:9px;height:9px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#ff6a5a,#c0392b 50%,#8a1a10);border:1px solid #ff9a88;box-shadow:0 0 5px rgba(255,90,74,.6),inset 0 1px 1px rgba(255,255,255,.5);transition:all .3s}
+.hp-gem.empty{background:linear-gradient(135deg,#1a0a08,#0a0402);border-color:#3a1a14;box-shadow:inset 0 1px 2px rgba(0,0,0,.9);opacity:.7}
+.hp-gem.low{animation:hpPulse 1s infinite}
+@keyframes hpPulse{0%,100%{box-shadow:0 0 5px rgba(255,90,74,.6)}50%{box-shadow:0 0 14px rgba(255,150,90,.95)}}
+/* ==== 装备槽：图标 + 汉字简称 ==== */
+.p-card .pequip-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:2px}
+.equip-slot{aspect-ratio:1;border-radius:3px;background:rgba(0,0,0,.45);border:1px dashed #3a2a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;gap:0;position:relative}
+.equip-slot.filled{border-style:solid;border-color:var(--gold-dim);background:linear-gradient(160deg,#4a2a10,#1a0e04);box-shadow:0 0 4px rgba(245,197,66,.35)}
+.equip-slot .eq-icon{font-size:9px;line-height:1;opacity:.3}
+.equip-slot.filled .eq-icon{opacity:1}
+.equip-slot .eq-short{font-size:7px;line-height:1;color:var(--gold);font-weight:700;margin-top:1px;white-space:nowrap}
+/* ==== 完整装备名称行 ==== */
+.p-card .pequip-names{font-size:8px;color:#c8b088;text-align:center;padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:10px;line-height:1.25;letter-spacing:.5px}
+.p-card .pequip-names:empty{display:none}
+.p-card .pfooter{display:flex;justify-content:space-between;align-items:center;padding-top:2px;border-top:1px solid rgba(138,109,59,.3)}
+.hand-pile{position:relative;height:16px;width:26px}
+.hand-pile .mini-card{position:absolute;top:0;left:0;width:11px;height:16px;border-radius:2px;background:radial-gradient(circle at 50% 50%,rgba(245,197,66,.3) 0 25%,transparent 30%),linear-gradient(135deg,#2a1810,#4a2a18 50%,#2a1810);border:1px solid var(--gold-dim)}
+.hand-pile .mini-card:nth-child(2){left:4px}.hand-pile .mini-card:nth-child(3){left:8px}.hand-pile .mini-card:nth-child(4){left:12px}
+.hand-pile .hand-count{position:absolute;right:-3px;bottom:-2px;background:var(--gold);color:#1a0c08;font-size:8px;font-weight:700;min-width:12px;height:12px;line-height:12px;text-align:center;border-radius:6px;padding:0 2px}
+.p-card .pjudge-row{display:flex;gap:1px;margin-top:2px;flex-wrap:wrap}
+.judge-tag{font-size:7px;background:rgba(155,89,182,.25);border:1px solid #9b59b6;color:#d8b8ff;padding:0 3px;border-radius:2px}
+.p-badges{display:flex;gap:2px;justify-content:center;margin-bottom:2px;flex-wrap:wrap;min-height:12px}
+.badge{font-size:8px;padding:0 4px;border-radius:3px;font-weight:700;line-height:12px;height:12px}
+.badge-shield{color:#4af;background:rgba(68,170,255,.15);border:1px solid rgba(68,170,255,.55)}
+.badge-combo{color:var(--gold);background:rgba(245,197,66,.18);border:1px solid rgba(245,197,66,.55)}
+.badge-master{color:#b57fff;background:rgba(181,127,255,.18);border:1px solid rgba(181,127,255,.55)}
+.table-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:260px;height:140px;display:flex;align-items:center;justify-content:space-around;z-index:1;border-radius:50%}
+.pile{display:flex;flex-direction:column;align-items:center;gap:2px}
+.pile-label{font-size:8.5px;color:var(--gold-dim);letter-spacing:1px}
+.pile-stack{position:relative;width:36px;height:50px}
+.pile-stack .card-back-pile{position:absolute;left:0;top:0;width:32px;height:46px;border-radius:4px;background:radial-gradient(circle at 50% 50%,rgba(245,197,66,.25) 0 30%,transparent 32%),linear-gradient(135deg,#2a1810,#4a2a18 50%,#2a1810);border:1.5px solid var(--gold-dim)}
+.pile-stack .card-back-pile::after{content:'学';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(245,197,66,.5);font-size:11px;font-family:"STKaiti","KaiTi",serif}
+.pile-stack .card-back-pile:nth-child(2){left:2px;top:2px}.pile-stack .card-back-pile:nth-child(3){left:4px;top:4px}
+.pile-count{font-size:10.5px;color:var(--gold);font-weight:600}
+.play-zone{flex:1;height:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;padding:4px;position:relative}
+.play-zone-label{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:2px;color:var(--gold-dim);background:rgba(15,26,12,.8);padding:0 6px;border-radius:3px}
+.play-zone-empty{font-size:9px;color:#5a5a40;letter-spacing:1px;font-style:italic}
+.play-card{width:38px;height:54px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600;font-size:10px;position:relative;animation:playCardIn .4s cubic-bezier(.3,1.4,.5,1);box-shadow:0 0 10px rgba(245,197,66,.5),0 2px 6px rgba(0,0,0,.7);flex-shrink:0}
+.play-card .pcsuit{position:absolute;top:1px;left:2px;font-size:7px}
+.play-card .pcnum{position:absolute;top:1px;right:2px;font-size:6px;color:#7a6a50}
+.play-card .pcname{font-family:"STKaiti","KaiTi",serif;color:#8a1a10;font-size:10px;text-align:center;line-height:1.1}
+.play-card .pcowner{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:5.5px;color:#7a6a50;background:rgba(255,255,255,.35);border-radius:0 0 2px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.play-card.red .pcsuit{color:#c0392b}
+@keyframes playCardIn{from{opacity:0;transform:translateY(30px) scale(.4) rotate(-20deg)}60%{opacity:1;transform:translateY(-3px) scale(1.08)}to{opacity:1;transform:none}}
+.play-card.fade-out{animation:playCardOut .4s ease-in forwards}
+@keyframes playCardOut{to{opacity:0;transform:translateY(-20px) scale(.5) rotate(10deg)}}
+.side-panel{width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;height:540px}
+.play-log-panel,.chat-panel{background:linear-gradient(160deg,#2a1610,#160a06);border:1px solid var(--gold-dim);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
+.play-log-panel{flex:1;min-height:0}
+.chat-panel{flex:1.15;min-height:0}
+.panel-title{font-size:10.5px;color:var(--gold);padding:5px 10px;background:rgba(0,0,0,.35);border-bottom:1px solid rgba(138,109,59,.4);letter-spacing:2px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title .badge{font-size:9px;color:var(--muted);letter-spacing:0}
+.panel-toggle{background:transparent;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:0 6px;font-family:inherit;min-width:24px;height:20px;line-height:20px}
+.panel-toggle:hover{color:var(--gold)}
+.play-log-panel.collapsed{flex:0 0 auto !important;min-height:auto !important}
+.play-log-panel.collapsed .play-log-list{display:none}
+.chat-panel.collapsed{flex:0 0 auto !important;min-height:auto !important}
+.chat-panel.collapsed .chat-body{display:none}
+.play-log-list{flex:1;overflow-y:auto;padding:5px 7px;font-size:10px;line-height:1.55}
+.play-log-item{margin-bottom:3px;padding:2px 5px;background:rgba(0,0,0,.3);border-left:2px solid var(--gold-dim);border-radius:0 4px 4px 0;animation:logIn .35s ease-out;color:#c8b8a0}
+@keyframes logIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.play-log-item .pl-from{font-weight:600;color:#e8a0a0}
+.play-log-item .pl-card{color:var(--gold);font-weight:600}
+.play-log-item .pl-to{color:#a0c8e8;font-weight:600}
+.play-log-item.dmg{border-left-color:#e74c3c}
+.play-log-item.heal{border-left-color:#27ae60}
+.play-log-item.skill{border-left-color:#9b59b6}
+.play-log-item.reward{border-left-color:#f5c542;background:rgba(245,197,66,.12)}
+.play-log-item.hl{border-left-color:var(--gold);color:var(--gold);font-weight:600}
+.play-log-item.faction{border-left-color:#4af;background:rgba(68,170,255,.1);color:#a0d8ff}
+.play-log-item.kp{border-left-color:#4af;background:rgba(68,170,255,.08);color:#a0d8ff;font-size:9.5px}
+.chat-body{flex:1;display:flex;flex-direction:column;min-height:0}
+.chat-list{flex:1;overflow-y:auto;padding:5px 7px;font-size:10.5px;line-height:1.5}
+.chat-msg{margin-bottom:4px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.3);max-width:92%;animation:chatIn .3s ease-out;word-break:break-word}
+@keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.chat-msg.self{margin-left:auto;background:linear-gradient(160deg,rgba(41,128,185,.35),rgba(41,128,185,.15));border:1px solid rgba(41,128,185,.4);text-align:right}
+.chat-msg.ai{margin-right:auto;border:1px solid rgba(138,109,59,.35)}
+.chat-msg.sys{margin-left:auto;margin-right:auto;text-align:center;background:rgba(245,197,66,.1);border:1px dashed var(--gold-dim);color:var(--gold)}
+.chat-msg .chat-name{font-size:8.5px;font-weight:600;color:var(--gold);display:block;margin-bottom:1px}
+.chat-msg.self .chat-name{color:#4af;text-align:right}
+.chat-msg .chat-text{color:#e0d4bc}
+.chat-input-row{display:flex;gap:4px;padding:5px;background:rgba(0,0,0,.35);border-top:1px solid rgba(138,109,59,.4);flex-shrink:0}
+.chat-input-row input{flex:1;background:#0a0402;border:1px solid var(--gold-dim);color:var(--text);border-radius:4px;padding:4px 8px;font-size:10.5px;font-family:inherit;min-width:0}
+.chat-input-row button{background:linear-gradient(160deg,#3a2a10,#1a0e04);border:1px solid var(--gold-dim);color:var(--gold);border-radius:4px;padding:0 10px;font-size:10.5px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.center-area{background:rgba(0,0,0,.35);border:1px solid #3a2a1a;border-radius:7px;padding:5px 8px;margin-bottom:5px;min-height:50px;position:relative;z-index:2}
+.action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px;line-height:1.4}
+.action-hint.hint-play{color:var(--gold);font-weight:600}
+.action-hint.hint-target{color:#e74c3c;font-weight:600}
+.action-hint.hint-urgent{color:#ff9a5a;font-weight:600;animation:hintPulse 1s infinite}
+@keyframes hintPulse{0%,100%{opacity:1}50%{opacity:.65}}
+.action-btns{display:flex;gap:4px;flex-wrap:wrap}
+.hand-row{display:flex;gap:5px;overflow-x:auto;padding:4px 2px 8px;min-height:98px;align-items:flex-end;position:relative;z-index:2;justify-content:center}
+.card{width:58px;height:84px;flex-shrink:0;border-radius:5px;background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.5),transparent 60%),linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);box-shadow:0 3px 9px rgba(0,0,0,.65);position:relative;cursor:default;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600}
+.card.clickable{cursor:pointer}
+.card.clickable:hover{transform:translateY(-10px) scale(1.06);box-shadow:0 10px 22px rgba(245,197,66,.55);border-color:var(--gold);z-index:3}
+.card.clickable.card-discard-hint{border-color:#e74c3c;animation:cardDiscardPulse 1s infinite}
+@keyframes cardDiscardPulse{0%,100%{box-shadow:0 3px 9px rgba(231,76,60,.4)}50%{box-shadow:0 0 18px rgba(231,76,60,.9),0 3px 9px rgba(0,0,0,.65)}}
+.card.clickable.card-rescue-hint{border-color:#27ae60;animation:cardRescuePulse 1s infinite}
+@keyframes cardRescuePulse{0%,100%{box-shadow:0 3px 9px rgba(39,174,96,.4)}50%{box-shadow:0 0 18px rgba(39,174,96,.9),0 3px 9px rgba(0,0,0,.65)}}
+.card.clickable.card-shan-hint{border-color:#4af;animation:cardShanPulse 1s infinite}
+@keyframes cardShanPulse{0%,100%{box-shadow:0 3px 9px rgba(68,170,255,.4)}50%{box-shadow:0 0 18px rgba(68,170,255,.9),0 3px 9px rgba(0,0,0,.65)}}
+.card.disabled{opacity:.4;cursor:not-allowed}
+.card .suit{position:absolute;top:2px;left:3px;font-size:10px;font-weight:700}
+.card .num{position:absolute;top:2px;right:3px;font-size:8px;color:#7a6a50}
+.card .cname{font-size:13px;font-family:"STKaiti","KaiTi",serif;color:#8a1a10;text-align:center;line-height:1.1;padding:0 2px}
+.card .ctype{font-size:7px;color:#7a6a50;margin-top:1px}
+.card.red .suit{color:#c0392b}
+.card.black .suit{color:#1a1a1a}
+#quizModal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:100;padding:14px}
+#quizModal.show{display:flex}
+.quiz-box{width:100%;max-width:460px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold-dim);box-shadow:0 0 0 2px var(--gold),0 20px 60px rgba(0,0,0,.9);border-radius:10px;padding:16px;color:var(--ink);animation:cardIn .3s ease-out}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
+.quiz-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.quiz-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:radial-gradient(circle,rgba(139,101,40,.25),transparent 70%);border:2px solid #8a6d3b}
+.quiz-meta{flex:1}
+.quiz-subject{font-size:11px;letter-spacing:2px;color:#8a6d3b;font-weight:700}
+.quiz-progress{font-size:9px;color:#7a6a50;margin-top:1px}
+.quiz-kp{display:inline-block;background:#8a6d3b;color:var(--parch);font-size:9.5px;padding:2px 8px;border-radius:3px;margin-bottom:8px;letter-spacing:1px}
+.quiz-question{font-size:13.5px;line-height:1.7;margin-bottom:10px;font-weight:600;color:var(--ink)}
+.quiz-option{display:block;width:100%;text-align:left;background:rgba(255,255,255,.45);border:1.5px solid rgba(139,101,40,.4);color:var(--ink);border-radius:5px;padding:8px 10px;margin-bottom:6px;cursor:pointer;font-size:12.5px;transition:all .15s;font-family:inherit}
+.quiz-option:hover{background:rgba(255,255,255,.75)}
+.quiz-option.correct{background:rgba(46,204,113,.4);border-color:#27ae60;font-weight:700}
+.quiz-option.wrong{background:rgba(231,76,60,.35);border-color:#c0392b}
+.quiz-option .tag{display:inline-block;width:19px;height:19px;line-height:19px;text-align:center;border-radius:50%;background:#8a6d3b;color:var(--parch);font-size:10px;margin-right:6px;font-weight:700}
+#quizFeedback{font-size:12px;margin-top:6px;min-height:18px;font-weight:700;text-align:center}
+.rules-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:200;padding:14px}
+.rules-modal.show{display:flex}
+.rules-box{width:100%;max-width:640px;max-height:85vh;background:linear-gradient(160deg,#2a1610,#1a0c08);border:2px solid var(--gold-dim);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+.rules-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(0,0,0,.4);border-bottom:1px solid rgba(138,109,59,.4);color:var(--gold);font-size:14px;letter-spacing:2px}
+.rules-close{background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 6px}
+.rules-tabs{display:flex;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(138,109,59,.3);overflow-x:auto}
+.rule-tab{flex:1;padding:8px 4px;background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;white-space:nowrap;min-width:70px}
+.rule-tab.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(245,197,66,.08)}
+.rules-content{flex:1;overflow-y:auto;padding:12px 16px;font-size:12px;line-height:1.7;color:#c8b8a0}
+.rule-section{margin-bottom:14px}
+.rule-section h4{color:var(--gold);font-size:13px;margin-bottom:6px}
+.rule-section ul,.rule-section ol{padding-left:20px}
+.rule-section li{margin-bottom:4px}
+.rule-section b{color:#f5e0a0}
+.rule-faction{margin-bottom:8px;padding:7px;background:rgba(0,0,0,.25);border-radius:6px;border-left:3px solid}
+.rule-faction-header{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.rule-faction-icon{font-size:19px}
+.rule-faction-name{font-weight:700;font-size:13px}
+.rule-faction-subject{font-size:11px;color:var(--muted)}
+.rule-faction-desc{font-size:11px;line-height:1.55}
+.rule-faction-desc b{color:#f5e0a0}
+.bank-info{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:6px}
+.bank-info b{color:var(--gold)}
+.file-input{display:none}
+.fx-layer{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+.p-card.attacking{animation:attackLunge .42s cubic-bezier(.3,1.4,.5,1)}
+@keyframes attackLunge{0%,100%{transform:translateY(0) scale(1.06)}30%{transform:translateY(-12px) scale(1.13)}60%{transform:translateY(5px) scale(1.03)}}
+.p-card.hit-shake{animation:hitShake .5s}
+@keyframes hitShake{0%,100%{transform:translate(0,0) scale(1.06)}15%{transform:translate(-8px,-3px) scale(1.06);filter:brightness(2.2)}35%{transform:translate(8px,4px) scale(1.06);filter:brightness(1.6)}55%{transform:translate(-6px,0) scale(1.06);filter:brightness(1.3)}}
+.fly-card{position:fixed;width:44px;height:62px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--red);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:"STKaiti","KaiTi",serif;font-size:20px;font-weight:900;pointer-events:none;box-shadow:0 0 20px currentColor;color:#e74c3c;z-index:1000}
+.slash-fx{position:fixed;font-size:70px;font-family:"STKaiti","KaiTi",serif;font-weight:900;color:#ff2020;text-shadow:0 0 20px #f00,0 0 40px #f00;pointer-events:none;z-index:1001;animation:slashAnim .85s cubic-bezier(.3,1.5,.5,1) forwards}
+@keyframes slashAnim{0%{opacity:0;transform:scale(.2) rotate(-30deg)}25%{opacity:1;transform:scale(1.6) rotate(-30deg)}45%{transform:scale(1.2) rotate(-30deg)}70%{opacity:1;transform:scale(1.35) rotate(-30deg) translateY(-20px)}100%{opacity:0;transform:scale(1.9) rotate(-30deg) translateY(-60px)}}
+.float-text{position:fixed;font-size:28px;font-weight:900;pointer-events:none;z-index:1001;animation:floatUp 1.1s cubic-bezier(.2,1,.5,1) forwards;text-shadow:2px 2px 6px #000}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) scale(.3)}15%{opacity:1;transform:translateY(-15px) scale(1.3)}35%{transform:translateY(-25px) scale(1.1)}100%{opacity:0;transform:translateY(-80px) scale(.9)}}
+.shield-fx{position:fixed;width:120px;height:120px;border-radius:50%;border:4px solid #4af;box-shadow:0 0 30px #4af;pointer-events:none;z-index:1000;animation:shieldAnim .7s ease-out forwards}
+@keyframes shieldAnim{0%{opacity:0;transform:scale(.2)}30%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.7)}}
+.heal-fx{position:fixed;width:85px;height:85px;border-radius:50%;background:radial-gradient(circle,rgba(46,204,113,.75) 0%,transparent 70%);pointer-events:none;z-index:1000;animation:healAnim .9s ease-out forwards}
+@keyframes healAnim{0%{opacity:0;transform:scale(.3)}40%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1.8) translateY(-30px)}}
+.skill-ripple{position:fixed;width:150px;height:150px;border-radius:50%;border:3px solid #b57fff;box-shadow:0 0 40px #b57fff;pointer-events:none;z-index:1000;animation:rippleAnim .9s ease-out forwards}
+@keyframes rippleAnim{0%{opacity:0;transform:scale(.2)}40%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.85)}}
+.judge-fx{position:fixed;width:60px;height:88px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold);border-radius:5px;pointer-events:none;z-index:1001;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600;animation:judgeFlip .95s cubic-bezier(.3,1.4,.5,1) forwards;box-shadow:0 0 24px rgba(245,197,66,.9)}
+@keyframes judgeFlip{0%{opacity:0;transform:translateY(30px) rotateY(0) scale(.5)}30%{opacity:1;transform:translateY(0) rotateY(180deg) scale(1.1)}70%{opacity:1;transform:translateY(0) rotateY(180deg) scale(1.1)}100%{opacity:0;transform:translateY(-50px) rotateY(180deg) scale(.9)}}
+.judge-fx .jsuit{font-size:20px}.judge-fx .jnum{font-size:11px;color:#7a6a50}
+.judge-fx .jname{font-size:8px;margin-top:3px;color:#8a1a10;border-top:1px solid #c0b090;padding-top:2px;width:80%;text-align:center}
+.judge-fx.red{color:#c0392b}.judge-fx.black{color:#1a1a1a}
+.death-fx{position:fixed;font-size:46px;font-weight:900;color:#888;text-shadow:0 0 20px #000,0 0 40px #f00;pointer-events:none;z-index:1002;animation:deathAnim 1.25s ease-out forwards;font-family:"STKaiti","KaiTi",serif}
+@keyframes deathAnim{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.4) rotate(-8deg)}100%{opacity:0;transform:scale(.8) rotate(-15deg) translateY(-80px)}}
+
+@media(max-width:900px){
+  .game-main{flex-direction:column;gap:6px}
+  .table-area{height:460px;border-radius:48% / 36%}
+  .side-panel{width:100%;height:auto;flex-direction:row;gap:6px}
+  .play-log-panel,.chat-panel{flex:1;min-height:0;max-height:160px}
+  .p-card{width:100px}
+  .card{width:50px;height:72px}
+  .card .cname{font-size:11px}
+}
+
+@media(max-width:600px){
+  body{padding:4px}
+  h1{font-size:18px;letter-spacing:5px}
+  .subtitle{font-size:9px;margin-bottom:5px}
+  .top-bar{font-size:10px;padding:4px 6px}
+  .top-bar .btn{font-size:10px;padding:3px 7px}
+  .table-area{display:flex;flex-direction:column;height:auto;border-radius:10px;border:none;background:none;box-shadow:none;overflow:visible;padding:0;gap:4px}
+  .table-area::before{display:none}
+  .table-center{position:static;transform:none;left:auto;top:auto;width:100%;height:90px;order:-1;border-radius:8px;border:1px solid #4a5a30;background:linear-gradient(160deg,#2a3a1c,#0f1a0c);box-shadow:inset 0 0 20px rgba(0,0,0,.5)}
+  .pile-label,.pile-count{font-size:8px}
+  .pile-stack{width:28px;height:40px}
+  .pile-stack .card-back-pile{width:24px;height:36px;font-size:9px}
+  .pile-stack .card-back-pile::after{font-size:9px}
+  .play-card{width:32px;height:46px;font-size:9px}
+  .play-card .pcname{font-size:9px}
+  .play-card .pcsuit{font-size:6px}
+  .play-card .pcnum{font-size:5px}
+  .play-card .pcowner{font-size:5px}
+  .play-zone{gap:3px}
+  .play-zone-label{font-size:7px;padding:0 4px}
+  .seat-ring{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:6px 4px;width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .seat{position:static !important;transform:none !important;left:auto !important;top:auto !important;transition:none !important;flex-shrink:0}
+  .p-card{width:92px;padding:4px;border-radius:8px;transition:none}
+  .p-card .faction-icon{width:18px;height:18px;line-height:18px;font-size:11px;top:-8px;left:-6px}
+  .p-card .pheader{gap:2px;margin-bottom:2px;margin-left:2px}
+  .p-card .pavatar{width:18px;height:18px;font-size:13px}
+  .p-card .pname{font-size:9px}
+  .p-card .prole{font-size:7px}
+  .p-card .pknow{font-size:7px;padding:0 2px;top:2px;right:2px}
+  .p-card .php-bar{gap:1px;padding:1px 0 2px;margin-bottom:2px}
+  .hp-gem{width:7px;height:7px}
+  .p-card .pequip-slots{gap:1px;margin-bottom:2px}
+  .equip-slot{font-size:8px;border-radius:2px}
+  .equip-slot .eq-icon{font-size:8px}
+  .equip-slot .eq-short{font-size:6px;margin-top:0}
+  .p-card .pequip-names{font-size:7px;min-height:8px;padding:0 1px}
+  .p-card .pfooter{padding-top:1px}
+  .hand-pile{height:12px;width:22px}
+  .hand-pile .mini-card{width:9px;height:12px}
+  .hand-pile .mini-card:nth-child(2){left:3px}
+  .hand-pile .mini-card:nth-child(3){left:6px}
+  .hand-pile .mini-card:nth-child(4){left:9px}
+  .hand-pile .hand-count{font-size:7px;min-width:10px;height:10px;line-height:10px;padding:0 1px}
+  .p-badges{min-height:8px;margin-bottom:1px;gap:1px}
+  .badge{font-size:7px;line-height:10px;height:10px;padding:0 3px}
+  .judge-tag{font-size:6px;padding:0 2px}
+  .p-card.is-self::before{font-size:8px;padding:0 4px;top:-6px;right:-4px}
+  .side-panel{flex-direction:column;gap:4px;max-height:none}
+  .play-log-panel,.chat-panel{max-height:180px}
+  .play-log-panel.collapsed,.chat-panel.collapsed{max-height:auto}
+  .panel-title{font-size:10px;padding:4px 8px}
+  .panel-toggle{font-size:16px;padding:0 8px}
+  .play-log-list,.chat-list{font-size:10px;padding:4px 6px}
+  .chat-input-row input,.chat-input-row button{font-size:10px}
+  .center-area{padding:4px 6px;min-height:44px}
+  .action-hint{font-size:10px;margin-bottom:3px}
+  .action-btns .btn{font-size:10px;padding:4px 8px}
+  .hand-row{min-height:78px;padding:2px 1px 4px;gap:3px}
+  .card{width:46px;height:66px;border-radius:4px}
+  .card .suit{font-size:8px;top:1px;left:2px}
+  .card .num{font-size:7px;top:1px;right:2px}
+  .card .cname{font-size:10px}
+  .card .ctype{font-size:6px}
+  .quiz-box{max-width:100%;padding:12px}
+  .quiz-question{font-size:12.5px}
+  .quiz-option{font-size:12px;padding:7px 9px}
+  .faction-grid{grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:4px}
+  .faction-card{padding:5px 2px}
+  .faction-card .f-icon{font-size:18px}
+  .faction-card .f-name{font-size:11px}
+  .faction-card .f-desc{font-size:7.5px}
+  .char-grid{grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:4px;max-height:280px}
+  .char-card{padding:5px}
+  .char-card .cavatar{font-size:18px}
+  .char-card .cname{font-size:11px}
+  .panel{padding:9px;margin-bottom:6px}
+  .panel h3{font-size:12px;margin-bottom:6px}
+  .opt-btn{padding:6px 2px;font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
+
+<h1>学堂杀</h1>
+<div class="subtitle">九 科 争 鸣 · 学 科 阵 营</div>
+
+<div id="screenLobby" class="screen active">
+  <div class="panel">
+    <h3>◈ 游戏模式 ◈</h3>
+    <div class="opt-row" id="modePicker">
+      <button class="opt-btn active" data-mode="single">单机对局<small>你 + AI</small></button>
+      <button class="opt-btn" data-mode="host">创建房间<small>联机房主</small></button>
+      <button class="opt-btn" data-mode="join">加入房间<small>联机玩家</small></button>
+    </div>
+  </div>
+  <div id="hostConfig">
+    <div class="panel">
+      <h3>◈ 选择年级 ◈</h3>
+      <div class="opt-row" id="gradePicker">
+        <button class="opt-btn active" data-grade="初一">初一</button>
+        <button class="opt-btn" data-grade="初二">初二</button>
+        <button class="opt-btn" data-grade="初三">初三</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>◈ 玩家总数 ◈</h3>
+      <div class="opt-row" id="playerCountPicker">
+        <button class="opt-btn" data-count="2">2人</button>
+        <button class="opt-btn" data-count="3">3人</button>
+        <button class="opt-btn active" data-count="4">4人</button>
+        <button class="opt-btn" data-count="5">5人</button>
+        <button class="opt-btn" data-count="6">6人</button>
+        <button class="opt-btn" data-count="7">7人</button>
+        <button class="opt-btn" data-count="8">8人</button>
+      </div>
+      <div id="aiCountHint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px;"></div>
+    </div>
+    <div class="panel" id="roomConfig" style="display:none;">
+      <h3>◈ 联机配置 ◈</h3>
+      <div class="input-row"><input type="text" id="nicknameInput" placeholder="你的昵称" maxlength="12" value="房主"></div>
+      <button class="btn btn-accent" style="width:100%" onclick="createRoom()">创建房间并等待玩家</button>
+      <div id="roomInfo" style="margin-top:8px;font-size:12px;color:var(--gold);"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 题库管理 ◈</h3>
+      <div class="bank-info" id="bankInfo">加载中…</div>
+      <div class="opt-row" style="margin-bottom:0">
+        <button class="btn btn-accent" style="flex:1" onclick="document.getElementById('fileInput').click()">📂 导入外部题库</button>
+        <button class="btn" style="flex:0 0 auto" onclick="clearExternalBank()">🗑️ 清空外部题库</button>
+      </div>
+      <input type="file" id="fileInput" class="file-input" accept=".json,.js" onchange="importQuestionBank(event)">
+      <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6;">
+        支持 <b style="color:var(--gold)">JSON</b> 或 <b style="color:var(--gold)">JS</b> 文件。格式见规则页"题库说明"。<br>
+        外部题库与内置题库叠加，按题干去重。
+      </div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的科目阵营 ◈</h3>
+      <div class="faction-grid" id="factionPicker"></div>
+    </div>
+    <div class="panel">
+      <h3>◈ 选择你的角色 ◈</h3>
+      <div class="char-grid" id="charGrid"></div>
+    </div>
+    <div class="lobby-btns">
+      <button class="btn btn-accent btn-lg" id="startBtn" onclick="startSingle()">开始单机对局</button>
+    </div>
+  </div>
+  <div id="joinConfig" style="display:none;">
+    <div class="panel">
+      <h3>◈ 加入房间 ◈</h3>
+      <div class="input-row"><input type="text" id="joinNick" placeholder="你的昵称" maxlength="12" value="玩家"></div>
+      <div class="input-row"><input type="text" id="joinCode" placeholder="6 位房间号" maxlength="6" inputmode="numeric"></div>
+      <button class="btn btn-accent" style="width:100%" onclick="joinRoom()">加入房间</button>
+      <div id="joinStatus" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+    </div>
+  </div>
+</div>
+
+<div id="screenGame" class="screen">
+  <div class="top-bar">
+    <span>回合：<span class="turn-name" id="turnName">—</span></span>
+    <span>阶段：<span id="phaseLabel">—</span></span>
+    <span id="selfInfo" style="color:var(--muted)"></span>
+    <span id="connInfo" style="color:var(--green);font-size:10px;"></span>
+    <button class="btn btn-sm btn-rules" onclick="openRules()">📖 规则</button>
+  </div>
+  <div class="game-main">
+    <div class="table-area" id="tableArea">
+      <div class="seat-ring" id="seatRing"></div>
+      <div class="table-center">
+        <div class="pile">
+          <div class="pile-label">牌堆</div>
+          <div class="pile-stack"><div class="card-back-pile"></div><div class="card-back-pile"></div><div class="card-back-pile"></div></div>
+          <div class="pile-count" id="deckCount">0</div>
+        </div>
+        <div class="play-zone" id="playZoneCards">
+          <div class="play-zone-label">出 牌 区</div>
+          <span class="play-zone-empty">— 牌桌中央 —</span>
+        </div>
+        <div class="pile">
+          <div class="pile-label">弃牌</div>
+          <div class="pile-stack"><div class="card-back-pile" style="filter:brightness(.6)"></div></div>
+          <div class="pile-count" id="discardCount">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="play-log-panel" id="playLogPanel">
+        <div class="panel-title">
+          <span>战 报 <span class="badge" id="playLogBadge">0</span></span>
+          <button class="panel-toggle" onclick="togglePanel('playLogPanel')">▾</button>
+        </div>
+        <div class="play-log-list" id="playLogList"></div>
+      </div>
+      <div class="chat-panel" id="chatPanel" style="display:none;">
+        <div class="panel-title">
+          <span>聊 天 室 <span class="badge">💬</span></span>
+          <button class="panel-toggle" onclick="togglePanel('chatPanel')">▾</button>
+        </div>
+        <div class="chat-body">
+          <div class="chat-list" id="chatList"></div>
+          <div class="chat-input-row">
+            <input id="chatInput" placeholder="说点什么…" maxlength="40" onkeydown="if(event.key==='Enter')sendChat()">
+            <button onclick="sendChat()">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="center-area">
+    <div class="action-hint" id="actionHint"></div>
+    <div class="action-btns" id="actionBtns"></div>
+  </div>
+  <div class="hand-row" id="handRow"></div>
+  <div style="text-align:center;margin-top:5px;position:relative;z-index:2">
+    <button class="btn btn-sm" onclick="exitGame()">退出重开</button>
+  </div>
+</div>
+
+<div id="quizModal">
+  <div class="quiz-box">
+    <div class="quiz-header">
+      <div class="quiz-icon" id="quizIcon">📖</div>
+      <div class="quiz-meta">
+        <div class="quiz-subject" id="quizSubject"></div>
+        <div class="quiz-progress" id="quizProgress"></div>
+      </div>
+    </div>
+    <div class="quiz-kp" id="quizKP"></div>
+    <div class="quiz-question" id="quizQuestion"></div>
+    <div id="quizOptions"></div>
+    <div id="quizFeedback"></div>
+  </div>
+</div>
+
+<div id="rulesModal" class="rules-modal">
+  <div class="rules-box">
+    <div class="rules-header"><span>📖 学堂杀规则说明</span><button onclick="closeRules()" class="rules-close">✕</button></div>
+    <div class="rules-tabs">
+      <button class="rule-tab active" data-tab="basic" onclick="switchRulesTab('basic')">基本规则</button>
+      <button class="rule-tab" data-tab="factions" onclick="switchRulesTab('factions')">九科阵营</button>
+      <button class="rule-tab" data-tab="cards" onclick="switchRulesTab('cards')">卡牌说明</button>
+      <button class="rule-tab" data-tab="chars" onclick="switchRulesTab('chars')">角色技能</button>
+      <button class="rule-tab" data-tab="bank" onclick="switchRulesTab('bank')">题库说明</button>
+    </div>
+    <div class="rules-content" id="rulesContent"></div>
+  </div>
+</div>
+
+<div class="fx-layer" id="fxLayer"></div>
+
+<script>
+/* ============================================================
+   工具
+   ============================================================ */
+function togglePanel(id){const el=document.getElementById(id);if(!el)return;el.classList.toggle('collapsed');const btn=el.querySelector('.panel-toggle');if(btn)btn.textContent=el.classList.contains('collapsed')?'▸':'▾';}
+function exitGame(){document.querySelectorAll('.rules-modal, #quizModal').forEach(el=>el.classList.remove('show'));try{if(typeof G!=='undefined')G.gameOver=true;if(typeof NET!=='undefined'&&NET.peer){try{NET.peer.destroy()}catch(e){}}}catch(e){}setTimeout(()=>{window.location.href=window.location.pathname+'?t='+Date.now();},120);}
+window.addEventListener('load',()=>{if(window.innerWidth<900){const pl=document.getElementById('playLogPanel');if(pl){pl.classList.add('collapsed');const b=pl.querySelector('.panel-toggle');if(b)b.textContent='▸'}const cp=document.getElementById('chatPanel');if(cp){cp.classList.add('collapsed');const b=cp.querySelector('.panel-toggle');if(b)b.textContent='▸'}}});
+window.addEventListener('resize',()=>{if(typeof G!=='undefined'&&G.started){renderSeats();}});
+
+/* ============================================================
+   九科阵营
+   ============================================================ */
+const FACTIONS={
+  chinese:{name:'语文',color:'#e74c3c',icon:'📖',subject:'语文',desc:'文学素养',lordSkill:{id:'shishu',name:'诗书',type:'active',desc:'主公技：摸一张牌'}},
+  math:{name:'数学',color:'#3498db',icon:'🔢',subject:'数学',desc:'数理推演',lordSkill:{id:'tuiyan',name:'推演',type:'active',desc:'主公技：令一名角色判定，黑色受1伤，红色摸1牌'}},
+  english:{name:'英语',color:'#27ae60',icon:'🔤',subject:'英语',desc:'语言交流',lordSkill:{id:'yishu',name:'译述',type:'active',desc:'主公技：获得一名角色一张手牌'}},
+  physics:{name:'物理',color:'#f39c12',icon:'⚛️',subject:'物理',desc:'力学探索',lordSkill:{id:'yinli',name:'引力',type:'active',desc:'主公技：对一名角色造成1点伤害'}},
+  chemistry:{name:'化学',color:'#9b59b6',icon:'⚗️',subject:'化学',desc:'元素反应',lordSkill:{id:'cuihua',name:'催化',type:'active',desc:'主公技：令一名角色回复1点体力'}},
+  biology:{name:'生物',color:'#16a085',icon:'🧬',subject:'生物',desc:'生命奥秘',lordSkill:{id:'jinhua',name:'进化',type:'active',desc:'主公技：摸两张牌然后弃一张牌'}},
+  history:{name:'历史',color:'#d35400',icon:'🏛️',subject:'历史',desc:'古今明鉴',lordSkill:{id:'mingjian',name:'明鉴',type:'active',desc:'主公技：令一名角色弃一张牌'}},
+  geography:{name:'地理',color:'#2980b9',icon:'🌍',subject:'地理',desc:'山河万象',lordSkill:{id:'tansuo',name:'探索',type:'active',desc:'主公技：所有角色各摸一张牌'}},
+  politics:{name:'政治',color:'#8e44ad',icon:'⚖️',subject:'政治',desc:'道德法治',lordSkill:{id:'xunjie',name:'训诫',type:'active',desc:'主公技：令一名角色选择弃一张牌或交给你一张牌'}}
+};
+const SUBJECT_ICON={'语文':'📖','数学':'🔢','英语':'🔤','物理':'⚛️','化学':'⚗️','生物':'🧬','历史':'🏛️','地理':'🌍','政治':'⚖️'};
+
+/* ============================================================
+   内置题库
+   ============================================================ */
+const BUILTIN_QUESTION_BANK={
+'初一':[
+{s:'语文',kp:'古诗词·送别诗',q:'“海内存知己，天涯若比邻”作者是（ ）',o:['李白','王勃','杜甫','王维'],a:1},
+{s:'语文',kp:'文言文·论语',q:'《论语》记录（ ）及其弟子言行。',o:['孟子','孔子','老子','庄子'],a:1},
+{s:'语文',kp:'字形辨析',q:'下列词语无错别字的是（ ）',o:['翻来复去','各得其所','决别','分岐'],a:1},
+{s:'语文',kp:'古诗词·春景',q:'“吹面不寒杨柳风”出自（ ）',o:['朱自清《春》','老舍《济南的冬天》','志南《绝句》','曹操《观沧海》'],a:2},
+{s:'语文',kp:'修辞手法',q:'“红的像火，粉的像霞，白的像雪”运用的修辞是（ ）',o:['比喻','拟人','排比','夸张'],a:0},
+{s:'语文',kp:'文学常识·论语',q:'“温故而知新”出自（ ）',o:['《论语》','《孟子》','《大学》','《中庸》'],a:0},
+{s:'语文',kp:'古诗词·思乡',q:'“乡书何处达？归雁洛阳边”作者是（ ）',o:['王维','王湾','孟浩然','陶渊明'],a:1},
+{s:'语文',kp:'说明方法',q:'“这座塔高约30米”运用的说明方法是（ ）',o:['打比方','列数字','作比较','举例子'],a:1},
+{s:'数学',kp:'有理数运算',q:'计算：(-3)+5 =（ ）',o:['-8','-2','2','8'],a:2},
+{s:'数学',kp:'一元一次方程',q:'方程 2x-3=7 的解是（ ）',o:['x=2','x=3','x=4','x=5'],a:3},
+{s:'数学',kp:'绝对值',q:'若 |a|=5，则 a =（ ）',o:['5','-5','±5','0'],a:2},
+{s:'数学',kp:'余角与补角',q:'一个角的补角是它的3倍，这个角是（ ）',o:['30°','45°','60°','75°'],a:1},
+{s:'数学',kp:'单项式·次数',q:'单项式 -3x²y 的次数是（ ）',o:['2','3','4','5'],a:1},
+{s:'数学',kp:'有理数比较大小',q:'下列各数中，最小的数是（ ）',o:['-2','0','-1/2','1'],a:0},
+{s:'数学',kp:'科学记数法',q:'0.000025 用科学记数法表示为（ ）',o:['2.5×10⁻⁴','2.5×10⁻⁵','25×10⁻⁶','0.25×10⁻⁴'],a:1},
+{s:'数学',kp:'平行线性质',q:'两条平行线被第三条直线所截，同位角（ ）',o:['互补','相等','互余','不确定'],a:1},
+{s:'英语',kp:'不定冠词',q:'It’s ____ apple.',o:['a','an','the','/'],a:1},
+{s:'英语',kp:'一般现在时·三单',q:'My sister ____ TV every evening.',o:['watch','watches','watching','to watch'],a:1},
+{s:'英语',kp:'There be 句型',q:'There ____ some milk in the glass.',o:['is','are','have','has'],a:0},
+{s:'英语',kp:'时间介词',q:'I usually get up ____ 6:30.',o:['in','on','at','for'],a:2},
+{s:'英语',kp:'现在进行时',q:'Look! The children ____ football.',o:['play','plays','are playing','played'],a:2},
+{s:'英语',kp:'情态动词',q:'He can ____ English and French.',o:['speaks','speak','speaking','to speak'],a:1},
+{s:'英语',kp:'疑问代词',q:'—____ is your birthday? —It’s on May 2nd.',o:['What','When','Where','How'],a:1},
+{s:'生物',kp:'光合作用·器官',q:'植物光合作用的主要器官是（ ）',o:['根','茎','叶','花'],a:2},
+{s:'生物',kp:'消化系统·肝脏',q:'人体最大的消化腺是（ ）',o:['胰腺','肝脏','唾液腺','胃腺'],a:1},
+{s:'生物',kp:'细胞结构',q:'细胞的控制中心是（ ）',o:['细胞膜','细胞质','细胞核','液泡'],a:2},
+{s:'生物',kp:'生物的特征',q:'下列属于生物的是（ ）',o:['机器人','钟乳石','蘑菇','珊瑚'],a:2},
+{s:'生物',kp:'呼吸系统',q:'人体呼吸系统中，气体交换的主要场所是（ ）',o:['气管','肺','鼻腔','支气管'],a:1},
+{s:'生物',kp:'蒸腾作用',q:'植物体内水分运输的主要动力是（ ）',o:['光合作用','呼吸作用','蒸腾作用','吸收作用'],a:2},
+{s:'历史',kp:'秦朝统一·时间',q:'秦朝统一中国的时间是（ ）',o:['公元前221年','公元前206年','公元220年','公元前256年'],a:0},
+{s:'历史',kp:'唐朝·贞观之治',q:'“贞观之治”出现在（ ）统治时期',o:['唐高祖','唐太宗','唐玄宗','武则天'],a:1},
+{s:'历史',kp:'夏朝建立',q:'我国历史上第一个王朝是（ ）',o:['商朝','夏朝','周朝','秦朝'],a:1},
+{s:'历史',kp:'三国·赤壁之战',q:'赤壁之战中孙刘联军打败的是（ ）',o:['曹操','袁绍','董卓','吕布'],a:0},
+{s:'历史',kp:'春秋·百家争鸣',q:'儒家学派的创始人是（ ）',o:['老子','孔子','墨子','韩非子'],a:1},
+{s:'历史',kp:'西汉·丝绸之路',q:'丝绸之路开通于（ ）时期',o:['汉高祖','汉武帝','汉光武帝','汉文帝'],a:1},
+{s:'地理',kp:'四大洋·面积',q:'地球上最大的洋是（ ）',o:['太平洋','大西洋','印度洋','北冰洋'],a:0},
+{s:'地理',kp:'经纬线',q:'本初子午线是（ ）',o:['0°纬线','0°经线','180°经线','90°经线'],a:1},
+{s:'地理',kp:'气候类型',q:'全年高温多雨的气候类型是（ ）',o:['热带雨林气候','温带季风气候','地中海气候','极地气候'],a:0},
+{s:'地理',kp:'中国行政区划',q:'我国面积最大的省级行政区是（ ）',o:['西藏','新疆','内蒙古','青海'],a:1},
+{s:'地理',kp:'大洲·人口',q:'世界人口最多的大洲是（ ）',o:['非洲','欧洲','亚洲','南美洲'],a:2},
+{s:'政治',kp:'根本政治制度',q:'我国的根本政治制度是（ ）',o:['民族区域自治制度','人民代表大会制度','多党合作制度','基层群众自治制度'],a:1},
+{s:'政治',kp:'法律特征',q:'法律最主要的特征是（ ）',o:['由国家制定或认可','靠舆论维持','由国家强制力保证实施','对全体成员普遍适用'],a:2},
+{s:'政治',kp:'道德·换位思考',q:'“己所不欲，勿施于人”体现的是（ ）',o:['诚信','宽容','换位思考','尊重'],a:2},
+{s:'政治',kp:'未成年人保护',q:'专门保护未成年人的法律是（ ）',o:['《宪法》','《未成年人保护法》','《民法典》','《教育法》'],a:1},
+],
+'初二':[
+{s:'语文',kp:'古诗词·边塞诗',q:'“忽如一夜春风来”作者是（ ）',o:['李白','岑参','杜甫','白居易'],a:1},
+{s:'语文',kp:'现代散文·背影',q:'《背影》的作者是（ ）',o:['鲁迅','朱自清','老舍','冰心'],a:1},
+{s:'语文',kp:'古文·岳阳楼记',q:'“先天下之忧而忧”出自（ ）',o:['醉翁亭记','岳阳楼记','小石潭记','桃花源记'],a:1},
+{s:'语文',kp:'文学常识·西游记',q:'《西游记》的作者是（ ）',o:['罗贯中','施耐庵','吴承恩','曹雪芹'],a:2},
+{s:'语文',kp:'古诗词·望岳',q:'“会当凌绝顶，一览众山小”出自（ ）',o:['《春望》','《望岳》','《石壕吏》','《茅屋为秋风所破歌》'],a:1},
+{s:'语文',kp:'语病·成分残缺',q:'下列句子没有语病的是（ ）',o:['通过学习，使我明白了道理。','我们要防止事故不再发生。','他的写作水平有了明显提高。','能否努力是取得好成绩的关键。'],a:2},
+{s:'数学',kp:'勾股定理',q:'直角三角形直角边 6、8，斜边为（ ）',o:['9','10','11','12'],a:1},
+{s:'数学',kp:'勾股数',q:'下列是勾股数的是（ ）',o:['1,1,2','1.5,2,2.5','5,12,13','2,3,4'],a:2},
+{s:'数学',kp:'一次函数·象限',q:'y=2x+1 不经过（ ）',o:['第一象限','第二象限','第三象限','第四象限'],a:3},
+{s:'数学',kp:'平行四边形性质',q:'平行四边形不具有的性质是（ ）',o:['对边平行','对边相等','对角线垂直','对角线互相平分'],a:2},
+{s:'数学',kp:'中位数',q:'数据 2,3,3,4,5 的中位数是（ ）',o:['3','3.5','4','2'],a:0},
+{s:'数学',kp:'平方根',q:'若 x²=9，则 x =（ ）',o:['3','-3','±3','9'],a:2},
+{s:'英语',kp:'条件状语从句',q:'If it ____ tomorrow, we will stay home.',o:['rain','rains','will rain','rained'],a:1},
+{s:'英语',kp:'形容词最高级',q:'He is one of ____ students in our class.',o:['tall','taller','the tallest','tallest'],a:2},
+{s:'英语',kp:'被动语态·一般过去',q:'The Great Wall ____ long ago.',o:['built','was built','is built','builds'],a:1},
+{s:'英语',kp:'宾语从句·连接词',q:'She asked me ____ I had finished.',o:['that','if','what','which'],a:1},
+{s:'英语',kp:'现在完成时',q:'—How long ____ you ____ this book? —For two weeks.',o:['have, borrowed','have, kept','did, borrow','do, keep'],a:1},
+{s:'物理',kp:'声速·介质',q:'声音在下列介质中传播最快的是（ ）',o:['空气','水','钢铁','真空'],a:2},
+{s:'物理',kp:'光速·真空',q:'光在真空中的速度约为（ ）',o:['3×10⁵m/s','3×10⁶m/s','3×10⁷m/s','3×10⁸m/s'],a:3},
+{s:'物理',kp:'光的反射',q:'属于光的反射的是（ ）',o:['小孔成像','水中倒影','海市蜃楼','雨后彩虹'],a:1},
+{s:'物理',kp:'速度·路程',q:'物体以5m/s匀速运动，10秒内通过的路程是（ ）',o:['2m','5m','50m','15m'],a:2},
+{s:'物理',kp:'凸透镜·会聚',q:'凸透镜对光有（ ）',o:['发散作用','会聚作用','无作用','吸收作用'],a:1},
+{s:'生物',kp:'心脏·左心室',q:'心脏壁最厚的腔是（ ）',o:['左心房','左心室','右心房','右心室'],a:1},
+{s:'生物',kp:'遗传物质·DNA',q:'遗传信息的载体是（ ）',o:['蛋白质','DNA','糖类','脂肪'],a:1},
+{s:'生物',kp:'先天性行为',q:'下列属于先天性行为的是（ ）',o:['老马识途','蜘蛛结网','鹦鹉学舌','望梅止渴'],a:1},
+{s:'生物',kp:'免疫·抗体',q:'人体第三道防线主要由（ ）组成',o:['皮肤和黏膜','体液中的杀菌物质','免疫器官和免疫细胞','吞噬细胞'],a:2},
+{s:'历史',kp:'南宋·岳飞',q:'“精忠报国”说的是（ ）',o:['岳飞','文天祥','戚继光','郑成功'],a:0},
+{s:'历史',kp:'秦朝·小篆',q:'秦始皇统一后推行的文字是（ ）',o:['甲骨文','小篆','隶书','楷书'],a:1},
+{s:'历史',kp:'南京条约·时间',q:'《南京条约》签订于（ ）年',o:['1840','1842','1856','1860'],a:1},
+{s:'历史',kp:'辛亥革命',q:'辛亥革命爆发于（ ）年',o:['1901','1911','1919','1921'],a:1},
+{s:'地理',kp:'省级行政区·面积',q:'我国面积最大的省级行政区是（ ）',o:['西藏','新疆','内蒙古','青海'],a:1},
+{s:'地理',kp:'世界人口·大洲',q:'世界人口最多的大洲是（ ）',o:['非洲','欧洲','亚洲','南美洲'],a:2},
+{s:'地理',kp:'长江·发源地',q:'长江发源于（ ）',o:['巴颜喀拉山','唐古拉山','喜马拉雅山','昆仑山'],a:1},
+{s:'政治',kp:'宪法·地位',q:'我国的根本大法是（ ）',o:['刑法','民法典','宪法','立法法'],a:2},
+{s:'政治',kp:'公民基本权利',q:'公民最基本的权利是（ ）',o:['选举权','人身自由权','受教育权','劳动权'],a:1},
+{s:'政治',kp:'社会责任',q:'“天下兴亡，匹夫有责”强调（ ）',o:['权利意识','社会责任','法律意识','道德修养'],a:1},
+],
+'初三':[
+{s:'语文',kp:'古诗词·行路难',q:'“长风破浪会有时”作者是（ ）',o:['杜甫','李白','苏轼','辛弃疾'],a:1},
+{s:'语文',kp:'文言文·范进中举',q:'《范进中举》的作者是（ ）',o:['吴敬梓','曹雪芹','蒲松龄','鲁迅'],a:0},
+{s:'语文',kp:'古文·醉翁亭记',q:'“醉翁之意不在酒”出自（ ）',o:['岳阳楼记','醉翁亭记','爱莲说','陋室铭'],a:1},
+{s:'语文',kp:'文学常识·红楼梦',q:'《红楼梦》的作者是（ ）',o:['罗贯中','施耐庵','吴承恩','曹雪芹'],a:3},
+{s:'语文',kp:'古诗词·密州出猎',q:'“会挽雕弓如满月，西北望，射天狼”出自（ ）',o:['苏轼《江城子·密州出猎》','辛弃疾《破阵子》','李清照《渔家傲》','范仲淹《渔家傲》'],a:0},
+{s:'语文',kp:'议论文·论证方法',q:'用典型事例来证明论点属于（ ）',o:['举例论证','道理论证','比喻论证','对比论证'],a:0},
+{s:'数学',kp:'一元二次方程',q:'x²-4=0 的解是（ ）',o:['x=2','x=-2','x=±2','x=4'],a:2},
+{s:'数学',kp:'二次函数·顶点式',q:'y=(x-1)²+2 的顶点是（ ）',o:['(1,2)','(-1,2)','(1,-2)','(-1,-2)'],a:0},
+{s:'数学',kp:'判别式',q:'x²+2x+k=0 有两个相等实根，k=（ ）',o:['0','1','2','-1'],a:1},
+{s:'数学',kp:'扇形面积',q:'半径为 3，圆心角为 60° 的扇形面积是（ ）',o:['π/2','3π/2','3π','π'],a:1},
+{s:'数学',kp:'概率·简单',q:'袋中 2 红 3 白，随机摸出一个是红球的概率是（ ）',o:['2/5','3/5','1/2','2/3'],a:0},
+{s:'数学',kp:'二次函数·最值',q:'二次函数 y=-x²+2x+3 的最大值是（ ）',o:['3','4','5','2'],a:1},
+{s:'英语',kp:'现在完成时·has gone',q:'—Where is Tom? —He ____ to the library.',o:['has been','has gone','went','goes'],a:1},
+{s:'英语',kp:'定语从句·关系代词',q:'The book ____ I bought is interesting.',o:['who','whom','which','what'],a:2},
+{s:'英语',kp:'虚拟语气',q:'If I ____ you, I would study harder.',o:['am','was','were','be'],a:2},
+{s:'英语',kp:'被动语态·一般现在',q:'The homework ____ every day.',o:['finish','finishes','is finished','are finished'],a:2},
+{s:'英语',kp:'It 句型',q:'It’s important ____ us to learn English well.',o:['of','for','to','with'],a:1},
+{s:'物理',kp:'串联电路·电流',q:'R₁=10Ω 与 R₂=20Ω 串联接6V，电流为（ ）',o:['0.2A','0.3A','0.4A','0.6A'],a:0},
+{s:'物理',kp:'并联电路·电阻',q:'R₁=10Ω 与 R₂=20Ω 并联，总电阻为（ ）',o:['30Ω','15Ω','20/3Ω','10Ω'],a:2},
+{s:'物理',kp:'电磁感应·发电机',q:'发电机的工作原理是（ ）',o:['电流磁效应','电磁感应','磁场对电流作用','静电感应'],a:1},
+{s:'物理',kp:'焦耳定律',q:'焦耳定律的表达式是（ ）',o:['Q = I²Rt','Q = IRt','Q = I²R','Q = UIt/R'],a:0},
+{s:'物理',kp:'牛顿第二定律',q:'质量 2kg 的物体受 10N 的力，加速度为（ ）',o:['2 m/s²','5 m/s²','10 m/s²','20 m/s²'],a:1},
+{s:'物理',kp:'家庭电路·并联',q:'家庭电路中，用电器之间的连接方式是（ ）',o:['串联','并联','混联','无法确定'],a:1},
+{s:'化学',kp:'有机化合物',q:'下列属于有机物的是（ ）',o:['Na₂O','C₂H₅OH','Ca(OH)₂','CaCO₃'],a:1},
+{s:'化学',kp:'置换反应',q:'属于置换反应的是（ ）',o:['2H₂O₂→2H₂O+O₂↑','Zn+H₂SO₄→ZnSO₄+H₂↑','CH₄+O₂','Na₂CO₃+CaCl₂'],a:1},
+{s:'化学',kp:'碱的定义',q:'属于碱的是（ ）',o:['H₂SO₄','KOH','HCl','CaCO₃'],a:1},
+{s:'化学',kp:'单质·化合物',q:'属于单质的是（ ）',o:['NaOH','O₂','CaCO₃','H₂SO₄'],a:1},
+{s:'化学',kp:'空气成分',q:'空气中体积分数约21%的是（ ）',o:['氮气','氧气','二氧化碳','稀有气体'],a:1},
+{s:'化学',kp:'化学式书写',q:'下列化学式书写正确的是（ ）',o:['氧化镁 MgO₂','氯化钠 NaCl₂','硫酸铝 Al₂(SO₄)₃','氢氧化钙 CaOH'],a:2},
+{s:'历史',kp:'一战·时间',q:'第一次世界大战爆发于（ ）年',o:['1914','1918','1939','1945'],a:0},
+{s:'历史',kp:'新文化运动',q:'新文化运动的主要阵地是（ ）',o:['《申报》','《新青年》','《民报》','《时务报'],a:1},
+{s:'历史',kp:'工业革命',q:'第一次工业革命的标志性发明是（ ）',o:['蒸汽机','电灯','汽车','飞机'],a:0},
+{s:'政治',kp:'根本政治制度',q:'我国的根本政治制度是（ ）',o:['人民代表大会制度','民族区域自治制度','政治协商制度','基层自治制度'],a:0},
+{s:'政治',kp:'一国两制',q:'“一国两制”首先成功实践于（ ）',o:['台湾','香港','澳门','西藏'],a:1},
+{s:'政治',kp:'社会主义核心价值观',q:'社会主义核心价值观国家层面的价值目标是（ ）',o:['富强、民主、文明、和谐','自由、平等、公正、法治','爱国、敬业、诚信、友善','和平、发展、合作、共赢'],a:0},
+],
+};
+
+/* ============================================================
+   外部题库
+   ============================================================ */
+const QUESTION_BANK = JSON.parse(JSON.stringify(BUILTIN_QUESTION_BANK));
+let EXTERNAL_STATS = {初一:0,初二:0,初三:0,total:0};
+
+function updateBankInfo(){
+  const bi=document.getElementById('bankInfo');
+  if(!bi) return;
+  const counts={初一:QUESTION_BANK['初一'].length,初二:QUESTION_BANK['初二'].length,初三:QUESTION_BANK['初三'].length};
+  bi.innerHTML=`内置题库：<b>初一 ${counts['初一']}</b> · <b>初二 ${counts['初二']}</b> · <b>初三 ${counts['初三']}</b> 题<br>外部题库：共导入 <b>${EXTERNAL_STATS.total}</b> 题（初一 ${EXTERNAL_STATS['初一']} / 初二 ${EXTERNAL_STATS['初二']} / 初三 ${EXTERNAL_STATS['初三']}）`;
+}
+function addQuestionsToBank(questions, grade){
+  if(!Array.isArray(questions)) return {added:0,dup:0,invalid:0};
+  let added=0,dup=0,invalid=0;
+  const existing=new Set(QUESTION_BANK[grade].map(q=>q.q));
+  for(const item of questions){
+    if(!item||typeof item!=='object'||!item.q||!Array.isArray(item.o)||item.o.length<2) {invalid++;continue}
+    if(typeof item.a!=='number'||item.a<0||item.a>=item.o.length) {invalid++;continue}
+    if(existing.has(item.q)) {dup++;continue}
+    QUESTION_BANK[grade].push({s:item.s||'语文',kp:item.kp||item.knowledge||'综合',q:item.q,o:item.o,a:item.a});
+    existing.add(item.q);added++;
+  }
+  return {added,dup,invalid};
+}
+function importQuestionBank(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    try{
+      let data;
+      const text=e.target.result;
+      if(file.name.endsWith('.js')){
+        const fn=new Function(text+'; return window.EXTERNAL_BANK||null;');
+        data=fn();
+      } else {
+        data=JSON.parse(text);
+      }
+      if(!data) throw new Error('未找到题库数据');
+      let totalAdded=0,totalDup=0,totalInvalid=0;
+      const report=[];
+      if(Array.isArray(data)){
+        const grade=SELECTED_GRADE;
+        const r=addQuestionsToBank(data,grade);
+        totalAdded+=r.added;totalDup+=r.dup;totalInvalid+=r.invalid;
+        EXTERNAL_STATS[grade]+=r.added;EXTERNAL_STATS.total+=r.added;
+        report.push(`${grade}：新增 ${r.added}，重复 ${r.dup}，无效 ${r.invalid}`);
+      } else if(typeof data==='object'){
+        for(const grade of ['初一','初二','初三']){
+          if(Array.isArray(data[grade])){
+            const r=addQuestionsToBank(data[grade],grade);
+            totalAdded+=r.added;totalDup+=r.dup;totalInvalid+=r.invalid;
+            EXTERNAL_STATS[grade]+=r.added;EXTERNAL_STATS.total+=r.added;
+            report.push(`${grade}：新增 ${r.added}，重复 ${r.dup}，无效 ${r.invalid}`);
+          }
+        }
+        if(report.length===0){
+          const arr=Object.values(data).filter(v=>typeof v==='object'&&v.q);
+          if(arr.length>0){
+            const r=addQuestionsToBank(arr,SELECTED_GRADE);
+            totalAdded+=r.added;EXTERNAL_STATS[SELECTED_GRADE]+=r.added;EXTERNAL_STATS.total+=r.added;
+            report.push(`${SELECTED_GRADE}：新增 ${r.added}，重复 ${r.dup}，无效 ${r.invalid}`);
+          }
+        }
+      }
+      updateBankInfo();
+      alert(`✅ 题库导入完成\n\n${report.join('\n')}\n\n总计：新增 ${totalAdded}，重复 ${totalDup}，无效 ${totalInvalid}`);
+      event.target.value='';
+    }catch(err){
+      alert('❌ 题库导入失败：'+err.message+'\n\n请检查文件格式。');
+      event.target.value='';
+    }
+  };
+  reader.readAsText(file);
+}
+function clearExternalBank(){
+  if(!confirm('确认清空所有外部导入的题库？')) return;
+  for(const grade of ['初一','初二','初三']){
+    const builtinSet=new Set(BUILTIN_QUESTION_BANK[grade].map(q=>q.q));
+    QUESTION_BANK[grade]=QUESTION_BANK[grade].filter(q=>builtinSet.has(q.q));
+  }
+  EXTERNAL_STATS={初一:0,初二:0,初三:0,total:0};
+  updateBankInfo();
+}
+
+/* ============================================================
+   角色
+   ============================================================ */
+const CHARACTERS=[
+{id:'luxun',name:'鲁迅',title:'文坛斗士',faction:'chinese',subject:'语文',hp:3,avatar:'📖',skills:[{id:'nah',name:'呐喊',type:'active',desc:'弃一张牌，令一名角色选择：弃一张牌或失去1点体力'},{id:'hengmei',name:'横眉',type:'trigger',desc:'受到伤害后摸一张牌'}]},
+{id:'libai',name:'李白',title:'诗仙',faction:'chinese',subject:'语文',hp:4,avatar:'🌙',skills:[{id:'jiangjinjiu',name:'将进酒',type:'active',desc:'摸两张牌，本回合不能使用【杀】'},{id:'shicheng',name:'诗成',type:'trigger',desc:'使用锦囊牌时摸一张牌'}]},
+{id:'sushi',name:'苏轼',title:'东坡居士',faction:'chinese',subject:'语文',hp:4,avatar:'🎋',skills:[{id:'shuidiao',name:'水调歌头',type:'active',desc:'弃一张牌，令一名角色回复1点体力'},{id:'kuangda',name:'旷达',type:'trigger',desc:'锁定技，判定为红桃时摸一张牌'}]},
+{id:'dufu',name:'杜甫',title:'诗圣',faction:'chinese',subject:'语文',hp:4,avatar:'📜',skills:[{id:'chenyu',name:'沉郁',type:'active',desc:'弃一张牌，令一名角色摸牌'},{id:'youguo',name:'忧国',type:'trigger',desc:'受到伤害后摸一张牌'}]},
+{id:'zuchongzhi',name:'祖冲之',title:'圆周率之父',faction:'math',subject:'数学',hp:3,avatar:'⭕',skills:[{id:'milv',name:'密率',type:'active',desc:'弃一张牌，令一名角色判定，黑色受1点伤害'},{id:'zhuishu',name:'缀术',type:'trigger',desc:'锁定技，手牌上限+2'}]},
+{id:'hualuogeng',name:'华罗庚',title:'数学大师',faction:'math',subject:'数学',hp:4,avatar:'🔢',skills:[{id:'tongchou',name:'统筹',type:'active',desc:'将一张手牌交给一名角色，然后摸一张牌'},{id:'youxuan',name:'优选法',type:'trigger',desc:'摸牌阶段额外摸一张牌，然后弃一张牌'}]},
+{id:'gaosi',name:'高斯',title:'数学王子',faction:'math',subject:'数学',hp:4,avatar:'📐',skills:[{id:'qiuhe',name:'求和',type:'active',desc:'令所有角色各摸一张牌'},{id:'gaosifenbu',name:'高斯分布',type:'trigger',desc:'受到伤害时若来源手牌多于你，伤害-1'}]},
+{id:'shashibiya',name:'莎士比亚',title:'戏剧大师',faction:'english',subject:'英语',hp:3,avatar:'🎭',skills:[{id:'shisihang',name:'十四行诗',type:'active',desc:'令一名角色交给你一张手牌或失去1点体力'},{id:'hamuleite',name:'哈姆雷特',type:'trigger',desc:'受到伤害后令来源弃一张牌'}]},
+{id:'hailun',name:'海伦·凯勒',title:'光明使者',faction:'english',subject:'英语',hp:3,avatar:'✨',skills:[{id:'santian',name:'三天光明',type:'active',desc:'弃一张牌，令所有角色各摸一张牌'},{id:'jianren',name:'坚韧',type:'trigger',desc:'濒死时摸一张牌'}]},
+{id:'niudun',name:'牛顿',title:'力学之父',faction:'physics',subject:'物理',hp:4,avatar:'🍎',skills:[{id:'wanyou',name:'万有引力',type:'trigger',desc:'锁定技，计算距离-1'},{id:'sandadinglv',name:'三大定律',type:'trigger',desc:'使用【闪】时摸一张牌'}]},
+{id:'einstein',name:'爱因斯坦',title:'相对论之父',faction:'physics',subject:'物理',hp:3,avatar:'⚛️',skills:[{id:'xiangduilun',name:'相对论',type:'trigger',desc:'锁定技，使用【杀】时若目标手牌与你不同不可闪避'},{id:'zhineng',name:'质能方程',type:'active',desc:'弃一张牌，令一名角色失去1点体力'}]},
+{id:'ajimide',name:'阿基米德',title:'力学之父',faction:'physics',subject:'物理',hp:4,avatar:'🛁',skills:[{id:'ganggan',name:'杠杆',type:'active',desc:'弃一张牌，获得一名角色装备区一张牌'},{id:'fuli',name:'浮力',type:'trigger',desc:'受到伤害时若来源有装备，伤害-1'}]},
+{id:'menjieliefu',name:'门捷列夫',title:'元素周期表之父',faction:'chemistry',subject:'化学',hp:4,avatar:'⚗️',skills:[{id:'zhouqilv',name:'周期律',type:'active',desc:'令所有角色各摸一张牌'},{id:'yuansu',name:'元素',type:'trigger',desc:'锁定技，手牌上限+1'}]},
+{id:'lawaxi',name:'拉瓦锡',title:'近代化学之父',faction:'chemistry',subject:'化学',hp:3,avatar:'🔥',skills:[{id:'zhiliang',name:'质量守恒',type:'trigger',desc:'使用锦囊牌时摸一张牌'},{id:'ranshao',name:'燃烧',type:'active',desc:'弃一张红色牌，对一名角色造成1点伤害'}]},
+{id:'juli',name:'居里夫人',title:'镭元素发现者',faction:'chemistry',subject:'化学',hp:3,avatar:'💎',skills:[{id:'leiguang',name:'镭光',type:'active',desc:'弃一张黑色牌，对一名角色造成1点伤害'},{id:'jianchi',name:'坚持',type:'trigger',desc:'摸牌阶段额外摸一张牌'}]},
+{id:'daerwen',name:'达尔文',title:'进化论之父',faction:'biology',subject:'生物',hp:4,avatar:'🧬',skills:[{id:'jinhualun',name:'进化论',type:'active',desc:'摸两张牌然后弃一张牌'},{id:'shizhe',name:'适者生存',type:'trigger',desc:'受到伤害时若体力低于来源，摸一张牌'}]},
+{id:'yuanlongping',name:'袁隆平',title:'杂交水稻之父',faction:'biology',subject:'生物',hp:4,avatar:'🌾',skills:[{id:'hexia',name:'禾下乘凉',type:'active',desc:'令所有角色回复1点体力'},{id:'fengshou',name:'丰收',type:'trigger',desc:'摸牌阶段额外摸一张牌'}]},
+{id:'qinshihuang',name:'秦始皇',title:'千古一帝',faction:'history',subject:'历史',hp:4,avatar:'👑',skills:[{id:'tongyi',name:'统一',type:'active',desc:'令所有其他角色各弃一张牌'},{id:'fenshu',name:'焚书',type:'trigger',desc:'锁定技，你不能成为锦囊牌的目标'}]},
+{id:'yuefei',name:'岳飞',title:'精忠报国',faction:'history',subject:'历史',hp:4,avatar:'⚔️',skills:[{id:'jingzhong',name:'精忠',type:'trigger',desc:'锁定技，使用【杀】造成伤害时伤害+1'},{id:'moxuyou',name:'莫须有',type:'trigger',desc:'受到伤害后摸一张牌'}]},
+{id:'simaqian',name:'司马迁',title:'史圣',faction:'history',subject:'历史',hp:3,avatar:'📚',skills:[{id:'shiji',name:'史记',type:'active',desc:'令一名角色弃两张牌'},{id:'renru',name:'忍辱',type:'trigger',desc:'受到伤害后摸一张牌'}]},
+{id:'xuxiake',name:'徐霞客',title:'游圣',faction:'geography',subject:'地理',hp:4,avatar:'🌄',skills:[{id:'youji',name:'游记',type:'active',desc:'令一名角色弃一张牌或让你摸一张牌'},{id:'tanxian',name:'探险',type:'trigger',desc:'锁定技，计算距离-1'}]},
+{id:'zhangheng',name:'张衡',title:'科圣',faction:'geography',subject:'地理',hp:3,avatar:'🌏',skills:[{id:'didongyi',name:'地动仪',type:'active',desc:'令一名角色判定，黑色受1点伤害'},{id:'huntian',name:'浑天',type:'trigger',desc:'锁定技，手牌上限+1'}]},
+{id:'kongzi',name:'孔子',title:'万世师表',faction:'politics',subject:'政治',hp:4,avatar:'🏛️',skills:[{id:'lunyu',name:'论语',type:'active',desc:'令一名角色回复1点体力并摸一张牌'},{id:'jiaohua',name:'教化',type:'trigger',desc:'使用锦囊牌时摸一张牌'}]},
+{id:'sugeladi',name:'苏格拉底',title:'哲人',faction:'politics',subject:'政治',hp:3,avatar:'⚖️',skills:[{id:'jiewen',name:'诘问',type:'active',desc:'令一名角色弃一张牌或失去1点体力'},{id:'sibian',name:'思辨',type:'trigger',desc:'受到伤害后摸一张牌'}]},
+];
+
+const ROLES={lord:{name:'主公',color:'#f5c542'},loyal:{name:'忠臣',color:'#27ae60'},rebel:{name:'反贼',color:'#e74c3c'},spy:{name:'内奸',color:'#9b59b6'}};
+const ROLE_CONFIG={2:['lord','rebel'],3:['lord','rebel','spy'],4:['lord','loyal','rebel','spy'],5:['lord','loyal','rebel','rebel','spy'],6:['lord','loyal','rebel','rebel','rebel','spy'],7:['lord','loyal','loyal','rebel','rebel','rebel','spy'],8:['lord','loyal','loyal','rebel','rebel','rebel','rebel','spy']};
+
+/* ============================================================
+   装备简称映射
+   ============================================================ */
+const EQUIP_SHORT={
+  '诸葛连弩':'弩','青龙偃月刀':'刀','丈八蛇矛':'矛',
+  '八卦阵':'卦','仁王盾':'盾','+1马':'+1','-1马':'-1'
+};
+
+/* ============================================================
+   音效
+   ============================================================ */
+const Sound={ctx:null,enabled:true,
+  init(){if(!this.ctx){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){this.enabled=false;return null}}if(this.ctx.state==='suspended')this.ctx.resume();return this.ctx},
+  play(t){if(!this.enabled)return;const c=this.init();if(!c)return;const n=c.currentTime;
+    const tone=(f,d,tp='sine',v=0.1)=>{const o=c.createOscillator(),g=c.createGain();o.type=tp;o.frequency.setValueAtTime(f,n);g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(0.001,n+d);o.connect(g);g.connect(c.destination);o.start(n);o.stop(n+d)};
+    switch(t){
+      case 'click':tone(880,.06,'triangle',.06);break;
+      case 'draw':tone(1200,.1,'sine',.07);break;
+      case 'play':tone(520,.14,'triangle',.12);break;
+      case 'sha':tone(130,.32,'sine',.3);break;
+      case 'shan':[1500,2250,3000].forEach(f=>tone(f,.4,'sine',.06));break;
+      case 'tao':[523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,.3,'sine',.1),i*80));break;
+      case 'jiu':tone(180,.38,'sawtooth',.1);break;
+      case 'hit':tone(180,.28,'square',.2);break;
+      case 'skill':tone(280,.45,'sawtooth',.09);break;
+      case 'correct':[659,880,1046].forEach((f,i)=>setTimeout(()=>tone(f,.3,'sine',.08),i*70));break;
+      case 'wrong':tone(200,.42,'square',.11);break;
+      case 'win':[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,.5,'triangle',.1),i*120));break;
+      case 'reward':[1046,1318,1568].forEach((f,i)=>setTimeout(()=>tone(f,.3,'triangle',.1),i*60));break;
+    }}
+};
+function toggleSound(){Sound.enabled=!Sound.enabled;const b=document.getElementById('soundToggle');b.textContent=Sound.enabled?'🔊':'🔇';b.classList.toggle('muted',!Sound.enabled);if(Sound.enabled){Sound.init();Sound.play('click')}}
+
+/* ============================================================
+   特效
+   ============================================================ */
+const FX={
+  anchor(idx){const s=document.querySelector(`.seat[data-idx="${idx}"] .p-card`);if(!s)return{x:window.innerWidth/2,y:window.innerHeight/2};const r=s.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}},
+  attackLunge(idx){const e=document.querySelector(`.seat[data-idx="${idx}"] .p-card`);if(!e)return;e.classList.remove('attacking');void e.offsetWidth;e.classList.add('attacking');setTimeout(()=>e.classList.remove('attacking'),480)},
+  hitShake(idx){const e=document.querySelector(`.seat[data-idx="${idx}"] .p-card`);if(!e)return;e.classList.remove('hit-shake');void e.offsetWidth;e.classList.add('hit-shake');setTimeout(()=>e.classList.remove('hit-shake'),520)},
+  async flyCard(fromIdx,toIdx,text,type='basic',dur=520){const from=this.anchor(fromIdx),to=this.anchor(toIdx);const e=document.createElement('div');e.className='fly-card '+(type!=='basic'?type:'');e.textContent=text;e.style.left=(from.x-22)+'px';e.style.top=(from.y-31)+'px';document.getElementById('fxLayer').appendChild(e);const dx=to.x-from.x,dy=to.y-from.y;const a=e.animate([{transform:'translate(0,0) scale(.5) rotate(0)',opacity:0},{transform:'translate(0,0) scale(1.08) rotate(0)',opacity:1,offset:.14},{transform:`translate(${dx*.5}px,${dy*.5-55}px) scale(1.1) rotate(180deg)`,opacity:1,offset:.62},{transform:`translate(${dx}px,${dy}px) scale(.5) rotate(360deg)`,opacity:.15}],{duration:dur,easing:'cubic-bezier(.45,.05,.65,.95)',fill:'forwards'});return a.finished.then(()=>e.remove())},
+  async slash(idx){const a=this.anchor(idx);this.hitShake(idx);const f=document.createElement('div');f.className='slash-fx';f.textContent='杀';f.style.left=(a.x-35)+'px';f.style.top=(a.y-40)+'px';document.getElementById('fxLayer').appendChild(f);setTimeout(()=>f.remove(),880);await sleep(340)},
+  async shield(idx){const a=this.anchor(idx);const r=document.createElement('div');r.className='shield-fx';r.style.left=(a.x-60)+'px';r.style.top=(a.y-60)+'px';document.getElementById('fxLayer').appendChild(r);floatTextFx(idx,'闪','#4af');setTimeout(()=>r.remove(),720);await sleep(320)},
+  healGlow(idx){const a=this.anchor(idx);const f=document.createElement('div');f.className='heal-fx';f.style.left=(a.x-42)+'px';f.style.top=(a.y-42)+'px';document.getElementById('fxLayer').appendChild(f);setTimeout(()=>f.remove(),950)},
+  skillWave(idx){const a=this.anchor(idx);const f=document.createElement('div');f.className='skill-ripple';f.style.left=(a.x-75)+'px';f.style.top=(a.y-75)+'px';document.getElementById('fxLayer').appendChild(f);setTimeout(()=>f.remove(),900)},
+  async judge(idx,card){const a=this.anchor(idx);const isRed=card.suit==='♥'||card.suit==='♦';const f=document.createElement('div');f.className='judge-fx '+(isRed?'red':'black');f.innerHTML=`<div class="jsuit">${card.suit}</div><div class="jnum">${card.num}</div><div class="jname">${card.name}</div>`;f.style.left=(a.x-30)+'px';f.style.top=(a.y-44)+'px';document.getElementById('fxLayer').appendChild(f);await sleep(900);f.remove()},
+  async death(idx){const a=this.anchor(idx);const f=document.createElement('div');f.className='death-fx';f.textContent='☠ 阵亡';f.style.left=(a.x-62)+'px';f.style.top=(a.y-26)+'px';document.getElementById('fxLayer').appendChild(f);await sleep(1250);f.remove()}
+};
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function floatTextFx(idx,text,color){const a=FX.anchor(idx);const f=document.createElement('div');f.className='float-text';f.textContent=text;f.style.color=color;f.style.left=(a.x-16)+'px';f.style.top=(a.y-14)+'px';document.getElementById('fxLayer').appendChild(f);setTimeout(()=>f.remove(),1150)}
+
+/* ============================================================
+   出牌区 & 战报
+   ============================================================ */
+function showPlayCard(card,ownerName,ownerColor){
+  const z=document.getElementById('playZoneCards');if(!z)return;
+  const em=z.querySelector('.play-zone-empty');if(em)em.remove();
+  const isRed=card.suit==='♥'||card.suit==='♦';
+  const cls=card.type==='trick'?'trick':(card.type==='equip'?'equip':(isRed?'red':''));
+  const e=document.createElement('div');e.className='play-card '+cls;
+  if(ownerColor)e.style.borderColor=ownerColor;
+  e.innerHTML=`<span class="pcsuit">${card.suit}</span><span class="pcnum">${card.num}</span><span class="pcname">${card.name}</span><span class="pcowner">${ownerName||''}</span>`;
+  while(z.querySelectorAll('.play-card').length>=4){const f=z.querySelector('.play-card');if(f)f.remove()}
+  z.appendChild(e);
+  setTimeout(()=>{e.classList.add('fade-out');setTimeout(()=>{if(e.parentNode)e.parentNode.removeChild(e);if(z.querySelectorAll('.play-card').length===0)z.innerHTML='<div class="play-zone-label">出 牌 区</div><span class="play-zone-empty">— 牌桌中央 —</span>'},420)},2200)
+}
+function clearPlayZone(){const z=document.getElementById('playZoneCards');if(z)z.innerHTML='<div class="play-zone-label">出 牌 区</div><span class="play-zone-empty">— 牌桌中央 —</span>'}
+
+let playLog=[];
+function addLog(t,cls=''){playLog.push({action:'log',text:t,cls});if(playLog.length>100)playLog.shift();renderPlayLog();if(NET.isHost) NET.broadcast({type:'play_log',entry:{action:'log',text:t,cls}});}
+function addPlayLog(fromName,action,cardName,toName,cls=''){const entry={action,fromName,cardName,toName,cls};playLog.push(entry);if(playLog.length>100)playLog.shift();renderPlayLog();if(NET.isHost) NET.broadcast({type:'play_log',entry});}
+function renderPlayLog(){
+  const el=document.getElementById('playLogList');if(!el)return;
+  el.innerHTML=playLog.slice(-60).map(l=>{
+    if(l.action==='log')return `<div class="play-log-item ${l.cls||''}">${l.text}</div>`;
+    if(l.action==='use')return `<div class="play-log-item ${l.cls||''}"><span class="pl-from">${l.fromName}</span> 使用 <span class="pl-card">【${l.cardName}】</span>${l.toName?' → <span class="pl-to">'+l.toName+'</span>':''}</div>`;
+    if(l.action==='damage')return `<div class="play-log-item dmg"><span class="pl-to">${l.toName}</span> 受到 <span class="pl-card">${l.cardName}</span> 点伤害</div>`;
+    if(l.action==='heal')return `<div class="play-log-item heal"><span class="pl-to">${l.toName}</span> 回复 <span class="pl-card">${l.cardName}</span> 点体力</div>`;
+    if(l.action==='skill')return `<div class="play-log-item skill"><span class="pl-from">${l.fromName}</span> 发动 <span class="pl-card">【${l.cardName}】</span></div>`;
+    if(l.action==='reward')return `<div class="play-log-item reward"><span class="pl-from">${l.fromName}</span> 获得 <span class="pl-card">${l.cardName}</span></div>`;
+    if(l.action==='faction')return `<div class="play-log-item faction">${l.fromName} ${l.cardName}${l.toName?' → '+l.toName:''}</div>`;
+    if(l.action==='kp')return `<div class="play-log-item kp">📖 ${l.fromName} 答对【${l.cardName}】知识点</div>`;
+    return '';
+  }).join('');
+  document.getElementById('playLogBadge').textContent=playLog.length;
+  el.scrollTop=el.scrollHeight;
+}
+
+/* ============================================================
+   聊天
+   ============================================================ */
+let chatMessages=[];
+function addChat(name,text,kind='ai'){chatMessages.push({name,text,kind});if(chatMessages.length>100)chatMessages.shift();renderChat()}
+function renderChat(){const el=document.getElementById('chatList');if(!el)return;el.innerHTML=chatMessages.map(m=>`<div class="chat-msg ${m.kind}"><span class="chat-name">${m.name}</span><span class="chat-text">${escapeHtml(m.text)}</span></div>`).join('');el.scrollTop=el.scrollHeight}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function sendChat(){
+  const input=document.getElementById('chatInput');const text=(input.value||'').trim();if(!text)return;
+  const me=G.players[G.myPlayerIdx];if(!me)return;
+  addChat(me.name,text,'self');input.value='';
+  if(NET.isHost){NET.broadcast({type:'chat',name:me.name,text})}
+  else if(NET.myConn){NET.myConn.send({type:'chat',name:me.name,text})}
+  if(NET.mode==='single'||NET.mode==='host'){
+    const others=G.players.filter((p,i)=>i!==G.myPlayerIdx&&p.alive&&p.isAI);
+    if(others.length>0&&Math.random()<0.7){
+      setTimeout(()=>{
+        const r=others[Math.floor(Math.random()*others.length)];
+        const reply=aiReply(r,text);addChat(r.name,reply,'ai');
+        if(NET.isHost)NET.broadcast({type:'chat',name:r.name,text:reply});
+      },800+Math.random()*1400);
+    }
+  }
+}
+function aiReply(p,u){const l=AI_LINES[p.charId]||AI_LINES.default;if(/杀|攻击/.test(u))return pickRand(l.attack);if(/桃|血/.test(u))return pickRand(l.heal);if(/技能/.test(u))return pickRand(l.skill);if(/你好|hi/i.test(u))return pickRand(l.greet);return pickRand(l.idle)}
+function pickRand(a){return a[Math.floor(Math.random()*a.length)]}
+function aiSpeak(p,t){if(!p||!p.isAI)return;if(Math.random()>0.55)return;const l=AI_LINES[p.charId]||AI_LINES.default;const arr=l[t]||l.idle;if(!arr||!arr.length)return;const text=pickRand(arr);addChat(p.name,text,'ai');if(NET.isHost)NET.broadcast({type:'chat',name:p.name,text})}
+
+/* ============================================================
+   规则
+   ============================================================ */
+function openRules(){document.getElementById('rulesModal').classList.add('show');switchRulesTab('basic')}
+function closeRules(){document.getElementById('rulesModal').classList.remove('show')}
+function switchRulesTab(tab){
+  document.querySelectorAll('.rule-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  const el=document.getElementById('rulesContent');
+  if(tab==='basic'){
+    el.innerHTML=`
+      <div class="rule-section"><h4>🎯 游戏目标</h4><ul>
+        <li><b>主公</b>：消灭所有反贼和内奸</li>
+        <li><b>忠臣</b>：主公存活并消灭反贼和内奸</li>
+        <li><b>反贼</b>：杀死主公</li>
+        <li><b>内奸</b>：先清除其他角色，最后单挑杀死主公</li>
+      </ul></div>
+      <div class="rule-section"><h4>🔄 回合流程</h4><ol>
+        <li><b>判定阶段</b>：结算判定区</li>
+        <li><b>摸牌阶段</b>：摸 2 张牌，可参悟答题多摸 1 张</li>
+        <li><b>出牌阶段</b>：点击手牌出牌，点击座位卡选目标，点击技能发动（需答题）</li>
+        <li><b>弃牌阶段</b>：点击手牌弃置，直到不超过体力值</li>
+      </ol></div>
+      <div class="rule-section"><h4>🎮 直接点击操作</h4><ul>
+        <li><b>出牌</b>：直接点击手牌中的卡牌</li>
+        <li><b>弃牌</b>：直接点击要弃置的手牌（红色脉冲提示）</li>
+        <li><b>濒死自救</b>：直接点击手牌中的【桃】/【酒】（绿色脉冲提示）</li>
+        <li><b>出闪</b>：直接点击手牌中的【闪】（蓝色脉冲提示）</li>
+        <li><b>选目标</b>：直接点击对方的座位卡</li>
+      </ul></div>
+      <div class="rule-section"><h4>📚 学习机制</h4><ul>
+        <li><b>学识 🔮</b>：答对任意题目 +1。每 2 学识抵挡 1 点伤害</li>
+        <li><b>知识护盾 🛡️</b>：答对随机获得 1 层，每层抵挡 1 点伤害</li>
+        <li><b>技能挑战</b>：发动主动技能前必须答题</li>
+        <li><b>连击 ⚡</b>：连续答对 3/5/7 题触发额外奖励</li>
+        <li><b>科目加成</b>：答对本阵营科目题额外 +1 学识并摸 1 张牌</li>
+        <li><b>知识点</b>：每道题都标注知识点，答对后战报会记录</li>
+      </ul></div>
+      <div class="rule-section"><h4>📱 移动端布局</h4><ul>
+        <li>手机和小屏设备自动切换为<b>横向滚动座位列表</b></li>
+        <li>可左右滑动查看所有玩家，不再出现遮挡</li>
+      </ul></div>`;
+  }else if(tab==='factions'){
+    el.innerHTML=`<div class="rule-section"><h4>🏛️ 九科阵营</h4><p style="margin-bottom:8px;">每个阵营对应一个学科。主公获得该阵营<b>主公技</b>。答对本阵营科目题额外 +1 学识 + 摸 1 牌。</p></div>`+
+      Object.entries(FACTIONS).map(([k,f])=>`
+        <div class="rule-faction" style="border-left-color:${f.color};">
+          <div class="rule-faction-header">
+            <span class="rule-faction-icon">${f.icon}</span>
+            <span class="rule-faction-name" style="color:${f.color};">${f.name}</span>
+            <span class="rule-faction-subject">${f.desc}</span>
+          </div>
+          <div class="rule-faction-desc"><b>${f.lordSkill.name}</b>：${f.lordSkill.desc}</div>
+        </div>`).join('');
+  }else if(tab==='cards'){
+    el.innerHTML=`
+      <div class="rule-section"><h4>⚔️ 基本牌</h4><ul>
+        <li><b>杀</b>：对攻击范围内一名角色造成 1 点伤害</li>
+        <li><b>闪</b>：抵消一次【杀】</li>
+        <li><b>桃</b>：回复 1 点体力或濒死自救</li>
+        <li><b>酒</b>：本回合下一张【杀】伤害 +1</li>
+      </ul></div>
+      <div class="rule-section"><h4>🎴 锦囊牌</h4><ul>
+        <li><b>无中生有</b>：摸 2 张牌</li>
+        <li><b>过河拆桥</b>：弃置一名角色一张牌</li>
+        <li><b>顺手牵羊</b>：获得距离 1 内一名角色一张牌</li>
+        <li><b>决斗</b>：轮流出【杀】，先不出者受 1 伤</li>
+        <li><b>南蛮入侵</b>：其他角色需出【杀】否则受 1 伤</li>
+        <li><b>万箭齐发</b>：其他角色需出【闪】否则受 1 伤</li>
+        <li><b>桃园结义</b>：所有角色回复 1 点</li>
+        <li><b>乐不思蜀</b>：判定非红桃则跳过出牌</li>
+        <li><b>闪电</b>：判定黑桃 2-9 受 3 点雷电伤害</li>
+      </ul></div>
+      <div class="rule-section"><h4>🛡️ 装备牌</h4><ul>
+        <li><b>诸葛连弩</b>：可无限使用【杀】</li>
+        <li><b>青龙偃月刀</b>：杀被闪避后可再出【杀】</li>
+        <li><b>八卦阵</b>：需出【闪】时判定红色视为出闪</li>
+        <li><b>仁王盾</b>：黑色【杀】对你无效</li>
+        <li><b>+1/-1马</b>：影响距离</li>
+      </ul></div>
+      <div class="rule-section"><h4>👁️ 装备显示</h4><ul>
+        <li>座位卡中的装备槽显示<b>图标 + 汉字简称</b></li>
+        <li>座位卡下方显示<b>完整装备名称</b></li>
+      </ul></div>`;
+  }else if(tab==='chars'){
+    el.innerHTML=Object.entries(FACTIONS).map(([fk,f])=>{
+      const chars=CHARACTERS.filter(c=>c.faction===fk);
+      if(!chars.length)return '';
+      return `<div class="rule-section"><h4 style="color:${f.color};">${f.icon} ${f.name}</h4>`+
+        chars.map(c=>`
+          <div class="rule-faction" style="border-left-color:${f.color};margin-bottom:6px;">
+            <div class="rule-faction-header">
+              <span class="rule-faction-icon">${c.avatar}</span>
+              <span class="rule-faction-name" style="color:${f.color};font-size:13px;">${c.name}</span>
+              <span class="rule-faction-subject">${c.title} · 体力 ${c.hp}</span>
+            </div>
+            <div class="rule-faction-desc">${c.skills.map(s=>`<b>${s.name}</b>（${s.type==='active'?'主动·需答题':'触发'}）：${s.desc}`).join('<br>')}</div>
+          </div>`).join('')+`</div>`;
+    }).join('');
+  }else if(tab==='bank'){
+    el.innerHTML=`
+      <div class="rule-section"><h4>📂 题库格式说明</h4>
+        <p style="margin-bottom:8px;">支持 <b>JSON</b> 或 <b>JS</b> 文件导入。导入的题目会与内置题库<b>叠加</b>，按题干去重。</p>
+      </div>
+      <div class="rule-section"><h4>📋 格式 A：按年级分组（推荐）</h4>
+        <pre style="background:#0a0402;border:1px solid var(--gold-dim);border-radius:5px;padding:8px;font-size:10.5px;line-height:1.6;overflow-x:auto;color:#c8b8a0;">{
+  "初一": [
+    {"s":"语文","kp":"古诗词·送别诗","q":"题干","o":["A","B","C","D"],"a":1}
+  ],
+  "初二": [ ... ],
+  "初三": [ ... ]
+}</pre>
+      </div>
+      <div class="rule-section"><h4>📋 格式 B：扁平数组</h4>
+        <pre style="background:#0a0402;border:1px solid var(--gold-dim);border-radius:5px;padding:8px;font-size:10.5px;line-height:1.6;overflow-x:auto;color:#c8b8a0;">[{"s":"数学","kp":"勾股定理","q":"...","o":["..."],"a":0}]</pre>
+      </div>
+      <div class="rule-section"><h4>📋 格式 C：JS 文件</h4>
+        <pre style="background:#0a0402;border:1px solid var(--gold-dim);border-radius:5px;padding:8px;font-size:10.5px;line-height:1.6;overflow-x:auto;color:#c8b8a0;">window.EXTERNAL_BANK = { "初一": [...] };</pre>
+      </div>
+      <div class="rule-section"><h4>🔑 字段说明</h4><ul>
+        <li><b>s</b>：科目（语文/数学/英语/物理/化学/生物/历史/地理/政治）</li>
+        <li><b>kp</b>：知识点名称（可选，默认"综合"）</li>
+        <li><b>q</b>：题干（必填）</li>
+        <li><b>o</b>：选项数组，至少 2 项（必填）</li>
+        <li><b>a</b>：正确答案索引，从 0 开始（必填）</li>
+      </ul></div>`;
+  }
+  el.scrollTop=0;
+}
+
+/* ============================================================
+   AI 台词
+   ============================================================ */
+const AI_LINES={
+  luxun:{idle:['这局，我以笔为剑。'],attack:['呐喊！'],heal:['横眉冷对。'],skill:['我以我血荐轩辕。'],greet:['你好，同学。']},
+  libai:{idle:['举杯邀明月。'],attack:['十步杀一人！'],heal:['将进酒。'],skill:['诗成泣鬼神！'],greet:['来，对饮？']},
+  sushi:{idle:['竹杖芒鞋轻胜马。'],attack:['东坡一怒。'],heal:['人间有味是清欢。'],skill:['水调歌头！'],greet:['客官安好。']},
+  dufu:{idle:['国破山河在。'],attack:['忧国一击！'],heal:['安得广厦千万间。'],skill:['沉郁顿挫！'],greet:['同是天涯沦落人。']},
+  zuchongzhi:{idle:['圆周率还在算呢。'],attack:['计算精准！'],heal:['缀术补气。'],skill:['密率·π！'],greet:['数学作业交了吗？']},
+  hualuogeng:{idle:['统筹安排。'],attack:['优选法！'],heal:['统筹气血。'],skill:['统筹全局！'],greet:['一起研究数学？']},
+  gaosi:{idle:['高斯分布。'],attack:['求和！'],heal:['对称补血。'],skill:['高斯分布！'],greet:['见过诸位。']},
+  shashibiya:{idle:['To be or not to be.'],attack:['十四行诗！'],heal:['诗意的疗愈。'],skill:['哈姆雷特！'],greet:['Hello!']},
+  hailun:{idle:['假如给我三天光明。'],attack:['光明一击！'],heal:['坚韧自愈。'],skill:['三天光明！'],greet:['你好。']},
+  niudun:{idle:['力与反作用力。'],attack:['F=ma！'],heal:['恢复力场。'],skill:['三大定律！'],greet:['聊聊力学？']},
+  einstein:{idle:['时空皆相对。'],attack:['E=mc²！'],heal:['时空修复。'],skill:['相对论！'],greet:['聊聊物理？']},
+  ajimide:{idle:['给我一个支点。'],attack:['杠杆！'],heal:['水之疗愈。'],skill:['杠杆原理！'],greet:['浴室里想出的真理。']},
+  menjieliefu:{idle:['元素周期表已备好。'],attack:['周期律！'],heal:['元素调和。'],skill:['周期律！'],greet:['背元素吗？']},
+  lawaxi:{idle:['质量守恒。'],attack:['燃烧！'],heal:['还原反应。'],skill:['质量守恒！'],greet:['实验开始？']},
+  juli:{idle:['镭的光芒。'],attack:['镭光一击！'],heal:['坚持就是胜利。'],skill:['镭元素！'],greet:['科学需要坚持。']},
+  daerwen:{idle:['物竞天择。'],attack:['进化一击！'],heal:['适应环境。'],skill:['进化论！'],greet:['聊聊物种起源？']},
+  yuanlongping:{idle:['禾下乘凉梦。'],attack:['丰收之力！'],heal:['稻香满田。'],skill:['禾下乘凉！'],greet:['吃饭了吗？']},
+  qinshihuang:{idle:['朕即天下。'],attack:['统一！'],heal:['朕之疆土。'],skill:['统一六国！'],greet:['朕在此。']},
+  yuefei:{idle:['精忠报国。'],attack:['精忠一击！'],heal:['莫须有。'],skill:['精忠报国！'],greet:['同袍，有战事？']},
+  simaqian:{idle:['究天人之际。'],attack:['史记一击！'],heal:['忍辱负重。'],skill:['史记！'],greet:['听段历史？']},
+  xuxiake:{idle:['朝碧海暮苍梧。'],attack:['游记一击！'],heal:['山水疗愈。'],skill:['游记山河！'],greet:['去旅行？']},
+  zhangheng:{idle:['浑天如鸡子。'],attack:['地动仪！'],heal:['浑天补气。'],skill:['地动仪！'],greet:['测地震吗？']},
+  kongzi:{idle:['学而时习之。'],attack:['论语一击！'],heal:['仁者爱人。'],skill:['论语！'],greet:['有朋自远方来。']},
+  sugeladi:{idle:['认识你自己。'],attack:['诘问！'],heal:['思辨之力。'],skill:['诘问！'],greet:['来讨论吧。']},
+  default:{idle:['嗯……'],attack:['出手。'],heal:['恢复。'],skill:['看招。'],greet:['你好。']}
+};
+
+/* ============================================================
+   卡牌
+   ============================================================ */
+const SUITS=['♠','♥','♣','♦'];let cid=0;
+function C(name,type,sub,suit,num,extra={}){return{id:++cid,name,type,sub,suit,num,...extra}}
+function buildDeck(){
+  const d=[];
+  for(let i=0;i<30;i++)d.push(C('杀','basic','sha',SUITS[i%4],i%13+1));
+  for(let i=0;i<15;i++)d.push(C('闪','basic','shan',SUITS[i%4],i%13+1));
+  for(let i=0;i<8;i++)d.push(C('桃','basic','tao',SUITS[i%4],i%13+1));
+  for(let i=0;i<5;i++)d.push(C('酒','basic','jiu',SUITS[i%4],i%13+1));
+  const tr=[['无中生有','wuzhong',4],['过河拆桥','guohe',6],['顺手牵羊','shunshou',5],['决斗','juedou',3],['南蛮入侵','nanman',3],['万箭齐发','wanjian',1],['桃园结义','taoyuan',1],['无懈可击','wuxie',4],['乐不思蜀','lebu',3],['闪电','shandian',2]];
+  tr.forEach(([n,s,c])=>{for(let i=0;i<c;i++)d.push(C(n,'trick',s,SUITS[i%4],i%13+1))});
+  const eq=[['诸葛连弩','weapon',{range:1,skill:'liannu'},1],['青龙偃月刀','weapon',{range:3,skill:'qinglong'},1],['丈八蛇矛','weapon',{range:3,skill:'zhangba'},1],['八卦阵','armor',{skill:'bagua'},2],['仁王盾','armor',{skill:'renwang'},1],['+1马','horse+',{dist:1},3],['-1马','horse-',{dist:1},3]];
+  eq.forEach(([n,s,e,c])=>{for(let i=0;i<c;i++)d.push(C(n,'equip',s,SUITS[i%4],i%13+1,e))});
+  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}
+  return d;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+
+/* ============================================================
+   游戏状态
+   ============================================================ */
+const G={players:[],deck:[],discard:[],current:0,started:false,grade:'初二',myPlayerIdx:0,
+  pendingOptions:null,pendingType:'list',pendingResolve:null,pendingPlayer:null,gameOver:false,winnerText:'',playerCount:4};
+let quizStats={total:0,correct:0};let quizResolve=null;
+
+function pickQ(p){
+  const bank=QUESTION_BANK[G.grade]||QUESTION_BANK['初二'];
+  if(p){
+    const f=FACTIONS[p.faction];
+    if(f&&Math.random()<0.5){const sub=bank.filter(q=>q.s===f.subject);if(sub.length)return sub[Math.floor(Math.random()*sub.length)]}
+    if(p.subject&&Math.random()<0.7){const sub=bank.filter(q=>q.s===p.subject);if(sub.length)return sub[Math.floor(Math.random()*sub.length)]}
+  }
+  return bank[Math.floor(Math.random()*bank.length)];
+}
+function hasSkill(p,id){return p.skills&&p.skills.some(s=>s.id===id)}
+function seatDist(a,b){const n=G.players.length;return Math.min(Math.abs(a-b),n-Math.abs(a-b))}
+function distBetween(fromIdx,toIdx){let d=seatDist(fromIdx,toIdx);const from=G.players[fromIdx],to=G.players[toIdx];if(to.equip.horsePlus)d+=1;if(from.equip.horseMinus)d-=1;if(hasSkill(from,'wanyou')||hasSkill(from,'tanxian'))d-=1;return Math.max(1,d)}
+function attackRange(p){return p.equip.weapon?(p.equip.weapon.range||1):1}
+function inRange(fromIdx,toIdx){return distBetween(fromIdx,toIdx)<=attackRange(G.players[fromIdx])}
+function drawCards(p,n){for(let i=0;i<n;i++){if(G.deck.length===0){if(G.discard.length===0)break;G.deck=G.discard;G.discard=[];shuffle(G.deck)}const c=G.deck.pop();if(c)p.hand.push(c)}if(n>0)Sound.play('draw')}
+function discardCard(p,card,toDiscard=true){const i=p.hand.findIndex(c=>c.id===card.id);if(i>=0){p.hand.splice(i,1);if(toDiscard)G.discard.push(card)}}
+function handLimit(p){let l=Math.max(p.hp,0);if(hasSkill(p,'zhuishu'))l+=2;if(hasSkill(p,'yuansu')||hasSkill(p,'huntian'))l+=1;return l}
+function sameFaction(a,b){return a.faction===b.faction}
+
+/* ============================================================
+   网络层
+   ============================================================ */
+const NET={peer:null,conns:[],myConn:null,isHost:false,mode:'single',roomCode:null,myPeerId:null,playerConns:{},pendingQuiz:null,
+  async createRoom(code,hostName){return new Promise((resolve,reject)=>{this.roomCode=code;this.isHost=true;this.mode='host';this.peer=new Peer('xts-'+code,{debug:1});this.peer.on('open',id=>{this.myPeerId=id;resolve(id)});this.peer.on('error',e=>reject(e));this.peer.on('connection',conn=>{this.conns.push(conn);conn.on('open',()=>{this.playerConns[conn.peer]=conn;onPeerConnected(conn)});conn.on('data',d=>onPeerData(conn,d));conn.on('close',()=>{this.conns=this.conns.filter(c=>c!==conn);delete this.playerConns[conn.peer];const p=G.players.find(pl=>pl.peerId===conn.peer);if(p&&p.alive){addLog(`${p.name} 断线，转为 AI`);p.isAI=true;p.peerId=null;render()}})})})},
+  async joinRoom(code,myName){return new Promise((resolve,reject)=>{this.roomCode=code;this.isHost=false;this.mode='join';this.peer=new Peer({debug:1});this.peer.on('open',id=>{this.myPeerId=id;const conn=this.peer.connect('xts-'+code,{metadata:{name:myName}});this.myConn=conn;this.conns=[conn];conn.on('open',()=>resolve(id));conn.on('data',d=>onClientData(d));conn.on('error',e=>reject(e))});this.peer.on('error',e=>reject(e))})},
+  broadcast(msg){if(!this.isHost)return;this.conns.forEach(c=>{try{c.send(msg)}catch(e){}})},
+  sendToHost(msg){if(this.isHost)return;if(this.myConn){try{this.myConn.send(msg)}catch(e){}}},
+  sendToPlayer(pid,msg){if(!this.isHost)return;const c=this.playerConns[pid];if(c){try{c.send(msg)}catch(e){}}}
+};
+function onPeerConnected(conn){const name=conn.metadata?.name||'玩家';addChat('系统',`${name} 加入房间。`,'sys');NET.broadcast({type:'chat',name:'系统',text:`${name} 加入房间。`});updateConnectedList()}
+function updateConnectedList(){const el=document.getElementById('connectedList');if(!el)return;const peers=Object.values(NET.playerConns).map(c=>c.metadata?.name||'玩家');el.innerHTML=`已连接：${peers.length?peers.join('、'):'（暂无）'} · 目标：${SELECTED_COUNT} 人`}
+function onPeerData(conn,data){
+  if(!NET.isHost)return;
+  if(data.type==='choose_response'){if(G.pendingPlayer!=null&&G.pendingResolve){const r=G.pendingResolve;G.pendingResolve=null;G.pendingOptions=null;G.pendingPlayer=null;r(data.value)}}
+  else if(data.type==='quiz_response'){if(NET.pendingQuiz){const r=NET.pendingQuiz.resolve;NET.pendingQuiz=null;r(data.correct)}}
+  else if(data.type==='chat'){addChat(data.name,data.text,'ai');NET.broadcast(data)}
+}
+function onClientData(data){
+  if(data.type==='start_game'){
+    G.players=data.players;G.myPlayerIdx=data.myPlayerIdx;G.grade=data.grade;G.playerCount=data.playerCount;
+    G.started=true;G.deck=[];G.discard=[];
+    document.getElementById('screenLobby').classList.remove('active');
+    document.getElementById('screenGame').classList.add('active');
+    clearPlayZone();render();
+    if(window.innerWidth<900){const cp=document.getElementById('chatPanel');if(cp){cp.style.display='flex';cp.classList.add('collapsed');const b=cp.querySelector('.panel-toggle');if(b)b.textContent='▸'}}
+  }
+  else if(data.type==='state_sync'){
+    G.players=data.players;G.current=data.current;G.deck=data.deck;G.discard=data.discard;
+    G.gameOver=data.gameOver;G.winnerText=data.winnerText;
+    G.pendingOptions=data.pendingOptions;G.pendingPlayer=data.pendingPlayer;G.pendingType=data.pendingType||'list';
+    if(data.playLog){playLog=data.playLog.slice(-60);renderPlayLog()}
+    render();
+  }
+  else if(data.type==='choose_request'){G.pendingOptions=data.options;G.pendingPlayer=data.myPlayerIdx;G.pendingType=data.choiceType||'list';render()}
+  else if(data.type==='ask_quiz_request'){onAskQuizRequest(data.question,data.isSkill)}
+  else if(data.type==='chat'){addChat(data.name,data.text,'ai')}
+  else if(data.type==='play_log'){if(data.entry){playLog.push(data.entry);if(playLog.length>100)playLog.shift();renderPlayLog()}}
+}
+function syncStateToClients(){
+  if(!NET.isHost)return;
+  NET.broadcast({
+    type:'state_sync',
+    players:G.players,current:G.current,deck:G.deck,discard:G.discard,
+    gameOver:G.gameOver,winnerText:G.winnerText,
+    pendingOptions:G.pendingOptions,pendingType:G.pendingType,pendingPlayer:G.pendingPlayer,
+    playLog:playLog.slice(-60)
+  });
+}
+async function onAskQuizRequest(question,isSkill){
+  const player=G.players[G.myPlayerIdx];
+  const correct=await displayQuiz(question,player,isSkill);
+  NET.sendToHost({type:'quiz_response',correct:correct});
+}
+function isLocalPlayer(idx){if(NET.mode==='single')return true;if(NET.mode==='host'){const p=G.players[idx];return !p.isAI&&p.peerId===NET.myPeerId}if(NET.mode==='join')return idx===G.myPlayerIdx;return false}
+
+function waitChoice(playerIdx,options,type='list'){
+  return new Promise(resolve=>{
+    const p=G.players[playerIdx];if(!p){resolve(options[options.length-1].value);return}
+    G.pendingOptions=options;G.pendingType=type;G.pendingPlayer=playerIdx;G.pendingResolve=resolve;
+    if(isLocalPlayer(playerIdx)){render()}
+    else if(NET.isHost){NET.sendToPlayer(p.peerId,{type:'choose_request',options,myPlayerIdx:G.players.indexOf(p),choiceType:type});render();syncStateToClients()}
+    else{render()}
+  });
+}
+function resolveChoice(v){
+  Sound.play('click');
+  if(!G.pendingResolve)return;
+  const r=G.pendingResolve;G.pendingResolve=null;G.pendingOptions=null;G.pendingPlayer=null;
+  r(v);
+  if(NET.isHost)syncStateToClients();
+  render();
+}
+function clientResolveChoice(v){Sound.play('click');if(!G.pendingOptions)return;G.pendingOptions=null;G.pendingPlayer=null;NET.sendToHost({type:'choose_response',value:v});render()}
+function handleLocalChoice(v){if(NET.mode==='join')clientResolveChoice(v);else resolveChoice(v)}
+
+/* ============================================================
+   卡牌点击 - 直接操作
+   ============================================================ */
+function isCardClickable(card){
+  if(!G.pendingOptions || G.pendingPlayer!==G.myPlayerIdx) return false;
+  const type=G.pendingType;
+  if(type==='play'){
+    return G.pendingOptions.some(o=>o.value===`sha_${card.id}`||o.value===`tao_${card.id}`||o.value===`jiu_${card.id}`||o.value===`trick_${card.id}`||o.value===`equip_${card.id}`);
+  }
+  if(type==='discard'){
+    return G.pendingOptions.some(o=>o.value===card.id || String(o.value)===String(card.id));
+  }
+  if(type==='rescue' || type==='shan'){
+    return G.pendingOptions.some(o=>o.value===`card_${card.id}`);
+  }
+  return false;
+}
+function cardClickHint(card){
+  if(!G.pendingOptions || G.pendingPlayer!==G.myPlayerIdx) return '';
+  const type=G.pendingType;
+  if(type==='discard' && isCardClickable(card)) return 'card-discard-hint';
+  if(type==='rescue' && isCardClickable(card)) return 'card-rescue-hint';
+  if(type==='shan' && isCardClickable(card)) return 'card-shan-hint';
+  return '';
+}
+function clickHandCard(cardId){
+  if(!G.pendingOptions) return;
+  const type=G.pendingType;
+  let matched=null;
+  if(type==='play'){
+    const vals=[`sha_${cardId}`,`tao_${cardId}`,`jiu_${cardId}`,`trick_${cardId}`,`equip_${cardId}`];
+    matched=G.pendingOptions.find(o=>vals.includes(o.value));
+  } else if(type==='discard'){
+    matched=G.pendingOptions.find(o=>o.value===cardId || String(o.value)===String(cardId));
+  } else if(type==='rescue' || type==='shan'){
+    matched=G.pendingOptions.find(o=>o.value===`card_${cardId}`);
+  }
+  if(matched){Sound.play('click');handleLocalChoice(matched.value)}
+}
+function clickTargetSeat(idx){
+  if(!G.pendingOptions||G.pendingType!=='target')return;
+  const opt=G.pendingOptions.find(o=>o.value===idx);
+  if(opt){Sound.play('click');handleLocalChoice(idx)}
+}
+
+/* ============================================================
+   学习奖励
+   ============================================================ */
+function grantLearningReward(player,isSkillQuiz,question){
+  if(!player)return [];
+  const rewards=[];
+  player.subjectMastery=player.subjectMastery||{};
+  const sub=question?question.s:null;
+  if(sub)player.subjectMastery[sub]=(player.subjectMastery[sub]||0)+1;
+  player.combo=(player.combo||0)+1;
+  if(player.combo>(player.maxCombo||0))player.maxCombo=player.combo;
+  const faction=FACTIONS[player.faction];
+  if(faction&&sub&&faction.subject===sub){
+    player.knowledge+=1;drawCards(player,1);
+    rewards.push(`🏛️【${faction.name}】额外+1学识+摸1牌`);
+    addPlayLog(player.name,'faction',faction.name+'加成','','faction');
+  }
+  const roll=Math.random();
+  if(roll<0.30){player.shield=(player.shield||0)+1;rewards.push('🛡️+1护盾')}
+  else if(roll<0.55){drawCards(player,1);rewards.push('🎴摸1张')}
+  else if(roll<0.72){if(player.hp<player.maxHp){player.hp++;rewards.push('💚回复1点')}else{drawCards(player,1);rewards.push('🎴满血改摸1张')}}
+  else if(roll<0.88){player.flags.extraDamage=(player.flags.extraDamage||0)+1;rewards.push('⚔️下张杀伤害+1')}
+  else{player.knowledge+=1;rewards.push('🔮额外+1学识')}
+  if(isSkillQuiz){player.shield=(player.shield||0)+1;rewards.push('✨技能奖励+1护盾')}
+  if(player.combo===3){drawCards(player,1);rewards.push('🔥连击3摸1张')}
+  else if(player.combo===5){player.hp=Math.min(player.maxHp,player.hp+1);player.shield=(player.shield||0)+1;rewards.push('🔥连击5回1血+1护盾')}
+  else if(player.combo>=7){player.knowledge+=2;rewards.push('🔥连击'+player.combo+'学识+2')}
+  if(sub&&player.subjectMastery[sub]===5){player.flags.extraDamage=(player.flags.extraDamage||0)+1;rewards.push(`🎓【${sub}精通】下张杀+1`)}
+  if(rewards.length>0){rewards.forEach(r=>addPlayLog(player.name,'reward',r.replace(/^[^\s]+\s*/,''),'','reward'))}
+  return rewards;
+}
+
+/* ============================================================
+   答题
+   ============================================================ */
+function displayQuiz(q,player,isSkill){
+  return new Promise(resolve=>{
+    quizResolve=resolve;
+    document.getElementById('quizIcon').textContent=SUBJECT_ICON[q.s]||'📖';
+    document.getElementById('quizSubject').textContent=q.s+(isSkill?' · 技能挑战':' · 知识挑战');
+    document.getElementById('quizProgress').textContent=`已答 ${quizStats.total} 题 · 正确 ${quizStats.correct} 题`;
+    document.getElementById('quizKP').textContent='知识点：'+(q.kp||'综合');
+    document.getElementById('quizQuestion').textContent=q.q;
+    const opts=document.getElementById('quizOptions');
+    opts.innerHTML=q.o.map((o,i)=>`<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65+i)}</span>${o}</button>`).join('');
+    document.getElementById('quizFeedback').textContent='';
+    opts.querySelectorAll('.quiz-option').forEach(btn=>{
+      btn.onclick=()=>{
+        const i=Number(btn.dataset.i);const correct=i===q.a;
+        opts.querySelectorAll('.quiz-option').forEach(b=>{b.disabled=true;if(Number(b.dataset.i)===q.a)b.classList.add('correct')});
+        if(!correct)btn.classList.add('wrong');
+        const fb=document.getElementById('quizFeedback');
+        quizStats.total++;
+        if(correct){
+          quizStats.correct++;
+          if(player)player.knowledge+=1;
+          const rewards=grantLearningReward(player,isSkill,q);
+          fb.innerHTML=`✓ 答对！知识点【${q.kp||'综合'}】+1学识<br><span style="font-size:10.5px;color:#1e7a3a;">${rewards.join(' · ')}</span>`;
+          fb.style.color='#1e7a3a';
+          Sound.play('correct');
+          if(player)addPlayLog(player.name,'kp',`${q.s}·${q.kp||'综合'}`,'','kp');
+          if(player&&player.combo>=3)setTimeout(()=>Sound.play('reward'),400);
+        }else{
+          if(player)player.combo=0;
+          fb.innerHTML=`✗ 正确答案是 ${String.fromCharCode(65+q.a)}<br><span style="font-size:10.5px;">知识点【${q.kp||'综合'}】</span>`;
+          fb.style.color='#a02020';
+          Sound.play('wrong');
+        }
+        setTimeout(()=>{document.getElementById('quizModal').classList.remove('show');if(quizResolve){const r=quizResolve;quizResolve=null;r(correct)}},1500);
+      };
+    });
+    document.getElementById('quizModal').classList.add('show');
+  });
+}
+function askQuiz(player,isSkill=false){const q=pickQ(player);return displayQuiz(q,player,isSkill)}
+function aiQuiz(rate=0.6){return Math.random()<rate}
+function askQuizRemote(player,isSkill){
+  return new Promise(resolve=>{
+    const conn=NET.playerConns[player.peerId];
+    if(!conn){resolve(aiQuiz(0.6));return}
+    const q=pickQ(player);
+    NET.pendingQuiz={resolve,player,q};
+    conn.send({type:'ask_quiz_request',question:q,isSkill});
+    setTimeout(()=>{if(NET.pendingQuiz&&NET.pendingQuiz.player===player){NET.pendingQuiz=null;resolve(false)}},20000);
+  });
+}
+async function askQuizForPlayer(player,isSkill=false){
+  if(!player)return false;
+  if(player.isAI)return aiQuiz(isSkill?0.62:0.6);
+  const idx=G.players.indexOf(player);
+  if(isLocalPlayer(idx))return await askQuiz(player,isSkill);
+  if(NET.isHost&&player.peerId)return await askQuizRemote(player,isSkill);
+  return aiQuiz(0.6);
+}
+
+/* ============================================================
+   伤害 & 濒死
+   ============================================================ */
+async function dealDamage(srcIdx,tgtIdx,amount,type='normal'){
+  const tgt=G.players[tgtIdx];if(!tgt||!tgt.alive)return;
+  let dmg=amount;
+  if(hasSkill(tgt,'fuli')&&srcIdx>=0){const src=G.players[srcIdx];if(src.equip.weapon||src.equip.armor||src.equip.horsePlus||src.equip.horseMinus){dmg=Math.max(0,dmg-1);addLog(`【浮力】${tgt.name} 减免1点`,'heal')}}
+  if(hasSkill(tgt,'gaosifenbu')&&srcIdx>=0){const src=G.players[srcIdx];if(src.hand.length>tgt.hand.length){dmg=Math.max(0,dmg-1);addLog(`【高斯分布】${tgt.name} 减免1点`,'heal')}}
+  while(dmg>0&&(tgt.shield||0)>0){tgt.shield--;dmg--;addLog(`${tgt.name} 消耗1护盾抵挡1点`,'heal');floatTextFx(tgtIdx,'护盾','#4af')}
+  while(dmg>0&&tgt.knowledge>=2){tgt.knowledge-=2;dmg--;addLog(`${tgt.name} 消耗2学识抵挡1点`,'heal')}
+  if(dmg>0){
+    await FX.slash(tgtIdx);
+    floatTextFx(tgtIdx,'-'+dmg,'#ff3b30');
+    Sound.play('hit');
+    tgt.hp-=dmg;
+    addPlayLog('','damage',dmg,tgt.name,'dmg');
+    aiSpeak(tgt,'hurt');
+    render();
+    if(tgt.alive){
+      if(hasSkill(tgt,'hengmei')||hasSkill(tgt,'moxuyou')||hasSkill(tgt,'youguo')||hasSkill(tgt,'renru')||hasSkill(tgt,'sibian')){drawCards(tgt,1);addLog(`${tgt.name} 受伤摸一张牌`,'hl')}
+      if(hasSkill(tgt,'shizhe')&&srcIdx>=0&&tgt.hp<G.players[srcIdx].hp){drawCards(tgt,1);addLog(`【适者生存】${tgt.name} 摸一张牌`,'hl')}
+      if(hasSkill(tgt,'hamuleite')&&srcIdx>=0){const src=G.players[srcIdx];if(src.hand.length>0){const c=src.hand[Math.floor(Math.random()*src.hand.length)];discardCard(src,c);addLog(`【哈姆雷特】${src.name} 弃一张牌`,'dmg')}}
+    }
+    if(tgt.hp<=0)await dyingPhase(tgtIdx,srcIdx);
+  }
+  render();checkWin();
+}
+async function dyingPhase(idx,srcIdx){
+  const p=G.players[idx];if(!p.alive)return;
+  while(p.hp<=0){
+    if(p.isAI){
+      if(hasSkill(p,'jianren')){drawCards(p,1);addLog(`【坚韧】${p.name} 摸一张牌`,'hl')}
+      const tao=p.hand.find(c=>c.sub==='tao');
+      if(tao){discardCard(p,tao);p.hp++;addLog(`${p.name} 使用【桃】自救`,'heal');FX.healGlow(idx);continue}
+      let saved=false;
+      const sorted=[...G.players].map((q,i)=>({q,i})).filter(x=>x.i!==idx&&x.q.alive&&x.q.isAI);
+      sorted.sort((a,b)=>(sameFaction(b.q,p)?1:0)-(sameFaction(a.q,p)?1:0));
+      for(const {q,i} of sorted){
+        if(shouldSave(q,p)){const t2=q.hand.find(c=>c.sub==='tao');if(t2){discardCard(q,t2);p.hp++;addLog(`${q.name} 使用【桃】救 ${p.name}${sameFaction(q,p)?'（同阵营）':''}`,'heal');FX.healGlow(idx);saved=true;break}}
+      }
+      if(!saved){p.alive=false;p.roleRevealed=true;addLog(`${p.name} 阵亡，身份【${ROLES[p.role].name}】，阵营【${FACTIONS[p.faction].name}】`,'dmg');await FX.death(idx);break}
+    }else{
+      const opts=[];
+      p.hand.filter(c=>c.sub==='tao'||c.sub==='jiu').forEach(c=>opts.push({label:`【${c.name}】`,value:'card_'+c.id}));
+      if(p.knowledge>=1)opts.push({label:'消耗1学识自救',value:'know'});
+      if((p.shield||0)>=1)opts.push({label:'消耗1护盾自救',value:'shield'});
+      opts.push({label:'放弃',value:'giveup'});
+      const ch=await waitChoice(idx,opts,'rescue');
+      if(ch==='giveup'){p.alive=false;p.roleRevealed=true;addLog(`${p.name} 阵亡`,'dmg');await FX.death(idx);break}
+      if(ch==='know'){p.knowledge--;p.hp++;addLog(`${p.name} 消耗学识自救`,'heal');FX.healGlow(idx);continue}
+      if(ch==='shield'){p.shield--;p.hp++;addLog(`${p.name} 消耗护盾自救`,'heal');FX.healGlow(idx);continue}
+      if(String(ch).startsWith('card_')){const id=Number(String(ch).slice(5));const c=p.hand.find(x=>x.id===id);if(c){discardCard(p,c);p.hp++;addLog(`${p.name} 使用【${c.name}】自救`,'heal');FX.healGlow(idx);continue}}
+    }
+  }
+  render();
+}
+function shouldSave(healer,target){const h=healer.role,t=target.role;if(h==='lord'||h==='loyal')return t==='lord'||t==='loyal';if(h==='rebel')return t==='rebel';return false}
+function checkWin(){
+  if(G.gameOver)return;
+  const alive=G.players.filter(p=>p.alive);
+  const lord=G.players.find(p=>p.role==='lord');
+  const rebelsAlive=alive.some(p=>p.role==='rebel');
+  const spiesAlive=alive.some(p=>p.role==='spy');
+  if(!lord.alive){if(!rebelsAlive&&spiesAlive&&alive.length===1&&alive[0].role==='spy'){G.gameOver=true;G.winnerText='内奸获胜'}else{G.gameOver=true;G.winnerText='反贼获胜'}addLog('⚑ '+G.winnerText,'hl');Sound.play('win');return}
+  if(!rebelsAlive&&!spiesAlive){G.gameOver=true;G.winnerText='主公与忠臣获胜';addLog('⚑ '+G.winnerText,'hl');Sound.play('win')}
+}
+
+/* ============================================================
+   出闪
+   ============================================================ */
+async function requestShan(targetIdx,srcIdx){
+  const t=G.players[targetIdx];
+  if(srcIdx>=0&&hasSkill(G.players[srcIdx],'xiangduilun')){const src=G.players[srcIdx];if(src.hand.length!==t.hand.length){addLog(`【相对论】此杀不可闪避`,'hl');return false}}
+  if(t.isAI){
+    const shan=t.hand.find(c=>c.sub==='shan');
+    if(shan){discardCard(t,shan);addLog(`${t.name} 打出【闪】`);await FX.shield(targetIdx);if(hasSkill(t,'sandadinglv')){drawCards(t,1);addLog(`【三大定律】${t.name} 摸一张牌`,'hl')}return true}
+    if(t.knowledge>=1&&aiQuiz()){t.knowledge--;addLog(`${t.name} 消耗学识当闪`);await FX.shield(targetIdx);return true}
+    return false;
+  }
+  const opts=[];
+  t.hand.filter(c=>c.sub==='shan').forEach(c=>opts.push({label:`【闪】${c.suit}${c.num}`,value:'card_'+c.id}));
+  if(t.knowledge>=1)opts.push({label:'1学识当闪',value:'know'});
+  if((t.shield||0)>=1)opts.push({label:'1护盾当闪',value:'shield'});
+  opts.push({label:'答题免伤',value:'quiz'});
+  opts.push({label:'承受伤害',value:'none'});
+  const ch=await waitChoice(targetIdx,opts,'shan');
+  if(ch==='none')return false;
+  if(ch==='know'){t.knowledge--;addLog(`${t.name} 消耗学识当闪`);await FX.shield(targetIdx);return true}
+  if(ch==='shield'){t.shield--;addLog(`${t.name} 消耗护盾当闪`);await FX.shield(targetIdx);return true}
+  if(ch==='quiz'){
+    const ok=await askQuizForPlayer(t,false);
+    if(ok){addLog(`${t.name} 答对，视为闪`,'hl');await FX.shield(targetIdx);return true}
+    addLog(`${t.name} 答错`,'dmg');return false;
+  }
+  if(String(ch).startsWith('card_')){const id=Number(String(ch).slice(5));const c=t.hand.find(x=>x.id===id);if(c){discardCard(t,c);addLog(`${t.name} 打出【闪】`);await FX.shield(targetIdx);return true}}
+  return false;
+}
+
+/* ============================================================
+   使用卡牌
+   ============================================================ */
+async function useSha(attackerIdx,targetIdx){
+  const a=G.players[attackerIdx],t=G.players[targetIdx];
+  const hasLiannu=a.equip.weapon&&a.equip.weapon.skill==='liannu';
+  if(!hasLiannu&&a.flags.shaUsed>=1){addLog('本回合已使用过【杀】');return}
+  a.flags.shaUsed=(a.flags.shaUsed||0)+1;
+  addPlayLog(a.name,'use','杀',t.name);
+  aiSpeak(a,'attack');
+  FX.attackLunge(attackerIdx);Sound.play('sha');
+  showPlayCard({name:'杀',suit:'♠',num:'?',type:'basic'},a.name,FACTIONS[a.faction].color);
+  await FX.flyCard(attackerIdx,targetIdx,'杀','basic');
+  if(t.equip.armor&&t.equip.armor.skill==='renwang'&&Math.random()<0.5){addLog(`${t.name} 的【仁王盾】抵消`,'heal');await FX.shield(targetIdx);return}
+  if(t.equip.armor&&t.equip.armor.skill==='bagua'&&Math.random()<0.5){addLog(`${t.name} 的【八卦阵】视为出闪`,'heal');await FX.shield(targetIdx);return}
+  const dodged=await requestShan(targetIdx,attackerIdx);
+  if(dodged)return;
+  let dmg=1;
+  if(hasSkill(a,'jingzhong'))dmg+=1;
+  if(a.flags.extraDamage){dmg+=a.flags.extraDamage;a.flags.extraDamage=0}
+  await dealDamage(attackerIdx,targetIdx,dmg);
+  if(a.equip.weapon&&a.equip.weapon.skill==='qinglong'&&t.alive&&Math.random()<0.5){addLog(`【青龙偃月刀】触发`);const sha=a.hand.find(c=>c.sub==='sha');if(sha){discardCard(a,sha);await useSha(attackerIdx,targetIdx)}}
+}
+async function useTao(idx){
+  const p=G.players[idx];
+  if(p.hp>=p.maxHp){addLog('体力已满');return}
+  p.hp++;
+  addPlayLog(p.name,'heal','桃',p.name);
+  showPlayCard({name:'桃',suit:'♥',num:'?',type:'basic'},p.name,FACTIONS[p.faction].color);
+  FX.healGlow(idx);floatTextFx(idx,'+1','#27ae60');
+  render();
+}
+async function useJiu(idx){
+  const p=G.players[idx];
+  p.flags.extraDamage=(p.flags.extraDamage||0)+1;
+  addPlayLog(p.name,'use','酒','');
+  showPlayCard({name:'酒',suit:'♠',num:'?',type:'basic'},p.name,FACTIONS[p.faction].color);
+  FX.skillWave(idx);
+}
+async function useTrick(attackerIdx,card,targetIdx){
+  const a=G.players[attackerIdx];
+  const tn=targetIdx!=null?G.players[targetIdx].name:'';
+  addPlayLog(a.name,'use',card.name,tn);
+  showPlayCard(card,a.name,FACTIONS[a.faction].color);
+  if(hasSkill(a,'shicheng')||hasSkill(a,'zhiliang')||hasSkill(a,'jiaohua')){drawCards(a,1);addLog(`${a.name} 使用锦囊摸一张牌`,'hl')}
+  render();
+  switch(card.sub){
+    case 'wuzhong':{drawCards(a,2);addLog(`${a.name} 摸2张牌`);break}
+    case 'guohe':{if(targetIdx!=null)await discardTargetCard(targetIdx,attackerIdx,'弃置');break}
+    case 'shunshou':{if(targetIdx!=null)await discardTargetCard(targetIdx,attackerIdx,'获得');break}
+    case 'juedou':{if(targetIdx==null)break;let def=G.players[targetIdx],ai=attackerIdx,di=targetIdx;while(true){const sha=def.hand.find(c=>c.sub==='sha');if(sha){discardCard(def,sha);addLog(`${def.name} 打出【杀】`);FX.attackLunge(di);await FX.flyCard(di,ai,'杀','basic',420);[ai,di]=[di,ai];def=G.players[di]}else{await dealDamage(ai,di,1);break}}break}
+    case 'nanman':{for(let i=0;i<G.players.length;i++){if(i===attackerIdx||!G.players[i].alive)continue;const t=G.players[i];if(hasSkill(t,'fenshu')){addLog(`【焚书】${t.name} 免疫`);continue}const sha=t.hand.find(c=>c.sub==='sha');if(sha){discardCard(t,sha);addLog(`${t.name} 打出【杀】抵挡`)}else await dealDamage(attackerIdx,i,1)}break}
+    case 'wanjian':{for(let i=0;i<G.players.length;i++){if(i===attackerIdx||!G.players[i].alive)continue;const t=G.players[i];if(hasSkill(t,'fenshu')){addLog(`【焚书】${t.name} 免疫`);continue}const shan=t.hand.find(c=>c.sub==='shan');if(shan){discardCard(t,shan);addLog(`${t.name} 打出【闪】抵挡`);await FX.shield(i)}else await dealDamage(attackerIdx,i,1)}break}
+    case 'taoyuan':{for(const p of G.players){if(p.alive&&p.hp<p.maxHp){p.hp++;addLog(`${p.name} 回复1点体力`,'heal');FX.healGlow(G.players.indexOf(p))}}break}
+    case 'lebu':{if(targetIdx!=null){if(hasSkill(G.players[targetIdx],'fenshu')){addLog('【焚书】免疫');break}G.players[targetIdx].judge.push({...card,judgeType:'lebu'});addLog(`【乐不思蜀】置于 ${G.players[targetIdx].name} 判定区`)}break}
+    case 'shandian':{a.judge.push({...card,judgeType:'shandian'});addLog(`【闪电】置于 ${a.name} 判定区`);break}
+    case 'wuxie':break;
+  }
+  render();
+}
+
+/* ============================================================
+   拆牌/获得牌 —— 顺手牵羊、过河拆桥、刚烈、钢杆等共用
+   ★ 修复：获得的牌正确进入玩家手牌，不再错误进入弃牌堆
+   ============================================================ */
+async function discardTargetCard(targetIdx,srcIdx,mode){
+  const t=G.players[targetIdx];
+  if(hasSkill(t,'fenshu')){addLog(`【焚书】${t.name} 免疫`);return}
+  const opts=[];
+  if(t.hand.length>0)opts.push({label:`手牌（${t.hand.length}张）`,value:'hand'});
+  if(t.equip.weapon)opts.push({label:`武器：${t.equip.weapon.name}`,value:'weapon'});
+  if(t.equip.armor)opts.push({label:`防具：${t.equip.armor.name}`,value:'armor'});
+  if(t.equip.horsePlus)opts.push({label:'+1马',value:'horsePlus'});
+  if(t.equip.horseMinus)opts.push({label:'-1马',value:'horseMinus'});
+  if(!opts.length)return;
+  const src=G.players[srcIdx];
+  let ch;
+  if(src.isAI)ch=opts[Math.floor(Math.random()*opts.length)].value;
+  else ch=await waitChoice(srcIdx,opts,'list');
+
+  if(ch==='hand'){
+    const c=t.hand[Math.floor(Math.random()*t.hand.length)];
+    // ★ 关键修复：获得时不进弃牌堆
+    discardCard(t,c,mode!=='获得');
+    addLog(`${src.name} ${mode}了 ${t.name} 一张手牌`);
+    if(mode==='获得')src.hand.push(c);
+  } else {
+    const c=t.equip[ch];
+    if(c){
+      t.equip[ch]=null;
+      // ★ 关键修复：获得时进玩家手牌，弃置时进弃牌堆
+      if(mode==='获得'){src.hand.push(c);}
+      else{G.discard.push(c);}
+      addLog(`${src.name} ${mode}了 ${t.name} 的【${c.name}】`);
+    }
+  }
+  render();
+}
+
+/* ============================================================
+   主动技能
+   ============================================================ */
+async function useActiveSkill(idx,skillId){
+  const p=G.players[idx];
+  if(p.flags.skillUsed){addLog('本回合已使用过主动技能');return}
+  p.flags.skillUsed=true;
+  const sk=p.skills.find(s=>s.id===skillId);
+  if(!sk)return;
+  const isLord=Object.values(FACTIONS).some(f=>f.lordSkill.id===skillId);
+  addLog(isLord?`【主公技·${sk.name}】${p.name} 发起挑战…`:`【${sk.name}】${p.name} 发起技能挑战…`,'hl');
+  render();
+  const quizOk=await askQuizForPlayer(p,true);
+  if(!quizOk){addLog(`${p.name} 知识不足，【${sk.name}】发动失败`,'dmg');floatTextFx(idx,'技能失败','#8a8070');render();if(NET.isHost)syncStateToClients();return}
+  addPlayLog(p.name,'skill',sk.name,'');
+  aiSpeak(p,'skill');
+  FX.skillWave(idx);
+  showPlayCard({name:sk.name,suit:'✦',num:'',type:'trick'},p.name,FACTIONS[p.faction].color);
+
+  switch(skillId){
+    case 'shishu':{drawCards(p,1);break}
+    case 'tuiyan':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];const jc=G.deck.pop()||C('判定','basic','none','♠',1);await FX.judge(ti,jc);if(jc.suit==='♠'||jc.suit==='♣')await dealDamage(idx,ti,1);else{drawCards(t,1);addLog(`${t.name} 判定红摸一张牌`)}G.discard.push(jc);break}
+    case 'yishu':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx&&x.q.hand.length>0);if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];const c=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,c,false);p.hand.push(c);break}
+    case 'yinli':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}await dealDamage(idx,ti,1);break}
+    case 'cuihua':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive);if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hp<t.maxHp){t.hp++;FX.healGlow(ti)}else drawCards(t,1);break}
+    case 'jinhua':{drawCards(p,2);if(p.hand.length>0){discardCard(p,p.hand[0])}break}
+    case 'mingjian':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx&&x.q.hand.length>0);if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];const c=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,c);break}
+    case 'tansuo':{for(const q of G.players){if(q.alive)drawCards(q,1)}break}
+    case 'xunjie':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hand.length>0){const c=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,c,false);p.hand.push(c)}break}
+    case 'nah':{if(!p.hand.length)break;const c=p.hand[0];discardCard(p,c);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hand.length>0){discardCard(t,t.hand[Math.floor(Math.random()*t.hand.length)])}else await dealDamage(-1,ti,1);break}
+    case 'jiangjinjiu':{drawCards(p,2);p.flags.noSha=true;break}
+    case 'shuidiao':{if(!p.hand.length)break;discardCard(p,p.hand[0]);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive);let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hp<t.maxHp){t.hp++;FX.healGlow(ti)}break}
+    case 'chenyu':{if(!p.hand.length)break;discardCard(p,p.hand[0]);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive);let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];drawCards(t,1);if(t.hp<p.hp)drawCards(t,1);break}
+    case 'milv':{if(!p.hand.length)break;discardCard(p,p.hand[0]);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];const jc=G.deck.pop()||C('判定','basic','none','♠',1);await FX.judge(ti,jc);if(jc.suit==='♠'||jc.suit==='♣')await dealDamage(idx,ti,1);G.discard.push(jc);break}
+    case 'tongchou':{if(!p.hand.length)break;const c=p.hand[0];discardCard(p,c,false);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));ti=await waitChoice(idx,o,'target')}const t=G.players[ti];t.hand.push(c);drawCards(p,1);break}
+    case 'qiuhe':{for(const q of G.players){if(q.alive)drawCards(q,1)}break}
+    case 'zhineng':{if(!p.hand.length)break;discardCard(p,p.hand[0]);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}await dealDamage(-1,ti,1);break}
+    case 'ganggan':{if(!p.hand.length)break;discardCard(p,p.hand[0]);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx&&(x.q.equip.weapon||x.q.equip.armor||x.q.equip.horsePlus||x.q.equip.horseMinus));if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];const keys=['weapon','armor','horsePlus','horseMinus'];const k=keys.find(k=>t.equip[k]);if(k){const ec=t.equip[k];t.equip[k]=null;p.hand.push(ec);addLog(`${p.name} 获得 ${t.name} 的【${ec.name}】`)}break}
+    case 'zhouqilv':{for(const q of G.players){if(q.alive)drawCards(q,1)}break}
+    case 'ranshao':{const red=p.hand.find(c=>c.suit==='♥'||c.suit==='♦');if(!red)break;discardCard(p,red);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}await dealDamage(idx,ti,1);break}
+    case 'leiguang':{const black=p.hand.find(c=>c.suit==='♠'||c.suit==='♣');if(!black)break;discardCard(p,black);const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}await dealDamage(idx,ti,1);break}
+    case 'jinhualun':{drawCards(p,2);if(p.hand.length>0)discardCard(p,p.hand[0]);break}
+    case 'hexia':{for(const q of G.players){if(q.alive&&q.hp<q.maxHp){q.hp++;FX.healGlow(G.players.indexOf(q))}}break}
+    case 'tongyi':{for(let i=0;i<G.players.length;i++){if(i===idx||!G.players[i].alive)continue;const t=G.players[i];if(t.hand.length>0){discardCard(t,t.hand[Math.floor(Math.random()*t.hand.length)])}}break}
+    case 'shiji':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx&&x.q.hand.length>0);if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];for(let k=0;k<Math.min(2,t.hand.length);k++){discardCard(t,t.hand[Math.floor(Math.random()*t.hand.length)])}break}
+    case 'youji':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hand.length>0){discardCard(t,t.hand[Math.floor(Math.random()*t.hand.length)])}else drawCards(p,1);break}
+    case 'didongyi':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];const jc=G.deck.pop()||C('判定','basic','none','♠',1);await FX.judge(ti,jc);if(jc.suit==='♠'||jc.suit==='♣')await dealDamage(idx,ti,1);G.discard.push(jc);break}
+    case 'lunyu':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive);if(!ts.length)break;let ti;if(p.isAI)ti=ts[0].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hp<t.maxHp){t.hp++;FX.healGlow(ti)}drawCards(t,1);break}
+    case 'jiewen':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hand.length>0){discardCard(t,t.hand[Math.floor(Math.random()*t.hand.length)])}else await dealDamage(-1,ti,1);break}
+    case 'santian':{if(!p.hand.length)break;discardCard(p,p.hand[0]);for(const q of G.players){if(q.alive)drawCards(q,1)}break}
+    case 'shisihang':{const ts=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);if(!ts.length)break;let ti;if(p.isAI)ti=ts[Math.floor(Math.random()*ts.length)].i;else{const o=ts.map(x=>({label:x.q.name,value:x.i}));o.push({label:'取消',value:-1});ti=await waitChoice(idx,o,'target');if(ti<0)break}const t=G.players[ti];if(t.hand.length>0){const c=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,c,false);p.hand.push(c)}else await dealDamage(-1,ti,1);break}
+  }
+  render();
+  if(NET.isHost)syncStateToClients();
+}
+
+/* ============================================================
+   回合流程
+   ============================================================ */
+async function runTurn(idx){
+  const p=G.players[idx];if(!p.alive)return;
+  p.flags.shaUsed=0;p.flags.skillUsed=false;p.flags.noSha=false;
+  G.current=idx;
+  addLog(`—— ${p.name}（${FACTIONS[p.faction].name}）的回合 ——`,'hl');
+  if(p.isAI)aiSpeak(p,'idle');
+  render();
+  await judgePhase(p);
+  let drawN=2;
+  if(hasSkill(p,'youxuan')||hasSkill(p,'jianchi')||hasSkill(p,'fengshou'))drawN+=1;
+  drawCards(p,drawN);
+  addLog(`${p.name} 摸 ${drawN} 张牌`);
+  if(hasSkill(p,'youxuan')&&p.hand.length>0){discardCard(p,p.hand[0]);addLog(`【优选法】${p.name} 弃一张牌`)}
+  render();
+  if(p.isAI){
+    const wantQuiz=aiQuiz(0.6);
+    if(wantQuiz){const ok=await askQuizForPlayer(p,false);if(ok){drawCards(p,1);addLog(`${p.name} 参悟成功`,'hl')}else addLog(`${p.name} 参悟失败`)}
+    else addLog(`${p.name} 未参悟`);
+  }else{
+    const ch=await waitChoice(idx,[{label:'参悟答题（答对多摸1张+奖励）',value:'quiz'},{label:'跳过',value:'skip'}],'list');
+    if(ch==='quiz'){
+      const ok=await askQuizForPlayer(p,false);
+      if(ok){drawCards(p,1);addLog(`${p.name} 参悟成功！`,'hl')}else addLog(`${p.name} 参悟失败`,'dmg');
+    }
+  }
+  render();
+  if(p.alive&&!p.flags.skipPlay)await playPhase(idx);
+  if(p.alive)await discardPhase(p);
+  render();
+}
+async function judgePhase(p){
+  if(!p.judge.length)return;
+  for(let i=p.judge.length-1;i>=0;i--){
+    const j=p.judge[i];if(!j.judgeType)continue;
+    p.judge.splice(i,1);
+    const card=G.deck.pop()||C('判定','basic','none','♠',1);
+    addLog(`${p.name} 判定：${card.suit}${card.num}`,'hl');
+    await FX.judge(G.players.indexOf(p),card);
+    if(hasSkill(p,'kuangda')&&card.suit==='♥'){drawCards(p,1)}
+    if(j.judgeType==='lebu'){if(card.suit!=='♥'){p.flags.skipPlay=true;addLog('【乐不思蜀】生效，跳过出牌','dmg')}else addLog('乐不思蜀失效');G.discard.push(card)}
+    else if(j.judgeType==='shandian'){if(card.suit==='♠'&&card.num>=2&&card.num<=9){addLog('【闪电】命中！','dmg');G.discard.push(card);await dealDamage(-1,G.players.indexOf(p),3,'thunder')}else{addLog('闪电未命中');const next=(G.players.indexOf(p)+1)%G.players.length;G.players[next].judge.push({...j});G.discard.push(card)}}
+    if(!p.alive)break;
+  }
+  render();
+}
+async function playPhase(idx){
+  const p=G.players[idx];
+  if(p.isAI){await aiPlayPhase(idx);return}
+  while(p.alive&&!G.gameOver){
+    const opts=[];
+    for(const c of p.hand){
+      if(c.sub==='sha')opts.push({label:`【杀】${c.suit}${c.num}`,value:'sha_'+c.id});
+      else if(c.sub==='tao'&&p.hp<p.maxHp)opts.push({label:`【桃】`,value:'tao_'+c.id});
+      else if(c.sub==='jiu')opts.push({label:`【酒】`,value:'jiu_'+c.id});
+      else if(c.type==='trick')opts.push({label:`【${c.name}】`,value:'trick_'+c.id});
+      else if(c.type==='equip')opts.push({label:`【${c.name}】`,value:'equip_'+c.id});
+    }
+    if(!p.flags.skillUsed){
+      p.skills.forEach(s=>{if(s.type==='active'){
+        const isLord=Object.values(FACTIONS).some(f=>f.lordSkill.id===s.id);
+        opts.push({label:`▶${isLord?'主公技·':''}${s.name}（需答题）`,value:'skill_'+s.id,skill:true,lord:isLord});
+      }});
+    }
+    opts.push({label:'结束出牌',value:'end'});
+    const ch=await waitChoice(idx,opts,'play');
+    if(ch==='end'||!ch)break;
+    if(!p.alive||G.gameOver)break;
+    if(String(ch).startsWith('skill_')){await useActiveSkill(idx,String(ch).slice(6));continue}
+    const [kind,idStr]=String(ch).split('_');const id=Number(idStr);
+    const card=p.hand.find(c=>c.id===id);if(!card)continue;
+    if(kind==='sha'){
+      if(p.flags.noSha){addLog('本回合不能使用【杀】');continue}
+      const targets=[];
+      for(let i=0;i<G.players.length;i++){if(i===idx||!G.players[i].alive)continue;if(inRange(idx,i))targets.push({label:`攻击 ${G.players[i].name}`,value:i})}
+      if(!targets.length){addLog('攻击范围内无目标');continue}
+      targets.push({label:'取消',value:-1});
+      const t=await waitChoice(idx,targets,'target');if(t<0)continue;
+      discardCard(p,card);await useSha(idx,t);
+    }else if(kind==='tao'){discardCard(p,card);await useTao(idx)}
+    else if(kind==='jiu'){discardCard(p,card);await useJiu(idx)}
+    else if(kind==='trick'){
+      let tgt=null;
+      if(['guohe','shunshou','juedou','lebu'].includes(card.sub)){
+        const targets=[];
+        for(let i=0;i<G.players.length;i++){if(i===idx||!G.players[i].alive)continue;if(card.sub==='shunshou'&&distBetween(idx,i)>1)continue;if(hasSkill(G.players[i],'fenshu'))continue;targets.push({label:G.players[i].name,value:i})}
+        if(!targets.length){addLog('无合法目标');continue}
+        targets.push({label:'取消',value:-1});
+        const t=await waitChoice(idx,targets,'target');if(t<0)continue;tgt=t;
+      }
+      discardCard(p,card);await useTrick(idx,card,tgt);
+    }else if(kind==='equip'){
+      discardCard(p,card,false);
+      showPlayCard(card,p.name,FACTIONS[p.faction].color);addPlayLog(p.name,'use',card.name,'');
+      if(card.sub==='weapon'){if(p.equip.weapon)G.discard.push(p.equip.weapon);p.equip.weapon=card}
+      else if(card.sub==='armor'){if(p.equip.armor)G.discard.push(p.equip.armor);p.equip.armor=card}
+      else if(card.sub==='horse+'){if(p.equip.horsePlus)G.discard.push(p.equip.horsePlus);p.equip.horsePlus=card}
+      else if(card.sub==='horse-'){if(p.equip.horseMinus)G.discard.push(p.equip.horseMinus);p.equip.horseMinus=card}
+      addLog(`${p.name} 装备【${card.name}】`);
+      render();
+    }
+    if(!p.alive||G.gameOver)break;
+  }
+}
+async function discardPhase(p){
+  const limit=handLimit(p);
+  while(p.hand.length>limit&&p.hand.length>0){
+    if(p.isAI){const c=p.hand.pop();G.discard.push(c)}
+    else{
+      const opts=p.hand.map(c=>({label:c.name,value:c.id}));
+      if(!opts.length) break;
+      const ch=await waitChoice(G.players.indexOf(p),opts,'discard');
+      const cid=typeof ch==='number'?ch:Number(ch);
+      const c=p.hand.find(x=>x.id===cid);
+      if(c){discardCard(p,c);addLog(`${p.name} 弃置【${c.name}】`)}
+      else{addLog(`${p.name} 弃牌未匹配，跳过`);break}
+    }
+  }
+  render();
+}
+
+/* ============================================================
+   AI
+   ============================================================ */
+async function aiPlayPhase(idx){
+  const p=G.players[idx];
+  if(!p.flags.skillUsed&&p.skills.some(s=>s.type==='active')&&Math.random()<0.5){
+    const act=p.skills.find(s=>s.type==='active');
+    await useActiveSkill(idx,act.id);
+    await sleep(400);
+  }
+  for(const c of [...p.hand]){
+    if(c.type==='equip'&&p.alive){
+      discardCard(p,c,false);showPlayCard(c,p.name,FACTIONS[p.faction].color);addPlayLog(p.name,'use',c.name,'');
+      if(c.sub==='weapon'){if(p.equip.weapon)G.discard.push(p.equip.weapon);p.equip.weapon=c}
+      else if(c.sub==='armor'){if(p.equip.armor)G.discard.push(p.equip.armor);p.equip.armor=c}
+      else if(c.sub==='horse+'){if(p.equip.horsePlus)G.discard.push(p.equip.horsePlus);p.equip.horsePlus=c}
+      else if(c.sub==='horse-'){if(p.equip.horseMinus)G.discard.push(p.equip.horseMinus);p.equip.horseMinus=c}
+      addLog(`${p.name} 装备【${c.name}】`);
+      await sleep(300);
+    }
+  }
+  while(p.hp<p.maxHp&&p.alive){const tao=p.hand.find(c=>c.sub==='tao');if(!tao)break;discardCard(p,tao);await useTao(idx);await sleep(300)}
+  const wz=p.hand.find(c=>c.sub==='wuzhong');if(wz){discardCard(p,wz);await useTrick(idx,wz,null);await sleep(300)}
+  if(p.alive&&!p.flags.noSha&&p.flags.shaUsed<1){
+    const sha=p.hand.find(c=>c.sub==='sha');
+    if(sha){const ts=[];for(let i=0;i<G.players.length;i++){if(i===idx||!G.players[i].alive)continue;if(inRange(idx,i)&&isEnemy(p,G.players[i]))ts.push(i)}if(ts.length>0){discardCard(p,sha);await useSha(idx,ts[0]);await sleep(300)}}
+  }
+  if(p.alive){
+    const tr=p.hand.find(c=>['guohe','shunshou','juedou','nanman','wanjian','taoyuan','lebu'].includes(c.sub));
+    if(tr){let tgt=null;if(['guohe','shunshou','juedou','lebu'].includes(tr.sub)){const ts=[];for(let i=0;i<G.players.length;i++){if(i===idx||!G.players[i].alive)continue;if(tr.sub==='shunshou'&&distBetween(idx,i)>1)continue;if(hasSkill(G.players[i],'fenshu'))continue;if(isEnemy(p,G.players[i]))ts.push(i)}if(ts.length>0)tgt=ts[0]}if(tgt!=null||!['guohe','shunshou','juedou','lebu'].includes(tr.sub)){discardCard(p,tr);await useTrick(idx,tr,tgt);await sleep(300)}}
+  }
+  render();
+}
+function isEnemy(a,b){if(a.role==='lord'||a.role==='loyal')return b.role==='rebel'||b.role==='spy';if(a.role==='rebel')return b.role==='lord'||b.role==='loyal';if(a.role==='spy'){const rebelsAlive=G.players.filter(p=>p.alive&&p.role==='rebel').length;if(rebelsAlive>0)return b.role==='rebel';return b.role==='lord'||b.role==='loyal'}return false}
+
+/* ============================================================
+   主循环
+   ============================================================ */
+async function gameLoop(){
+  while(!G.gameOver){
+    const p=G.players[G.current];
+    if(p.alive)await runTurn(G.current);
+    if(G.gameOver)break;
+    let next=G.current;
+    for(let k=1;k<=G.players.length;k++){const idx=(G.current+k)%G.players.length;if(G.players[idx].alive){next=idx;break}}
+    G.current=next;await sleep(200);
+  }
+  render();
+}
+
+/* ============================================================
+   启动
+   ============================================================ */
+function setupPlayers(playerCount,localChar,localName){
+  const roleDeck=[...ROLE_CONFIG[playerCount]];
+  const lordIdx=roleDeck.indexOf('lord');
+  const others=roleDeck.filter((_,i)=>i!==lordIdx);
+  shuffle(others);
+  const finalRoles=[];let oi=0;
+  for(let i=0;i<roleDeck.length;i++)finalRoles.push(i===lordIdx?'lord':others[oi++]);
+  const myRole='lord';
+  const otherRoles=finalRoles.filter(r=>r!=='lord');
+  shuffle(otherRoles);
+  const roles=[myRole,...otherRoles];
+  const aiChars=CHARACTERS.filter(c=>c.id!==localChar.id);
+  shuffle(aiChars);
+  G.players=[];G.grade=SELECTED_GRADE;G.playerCount=playerCount;G.gameOver=false;G.current=0;G.winnerText='';
+  G.deck=buildDeck();G.discard=[];
+  quizStats={total:0,correct:0};playLog=[];chatMessages=[];
+  const newPlayer=(id,name,char,role,isAI,peerId)=>{
+    let skills=[...char.skills];
+    if(role==='lord'){
+      const lordSkill=FACTIONS[char.faction].lordSkill;
+      if(!skills.some(s=>s.id===lordSkill.id))skills.push({...lordSkill});
+    }
+    return{
+      id,name,avatar:char.avatar,subject:char.subject,charId:char.id,faction:char.faction,
+      role,roleRevealed:role==='lord',hp:role==='lord'?char.hp+1:char.hp,maxHp:role==='lord'?char.hp+1:char.hp,
+      hand:[],equip:{weapon:null,armor:null,horsePlus:null,horseMinus:null},judge:[],
+      knowledge:0,shield:0,combo:0,maxCombo:0,subjectMastery:{},
+      alive:true,isAI,skills,peerId:peerId||null,
+      flags:{shaUsed:0,skillUsed:false,extraDamage:0,skipPlay:false,noSha:false}
+    };
+  };
+  G.players.push(newPlayer(0,localName,localChar,roles[0],false,NET.isHost?NET.myPeerId:null));
+  const remotePeerIds=NET.isHost?Object.keys(NET.playerConns):[];
+  for(let i=1;i<playerCount;i++){
+    let name,char,isAI,peerId;
+    if(i-1<remotePeerIds.length){const conn=NET.playerConns[remotePeerIds[i-1]];name=conn?.metadata?.name||'玩家'+i;peerId=remotePeerIds[i-1];char=aiChars[(i-1)%aiChars.length];isAI=false}
+    else{name='AI·'+aiChars[(i-1)%aiChars.length].name;char=aiChars[(i-1)%aiChars.length];isAI=true;peerId=null}
+    G.players.push(newPlayer(i,name,char,roles[i],isAI,peerId));
+  }
+  G.players.forEach(p=>drawCards(p,4));
+  G.current=0;G.myPlayerIdx=0;G.started=true;
+}
+async function startSingle(){
+  Sound.init();
+  const localChar=SELECTED_CHAR;
+  const nickname=(document.getElementById('nicknameInput')?.value||'你').trim().slice(0,12);
+  NET.mode='single';NET.isHost=false;
+  setupPlayers(SELECTED_COUNT,localChar,nickname);
+  document.getElementById('screenLobby').classList.remove('active');
+  document.getElementById('screenGame').classList.add('active');
+  clearPlayZone();
+  document.getElementById('chatPanel').style.display='none';
+  addLog(`游戏开始。你是 ${FACTIONS[localChar.faction].name} 阵营主公。`,'hl');
+  render();
+  setTimeout(()=>{if(G.players[1])aiSpeak(G.players[1],'greet')},1500);
+  gameLoop();
+}
+async function createRoom(){
+  const nick=(document.getElementById('nicknameInput').value||'房主').trim().slice(0,12);
+  const code=String(Math.floor(100000+Math.random()*900000));
+  document.getElementById('roomInfo').innerHTML='正在连接…';
+  try{
+    await NET.createRoom(code,nick);
+    document.getElementById('roomInfo').innerHTML=`
+      <div style="font-size:14px;letter-spacing:2px;">房间号：<span style="font-size:20px;color:#f5c542;">${code}</span></div>
+      <div style="font-size:12px;color:#a89880;margin-top:4px;">等待玩家加入…</div>
+      <button class="btn btn-accent" style="margin-top:8px;width:100%;" onclick="hostStartGame()">开始游戏（AI 补齐空位）</button>
+      <div id="connectedList" style="margin-top:6px;font-size:11px;"></div>`;
+    updateConnectedList();
+  }catch(e){document.getElementById('roomInfo').innerHTML='<span style="color:#e74c3c;">连接失败：'+e.type+'</span>'}
+}
+async function hostStartGame(){
+  Sound.init();
+  const localChar=SELECTED_CHAR;
+  const nick=(document.getElementById('nicknameInput').value||'房主').trim().slice(0,12);
+  const remoteCount=Object.keys(NET.playerConns).length;
+  if(remoteCount+1>SELECTED_COUNT){alert('已连接玩家超过目标人数');return}
+  NET.mode='host';NET.isHost=true;
+  setupPlayers(SELECTED_COUNT,localChar,nick);
+  const remotePlayers=G.players.filter(p=>!p.isAI&&p.peerId!==NET.myPeerId);
+  remotePlayers.forEach(p=>{
+    const idx=G.players.indexOf(p);
+    NET.sendToPlayer(p.peerId,{type:'start_game',players:G.players,myPlayerIdx:idx,grade:G.grade,playerCount:SELECTED_COUNT});
+  });
+  document.getElementById('screenLobby').classList.remove('active');
+  document.getElementById('screenGame').classList.add('active');
+  clearPlayZone();
+  document.getElementById('chatPanel').style.display='flex';
+  addLog(`游戏开始。你是 ${FACTIONS[localChar.faction].name} 阵营主公。`,'hl');
+  addChat('系统','欢迎来到学堂杀联机房！','sys');
+  render();
+  if(G.players[1])setTimeout(()=>aiSpeak(G.players[1],'greet'),1500);
+  gameLoop();
+}
+async function joinRoom(){
+  const nick=(document.getElementById('joinNick').value||'玩家').trim().slice(0,12);
+  const code=(document.getElementById('joinCode').value||'').trim();
+  if(!/^\d{6}$/.test(code)){alert('请输入6位数字房间号');return}
+  document.getElementById('joinStatus').textContent='正在连接房间…';
+  try{
+    await NET.joinRoom(code,nick);
+    document.getElementById('joinStatus').innerHTML='<span style="color:#27ae60;">已连接房主，等待开始…</span>';
+    document.getElementById('chatPanel').style.display='flex';
+  }catch(e){document.getElementById('joinStatus').innerHTML='<span style="color:#e74c3c;">连接失败：'+e.type+'</span>'}
+}
+
+/* ============================================================
+   大厅 UI
+   ============================================================ */
+let SELECTED_GRADE='初二';let SELECTED_COUNT=4;let SELECTED_CHAR=null;let SELECTED_FACTION='chinese';let SELECTED_MODE='single';
+document.getElementById('gradePicker').addEventListener('click',e=>{const b=e.target.closest('.opt-btn');if(!b)return;Sound.play('click');document.querySelectorAll('#gradePicker .opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');SELECTED_GRADE=b.dataset.grade});
+document.getElementById('playerCountPicker').addEventListener('click',e=>{const b=e.target.closest('.opt-btn');if(!b)return;Sound.play('click');document.querySelectorAll('#playerCountPicker .opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');SELECTED_COUNT=Number(b.dataset.count);updateAIHint()});
+document.getElementById('modePicker').addEventListener('click',e=>{const b=e.target.closest('.opt-btn');if(!b)return;Sound.play('click');document.querySelectorAll('#modePicker .opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');SELECTED_MODE=b.dataset.mode;updateLobbyMode()});
+function updateLobbyMode(){
+  const hc=document.getElementById('hostConfig');const jc=document.getElementById('joinConfig');
+  const sb=document.getElementById('startBtn');const rc=document.getElementById('roomConfig');
+  if(SELECTED_MODE==='single'){hc.style.display='block';jc.style.display='none';if(rc)rc.style.display='none';sb.textContent='开始单机对局';sb.onclick=startSingle;sb.style.display='block'}
+  else if(SELECTED_MODE==='host'){hc.style.display='block';jc.style.display='none';if(rc)rc.style.display='block';sb.style.display='none'}
+  else{hc.style.display='none';jc.style.display='block';sb.style.display='none'}
+}
+function updateAIHint(){const h=document.getElementById('aiCountHint');if(h)h.textContent=`将补充 ${SELECTED_COUNT-1} 名 AI`}
+function renderFactionPicker(){
+  const grid=document.getElementById('factionPicker');
+  grid.innerHTML=Object.entries(FACTIONS).map(([k,f])=>`
+    <div class="faction-card ${k===SELECTED_FACTION?'selected':''}" style="border-color:${f.color};color:${f.color};${k===SELECTED_FACTION?'box-shadow:0 0 16px '+f.color:''}" data-faction="${k}" onclick="selectFaction('${k}')">
+      <div class="f-icon">${f.icon}</div>
+      <div class="f-name" style="color:${f.color};">${f.name}</div>
+      <div class="f-desc">主公技：${f.lordSkill.name}</div>
+    </div>
+  `).join('');
+}
+function selectFaction(k){
+  Sound.play('click');SELECTED_FACTION=k;
+  renderFactionPicker();
+  const chars=CHARACTERS.filter(c=>c.faction===k);
+  if(chars.length>0&&(!SELECTED_CHAR||SELECTED_CHAR.faction!==k))SELECTED_CHAR=chars[0];
+  renderCharPicker();
+}
+function renderCharPicker(){
+  const grid=document.getElementById('charGrid');
+  const chars=CHARACTERS.filter(c=>c.faction===SELECTED_FACTION);
+  if(!chars.length){grid.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px;">该阵营暂无角色</div>';return}
+  if(!SELECTED_CHAR||SELECTED_CHAR.faction!==SELECTED_FACTION)SELECTED_CHAR=chars[0];
+  grid.innerHTML=chars.map(c=>{
+    const f=FACTIONS[c.faction];
+    const sel=SELECTED_CHAR&&SELECTED_CHAR.id===c.id;
+    return `<div class="char-card ${sel?'selected':''}" style="border-color:${f.color};color:${f.color};${sel?'box-shadow:0 0 16px '+f.color:''}" data-id="${c.id}" onclick="selectChar('${c.id}')">
+      <div class="faction-badge" style="color:${f.color};">${f.icon}</div>
+      <div class="ctop"><span class="cavatar">${c.avatar}</span><div><div class="cname" style="color:${f.color};">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
+      <div class="csubject" style="color:${f.color};">${f.name} · 体力${c.hp}</div>
+      <div class="cskill">${c.skills.map(s=>`<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
+    </div>`;
+  }).join('');
+}
+function selectChar(id){Sound.play('click');SELECTED_CHAR=CHARACTERS.find(c=>c.id===id);renderCharPicker()}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+const EQUIP_ICON={weapon:'⚔️',armor:'🛡️',horsePlus:'🐎',horseMinus:'🐎'};
+const EQUIP_LABEL={weapon:'武器',armor:'防具',horsePlus:'+1马',horseMinus:'-1马'};
+const JUDGE_ICON={lebu:'🎋',shandian:'⚡'};
+
+function buildPlayerCard(p,i){
+  const isTurn=i===G.current;
+  const roleColor=p.roleRevealed?ROLES[p.role].color:'#5a4a3a';
+  const faction=FACTIONS[p.faction];
+  const fColor=faction.color;
+  const hpGems=Array.from({length:p.maxHp},(_,k)=>{const f=k<p.hp;const low=p.hp<=1&&f;return `<span class="hp-gem ${f?'':'empty'} ${low?'low':''}"></span>`}).join('');
+  // ★ 装备槽：图标 + 汉字简称
+  const equipSlots=['weapon','armor','horsePlus','horseMinus'].map(k=>{
+    const eq=p.equip[k];const f=!!eq;
+    const tip=f?eq.name:EQUIP_LABEL[k]+'（空）';
+    const short=f?(EQUIP_SHORT[eq.name]||eq.name.slice(0,1)):'';
+    return `<div class="equip-slot ${f?'filled':''}" data-tip="${tip}" title="${tip}">
+      <span class="eq-icon">${EQUIP_ICON[k]}</span>
+      ${f?`<span class="eq-short">${short}</span>`:''}
+    </div>`;
+  }).join('');
+  // ★ 完整装备名称行
+  const equipNames=[];
+  ['weapon','armor','horsePlus','horseMinus'].forEach(k=>{if(p.equip[k])equipNames.push(p.equip[k].name)});
+  const equipNamesHtml = equipNames.length ? `<div class="pequip-names" title="${equipNames.join(' · ')}">${equipNames.join(' · ')}</div>` : `<div class="pequip-names"></div>`;
+  const handCount=p.hand.length;
+  const dispCount=Math.min(handCount,4);
+  const miniCards=Array.from({length:dispCount},()=>'<div class="mini-card"></div>').join('');
+  const judgeTags=p.judge.map(j=>`<span class="judge-tag">${JUDGE_ICON[j.judgeType]||'❓'}${j.name}</span>`).join('');
+  const isSelf=(i===G.myPlayerIdx);
+  const aiTag=p.isAI?'<span style="font-size:8px;color:#8a8070;">[AI]</span>':'';
+  let badges='';
+  if((p.shield||0)>0)badges+=`<span class="badge badge-shield">🛡️${p.shield}</span>`;
+  if((p.combo||0)>=2)badges+=`<span class="badge badge-combo">⚡${p.combo}</span>`;
+  const masteredSubjects=Object.entries(p.subjectMastery||{}).filter(([s,n])=>n>=3).map(([s])=>s);
+  if(masteredSubjects.length>0)badges+=`<span class="badge badge-master">🎓${masteredSubjects.length}</span>`;
+  return `<div class="p-card ${!p.alive?'dead':''} ${isTurn?'turn':''} ${isSelf?'is-self':''}" style="--faction-color:${fColor};">
+    <div class="faction-icon" style="border-color:${fColor};color:${fColor};">${faction.icon}</div>
+    <div class="pheader"><div class="pavatar" style="border-color:${fColor};">${p.avatar}</div><div class="pname-block"><div class="pname">${p.name} ${aiTag}</div><div class="prole" style="color:${roleColor}">${p.roleRevealed?'【'+ROLES[p.role].name+'】':'身份未知'} · <span style="color:${fColor};">${faction.name}</span></div></div></div>
+    <div class="pknow">🔮${p.knowledge}</div>
+    <div class="php-bar">${hpGems}</div>
+    <div class="pequip-slots">${equipSlots}</div>
+    ${equipNamesHtml}
+    <div class="pfooter"><div class="hand-pile">${miniCards}<span class="hand-count">${handCount}</span></div></div>
+    <div class="p-badges">${badges}</div>
+    ${judgeTags?`<div class="pjudge-row">${judgeTags}</div>`:''}
+  </div>`;
+}
+function seatPos(rel,total){
+  const angle=90-(rel*360/total);
+  const rad=angle*Math.PI/180;
+  const rx=38,ry=36;
+  return{x:50+rx*Math.cos(rad),y:50+ry*Math.sin(rad)};
+}
+function renderSeats(){
+  const ring=document.getElementById('seatRing');if(!ring)return;
+  const total=G.players.length;
+  const isMobile=window.innerWidth<=600;
+  const targetValues=new Set();
+  if(G.targetSelectable&&G.pendingOptions){G.pendingOptions.forEach(o=>{if(typeof o.value==='number'&&o.value>=0&&o.value<total)targetValues.add(o.value)})}
+  let html='';
+  G.players.forEach((p,i)=>{
+    const isTarget=targetValues.has(i);
+    const clickAttr=isTarget?`onclick="clickTargetSeat(${i})"`:'';
+    const cls=isTarget?'seat seat-targetable':'seat';
+    if(isMobile){
+      html+=`<div class="${cls}" data-idx="${i}" ${clickAttr}>${buildPlayerCard(p,i)}</div>`;
+    } else {
+      const rel=(i-G.myPlayerIdx+total)%total;
+      const pos=seatPos(rel,total);
+      html+=`<div class="${cls}" data-idx="${i}" ${clickAttr} style="left:${pos.x}%;top:${pos.y}%;">${buildPlayerCard(p,i)}</div>`;
+    }
+  });
+  ring.innerHTML=html;
+}
+function render(){
+  if(!G.started)return;
+  const me=G.players[G.myPlayerIdx];if(!me)return;
+  let hintText='';let btnHtml='';let hintClass='';
+  G.pendingOptions && (G.pendingPlayer===G.myPlayerIdx) ? (G.handClickable=true) : (G.handClickable=false);
+  G.targetSelectable=false;
+  
+  if(G.gameOver){
+    hintText=`<span style="color:var(--gold);font-size:15px">${G.winnerText}</span>`;
+    G.handClickable=false;
+  } else if(G.pendingOptions && G.pendingPlayer===G.myPlayerIdx){
+    const type = G.pendingType;
+    if(type==='play'){
+      hintText='💡 点击手牌出牌 · 点击技能（需答题） · 或结束出牌';
+      hintClass='hint-play';
+      const skillBtns=G.pendingOptions.filter(o=>typeof o.value==='string'&&o.value.startsWith('skill_'));
+      skillBtns.forEach(o=>{btnHtml+=`<button class="btn btn-sm ${o.lord?'btn-lord':'btn-skill'}" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`});
+      if(G.pendingOptions.some(o=>o.value==='end'))btnHtml+=`<button class="btn btn-sm" onclick="handleLocalChoice('end')">结束出牌</button>`;
+    } else if(type==='discard'){
+      const need = Math.max(0, me.hand.length - handLimit(me));
+      hintText=`🗑️ 点击手牌弃置（还需弃 ${need} 张）`;
+      hintClass='hint-play';
+    } else if(type==='rescue'){
+      hintText='💔 濒死！点击手牌【桃】/【酒】自救，或选择下方按钮';
+      hintClass='hint-urgent';
+      const others=G.pendingOptions.filter(o=>!String(o.value).startsWith('card_'));
+      btnHtml=others.map(o=>`<button class="btn btn-sm" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`).join('');
+    } else if(type==='shan'){
+      hintText='🛡️ 需要出【闪】！点击手牌中的【闪】，或选择下方按钮';
+      hintClass='hint-urgent';
+      const others=G.pendingOptions.filter(o=>!String(o.value).startsWith('card_'));
+      btnHtml=others.map(o=>`<button class="btn btn-sm" onclick="handleLocalChoice('${o.value}')">${o.label}</button>`).join('');
+    } else if(type==='target'){
+      hintText='🎯 点击座位卡选择目标';hintClass='hint-target';
+      if(G.pendingOptions.some(o=>o.value===-1))btnHtml+=`<button class="btn btn-sm" onclick="handleLocalChoice(-1)">取消</button>`;
+      G.targetSelectable=true;
+      G.handClickable=false;
+    } else {
+      hintText='请选择：';
+      btnHtml=G.pendingOptions.map(o=>{
+        const v = typeof o.value === 'number' ? o.value : `'${o.value}'`;
+        return `<button class="btn btn-sm ${o.skill?'btn-skill':''}" onclick="handleLocalChoice(${v})">${o.label}</button>`;
+      }).join('');
+      G.handClickable=false;
+    }
+  } else if(G.pendingOptions && G.pendingPlayer!==G.myPlayerIdx){
+    const other=G.players[G.pendingPlayer];
+    hintText=`等待 ${other?.name||'?'} 选择中…`;
+  } else if(G.players[G.current] && G.players[G.current].isAI){
+    hintText=`等待 ${G.players[G.current].name} 行动…`;
+  } else if(G.players[G.current]===me){
+    hintText='请稍候…';
+  } else {
+    hintText=`等待 ${G.players[G.current].name} 行动…`;
+  }
+  
+  document.getElementById('turnName').textContent=G.players[G.current]?.name||'—';
+  document.getElementById('phaseLabel').textContent=G.gameOver?'游戏结束':'出牌阶段';
+  const rate=quizStats.total>0?Math.round(quizStats.correct/quizStats.total*100):0;
+  const myFaction=FACTIONS[me.faction];
+  document.getElementById('selfInfo').innerHTML=`<span style="color:${myFaction.color};font-weight:600;">${myFaction.icon}${myFaction.name}</span> · ${me.name} · ${ROLES[me.role].name} · 正确率 ${rate}%`;
+  const connEl=document.getElementById('connInfo');
+  if(NET.mode==='host')connEl.textContent=`房间 ${NET.roomCode}`;
+  else if(NET.mode==='join')connEl.textContent='已连接';
+  else connEl.textContent='';
+  
+  renderSeats();
+  
+  const hand=document.getElementById('handRow');
+  hand.innerHTML=me.hand.map(c=>{
+    const color=(c.suit==='♥'||c.suit==='♦')?'red':'black';
+    let cardCls='';let onclick='';
+    if(G.handClickable && isCardClickable(c)){
+      cardCls='clickable '+cardClickHint(c);
+      onclick=`onclick="clickHandCard(${c.id})"`;
+    } else if(G.handClickable){
+      cardCls='disabled';
+    }
+    return `<div class="card ${color} ${cardCls}" ${onclick}><span class="suit">${c.suit}</span><span class="num">${c.num}</span><span class="cname">${c.name}</span><span class="ctype">${c.type==='basic'?'基本':c.type==='trick'?'锦囊':'装备'}</span></div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:12px;padding:20px">无手牌</div>';
+  
+  const hintEl=document.getElementById('actionHint');
+  hintEl.innerHTML=hintText;
+  hintEl.className='action-hint '+(hintClass||'');
+  document.getElementById('actionBtns').innerHTML=btnHtml;
+  document.getElementById('deckCount').textContent=G.deck.length||0;
+  document.getElementById('discardCount').textContent=G.discard.length||0;
+  
+  const chatPanel=document.getElementById('chatPanel');
+  if(chatPanel)chatPanel.style.display=(NET.mode==='single')?'none':'flex';
+}
+
+/* 初始化 */
+SELECTED_CHAR=CHARACTERS.find(c=>c.faction===SELECTED_FACTION);
+renderFactionPicker();
+renderCharPicker();
+updateAIHint();
+updateLobbyMode();
+updateBankInfo();
+window.addEventListener('error',e=>{console.error('全局错误:',e.error||e.message)});
+</script>
+</body>
+</html>
