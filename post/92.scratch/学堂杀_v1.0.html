@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学堂杀 · 动作动画版</title>
+<style>
+:root{
+  --gold:#f5c542;--gold-dim:#8a6d3b;
+  --parch:#f7f0dd;--parch2:#e8dcc0;--ink:#2a1f0f;
+  --red:#c0392b;--green:#27ae60;--text:#e8e0d0;--muted:#a89880;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:radial-gradient(ellipse at 50% 0%,#4a2218,#2a1210 45%,#120604);
+  background-attachment:fixed;color:var(--text);
+  font-family:"PingFang SC","Microsoft YaHei",serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:10px;user-select:none;overflow-x:hidden;
+}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 1px,transparent 1px 3px);pointer-events:none;z-index:0}
+h1{font-size:24px;color:var(--gold);letter-spacing:8px;text-shadow:0 0 18px rgba(245,197,66,.5),0 2px 0 #000;margin-bottom:2px;position:relative;z-index:1}
+.subtitle{font-size:11px;color:var(--gold-dim);letter-spacing:3px;margin-bottom:10px;position:relative;z-index:1}
+.screen{display:none;width:100%;max-width:960px;position:relative;z-index:1}
+.screen.active{display:block}
+
+.sound-toggle{position:fixed;top:10px;right:10px;z-index:50;background:linear-gradient(160deg,#2a1a10,#160a06);border:2px solid var(--gold-dim);color:var(--gold);width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.sound-toggle:hover{border-color:var(--gold);box-shadow:0 0 14px rgba(245,197,66,.5)}
+.sound-toggle.muted{opacity:.5;color:var(--muted)}
+
+.panel{background:linear-gradient(160deg,#2a1610,#1a0c08);border:1px solid var(--gold-dim);border-radius:10px;padding:14px;margin-bottom:8px;box-shadow:inset 0 0 30px rgba(0,0,0,.6)}
+.panel h3{font-size:13px;color:var(--gold);margin-bottom:8px;letter-spacing:2px}
+.grade-picker{display:flex;gap:6px;flex-wrap:wrap}
+.grade-btn{flex:1;min-width:70px;background:linear-gradient(160deg,#2a1a10,#160a06);border:2px solid var(--gold-dim);color:var(--muted);padding:9px 4px;border-radius:7px;cursor:pointer;font-size:13px;transition:all .2s;font-family:inherit}
+.grade-btn:hover{border-color:var(--gold);color:var(--gold)}
+.grade-btn.active{background:linear-gradient(160deg,#5a3a10,#3a1a06);border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(245,197,66,.4)}
+.grade-btn small{display:block;font-size:9px;margin-top:2px;opacity:.7}
+
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-height:420px;overflow-y:auto;padding-right:4px}
+.char-card{background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:8px;padding:8px;cursor:pointer;transition:all .2s;position:relative}
+.char-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.char-card.selected{border-color:var(--gold);box-shadow:0 0 16px rgba(245,197,66,.6)}
+.char-card .ctop{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.char-card .cavatar{font-size:26px}
+.char-card .cname{font-size:13px;color:var(--gold);font-weight:600}
+.char-card .ctitle{font-size:10px;color:var(--muted)}
+.char-card .csubject{font-size:9px;color:#c8b088;margin-bottom:3px}
+.char-card .cskill{font-size:9px;color:#a89880;line-height:1.5;border-top:1px solid #3a2a1a;padding-top:4px}
+.char-card .cskill b{color:var(--gold);font-size:10px}
+
+#screenGame{max-width:920px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(180deg,#2a1610,#160a06);border:1px solid var(--gold-dim);border-radius:8px;padding:6px 10px;font-size:11px;margin-bottom:6px;position:relative;z-index:2}
+.top-bar .turn-name{color:var(--gold);font-weight:600}
+.opponents{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:6px;min-height:100px;position:relative;z-index:2}
+.p-card{width:128px;background:linear-gradient(160deg,#2a1a10,#120804);border:2px solid var(--gold-dim);border-radius:8px;padding:5px;position:relative;transition:all .25s}
+.p-card.turn{border-color:var(--gold);box-shadow:0 0 22px rgba(245,197,66,.8),0 0 40px rgba(245,197,66,.4);transform:translateY(-4px)}
+.p-card.dead{opacity:.25;filter:grayscale(1);transform:rotate(-6deg)}
+.p-card .ptop{display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.p-card .pavatar{font-size:20px}
+.p-card .pname{font-size:11px;color:var(--gold);font-weight:600}
+.p-card .prole{font-size:9px;color:var(--muted)}
+.p-card .php{display:flex;gap:1px;margin:2px 0}
+.hp-gem{width:7px;height:7px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#e74c3c,#8a1a10);border:1px solid #ff8a70;transition:all .3s}
+.hp-gem.empty{background:#1a0a08;border-color:#3a1a14;opacity:.5}
+.p-card .pstats{display:flex;justify-content:space-between;font-size:8px;color:var(--muted);margin-top:1px}
+.p-card .pequip{font-size:8px;color:#c8b088;margin-top:1px;line-height:1.3;min-height:10px}
+.p-card .pjudge{font-size:8px;color:#e88;min-height:10px}
+.p-card .pknow{font-size:9px;color:var(--gold)}
+
+/* 出牌区 */
+.play-zone{position:relative;min-height:96px;background:radial-gradient(ellipse at 50% 50%,rgba(245,197,66,.08),transparent 70%),rgba(0,0,0,.4);border:1px dashed rgba(245,197,66,.35);border-radius:10px;padding:14px 8px 8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;z-index:2;overflow:hidden}
+.play-zone-label{position:absolute;top:-9px;left:14px;font-size:10px;letter-spacing:2px;color:var(--gold-dim);background:#1a0c08;padding:1px 10px;border:1px solid var(--gold-dim);border-radius:3px}
+.play-zone-empty{color:#5a4a3a;font-size:11px;letter-spacing:2px;font-style:italic}
+.play-card{width:50px;height:72px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600;font-size:12px;position:relative;animation:playCardIn .45s cubic-bezier(.3,1.4,.5,1);box-shadow:0 0 16px rgba(245,197,66,.55),0 3px 10px rgba(0,0,0,.7);flex-shrink:0}
+.play-card .pcsuit{position:absolute;top:2px;left:3px;font-size:10px}
+.play-card .pcnum{position:absolute;top:2px;right:3px;font-size:8px;color:#7a6a50}
+.play-card .pcname{font-family:"STKaiti","KaiTi",serif;color:#8a1a10;font-size:14px;text-align:center;line-height:1.1;padding:0 2px}
+.play-card .pcowner{position:absolute;bottom:-1px;left:0;right:0;text-align:center;font-size:7px;color:#7a6a50;background:rgba(255,255,255,.4);border-radius:0 0 4px 4px;padding:1px 0}
+.play-card.red .pcsuit{color:#c0392b}
+.play-card.trick{border-color:#9b59b6;box-shadow:0 0 16px rgba(155,89,182,.6),0 3px 10px rgba(0,0,0,.7)}
+.play-card.trick .pcname{color:#5a1a7a}
+.play-card.equip{border-color:#2980b9;box-shadow:0 0 16px rgba(41,128,185,.6),0 3px 10px rgba(0,0,0,.7)}
+.play-card.equip .pcname{color:#1a4a7a}
+@keyframes playCardIn{from{opacity:0;transform:translateY(40px) scale(.4) rotate(-20deg)}60%{opacity:1;transform:translateY(-4px) scale(1.1) rotate(3deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+.play-card.fade-out{animation:playCardOut .45s ease-in forwards}
+@keyframes playCardOut{to{opacity:0;transform:translateY(-24px) scale(.6) rotate(10deg)}}
+
+.center-area{background:rgba(0,0,0,.35);border:1px solid #3a2a1a;border-radius:8px;padding:6px;margin-bottom:6px;min-height:60px;position:relative;z-index:2}
+.action-hint{font-size:11px;color:var(--muted);margin-bottom:4px;min-height:14px}
+.action-btns{display:flex;gap:4px;flex-wrap:wrap}
+
+.btn{background:linear-gradient(160deg,#2a1a10,#160a06);color:#d8c8a8;border:1px solid var(--gold-dim);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer;transition:all .15s;margin:2px;font-family:inherit}
+.btn:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-accent{background:linear-gradient(160deg,#8a2018,#5a1008);border-color:#e74c3c;color:#ffe0d0}
+.btn-sm{padding:4px 8px;font-size:11px}
+.btn-skill{background:linear-gradient(160deg,#3a2a50,#1a0a30);border-color:#9b59b6;color:#d8c8ff}
+
+.hand-row{display:flex;gap:5px;overflow-x:auto;padding:4px 2px 8px;min-height:100px;align-items:flex-end;position:relative;z-index:2}
+.card{width:60px;height:86px;flex-shrink:0;border-radius:5px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:2px solid var(--gold-dim);box-shadow:0 3px 8px rgba(0,0,0,.6);position:relative;cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600}
+.card:hover{transform:translateY(-6px);box-shadow:0 8px 16px rgba(245,197,66,.5)}
+.card.selected{transform:translateY(-10px);border-color:var(--gold);box-shadow:0 0 18px rgba(245,197,66,.8)}
+.card .suit{position:absolute;top:1px;left:3px;font-size:9px}
+.card .num{position:absolute;top:1px;right:3px;font-size:8px;color:#7a6a50}
+.card .cname{font-size:14px;font-family:"STKaiti","KaiTi",serif;color:#8a1a10;text-align:center;line-height:1.1;padding:0 2px}
+.card .ctype{font-size:7px;color:#7a6a50;margin-top:1px}
+.card.red .suit{color:#c0392b}
+.card.black .suit{color:#1a1a1a}
+
+#quizModal{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:100;padding:14px;backdrop-filter:blur(3px)}
+#quizModal.show{display:flex}
+.quiz-box{width:100%;max-width:440px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold-dim);box-shadow:0 0 0 2px var(--gold),0 20px 60px rgba(0,0,0,.9);border-radius:10px;padding:16px;color:var(--ink);position:relative;animation:cardIn .3s ease-out}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
+.quiz-subject{display:inline-block;font-size:10px;letter-spacing:2px;color:var(--parch);background:#8a6d3b;padding:2px 8px;border-radius:3px;margin-bottom:8px}
+.quiz-question{font-size:13.5px;line-height:1.65;margin-bottom:10px;font-weight:600}
+.quiz-option{display:block;width:100%;text-align:left;background:rgba(255,255,255,.45);border:1.5px solid rgba(139,101,40,.4);color:var(--ink);border-radius:5px;padding:8px 10px;margin-bottom:6px;cursor:pointer;font-size:12.5px;transition:all .15s;font-family:inherit}
+.quiz-option:hover{background:rgba(255,255,255,.75);border-color:#8a6d3b}
+.quiz-option.correct{background:rgba(46,204,113,.35);border-color:#27ae60}
+.quiz-option.wrong{background:rgba(231,76,60,.3);border-color:#c0392b}
+.quiz-option .tag{display:inline-block;width:17px;height:17px;line-height:17px;text-align:center;border-radius:50%;background:#8a6d3b;color:var(--parch);font-size:10px;margin-right:6px}
+#quizFeedback{font-size:12px;margin-top:6px;min-height:16px;font-weight:600}
+
+.log{background:rgba(0,0,0,.45);border:1px solid #3a2a1a;border-radius:8px;padding:6px 10px;max-height:90px;overflow-y:auto;font-size:10.5px;line-height:1.6;color:var(--muted);position:relative;z-index:2}
+.log .hl{color:var(--gold)}
+.log .dmg{color:#e74c3c}
+.log .heal{color:var(--green)}
+
+/* ====== 特效层 ====== */
+.fx-layer{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+
+/* 角色卡牌动作 */
+.p-card.attacking{animation:attackLunge .42s cubic-bezier(.3,1.4,.5,1)}
+@keyframes attackLunge{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-12px) scale(1.07)}60%{transform:translateY(5px) scale(.97)}}
+.p-card.hit-shake{animation:hitShake .5s}
+@keyframes hitShake{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-10px,-3px) rotate(-1.2deg);filter:brightness(2.2) saturate(2)}
+  35%{transform:translate(10px,4px) rotate(1.2deg);filter:brightness(1.6) saturate(1.5)}
+  55%{transform:translate(-7px,0);filter:brightness(1.3)}
+  75%{transform:translate(7px,0);filter:brightness(1.1)}
+}
+#handRow.attacking{animation:selfAttack .42s cubic-bezier(.3,1.4,.5,1)}
+@keyframes selfAttack{0%,100%{transform:translateY(0)}30%{transform:translateY(-14px)}60%{transform:translateY(5px)}}
+#handRow.hit-shake{animation:selfHit .5s}
+@keyframes selfHit{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-10px,-3px);filter:brightness(2.2) saturate(2)}
+  35%{transform:translate(10px,4px);filter:brightness(1.6)}
+  55%{transform:translate(-7px,0);filter:brightness(1.3)}
+  75%{transform:translate(7px,0);filter:brightness(1.1)}
+}
+
+/* 飞牌 */
+.fly-card{position:fixed;width:50px;height:70px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:"STKaiti","KaiTi",serif;font-size:24px;font-weight:900;pointer-events:none;box-shadow:0 0 22px currentColor;color:#e74c3c;will-change:transform,opacity;z-index:1000}
+.fly-card.trick{border-color:#9b59b6;box-shadow:0 0 22px #9b59b6;color:#b57fff}
+.fly-card.thunder{border-color:#4af;box-shadow:0 0 26px #4af;color:#4af}
+.fly-card.heal{border-color:#27ae60;box-shadow:0 0 22px #27ae60;color:#27ae60}
+
+/* 斩击 */
+.slash-fx{position:fixed;font-size:82px;font-family:"STKaiti","KaiTi",serif;font-weight:900;color:#ff2020;text-shadow:0 0 20px #ff0000,0 0 44px #ff0000,3px 3px 0 #000,-3px -3px 0 #000;pointer-events:none;z-index:1001;animation:slashAnim .85s cubic-bezier(.3,1.5,.5,1) forwards;will-change:transform,opacity}
+@keyframes slashAnim{
+  0%{opacity:0;transform:scale(.2) rotate(-30deg)}
+  25%{opacity:1;transform:scale(1.6) rotate(-30deg)}
+  45%{transform:scale(1.2) rotate(-30deg)}
+  70%{opacity:1;transform:scale(1.35) rotate(-30deg) translateY(-20px)}
+  100%{opacity:0;transform:scale(1.9) rotate(-30deg) translateY(-60px)}
+}
+
+/* 伤害飘字 */
+.float-text{position:fixed;font-size:32px;font-weight:900;pointer-events:none;z-index:1001;animation:floatUp 1.1s cubic-bezier(.2,1,.5,1) forwards;font-family:"PingFang SC","Microsoft YaHei",sans-serif;text-shadow:2px 2px 6px #000,-1px -1px 2px #000;will-change:transform,opacity}
+@keyframes floatUp{
+  0%{opacity:0;transform:translateY(0) scale(.3)}
+  15%{opacity:1;transform:translateY(-15px) scale(1.3)}
+  35%{transform:translateY(-25px) scale(1.1)}
+  100%{opacity:0;transform:translateY(-80px) scale(.9)}
+}
+
+/* 闪避护盾 */
+.shield-fx{position:fixed;width:140px;height:140px;border-radius:50%;border:4px solid #4af;box-shadow:0 0 34px #4af,inset 0 0 34px rgba(68,170,255,.5);pointer-events:none;z-index:1000;animation:shieldAnim .7s ease-out forwards;will-change:transform,opacity}
+@keyframes shieldAnim{
+  0%{opacity:0;transform:scale(.2)}
+  30%{opacity:1;transform:scale(1.15)}
+  60%{transform:scale(1.05);opacity:.85}
+  100%{opacity:0;transform:scale(1.7)}
+}
+
+/* 治疗 */
+.heal-fx{position:fixed;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle,rgba(46,204,113,.75) 0%,transparent 70%);pointer-events:none;z-index:1000;animation:healAnim .9s ease-out forwards}
+@keyframes healAnim{0%{opacity:0;transform:scale(.3)}40%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1.8) translateY(-30px)}}
+.heal-ball{position:fixed;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle,#b8ffd0,#27ae60);box-shadow:0 0 22px #4f8,0 0 44px rgba(46,204,113,.6);pointer-events:none;z-index:1000;will-change:transform,opacity}
+
+/* 技能波纹 */
+.skill-ripple{position:fixed;width:170px;height:170px;border-radius:50%;border:3px solid #b57fff;box-shadow:0 0 44px #b57fff,inset 0 0 44px rgba(181,127,255,.5);pointer-events:none;z-index:1000;animation:rippleAnim .9s ease-out forwards;will-change:transform,opacity}
+@keyframes rippleAnim{0%{opacity:0;transform:scale(.2)}40%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.85)}}
+
+/* 屏幕震动 */
+#screenGame.screen-shake{animation:screenShake .42s cubic-bezier(.36,.07,.19,.97)}
+@keyframes screenShake{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-7px,3px) rotate(-.3deg)}
+  30%{transform:translate(7px,-3px) rotate(.3deg)}
+  45%{transform:translate(-5px,-4px)}
+  60%{transform:translate(5px,4px)}
+  75%{transform:translate(-3px,2px)}
+  90%{transform:translate(3px,-2px)}
+}
+
+/* 判定翻牌 */
+.judge-fx{position:fixed;width:72px;height:104px;background:linear-gradient(160deg,var(--parch),var(--parch2));border:3px solid var(--gold);border-radius:6px;pointer-events:none;z-index:1001;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);font-weight:600;animation:judgeFlip .95s cubic-bezier(.3,1.4,.5,1) forwards;box-shadow:0 0 26px rgba(245,197,66,.9)}
+@keyframes judgeFlip{
+  0%{opacity:0;transform:translateY(30px) rotateY(0deg) scale(.5)}
+  30%{opacity:1;transform:translateY(0) rotateY(180deg) scale(1.1)}
+  70%{opacity:1;transform:translateY(0) rotateY(180deg) scale(1.1)}
+  100%{opacity:0;transform:translateY(-50px) rotateY(180deg) scale(.9)}
+}
+.judge-fx .jsuit{font-size:26px}
+.judge-fx .jnum{font-size:14px;color:#7a6a50}
+.judge-fx .jname{font-size:9px;margin-top:4px;color:#8a1a10;border-top:1px solid #c0b090;padding-top:2px;width:80%;text-align:center}
+.judge-fx.red{color:#c0392b}
+.judge-fx.black{color:#1a1a1a}
+
+/* 阵亡 */
+.death-fx{position:fixed;font-size:56px;font-weight:900;color:#888;text-shadow:0 0 20px #000,0 0 44px #f00;pointer-events:none;z-index:1002;animation:deathAnim 1.25s ease-out forwards;font-family:"STKaiti","KaiTi",serif}
+@keyframes deathAnim{
+  0%{opacity:0;transform:scale(.3) rotate(0)}
+  30%{opacity:1;transform:scale(1.4) rotate(-8deg)}
+  60%{opacity:1;transform:scale(1.2) rotate(8deg)}
+  100%{opacity:0;transform:scale(.8) rotate(-15deg) translateY(-80px)}
+}
+
+/* 闪电：全屏闪白 + 目标爆发 */
+.screen-flash{position:fixed;inset:0;background:#dff;pointer-events:none;z-index:998}
+.lightning-burst{position:fixed;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(200,240,255,.95),rgba(80,150,255,.45) 40%,transparent 70%);transform:translate(-50%,-50%);pointer-events:none;z-index:1002;animation:lightningBurst .75s ease-out forwards}
+@keyframes lightningBurst{
+  0%{transform:translate(-50%,-50%) scale(.15);opacity:1}
+  60%{transform:translate(-50%,-50%) scale(1.1);opacity:.9}
+  100%{transform:translate(-50%,-50%) scale(1.9);opacity:0}
+}
+
+/* AOE 扩散 */
+.aoe-ring{position:fixed;width:44px;height:44px;border-radius:50%;background:rgba(200,80,40,.92);color:#fff;font-size:17px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(200,80,40,.85);pointer-events:none;z-index:1000;will-change:transform,opacity}
+.aoe-ring.arrow{background:rgba(50,120,200,.92);box-shadow:0 0 24px rgba(50,120,200,.85)}
+
+@media(max-width:560px){
+  h1{font-size:19px}
+  .p-card{width:100px}
+  .card{width:50px;height:72px}
+  .card .cname{font-size:12px}
+  .slash-fx{font-size:60px}
+  .float-text{font-size:24px}
+  .play-card{width:42px;height:60px}
+  .play-card .pcname{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<button class="sound-toggle" id="soundToggle" onclick="toggleSound()" title="开启/关闭音效">🔊</button>
+
+<h1>学堂杀</h1>
+<div class="subtitle">教 材 人 物 · 动 作 动 画 版</div>
+
+<div id="screenLobby" class="screen active">
+  <div class="panel">
+    <h3>◈ 选择年级 ◈</h3>
+    <div class="grade-picker" id="gradePicker">
+      <button class="grade-btn" data-grade="初一">初一<small>语数英·生地</small></button>
+      <button class="grade-btn active" data-grade="初二">初二<small>语数英·物生</small></button>
+      <button class="grade-btn" data-grade="初三">初三<small>语数英·物化</small></button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>◈ 选择你的教材人物（主公） ◈</h3>
+    <div class="char-grid" id="charGrid"></div>
+  </div>
+  <div style="text-align:center;margin-top:6px">
+    <button class="btn btn-accent" style="font-size:15px;padding:10px 30px" onclick="startGame()">开始对局</button>
+  </div>
+</div>
+
+<div id="screenGame" class="screen">
+  <div class="top-bar">
+    <span>回合：<span class="turn-name" id="turnName">—</span></span>
+    <span>阶段：<span id="phaseLabel">—</span></span>
+    <span id="selfInfo" style="color:var(--muted)"></span>
+  </div>
+  <div class="opponents" id="opponents"></div>
+
+  <div class="play-zone">
+    <div class="play-zone-label">出 牌 区</div>
+    <div id="playZoneCards" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:center;width:100%;min-height:68px;">
+      <span class="play-zone-empty">— 牌桌中央 —</span>
+    </div>
+  </div>
+
+  <div class="center-area">
+    <div class="action-hint" id="actionHint"></div>
+    <div class="action-btns" id="actionBtns"></div>
+  </div>
+  <div class="hand-row" id="handRow"></div>
+  <div class="log" id="gameLog"></div>
+  <div style="text-align:center;margin-top:6px;position:relative;z-index:2">
+    <button class="btn btn-sm" onclick="location.reload()">退出重开</button>
+  </div>
+</div>
+
+<div id="quizModal">
+  <div class="quiz-box">
+    <div class="quiz-subject" id="quizSubject"></div>
+    <div class="quiz-question" id="quizQuestion"></div>
+    <div id="quizOptions"></div>
+    <div id="quizFeedback"></div>
+  </div>
+</div>
+
+<div class="fx-layer" id="fxLayer"></div>
+
+<script>
+/* ============================================================
+   一、音效引擎
+   ============================================================ */
+const Sound = {
+  ctx: null, enabled: true,
+  init() {
+    if (!this.ctx) { try { this.ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){ this.enabled=false; return null; } }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  },
+  noise(dur) {
+    const ctx = this.ctx;
+    const size = Math.floor(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, size, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<size;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/size,1.6);
+    const src = ctx.createBufferSource(); src.buffer = buf; return src;
+  },
+  play(type) {
+    if (!this.enabled) return;
+    const ctx = this.init(); if (!ctx) return;
+    const now = ctx.currentTime;
+    switch(type) {
+      case 'click': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination);
+        o.type='triangle'; o.frequency.setValueAtTime(880,now); o.frequency.exponentialRampToValueAtTime(440,now+.06);
+        g.gain.setValueAtTime(.06,now); g.gain.exponentialRampToValueAtTime(.001,now+.06);
+        o.start(now); o.stop(now+.06); break;
+      }
+      case 'draw': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine';
+        o.frequency.setValueAtTime(1200,now); o.frequency.exponentialRampToValueAtTime(700,now+.09);
+        g.gain.setValueAtTime(.07,now); g.gain.exponentialRampToValueAtTime(.001,now+.1);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.1); break;
+      }
+      case 'play': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='triangle';
+        o.frequency.setValueAtTime(520,now); o.frequency.exponentialRampToValueAtTime(180,now+.13);
+        g.gain.setValueAtTime(.14,now); g.gain.exponentialRampToValueAtTime(.001,now+.14);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.14);
+        const n=this.noise(.08); const f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=1500;
+        const ng=ctx.createGain(); ng.gain.setValueAtTime(.1,now); ng.gain.exponentialRampToValueAtTime(.001,now+.08);
+        n.connect(f); f.connect(ng); ng.connect(ctx.destination); n.start(now); break;
+      }
+      case 'sha': {
+        const n=this.noise(.28); const f=ctx.createBiquadFilter(); f.type='bandpass'; f.Q.value=1.2;
+        f.frequency.setValueAtTime(2400,now); f.frequency.exponentialRampToValueAtTime(300,now+.26);
+        const ng=ctx.createGain(); ng.gain.setValueAtTime(.32,now); ng.gain.exponentialRampToValueAtTime(.001,now+.28);
+        n.connect(f); f.connect(ng); ng.connect(ctx.destination); n.start(now);
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine';
+        o.frequency.setValueAtTime(130,now); o.frequency.exponentialRampToValueAtTime(38,now+.32);
+        g.gain.setValueAtTime(.36,now); g.gain.exponentialRampToValueAtTime(.001,now+.32);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.32); break;
+      }
+      case 'shan': {
+        [1500,2250,3000].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+          g.gain.setValueAtTime(.08-i*.015,now); g.gain.exponentialRampToValueAtTime(.001,now+.45);
+          o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.45);}); break;
+      }
+      case 'tao': {
+        [523,659,784,1046].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+          const t=now+i*.08; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.12,t+.02);
+          g.gain.exponentialRampToValueAtTime(.001,t+.35); o.connect(g); g.connect(ctx.destination);
+          o.start(t); o.stop(t+.35);}); break;
+      }
+      case 'jiu': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sawtooth';
+        o.frequency.setValueAtTime(180,now); o.frequency.exponentialRampToValueAtTime(420,now+.35);
+        g.gain.setValueAtTime(.12,now); g.gain.exponentialRampToValueAtTime(.001,now+.38);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.38); break;
+      }
+      case 'trick': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine';
+        o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(1600,now+.3);
+        g.gain.setValueAtTime(.1,now); g.gain.exponentialRampToValueAtTime(.001,now+.32);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.32);
+        const o2=ctx.createOscillator(),g2=ctx.createGain(); o2.type='triangle';
+        o2.frequency.setValueAtTime(800,now); o2.frequency.linearRampToValueAtTime(1200,now+.3);
+        g2.gain.setValueAtTime(.06,now); g2.gain.exponentialRampToValueAtTime(.001,now+.32);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(now); o2.stop(now+.32); break;
+      }
+      case 'hit': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='square';
+        o.frequency.setValueAtTime(180,now); o.frequency.exponentialRampToValueAtTime(50,now+.25);
+        g.gain.setValueAtTime(.22,now); g.gain.exponentialRampToValueAtTime(.001,now+.28);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.28);
+        const n=this.noise(.15); const f=ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=1200;
+        const ng=ctx.createGain(); ng.gain.setValueAtTime(.18,now); ng.gain.exponentialRampToValueAtTime(.001,now+.15);
+        n.connect(f); f.connect(ng); ng.connect(ctx.destination); n.start(now); break;
+      }
+      case 'thunder': {
+        const n=this.noise(.5); const f=ctx.createBiquadFilter(); f.type='bandpass'; f.Q.value=.7;
+        f.frequency.setValueAtTime(3000,now); f.frequency.exponentialRampToValueAtTime(200,now+.5);
+        const ng=ctx.createGain(); ng.gain.setValueAtTime(.4,now); ng.gain.exponentialRampToValueAtTime(.001,now+.5);
+        n.connect(f); f.connect(ng); ng.connect(ctx.destination); n.start(now);
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sawtooth';
+        o.frequency.setValueAtTime(120,now); o.frequency.exponentialRampToValueAtTime(30,now+.55);
+        g.gain.setValueAtTime(.3,now); g.gain.exponentialRampToValueAtTime(.001,now+.55);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.55); break;
+      }
+      case 'judge': {
+        const n=this.noise(.12); const f=ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=3000;
+        const ng=ctx.createGain(); ng.gain.setValueAtTime(.1,now); ng.gain.exponentialRampToValueAtTime(.001,now+.12);
+        n.connect(f); f.connect(ng); ng.connect(ctx.destination); n.start(now);
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=1760;
+        g.gain.setValueAtTime(.1,now+.08); g.gain.exponentialRampToValueAtTime(.001,now+.4);
+        o.connect(g); g.connect(ctx.destination); o.start(now+.08); o.stop(now+.4); break;
+      }
+      case 'skill': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sawtooth';
+        o.frequency.setValueAtTime(280,now); o.frequency.exponentialRampToValueAtTime(1200,now+.4);
+        g.gain.setValueAtTime(.1,now); g.gain.exponentialRampToValueAtTime(.001,now+.45);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.45);
+        const o2=ctx.createOscillator(),g2=ctx.createGain(); o2.type='sine'; o2.frequency.value=1800;
+        g2.gain.setValueAtTime(.06,now); g2.gain.exponentialRampToValueAtTime(.001,now+.5);
+        o2.connect(g2); g2.connect(ctx.destination); o2.start(now); o2.stop(now+.5); break;
+      }
+      case 'death': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sawtooth';
+        o.frequency.setValueAtTime(400,now); o.frequency.exponentialRampToValueAtTime(60,now+.9);
+        g.gain.setValueAtTime(.2,now); g.gain.exponentialRampToValueAtTime(.001,now+.9);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.9); break;
+      }
+      case 'turn': {
+        [1046,1318].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+          const t=now+i*.15; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.1,t+.01);
+          g.gain.exponentialRampToValueAtTime(.001,t+.7); o.connect(g); g.connect(ctx.destination);
+          o.start(t); o.stop(t+.7);}); break;
+      }
+      case 'correct': {
+        [659,880,1046].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.value=f;
+          const t=now+i*.07; g.gain.setValueAtTime(.09,t); g.gain.exponentialRampToValueAtTime(.001,t+.3);
+          o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.3);}); break;
+      }
+      case 'wrong': {
+        const o=ctx.createOscillator(),g=ctx.createGain(); o.type='square';
+        o.frequency.setValueAtTime(200,now); o.frequency.linearRampToValueAtTime(140,now+.4);
+        g.gain.setValueAtTime(.12,now); g.gain.exponentialRampToValueAtTime(.001,now+.42);
+        o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+.42); break;
+      }
+      case 'win': {
+        [523,659,784,1046,1318].forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain(); o.type='triangle'; o.frequency.value=f;
+          const t=now+i*.12; g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.6);
+          o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+.6);}); break;
+      }
+    }
+  }
+};
+function toggleSound() {
+  Sound.enabled = !Sound.enabled;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = Sound.enabled ? '🔊' : '🔇';
+  btn.classList.toggle('muted', !Sound.enabled);
+  if (Sound.enabled) { Sound.init(); Sound.play('click'); }
+}
+
+/* ============================================================
+   二、动作动画系统 FX
+   ============================================================ */
+const FX = {
+  anchor(idx) {
+    const el = idx === G.myIndex
+      ? document.getElementById('handRow')
+      : document.querySelector(`.p-card[data-idx="${idx}"]`);
+    if (!el) return { x: window.innerWidth/2, y: window.innerHeight/2 };
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width/2, y: r.top + r.height/2 };
+  },
+
+  // 攻击者前冲姿态
+  attackLunge(idx) {
+    const el = idx === G.myIndex
+      ? document.getElementById('handRow')
+      : document.querySelector(`.p-card[data-idx="${idx}"]`);
+    if (!el) return;
+    el.classList.remove('attacking');
+    void el.offsetWidth;
+    el.classList.add('attacking');
+    setTimeout(() => el.classList.remove('attacking'), 480);
+  },
+
+  // 受击震颤
+  hitShake(idx) {
+    const el = idx === G.myIndex
+      ? document.getElementById('handRow')
+      : document.querySelector(`.p-card[data-idx="${idx}"]`);
+    if (!el) return;
+    el.classList.remove('hit-shake');
+    void el.offsetWidth;
+    el.classList.add('hit-shake');
+    setTimeout(() => el.classList.remove('hit-shake'), 520);
+  },
+
+  // 飞牌：从攻击者沿弧线飞向目标
+  async flyCard(fromIdx, toIdx, text, type='basic', dur=520) {
+    const from = this.anchor(fromIdx);
+    const to = this.anchor(toIdx);
+    const el = document.createElement('div');
+    el.className = 'fly-card ' + (type !== 'basic' ? type : '');
+    el.textContent = text;
+    el.style.left = (from.x - 25) + 'px';
+    el.style.top = (from.y - 35) + 'px';
+    document.getElementById('fxLayer').appendChild(el);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const spin = (Math.random() - 0.5) * 120;
+    const anim = el.animate([
+      { transform: 'translate(0,0) scale(.5) rotate(0deg)', opacity: 0 },
+      { transform: 'translate(0,0) scale(1.08) rotate(0deg)', opacity: 1, offset: 0.14 },
+      { transform: `translate(${dx*0.5}px, ${dy*0.5 - 70}px) scale(1.15) rotate(${180+spin}deg)`, opacity: 1, offset: 0.62 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.5) rotate(${360+spin*2}deg)`, opacity: 0.15 }
+    ], { duration: dur, easing: 'cubic-bezier(.45,.05,.65,.95)', fill: 'forwards' });
+    return anim.finished.then(() => el.remove());
+  },
+
+  // 斩击：大字“杀”+ 目标震颤
+  async slash(idx) {
+    const a = this.anchor(idx);
+    this.hitShake(idx);
+    const fx = document.createElement('div');
+    fx.className = 'slash-fx';
+    fx.textContent = '杀';
+    fx.style.left = (a.x - 41) + 'px';
+    fx.style.top = (a.y - 46) + 'px';
+    document.getElementById('fxLayer').appendChild(fx);
+    setTimeout(() => fx.remove(), 880);
+    await sleep(340);
+  },
+
+  // 闪避护盾
+  async shield(idx) {
+    const a = this.anchor(idx);
+    const ring = document.createElement('div');
+    ring.className = 'shield-fx';
+    ring.style.left = (a.x - 70) + 'px';
+    ring.style.top = (a.y - 70) + 'px';
+    document.getElementById('fxLayer').appendChild(ring);
+    const t = document.createElement('div');
+    t.className = 'float-text';
+    t.textContent = '闪';
+    t.style.color = '#4af';
+    t.style.fontSize = '26px';
+    t.style.left = (a.x - 13) + 'px';
+    t.style.top = (a.y - 22) + 'px';
+    document.getElementById('fxLayer').appendChild(t);
+    setTimeout(() => { ring.remove(); t.remove(); }, 900);
+    await sleep(320);
+  },
+
+  // 闪电：全屏白闪 + SVG 电弧 + 目标爆发
+  async lightning(idx) {
+    const a = this.anchor(idx);
+    // 全屏闪白
+    const flash = document.createElement('div');
+    flash.className = 'screen-flash';
+    document.body.appendChild(flash);
+    flash.animate([
+      { opacity: 0 }, { opacity: 0.9, offset: 0.12 },
+      { opacity: 0.3, offset: 0.4 }, { opacity: 0 }
+    ], { duration: 620 });
+    setTimeout(() => flash.remove(), 660);
+
+    // SVG 电弧
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', window.innerWidth);
+    svg.setAttribute('height', window.innerHeight);
+    svg.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:1003;';
+    const pts = [];
+    const segs = 9;
+    const startX = a.x + (Math.random() - 0.5) * 80;
+    const startY = -30;
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const x = startX + (a.x - startX) * t + (i===0||i===segs ? 0 : (Math.random()-0.5) * 80);
+      const y = startY + (a.y - startY) * t;
+      pts.push([x, y]);
+    }
+    const mkLine = (color, width, filter) => {
+      const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      pl.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+      pl.setAttribute('fill', 'none');
+      pl.setAttribute('stroke', color);
+      pl.setAttribute('stroke-width', width);
+      pl.setAttribute('stroke-linejoin', 'round');
+      if (filter) pl.style.filter = filter;
+      return pl;
+    };
+    svg.appendChild(mkLine('#4af', 9, 'drop-shadow(0 0 10px #4af)'));
+    svg.appendChild(mkLine('#aef', 4));
+    svg.appendChild(mkLine('#fff', 1.6));
+    document.body.appendChild(svg);
+
+    // 目标爆发
+    const burst = document.createElement('div');
+    burst.className = 'lightning-burst';
+    burst.style.left = a.x + 'px';
+    burst.style.top = a.y + 'px';
+    document.getElementById('fxLayer').appendChild(burst);
+
+    this.hitShake(idx);
+    Sound.play('thunder');
+    await sleep(750);
+    svg.remove();
+    burst.remove();
+  },
+
+  // 治疗光球：从施放者飞向目标
+  async heal(fromIdx, toIdx) {
+    const from = this.anchor(fromIdx);
+    const to = this.anchor(toIdx);
+    const ball = document.createElement('div');
+    ball.className = 'heal-ball';
+    ball.style.left = (from.x - 16) + 'px';
+    ball.style.top = (from.y - 16) + 'px';
+    document.getElementById('fxLayer').appendChild(ball);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const anim = ball.animate([
+      { transform: 'translate(0,0) scale(.4)', opacity: 0 },
+      { transform: 'translate(0,0) scale(1.1)', opacity: 1, offset: 0.15 },
+      { transform: `translate(${dx*0.5}px, ${dy*0.5 - 60}px) scale(1)`, opacity: 1, offset: 0.6 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.6)`, opacity: 0 }
+    ], { duration: 640, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
+    await anim.finished;
+    ball.remove();
+    this.healGlow(toIdx);
+  },
+
+  healGlow(idx) {
+    const a = this.anchor(idx);
+    const fx = document.createElement('div');
+    fx.className = 'heal-fx';
+    fx.style.left = (a.x - 48) + 'px';
+    fx.style.top = (a.y - 48) + 'px';
+    document.getElementById('fxLayer').appendChild(fx);
+    setTimeout(() => fx.remove(), 950);
+  },
+
+  // 技能波纹
+  skillWave(idx) {
+    const a = this.anchor(idx);
+    const fx = document.createElement('div');
+    fx.className = 'skill-ripple';
+    fx.style.left = (a.x - 85) + 'px';
+    fx.style.top = (a.y - 85) + 'px';
+    document.getElementById('fxLayer').appendChild(fx);
+    setTimeout(() => fx.remove(), 900);
+  },
+
+  // 判定翻牌
+  async judge(idx, card) {
+    const a = this.anchor(idx);
+    const isRed = card.suit === '♥' || card.suit === '♦';
+    const fx = document.createElement('div');
+    fx.className = 'judge-fx ' + (isRed ? 'red' : 'black');
+    fx.innerHTML = `<div class="jsuit">${card.suit}</div><div class="jnum">${card.num}</div><div class="jname">${card.name}</div>`;
+    fx.style.left = (a.x - 36) + 'px';
+    fx.style.top = (a.y - 52) + 'px';
+    document.getElementById('fxLayer').appendChild(fx);
+    Sound.play('judge');
+    await sleep(900);
+    fx.remove();
+  },
+
+  // AOE 扩散：南蛮 / 万箭
+  async aoe(fromIdx, kind) {
+    const from = this.anchor(fromIdx);
+    const label = kind === 'nanman' ? '蛮' : '箭';
+    const isArrow = kind === 'wanjian';
+    for (let i = 0; i < G.players.length; i++) {
+      if (i === fromIdx || !G.players[i].alive) continue;
+      const to = this.anchor(i);
+      const ring = document.createElement('div');
+      ring.className = 'aoe-ring' + (isArrow ? ' arrow' : '');
+      ring.textContent = label;
+      ring.style.left = (from.x - 22) + 'px';
+      ring.style.top = (from.y - 22) + 'px';
+      document.getElementById('fxLayer').appendChild(ring);
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      ring.animate([
+        { transform: 'translate(0,0) scale(.4)', opacity: 0 },
+        { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0.15 },
+        { transform: `translate(${dx*0.5}px, ${dy*0.5 - 50}px) scale(1.2)`, opacity: 1, offset: 0.6 },
+        { transform: `translate(${dx}px, ${dy}px) scale(1.4)`, opacity: 0 }
+      ], { duration: 540, easing: 'cubic-bezier(.4,0,.7,1)', fill: 'forwards' });
+      setTimeout(() => ring.remove(), 560);
+    }
+    await sleep(560);
+  },
+
+  // 阵亡
+  async death(idx) {
+    const a = this.anchor(idx);
+    const fx = document.createElement('div');
+    fx.className = 'death-fx';
+    fx.textContent = '☠ 阵亡';
+    fx.style.left = (a.x - 75) + 'px';
+    fx.style.top = (a.y - 30) + 'px';
+    document.getElementById('fxLayer').appendChild(fx);
+    Sound.play('death');
+    await sleep(1250);
+    fx.remove();
+  }
+};
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function floatTextFx(idx, text, color) {
+  const a = FX.anchor(idx);
+  const fx = document.createElement('div');
+  fx.className = 'float-text';
+  fx.textContent = text;
+  fx.style.color = color;
+  fx.style.left = (a.x - 20) + 'px';
+  fx.style.top = (a.y - 15) + 'px';
+  document.getElementById('fxLayer').appendChild(fx);
+  setTimeout(() => fx.remove(), 1150);
+}
+function shakeScreen(amp=6) {
+  const el = document.getElementById('screenGame');
+  if (!el) return;
+  el.classList.remove('screen-shake');
+  void el.offsetWidth;
+  el.classList.add('screen-shake');
+  setTimeout(() => el.classList.remove('screen-shake'), 450);
+}
+
+/* ============================================================
+   三、出牌展示区
+   ============================================================ */
+function showPlayCard(card, ownerName) {
+  const zone = document.getElementById('playZoneCards');
+  if (!zone) return;
+  const empty = zone.querySelector('.play-zone-empty');
+  if (empty) empty.remove();
+  const isRed = card.suit === '♥' || card.suit === '♦';
+  const cls = card.type === 'trick' ? 'trick' : (card.type === 'equip' ? 'equip' : (isRed ? 'red' : ''));
+  const el = document.createElement('div');
+  el.className = 'play-card ' + cls;
+  el.innerHTML = `<span class="pcsuit">${card.suit}</span>
+    <span class="pcnum">${card.num}</span>
+    <span class="pcname">${card.name}</span>
+    <span class="pcowner">${ownerName || ''}</span>`;
+  while (zone.children.length >= 6) zone.removeChild(zone.firstChild);
+  zone.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('fade-out');
+    setTimeout(() => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      if (zone.children.length === 0) {
+        zone.innerHTML = '<span class="play-zone-empty">— 牌桌中央 —</span>';
+      }
+    }, 460);
+  }, 2100);
+}
+function clearPlayZone() {
+  const zone = document.getElementById('playZoneCards');
+  if (zone) zone.innerHTML = '<span class="play-zone-empty">— 牌桌中央 —</span>';
+}
+
+/* ============================================================
+   四、题库
+   ============================================================ */
+const QUESTION_BANK={
+'初一':[
+{s:'英语',q:'—What’s this in English? —It’s ____ apple.',o:['a','an','the','/'],a:1},
+{s:'英语',q:'My sister ____ TV every evening.',o:['watch','watches','watching','to watch'],a:1},
+{s:'英语',q:'There ____ some milk in the glass.',o:['is','are','have','has'],a:0},
+{s:'英语',q:'I usually get up ____ 6:30.',o:['in','on','at','for'],a:2},
+{s:'英语',q:'Look! The children ____ football.',o:['play','plays','are playing','played'],a:2},
+{s:'语文',q:'“海内存知己，天涯若比邻”作者是（ ）',o:['李白','王勃','杜甫','王维'],a:1},
+{s:'语文',q:'《论语》记录（ ）及其弟子言行。',o:['孟子','孔子','老子','庄子'],a:1},
+{s:'语文',q:'下列词语无错别字的是（ ）',o:['翻来复去','各得其所','决别','分岐'],a:1},
+{s:'数学',q:'计算：(-3)+5 =（ ）',o:['-8','-2','2','8'],a:2},
+{s:'数学',q:'方程 2x-3=7 的解是（ ）',o:['x=2','x=3','x=4','x=5'],a:3},
+{s:'数学',q:'若 |a|=5，则 a =（ ）',o:['5','-5','±5','0'],a:2},
+{s:'生物',q:'植物光合作用的主要器官是（ ）',o:['根','茎','叶','花'],a:2},
+{s:'生物',q:'人体最大的消化腺是（ ）',o:['胰腺','肝脏','唾液腺','胃腺'],a:1},
+{s:'地理',q:'地球上最大的洋是（ ）',o:['太平洋','大西洋','印度洋','北冰洋'],a:0},
+{s:'地理',q:'本初子午线是（ ）',o:['0°纬线','0°经线','180°经线','90°经线'],a:1},
+{s:'历史',q:'秦朝统一中国的时间是（ ）',o:['公元前221年','公元前206年','公元220年','公元前256年'],a:0},
+{s:'历史',q:'“贞观之治”出现在（ ）统治时期',o:['唐高祖','唐太宗','唐玄宗','武则天'],a:1},
+],
+'初二':[
+{s:'英语',q:'If it ____ tomorrow, we will stay home.',o:['rain','rains','will rain','rained'],a:1},
+{s:'英语',q:'He is one of ____ students in our class.',o:['tall','taller','the tallest','tallest'],a:2},
+{s:'英语',q:'The Great Wall ____ long ago.',o:['built','was built','is built','builds'],a:1},
+{s:'英语',q:'She asked me ____ I had finished.',o:['that','if','what','which'],a:1},
+{s:'语文',q:'“忽如一夜春风来”作者是（ ）',o:['李白','岑参','杜甫','白居易'],a:1},
+{s:'语文',q:'《背影》的作者是（ ）',o:['鲁迅','朱自清','老舍','冰心'],a:1},
+{s:'语文',q:'“先天下之忧而忧”出自（ ）',o:['醉翁亭记','岳阳楼记','小石潭记','桃花源记'],a:1},
+{s:'数学',q:'直角三角形直角边 6、8，斜边为（ ）',o:['9','10','11','12'],a:1},
+{s:'数学',q:'下列是勾股数的是（ ）',o:['1,1,2','1.5,2,2.5','5,12,13','2,3,4'],a:2},
+{s:'数学',q:'y=2x+1 不经过（ ）',o:['第一象限','第二象限','第三象限','第四象限'],a:3},
+{s:'物理',q:'声音在下列介质中传播最快的是（ ）',o:['空气','水','钢铁','真空'],a:2},
+{s:'物理',q:'光在真空中的速度约为（ ）',o:['3×10⁵m/s','3×10⁶m/s','3×10⁷m/s','3×10⁸m/s'],a:3},
+{s:'物理',q:'属于光的反射的是（ ）',o:['小孔成像','水中倒影','海市蜃楼','雨后彩虹'],a:1},
+{s:'生物',q:'心脏壁最厚的腔是（ ）',o:['左心房','左心室','右心房','右心室'],a:1},
+{s:'生物',q:'遗传信息的载体是（ ）',o:['蛋白质','DNA','糖类','脂肪'],a:1},
+{s:'历史',q:'“精忠报国”说的是（ ）',o:['岳飞','文天祥','戚继光','郑成功'],a:0},
+{s:'历史',q:'秦始皇统一后推行的文字是（ ）',o:['甲骨文','小篆','隶书','楷书'],a:1},
+],
+'初三':[
+{s:'英语',q:'—Where is Tom? —He ____ to the library.',o:['has been','has gone','went','goes'],a:1},
+{s:'英语',q:'The book ____ I bought is interesting.',o:['who','whom','which','what'],a:2},
+{s:'英语',q:'If I ____ you, I would study harder.',o:['am','was','were','be'],a:2},
+{s:'英语',q:'The homework ____ every day.',o:['finish','finishes','is finished','are finished'],a:2},
+{s:'语文',q:'“长风破浪会有时”作者是（ ）',o:['杜甫','李白','苏轼','辛弃疾'],a:1},
+{s:'语文',q:'《范进中举》的作者是（ ）',o:['吴敬梓','曹雪芹','蒲松龄','鲁迅'],a:0},
+{s:'语文',q:'“醉翁之意不在酒”出自（ ）',o:['岳阳楼记','醉翁亭记','爱莲说','陋室铭'],a:1},
+{s:'数学',q:'x²-4=0 的解是（ ）',o:['x=2','x=-2','x=±2','x=4'],a:2},
+{s:'数学',q:'y=(x-1)²+2 的顶点是（ ）',o:['(1,2)','(-1,2)','(1,-2)','(-1,-2)'],a:0},
+{s:'数学',q:'x²+2x+k=0 有两个相等实根，k=（ ）',o:['0','1','2','-1'],a:1},
+{s:'物理',q:'R₁=10Ω 与 R₂=20Ω 串联接 6V，电流为（ ）',o:['0.2A','0.3A','0.4A','0.6A'],a:0},
+{s:'物理',q:'R₁=10Ω 与 R₂=20Ω 并联，总电阻为（ ）',o:['30Ω','15Ω','20/3Ω','10Ω'],a:2},
+{s:'物理',q:'发电机的工作原理是（ ）',o:['电流磁效应','电磁感应','磁场对电流作用','静电感应'],a:1},
+{s:'化学',q:'下列属于有机物的是（ ）',o:['Na₂O','C₂H₅OH','Ca(OH)₂','CaCO₃'],a:1},
+{s:'化学',q:'属于置换反应的是（ ）',o:['2H₂O₂→2H₂O+O₂↑','Zn+H₂SO₄→ZnSO₄+H₂↑','CH₄+O₂→CO₂+H₂O','Na₂CO₃+CaCl₂→CaCO₃↓+2NaCl'],a:1},
+{s:'化学',q:'属于碱的是（ ）',o:['H₂SO₄','KOH','HCl','CaCO₃'],a:1},
+{s:'化学',q:'空气中体积分数约 21% 的是（ ）',o:['氮气','氧气','二氧化碳','稀有气体'],a:1},
+{s:'历史',q:'第一次世界大战爆发于（ ）年',o:['1914','1918','1939','1945'],a:0},
+{s:'历史',q:'新文化运动的主要阵地是（ ）',o:['《申报》','《新青年》','《民报》','《时务报'],a:1},
+],
+};
+let SELECTED_GRADE='初二';
+document.getElementById('gradePicker').addEventListener('click', e=>{
+  const b=e.target.closest('.grade-btn'); if(!b) return;
+  Sound.play('click');
+  document.querySelectorAll('.grade-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); SELECTED_GRADE=b.dataset.grade;
+});
+
+/* ============================================================
+   五、教材人物
+   ============================================================ */
+const CHARACTERS=[
+{id:'luxun',name:'鲁迅',title:'文坛斗士',subject:'语文',hp:3,avatar:'📖',color:'#c0392b',
+  skills:[{id:'nah',name:'呐喊',type:'active',desc:'弃一张牌，令一名角色选择：弃一张牌或失去1点体力'},{id:'hengmei',name:'横眉',type:'trigger',desc:'当你受到伤害后，摸一张牌'}]},
+{id:'libai',name:'李白',title:'诗仙',subject:'语文',hp:4,avatar:'🌙',color:'#8e44ad',
+  skills:[{id:'jiangjinjiu',name:'将进酒',type:'active',desc:'摸两张牌，本回合不能使用【杀】'},{id:'shicheng',name:'诗成',type:'trigger',desc:'每当你使用锦囊牌，摸一张牌'}]},
+{id:'sushi',name:'苏轼',title:'东坡居士',subject:'语文',hp:4,avatar:'🎋',color:'#d35400',
+  skills:[{id:'shuidiao',name:'水调歌头',type:'active',desc:'弃一张牌，令一名角色回复1点体力'},{id:'kuangda',name:'旷达',type:'trigger',desc:'锁定技，判定牌为红桃时，摸一张牌'}]},
+{id:'zuchongzhi',name:'祖冲之',title:'圆周率之父',subject:'数学',hp:3,avatar:'⭕',color:'#2980b9',
+  skills:[{id:'milv',name:'密率',type:'active',desc:'弃一张牌，令一名角色判定，黑色则受到1点伤害'},{id:'zhuishu',name:'缀术',type:'trigger',desc:'锁定技，手牌上限+2'}]},
+{id:'hualuogeng',name:'华罗庚',title:'数学大师',subject:'数学',hp:4,avatar:'🔢',color:'#27ae60',
+  skills:[{id:'tongchou',name:'统筹',type:'active',desc:'将一张手牌交给一名其他角色，然后摸一张牌'},{id:'youxuan',name:'优选法',type:'trigger',desc:'摸牌阶段额外摸一张牌，然后弃一张牌'}]},
+{id:'gaosi',name:'高斯',title:'数学王子',subject:'数学',hp:4,avatar:'📐',color:'#16a085',
+  skills:[{id:'qiuhe',name:'求和',type:'active',desc:'令所有角色各摸一张牌'},{id:'gaosifenbu',name:'高斯分布',type:'trigger',desc:'锁定技，受到伤害时若来源手牌多于你，伤害-1'}]},
+{id:'niudun',name:'牛顿',title:'力学之父',subject:'物理',hp:4,avatar:'🍎',color:'#d35400',
+  skills:[{id:'wanyou',name:'万有引力',type:'trigger',desc:'锁定技，计算与其他角色距离-1'},{id:'sandadinglv',name:'三大定律',type:'trigger',desc:'当你使用【闪】时，摸一张牌'}]},
+{id:'einstein',name:'爱因斯坦',title:'相对论之父',subject:'物理',hp:3,avatar:'⚛️',color:'#f39c12',
+  skills:[{id:'xiangduilun',name:'相对论',type:'trigger',desc:'锁定技，使用【杀】时若目标手牌与你不同，此杀不可闪避'},{id:'zhineng',name:'质能方程',type:'active',desc:'弃一张牌，令一名角色失去1点体力'}]},
+{id:'ajimide',name:'阿基米德',title:'力学之父',subject:'物理',hp:4,avatar:'🛁',color:'#e67e22',
+  skills:[{id:'ganggan',name:'杠杆',type:'active',desc:'弃一张牌，获得一名角色装备区一张牌'},{id:'fuli',name:'浮力',type:'trigger',desc:'锁定技，受到伤害时若来源有装备牌，伤害-1'}]},
+{id:'menjieliefu',name:'门捷列夫',title:'元素周期表之父',subject:'化学',hp:4,avatar:'⚗️',color:'#9b59b6',
+  skills:[{id:'zhouqilv',name:'周期律',type:'active',desc:'令所有角色各摸一张牌'},{id:'yuansu',name:'元素',type:'trigger',desc:'锁定技，手牌上限+1'}]},
+{id:'lawaxi',name:'拉瓦锡',title:'近代化学之父',subject:'化学',hp:3,avatar:'🔥',color:'#e74c3c',
+  skills:[{id:'zhiliang',name:'质量守恒',type:'trigger',desc:'每当你使用锦囊牌时，摸一张牌'},{id:'ranshao',name:'燃烧',type:'active',desc:'弃一张红色牌，对一名角色造成1点伤害'}]},
+{id:'shashibiya',name:'莎士比亚',title:'戏剧大师',subject:'英语',hp:3,avatar:'🎭',color:'#34495e',
+  skills:[{id:'shisihang',name:'十四行诗',type:'active',desc:'令一名角色选择：交给你一张手牌，或失去1点体力'},{id:'hamuleite',name:'哈姆雷特',type:'trigger',desc:'受到伤害后，令伤害来源弃一张牌'}]},
+{id:'qinshihuang',name:'秦始皇',title:'千古一帝',subject:'历史',hp:4,avatar:'👑',color:'#c0392b',
+  skills:[{id:'tongyi',name:'统一',type:'active',desc:'令所有其他角色各弃一张牌'},{id:'fenshu',name:'焚书',type:'trigger',desc:'锁定技，你不能成为锦囊牌的目标'}]},
+{id:'yuefei',name:'岳飞',title:'精忠报国',subject:'历史',hp:4,avatar:'⚔️',color:'#27ae60',
+  skills:[{id:'jingzhong',name:'精忠',type:'trigger',desc:'锁定技，使用【杀】造成伤害时伤害+1'},{id:'moxuyou',name:'莫须有',type:'trigger',desc:'受到伤害后，摸一张牌'}]},
+];
+let SELECTED_CHAR=CHARACTERS[0];
+const ROLES={lord:{name:'主公',color:'#f5c542'},loyal:{name:'忠臣',color:'#27ae60'},rebel:{name:'反贼',color:'#e74c3c'},spy:{name:'内奸',color:'#9b59b6'}};
+
+function renderCharPicker(){
+  const grid=document.getElementById('charGrid');
+  grid.innerHTML=CHARACTERS.map(c=>`
+    <div class="char-card ${c.id===SELECTED_CHAR.id?'selected':''}" data-id="${c.id}" onclick="selectChar('${c.id}')">
+      <div class="ctop"><span class="cavatar">${c.avatar}</span>
+        <div><div class="cname">${c.name}</div><div class="ctitle">${c.title}</div></div></div>
+      <div class="csubject">${c.subject} · 体力${c.hp}</div>
+      <div class="cskill">${c.skills.map(s=>`<b>${s.name}</b>：${s.desc}`).join('<br>')}</div>
+    </div>
+  `).join('');
+}
+function selectChar(id){Sound.play('click');SELECTED_CHAR=CHARACTERS.find(c=>c.id===id);renderCharPicker()}
+
+/* ============================================================
+   六、卡牌
+   ============================================================ */
+const SUITS=['♠','♥','♣','♦'];let cid=0;
+function C(name,type,sub,suit,num,extra={}){return{id:++cid,name,type,sub,suit,num,...extra}}
+function buildDeck(){
+  const d=[];
+  for(let i=0;i<30;i++)d.push(C('杀','basic','sha',SUITS[i%4],i%13+1));
+  for(let i=0;i<15;i++)d.push(C('闪','basic','shan',SUITS[i%4],i%13+1));
+  for(let i=0;i<8;i++)d.push(C('桃','basic','tao',SUITS[i%4],i%13+1));
+  for(let i=0;i<5;i++)d.push(C('酒','basic','jiu',SUITS[i%4],i%13+1));
+  const tr=[['无中生有','wuzhong',4],['过河拆桥','guohe',6],['顺手牵羊','shunshou',5],['决斗','juedou',3],['南蛮入侵','nanman',3],['万箭齐发','wanjian',1],['桃园结义','taoyuan',1],['无懈可击','wuxie',4],['乐不思蜀','lebu',3],['闪电','shandian',2]];
+  tr.forEach(([n,s,c])=>{for(let i=0;i<c;i++)d.push(C(n,'trick',s,SUITS[i%4],i%13+1))});
+  const eq=[['诸葛连弩','weapon',{range:1,skill:'liannu'},1],['青龙偃月刀','weapon',{range:3,skill:'qinglong'},1],['丈八蛇矛','weapon',{range:3,skill:'zhangba'},1],['八卦阵','armor',{skill:'bagua'},2],['仁王盾','armor',{skill:'renwang'},1],['+1马','horse+',{dist:1},3],['-1马','horse-',{dist:1},3]];
+  eq.forEach(([n,s,e,c])=>{for(let i=0;i<c;i++)d.push(C(n,'equip',s,SUITS[i%4],i%13+1,e))});
+  for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}
+  return d;
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
+
+/* ============================================================
+   七、游戏状态
+   ============================================================ */
+const G={players:[],deck:[],discard:[],current:0,started:false,log:[],grade:'初二',myIndex:0,
+  pendingOptions:null,pendingResolve:null,busy:false,gameOver:false,winnerText:''};
+
+function addLog(t,cls=''){G.log.push({t,cls});if(G.log.length>80)G.log.shift();renderLog()}
+function renderLog(){
+  const el=document.getElementById('gameLog');if(!el)return;
+  el.innerHTML=G.log.map(l=>`<div class="${l.cls}">${l.t}</div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function pickQ(player){
+  const bank=QUESTION_BANK[G.grade]||QUESTION_BANK['初二'];
+  if(player&&player.subject&&Math.random()<0.7){
+    const sub=bank.filter(q=>q.s===player.subject);
+    if(sub.length)return sub[Math.floor(Math.random()*sub.length)];
+  }
+  return bank[Math.floor(Math.random()*bank.length)];
+}
+function hasSkill(p,id){return p.skills&&p.skills.some(s=>s.id===id)}
+
+function seatDist(a,b){const n=G.players.length;return Math.min(Math.abs(a-b),n-Math.abs(a-b))}
+function distBetween(fromIdx,toIdx){
+  let d=seatDist(fromIdx,toIdx);
+  const from=G.players[fromIdx],to=G.players[toIdx];
+  if(to.equip.horsePlus)d+=1;
+  if(from.equip.horseMinus)d-=1;
+  if(hasSkill(from,'wanyou'))d-=1;
+  return Math.max(1,d);
+}
+function attackRange(p){return p.equip.weapon?(p.equip.weapon.range||1):1}
+function inRange(fromIdx,toIdx){return distBetween(fromIdx,toIdx)<=attackRange(G.players[fromIdx])}
+
+function drawCards(p,n){
+  for(let i=0;i<n;i++){
+    if(G.deck.length===0){if(G.discard.length===0)break;G.deck=G.discard;G.discard=[];shuffle(G.deck)}
+    const c=G.deck.pop();if(c)p.hand.push(c);
+  }
+  if(n>0)Sound.play('draw');
+}
+function discardCard(p,card,toDiscard=true){
+  const i=p.hand.findIndex(c=>c.id===card.id);
+  if(i>=0){p.hand.splice(i,1);if(toDiscard)G.discard.push(card)}
+}
+function handLimit(p){let l=Math.max(p.hp,0);if(hasSkill(p,'zhuishu'))l+=2;if(hasSkill(p,'yuansu'))l+=1;return l}
+
+/* ============================================================
+   八、选择等待
+   ============================================================ */
+function waitChoice(options){
+  return new Promise(resolve=>{
+    G.pendingOptions=options;G.pendingResolve=resolve;render();
+  });
+}
+function resolveChoice(v){
+  Sound.play('click');
+  if(!G.pendingResolve)return;
+  const r=G.pendingResolve;G.pendingResolve=null;G.pendingOptions=null;r(v);render();
+}
+
+/* ============================================================
+   九、答题
+   ============================================================ */
+let quizResolve=null;
+function askQuiz(player){
+  const q=pickQ(player);
+  return new Promise(resolve=>{
+    quizResolve=resolve;
+    document.getElementById('quizSubject').textContent='【'+q.s+'】';
+    document.getElementById('quizQuestion').textContent=q.q;
+    const opts=document.getElementById('quizOptions');
+    opts.innerHTML=q.o.map((o,i)=>`<button class="quiz-option" data-i="${i}"><span class="tag">${String.fromCharCode(65+i)}</span>${o}</button>`).join('');
+    document.getElementById('quizFeedback').textContent='';
+    opts.querySelectorAll('.quiz-option').forEach(btn=>{
+      btn.onclick=()=>{
+        const i=Number(btn.dataset.i);
+        opts.querySelectorAll('.quiz-option').forEach(b=>{b.disabled=true;if(Number(b.dataset.i)===q.a)b.classList.add('correct')});
+        if(i!==q.a)btn.classList.add('wrong');
+        const fb=document.getElementById('quizFeedback');
+        fb.textContent=i===q.a?'✓ 答对':'✗ 正确答案是 '+String.fromCharCode(65+q.a);
+        fb.style.color=i===q.a?'#1e7a3a':'#a02020';
+        Sound.play(i===q.a?'correct':'wrong');
+        setTimeout(()=>{
+          document.getElementById('quizModal').classList.remove('show');
+          if(quizResolve){const r=quizResolve;quizResolve=null;r(i===q.a)}
+        },700);
+      };
+    });
+    document.getElementById('quizModal').classList.add('show');
+  });
+}
+function aiQuiz(rate=0.6){return Math.random()<rate}
+
+/* ============================================================
+   十、伤害与濒死
+   ============================================================ */
+async function dealDamage(srcIdx,tgtIdx,amount,type='normal'){
+  const tgt=G.players[tgtIdx];
+  if(!tgt||!tgt.alive)return;
+  let dmg=amount;
+  if(hasSkill(tgt,'fuli')&&srcIdx>=0){
+    const src=G.players[srcIdx];
+    if(src.equip.weapon||src.equip.armor||src.equip.horsePlus||src.equip.horseMinus){dmg=Math.max(0,dmg-1);addLog(`【浮力】${tgt.name} 减免 1 点伤害`,'heal')}
+  }
+  if(hasSkill(tgt,'gaosifenbu')&&srcIdx>=0){
+    const src=G.players[srcIdx];
+    if(src.hand.length>tgt.hand.length){dmg=Math.max(0,dmg-1);addLog(`【高斯分布】${tgt.name} 减免 1 点伤害`,'heal')}
+  }
+  while(dmg>0&&tgt.knowledge>=2){tgt.knowledge-=2;dmg--;addLog(`${tgt.name} 消耗 2 学识抵挡 1 点伤害`,'heal')}
+  if(dmg>0){
+    if(type==='thunder'){
+      await FX.lightning(tgtIdx);
+    }else{
+      // 斩击 + 伤害数字同时
+      FX.slash(tgtIdx);
+      shakeScreen(Math.min(10,4+dmg*2));
+    }
+    floatTextFx(tgtIdx,'-'+dmg, type==='thunder' ? '#4af' : '#ff3b30');
+    Sound.play('hit');
+    tgt.hp-=dmg;
+    addLog(`${tgt.name} 受到 ${dmg} 点${type==='thunder'?'雷电':''}伤害`,'dmg');
+    render();
+    if(tgt.alive){
+      if(hasSkill(tgt,'hengmei')){drawCards(tgt,1);addLog(`【横眉】${tgt.name} 摸一张牌`,'hl')}
+      if(hasSkill(tgt,'moxuyou')){drawCards(tgt,1);addLog(`【莫须有】${tgt.name} 摸一张牌`,'hl')}
+      if(hasSkill(tgt,'hamuleite')&&srcIdx>=0){
+        const src=G.players[srcIdx];
+        if(src.hand.length>0){const c=src.hand[Math.floor(Math.random()*src.hand.length)];discardCard(src,c);addLog(`【哈姆雷特】${src.name} 弃一张牌`,'dmg')}
+      }
+    }
+    if(tgt.hp<=0)await dyingPhase(tgtIdx,srcIdx);
+  }
+  render();checkWin();
+}
+
+async function dyingPhase(idx,srcIdx){
+  const p=G.players[idx];if(!p.alive)return;
+  while(p.hp<=0){
+    if(p.isAI){
+      const tao=p.hand.find(c=>c.sub==='tao');
+      if(tao){discardCard(p,tao);p.hp++;addLog(`${p.name} 使用【桃】自救`,'heal');FX.healGlow(idx);Sound.play('tao');continue}
+      let saved=false;
+      for(let i=0;i<G.players.length;i++){
+        const q=G.players[i];
+        if(i===idx||!q.alive||!q.isAI)continue;
+        if(shouldSave(q,p)){
+          const t2=q.hand.find(c=>c.sub==='tao');
+          if(t2){discardCard(q,t2);p.hp++;addLog(`${q.name} 使用【桃】救 ${p.name}`,'heal');FX.healGlow(idx);Sound.play('tao');saved=true;break}
+        }
+      }
+      if(!saved){p.alive=false;p.roleRevealed=true;addLog(`${p.name} 阵亡，身份【${ROLES[p.role].name}】`,'dmg');await FX.death(idx);break}
+    }else{
+      const opts=[];
+      p.hand.filter(c=>c.sub==='tao'||c.sub==='jiu').forEach(c=>opts.push({label:`使用【${c.name}】自救`,value:'card_'+c.id}));
+      if(p.knowledge>=1)opts.push({label:'消耗 1 学识自救',value:'know'});
+      opts.push({label:'放弃',value:'giveup'});
+      const ch=await waitChoice(opts);
+      if(ch==='giveup'){p.alive=false;p.roleRevealed=true;addLog(`${p.name} 阵亡，身份【${ROLES[p.role].name}】`,'dmg');await FX.death(idx);break}
+      if(ch==='know'){p.knowledge--;p.hp++;addLog(`${p.name} 消耗学识自救`,'heal');FX.healGlow(idx);Sound.play('tao');continue}
+      if(ch.startsWith('card_')){
+        const id=Number(ch.slice(5));const c=p.hand.find(x=>x.id===id);
+        if(c){discardCard(p,c);p.hp++;addLog(`${p.name} 使用【${c.name}】自救`,'heal');FX.healGlow(idx);Sound.play('tao');continue}
+      }
+    }
+  }
+  render();
+}
+function shouldSave(healer,target){
+  const h=healer.role,t=target.role;
+  if(h==='lord'||h==='loyal')return t==='lord'||t==='loyal';
+  if(h==='rebel')return t==='rebel';
+  return false;
+}
+function checkWin(){
+  if(G.gameOver)return;
+  const alive=G.players.filter(p=>p.alive);
+  const lord=G.players.find(p=>p.role==='lord');
+  const rebelsAlive=alive.some(p=>p.role==='rebel');
+  const spiesAlive=alive.some(p=>p.role==='spy');
+  if(!lord.alive){
+    if(!rebelsAlive&&spiesAlive&&alive.length===1&&alive[0].role==='spy'){G.gameOver=true;G.winnerText='内奸获胜'}
+    else{G.gameOver=true;G.winnerText='反贼获胜'}
+    addLog('⚑ '+G.winnerText,'hl');Sound.play('win');return;
+  }
+  if(!rebelsAlive&&!spiesAlive){G.gameOver=true;G.winnerText='主公与忠臣获胜';addLog('⚑ '+G.winnerText,'hl');Sound.play('win')}
+}
+
+/* ============================================================
+   十一、响应闪
+   ============================================================ */
+async function requestShan(targetIdx,srcIdx){
+  const t=G.players[targetIdx];
+  if(srcIdx>=0&&hasSkill(G.players[srcIdx],'xiangduilun')){
+    const src=G.players[srcIdx];
+    if(src.hand.length!==t.hand.length){addLog(`【相对论】此杀不可闪避`,'hl');return false}
+  }
+  if(t.isAI){
+    const shan=t.hand.find(c=>c.sub==='shan');
+    if(shan){
+      discardCard(t,shan);addLog(`${t.name} 打出【闪】`);
+      await FX.flyCard(targetIdx,targetIdx,'闪','trick',340);
+      await FX.shield(targetIdx);Sound.play('shan');
+      if(hasSkill(t,'sandadinglv')){drawCards(t,1);addLog(`【三大定律】${t.name} 摸一张牌`,'hl')}
+      return true;
+    }
+    if(t.knowledge>=1&&aiQuiz()){
+      t.knowledge--;addLog(`${t.name} 消耗学识当闪`);
+      await FX.shield(targetIdx);Sound.play('shan');return true;
+    }
+    return false;
+  }
+  const opts=[];
+  t.hand.filter(c=>c.sub==='shan').forEach(c=>opts.push({label:`出【闪】(${c.suit}${c.num})`,value:'card_'+c.id}));
+  if(t.knowledge>=1)opts.push({label:'消耗 1 学识当闪',value:'know'});
+  opts.push({label:'答题免伤',value:'quiz'});
+  opts.push({label:'承受伤害',value:'none'});
+  const ch=await waitChoice(opts);
+  if(ch==='none')return false;
+  if(ch==='know'){
+    t.knowledge--;addLog(`${t.name} 消耗学识当闪`);
+    await FX.shield(targetIdx);Sound.play('shan');return true;
+  }
+  if(ch==='quiz'){
+    const ok=await askQuiz(t);
+    if(ok){addLog(`${t.name} 答对，视为闪`,'hl');await FX.shield(targetIdx);Sound.play('shan');return true}
+    addLog(`${t.name} 答错`,'dmg');return false;
+  }
+  if(ch.startsWith('card_')){
+    const id=Number(ch.slice(5));const c=t.hand.find(x=>x.id===id);
+    if(c){
+      discardCard(t,c);addLog(`${t.name} 打出【闪】`);
+      await FX.flyCard(targetIdx,targetIdx,'闪','trick',340);
+      await FX.shield(targetIdx);Sound.play('shan');
+      if(hasSkill(t,'sandadinglv')){drawCards(t,1);addLog(`【三大定律】${t.name} 摸一张牌`,'hl')}
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ============================================================
+   十二、使用卡牌（含动作动画）
+   ============================================================ */
+async function useSha(attackerIdx,targetIdx){
+  const a=G.players[attackerIdx],t=G.players[targetIdx];
+  const hasLiannu=a.equip.weapon&&a.equip.weapon.skill==='liannu';
+  if(!hasLiannu&&a.flags.shaUsed>=1){addLog('本回合已使用过【杀】');return}
+  a.flags.shaUsed=(a.flags.shaUsed||0)+1;
+  addLog(`${a.name} 对 ${t.name} 使用【杀】`);
+
+  // 攻击者前冲 → 杀牌沿弧线飞向目标
+  FX.attackLunge(attackerIdx);
+  Sound.play('sha');
+  showPlayCard({name:'杀',suit:'♠',num:'?',type:'basic'},a.name);
+  await FX.flyCard(attackerIdx,targetIdx,'杀','basic');
+
+  // 仁王盾
+  if(t.equip.armor&&t.equip.armor.skill==='renwang'&&Math.random()<0.5){
+    addLog(`${t.name} 的【仁王盾】抵消了黑色杀`,'heal');
+    await FX.shield(targetIdx);Sound.play('shan');return;
+  }
+  // 八卦阵
+  if(t.equip.armor&&t.equip.armor.skill==='bagua'&&Math.random()<0.5){
+    addLog(`${t.name} 的【八卦阵】判定为红色，视为出闪`,'heal');
+    await FX.shield(targetIdx);Sound.play('shan');return;
+  }
+
+  const dodged=await requestShan(targetIdx,attackerIdx);
+  if(dodged)return;
+
+  let dmg=1;
+  if(hasSkill(a,'jingzhong'))dmg+=1;
+  if(a.flags.extraDamage){dmg+=a.flags.extraDamage;a.flags.extraDamage=0}
+  await dealDamage(attackerIdx,targetIdx,dmg);
+
+  if(a.equip.weapon&&a.equip.weapon.skill==='qinglong'&&t.alive&&Math.random()<0.5){
+    addLog(`【青龙偃月刀】效果触发`);
+    const sha=a.hand.find(c=>c.sub==='sha');
+    if(sha){discardCard(a,sha);await useSha(attackerIdx,targetIdx)}
+  }
+}
+
+async function useTao(idx){
+  const p=G.players[idx];
+  if(p.hp>=p.maxHp){addLog('体力已满');return}
+  p.hp++;
+  addLog(`${p.name} 使用【桃】回复 1 点体力`,'heal');
+  showPlayCard({name:'桃',suit:'♥',num:'?',type:'basic'},p.name);
+  // 治疗光球从自身飞出再回来
+  const a=FX.anchor(idx);
+  const ball=document.createElement('div');
+  ball.className='heal-ball';
+  ball.style.left=(a.x-16)+'px';ball.style.top=(a.y-16)+'px';
+  document.getElementById('fxLayer').appendChild(ball);
+  const anim=ball.animate([
+    {transform:'translate(0,0) scale(.4)',opacity:0},
+    {transform:'translate(0,-70px) scale(1.1)',opacity:1,offset:.4},
+    {transform:'translate(0,0) scale(.6)',opacity:0}
+  ],{duration:620,easing:'cubic-bezier(.4,0,.6,1)',fill:'forwards'});
+  anim.finished.then(()=>{ball.remove();FX.healGlow(idx);floatTextFx(idx,'+1','#27ae60')});
+  Sound.play('tao');
+  render();
+}
+
+async function useJiu(idx){
+  const p=G.players[idx];
+  p.flags.extraDamage=(p.flags.extraDamage||0)+1;
+  addLog(`${p.name} 使用【酒】，下一张杀伤害+1`,'hl');
+  Sound.play('jiu');
+  showPlayCard({name:'酒',suit:'♠',num:'?',type:'basic'},p.name);
+  // 酒：角色周围冒红色气浪
+  FX.skillWave(idx);
+}
+
+async function useTrick(attackerIdx,card,targetIdx){
+  const a=G.players[attackerIdx];
+  addLog(`${a.name} 使用【${card.name}】`);
+  Sound.play('trick');
+  showPlayCard(card,a.name);
+
+  if(hasSkill(a,'shicheng')){drawCards(a,1);addLog(`【诗成】${a.name} 摸一张牌`,'hl')}
+  if(hasSkill(a,'zhiliang')){drawCards(a,1);addLog(`【质量守恒】${a.name} 摸一张牌`,'hl')}
+  render();
+
+  switch(card.sub){
+    case 'wuzhong': {
+      // 无中生有：牌飞到自己
+      await FX.flyCard(attackerIdx,attackerIdx,'有','trick',420);
+      drawCards(a,2);addLog(`${a.name} 摸 2 张牌`);break;
+    }
+    case 'guohe': {
+      if(targetIdx!=null){
+        await FX.flyCard(attackerIdx,targetIdx,'拆','trick');
+        await discardTargetCard(targetIdx,attackerIdx,'弃置');
+      }
+      break;
+    }
+    case 'shunshou': {
+      if(targetIdx!=null){
+        await FX.flyCard(attackerIdx,targetIdx,'顺','trick');
+        await discardTargetCard(targetIdx,attackerIdx,'获得');
+      }
+      break;
+    }
+    case 'juedou': {
+      if(targetIdx==null)break;
+      let def=G.players[targetIdx],ai=attackerIdx,di=targetIdx;
+      // 决斗：双方来回飞杀
+      while(true){
+        const sha=def.hand.find(c=>c.sub==='sha');
+        if(sha){
+          discardCard(def,sha);addLog(`${def.name} 打出【杀】`);
+          Sound.play('sha');
+          FX.attackLunge(di);
+          await FX.flyCard(di,ai,'杀','basic',420);
+          [ai,di]=[di,ai];def=G.players[di];
+        }else{
+          await dealDamage(ai,di,1);break;
+        }
+      }
+      break;
+    }
+    case 'nanman': {
+      // 南蛮：从施放者向所有目标扩散“蛮”标记
+      await FX.aoe(attackerIdx,'nanman');
+      for(let i=0;i<G.players.length;i++){
+        if(i===attackerIdx||!G.players[i].alive)continue;
+        const t=G.players[i];
+        if(hasSkill(t,'fenshu')){addLog(`【焚书】${t.name} 不受锦囊影响`);continue}
+        const sha=t.hand.find(c=>c.sub==='sha');
+        if(sha){discardCard(t,sha);addLog(`${t.name} 打出【杀】抵挡`);Sound.play('sha')}
+        else await dealDamage(attackerIdx,i,1);
+      }
+      break;
+    }
+    case 'wanjian': {
+      // 万箭：从施放者向所有目标扩散“箭”标记
+      await FX.aoe(attackerIdx,'wanjian');
+      for(let i=0;i<G.players.length;i++){
+        if(i===attackerIdx||!G.players[i].alive)continue;
+        const t=G.players[i];
+        if(hasSkill(t,'fenshu')){addLog(`【焚书】${t.name} 不受锦囊影响`);continue}
+        const shan=t.hand.find(c=>c.sub==='shan');
+        if(shan){discardCard(t,shan);addLog(`${t.name} 打出【闪】抵挡`);await FX.shield(i);Sound.play('shan')}
+        else await dealDamage(attackerIdx,i,1);
+      }
+      break;
+    }
+    case 'taoyuan': {
+      // 桃园结义：对每位受伤角色投一个治疗球
+      for(const p of G.players){
+        if(p.alive&&p.hp<p.maxHp){
+          p.hp++;addLog(`${p.name} 回复 1 点体力`,'heal');
+          const tIdx=G.players.indexOf(p);
+          FX.heal(attackerIdx,tIdx);
+          Sound.play('tao');
+        }
+      }
+      break;
+    }
+    case 'lebu': {
+      if(targetIdx==null)break;
+      if(hasSkill(G.players[targetIdx],'fenshu')){addLog('【焚书】目标免疫');break}
+      await FX.flyCard(attackerIdx,targetIdx,'乐','trick');
+      G.players[targetIdx].judge.push({...card,judgeType:'lebu'});
+      addLog(`【乐不思蜀】置于 ${G.players[targetIdx].name} 判定区`);break;
+    }
+    case 'shandian': {
+      a.judge.push({...card,judgeType:'shandian'});
+      addLog(`【闪电】置于 ${a.name} 判定区`);break;
+    }
+    case 'wuxie': break;
+  }
+  render();
+}
+
+async function discardTargetCard(targetIdx,srcIdx,mode){
+  const t=G.players[targetIdx];
+  if(hasSkill(t,'fenshu')){addLog(`【焚书】${t.name} 不受锦囊影响`);return}
+  const opts=[];
+  if(t.hand.length>0)opts.push({label:`手牌（${t.hand.length}张）`,value:'hand'});
+  if(t.equip.weapon)opts.push({label:`武器：${t.equip.weapon.name}`,value:'weapon'});
+  if(t.equip.armor)opts.push({label:`防具：${t.equip.armor.name}`,value:'armor'});
+  if(t.equip.horsePlus)opts.push({label:'+1马',value:'horsePlus'});
+  if(t.equip.horseMinus)opts.push({label:'-1马',value:'horseMinus'});
+  if(t.judge.length>0)opts.push({label:`判定区（${t.judge.length}张）`,value:'judge'});
+  if(opts.length===0)return;
+  const src=G.players[srcIdx];
+  let ch;
+  if(src.isAI)ch=opts[Math.floor(Math.random()*opts.length)].value;
+  else ch=await waitChoice(opts);
+  if(ch==='hand'){
+    const c=t.hand[Math.floor(Math.random()*t.hand.length)];
+    discardCard(t,c);addLog(`${src.name} ${mode}了 ${t.name} 一张手牌`);
+    if(mode==='获得')src.hand.push(c);
+  }else if(ch==='judge'){
+    const c=t.judge.shift();G.discard.push(c);addLog(`${src.name} ${mode}了 ${t.name} 判定区一张牌`);
+  }else{
+    const c=t.equip[ch];if(c){t.equip[ch]=null;G.discard.push(c);addLog(`${src.name} ${mode}了 ${t.name} 的【${c.name}】`)}
+  }
+  render();
+}
+
+/* ============================================================
+   十三、主动技能
+   ============================================================ */
+async function useActiveSkill(idx,skillId){
+  const p=G.players[idx];
+  if(p.flags.skillUsed){addLog('本回合已使用过主动技能');return}
+  const sk=p.skills.find(s=>s.id===skillId);
+  addLog(`【${sk.name}】${p.name} 发动技能`,'hl');
+  Sound.play('skill');
+  FX.skillWave(idx);
+  showPlayCard({name:sk.name,suit:'✦',num:'',type:'trick'},p.name);
+  switch(skillId){
+    case 'nah':{
+      if(p.hand.length===0){addLog('没有手牌可弃');return}
+      const c=p.hand[0];discardCard(p,c);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);
+      if(targets.length===0)break;
+      let ti;
+      if(p.isAI)ti=targets[Math.floor(Math.random()*targets.length)].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      const t=G.players[ti];
+      if(t.hand.length>0){const tc=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,tc);addLog(`${t.name} 弃一张牌`)}
+      else await dealDamage(-1,ti,1);
+      break;
+    }
+    case 'jiangjinjiu':{drawCards(p,2);p.flags.noSha=true;addLog(`${p.name} 摸两张牌，本回合不能使用【杀】`);break}
+    case 'shuidiao':{
+      if(p.hand.length===0){addLog('没有手牌可弃');return}
+      const c=p.hand[0];discardCard(p,c);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive);
+      let ti;
+      if(p.isAI)ti=targets[0].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      const t=G.players[ti];
+      if(t.hp<t.maxHp){t.hp++;addLog(`${t.name} 回复 1 点体力`,'heal');await FX.heal(idx,ti);Sound.play('tao')}else addLog(`${t.name} 体力已满`);
+      break;
+    }
+    case 'milv':{
+      if(p.hand.length===0){addLog('没有手牌可弃');return}
+      const c=p.hand[0];discardCard(p,c);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);
+      let ti;
+      if(p.isAI)ti=targets[Math.floor(Math.random()*targets.length)].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      const t=G.players[ti];
+      const jc=G.deck.pop()||C('判定','basic','none','♠',1);
+      addLog(`${t.name} 判定：${jc.suit}${jc.num}`,'hl');
+      await FX.judge(ti,jc);
+      if(jc.suit==='♠'||jc.suit==='♣')await dealDamage(idx,ti,1);
+      else addLog('判定为红色，密率未生效');
+      G.discard.push(jc);
+      break;
+    }
+    case 'tongchou':{
+      if(p.hand.length===0){addLog('没有手牌');return}
+      const c=p.hand[0];discardCard(p,c,false);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);
+      let ti;
+      if(p.isAI)ti=targets[0].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));ti=await waitChoice(opts)}
+      const t=G.players[ti];t.hand.push(c);drawCards(p,1);
+      addLog(`将一张手牌交给 ${t.name}，然后摸一张牌`);break;
+    }
+    case 'qiuhe':{for(const q of G.players){if(q.alive)drawCards(q,1)}addLog('所有角色各摸一张牌');break}
+    case 'zhineng':{
+      if(p.hand.length===0){addLog('没有手牌可弃');return}
+      const c=p.hand[0];discardCard(p,c);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);
+      let ti;
+      if(p.isAI)ti=targets[Math.floor(Math.random()*targets.length)].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      await dealDamage(-1,ti,1);
+      break;
+    }
+    case 'ganggan':{
+      if(p.hand.length===0){addLog('没有手牌可弃');return}
+      const c=p.hand[0];discardCard(p,c);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx&&(x.q.equip.weapon||x.q.equip.armor||x.q.equip.horsePlus||x.q.equip.horseMinus));
+      if(targets.length===0){addLog('没有可获取的装备');return}
+      let ti;
+      if(p.isAI)ti=targets[0].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      const t=G.players[ti];const keys=['weapon','armor','horsePlus','horseMinus'];
+      const k=keys.find(k=>t.equip[k]);
+      if(k){const ec=t.equip[k];t.equip[k]=null;p.hand.push(ec);addLog(`${p.name} 获得 ${t.name} 的【${ec.name}】`)}
+      break;
+    }
+    case 'zhouqilv':{for(const q of G.players){if(q.alive)drawCards(q,1)}addLog('所有角色各摸一张牌');break}
+    case 'ranshao':{
+      const red=p.hand.find(c=>c.suit==='♥'||c.suit==='♦');
+      if(!red){addLog('没有红色手牌可弃');return}
+      discardCard(p,red);
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);
+      let ti;
+      if(p.isAI)ti=targets[Math.floor(Math.random()*targets.length)].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      await FX.flyCard(idx,ti,'火','trick');
+      await dealDamage(idx,ti,1);
+      break;
+    }
+    case 'shisihang':{
+      const targets=G.players.map((q,i)=>({q,i})).filter(x=>x.q.alive&&x.i!==idx);
+      if(targets.length===0)break;
+      let ti;
+      if(p.isAI)ti=targets[Math.floor(Math.random()*targets.length)].i;
+      else{const opts=targets.map(x=>({label:x.q.name,value:x.i}));opts.push({label:'取消',value:-1});ti=await waitChoice(opts);if(ti<0)return}
+      const t=G.players[ti];
+      if(t.hand.length>0){
+        const c=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,c,false);p.hand.push(c);
+        addLog(`${t.name} 交给 ${p.name} 一张手牌`);
+        await FX.flyCard(ti,idx,'牌','trick',420);
+      }else await dealDamage(-1,ti,1);
+      break;
+    }
+    case 'tongyi':{
+      for(let i=0;i<G.players.length;i++){
+        if(i===idx||!G.players[i].alive)continue;
+        const t=G.players[i];
+        if(t.hand.length>0){const c=t.hand[Math.floor(Math.random()*t.hand.length)];discardCard(t,c);addLog(`${t.name} 弃一张牌`)}
+      }
+      break;
+    }
+  }
+  p.flags.skillUsed=true;
+  render();
+}
+
+/* ============================================================
+   十四、回合流程
+   ============================================================ */
+async function runTurn(idx){
+  const p=G.players[idx];if(!p.alive)return;
+  p.flags.shaUsed=0;p.flags.skillUsed=false;p.flags.extraDamage=0;p.flags.noSha=false;
+  G.current=idx;
+  addLog(`—— ${p.name} 的回合 ——`,'hl');
+  Sound.play('turn');
+  render();
+  await judgePhase(p);
+  let drawN=2;
+  if(hasSkill(p,'youxuan'))drawN+=1;
+  drawCards(p,drawN);
+  addLog(`${p.name} 摸 ${drawN} 张牌`);
+  if(hasSkill(p,'youxuan')&&p.hand.length>0){const c=p.hand[0];discardCard(p,c);addLog(`【优选法】${p.name} 弃一张牌`)}
+  render();
+  if(p.isAI){
+    if(aiQuiz()){drawCards(p,1);p.knowledge++;addLog(`${p.name} 参悟成功，摸 1 张并获得 1 学识`,'hl')}
+    else addLog(`${p.name} 参悟失败`);
+  }else{
+    const ch=await waitChoice([{label:'参悟答题（答对多摸 1 张 + 1 学识）',value:'quiz'},{label:'跳过',value:'skip'}]);
+    if(ch==='quiz'){
+      const ok=await askQuiz(p);
+      if(ok){drawCards(p,1);p.knowledge++;addLog('参悟成功！摸 1 张并获得 1 学识','hl')}
+      else addLog('参悟失败','dmg');
+    }
+  }
+  render();
+  if(p.alive&&!p.flags.skipPlay)await playPhase(idx);
+  if(p.alive)await discardPhase(p);
+  render();
+}
+
+async function judgePhase(p){
+  if(p.judge.length===0)return;
+  for(let i=p.judge.length-1;i>=0;i--){
+    const j=p.judge[i];if(!j.judgeType)continue;
+    p.judge.splice(i,1);
+    const card=G.deck.pop()||C('判定','basic','none','♠',1);
+    addLog(`${p.name} 判定：${card.suit}${card.num}`,'hl');
+    await FX.judge(G.players.indexOf(p),card);
+    if(hasSkill(p,'kuangda')&&card.suit==='♥'){drawCards(p,1);addLog(`【旷达】${p.name} 摸一张牌`,'hl')}
+    if(j.judgeType==='lebu'){
+      if(card.suit!=='♥'){p.flags.skipPlay=true;addLog('【乐不思蜀】生效，跳过出牌阶段','dmg')}
+      else addLog('判定为红桃，乐不思蜀失效');
+      G.discard.push(card);
+    }else if(j.judgeType==='shandian'){
+      if(card.suit==='♠'&&card.num>=2&&card.num<=9){
+        addLog('【闪电】命中！','dmg');
+        G.discard.push(card);
+        await dealDamage(-1,G.players.indexOf(p),3,'thunder');
+      }else{
+        addLog('闪电未命中，移动到下家');
+        const next=(G.players.indexOf(p)+1)%G.players.length;
+        G.players[next].judge.push({...j});G.discard.push(card);
+      }
+    }
+    if(!p.alive)break;
+  }
+  render();
+}
+
+async function playPhase(idx){
+  const p=G.players[idx];
+  if(p.isAI){await aiPlayPhase(idx);return}
+  while(p.alive&&!G.gameOver){
+    const opts=[];
+    for(const c of p.hand){
+      if(c.sub==='sha')opts.push({label:`【杀】${c.suit}${c.num}`,value:'sha_'+c.id});
+      else if(c.sub==='tao'&&p.hp<p.maxHp)opts.push({label:`【桃】`,value:'tao_'+c.id});
+      else if(c.sub==='jiu')opts.push({label:`【酒】`,value:'jiu_'+c.id});
+      else if(c.type==='trick')opts.push({label:`【${c.name}】`,value:'trick_'+c.id});
+      else if(c.type==='equip')opts.push({label:`【${c.name}】`,value:'equip_'+c.id});
+    }
+    if(!p.flags.skillUsed){p.skills.forEach(s=>{if(s.type==='active')opts.push({label:`▶${s.name}`,value:'skill_'+s.id,skill:true})})}
+    opts.push({label:'结束出牌',value:'end'});
+    const ch=await waitChoice(opts);
+    if(ch==='end'||!ch)break;
+    if(!p.alive||G.gameOver)break;
+    if(ch.startsWith('skill_')){await useActiveSkill(idx,ch.slice(6));continue}
+    const [kind,idStr]=ch.split('_');const id=Number(idStr);
+    const card=p.hand.find(c=>c.id===id);if(!card)continue;
+    if(kind==='sha'){
+      if(p.flags.noSha){addLog('【将进酒】本回合不能使用【杀】');continue}
+      const targets=[];
+      for(let i=0;i<G.players.length;i++){
+        if(i===idx||!G.players[i].alive)continue;
+        if(inRange(idx,i))targets.push({label:`攻击 ${G.players[i].name}`,value:i});
+      }
+      if(targets.length===0){addLog('攻击范围内没有目标');continue}
+      targets.push({label:'取消',value:-1});
+      const t=await waitChoice(targets);if(t<0)continue;
+      discardCard(p,card);
+      Sound.play('play');
+      await useSha(idx,t);
+    }else if(kind==='tao'){discardCard(p,card);Sound.play('play');await useTao(idx)}
+    else if(kind==='jiu'){discardCard(p,card);Sound.play('play');await useJiu(idx)}
+    else if(kind==='trick'){
+      let tgt=null;
+      if(['guohe','shunshou','juedou','lebu'].includes(card.sub)){
+        const targets=[];
+        for(let i=0;i<G.players.length;i++){
+          if(i===idx||!G.players[i].alive)continue;
+          if(card.sub==='shunshou'&&distBetween(idx,i)>1)continue;
+          if(hasSkill(G.players[i],'fenshu'))continue;
+          targets.push({label:G.players[i].name,value:i});
+        }
+        if(targets.length===0){addLog('没有合法目标');continue}
+        targets.push({label:'取消',value:-1});
+        const t=await waitChoice(targets);if(t<0)continue;tgt=t;
+      }
+      discardCard(p,card);
+      Sound.play('play');
+      await useTrick(idx,card,tgt);
+    }else if(kind==='equip'){
+      discardCard(p,card,false);
+      Sound.play('play');
+      showPlayCard(card,p.name);
+      if(card.sub==='weapon'){if(p.equip.weapon)G.discard.push(p.equip.weapon);p.equip.weapon=card;addLog(`${p.name} 装备【${card.name}】`)}
+      else if(card.sub==='armor'){if(p.equip.armor)G.discard.push(p.equip.armor);p.equip.armor=card;addLog(`${p.name} 装备【${card.name}】`)}
+      else if(card.sub==='horse+'){if(p.equip.horsePlus)G.discard.push(p.equip.horsePlus);p.equip.horsePlus=card;addLog(`${p.name} 装备【${card.name}】`)}
+      else if(card.sub==='horse-'){if(p.equip.horseMinus)G.discard.push(p.equip.horseMinus);p.equip.horseMinus=card;addLog(`${p.name} 装备【${card.name}】`)}
+      render();
+    }
+    if(!p.alive||G.gameOver)break;
+  }
+}
+
+async function discardPhase(p){
+  const limit=handLimit(p);
+  while(p.hand.length>limit&&p.hand.length>0){
+    if(p.isAI){const c=p.hand.pop();G.discard.push(c)}
+    else{
+      const opts=p.hand.map(c=>({label:`弃置 ${c.name} ${c.suit}${c.num}`,value:c.id}));
+      const ch=await waitChoice(opts);
+      const c=p.hand.find(x=>x.id===ch);
+      if(c){discardCard(p,c);addLog(`${p.name} 弃置【${c.name}】`)}
+    }
+  }
+  render();
+}
+
+/* ============================================================
+   十五、AI
+   ============================================================ */
+async function aiPlayPhase(idx){
+  const p=G.players[idx];
+  if(!p.flags.skillUsed&&p.skills.some(s=>s.type==='active')&&Math.random()<0.5){
+    const act=p.skills.find(s=>s.type==='active');
+    await useActiveSkill(idx,act.id);
+    await sleep(400);
+  }
+  for(const c of [...p.hand]){
+    if(c.type==='equip'&&p.alive){
+      discardCard(p,c,false);
+      Sound.play('play');
+      showPlayCard(c,p.name);
+      if(c.sub==='weapon'){if(p.equip.weapon)G.discard.push(p.equip.weapon);p.equip.weapon=c}
+      else if(c.sub==='armor'){if(p.equip.armor)G.discard.push(p.equip.armor);p.equip.armor=c}
+      else if(c.sub==='horse+'){if(p.equip.horsePlus)G.discard.push(p.equip.horsePlus);p.equip.horsePlus=c}
+      else if(c.sub==='horse-'){if(p.equip.horseMinus)G.discard.push(p.equip.horseMinus);p.equip.horseMinus=c}
+      addLog(`${p.name} 装备【${c.name}】`);
+      await sleep(300);
+    }
+  }
+  while(p.hp<p.maxHp&&p.alive){const tao=p.hand.find(c=>c.sub==='tao');if(!tao)break;discardCard(p,tao);Sound.play('play');await useTao(idx);await sleep(300)}
+  const wz=p.hand.find(c=>c.sub==='wuzhong');if(wz){discardCard(p,wz);Sound.play('play');await useTrick(idx,wz,null);await sleep(300)}
+  if(p.alive&&!p.flags.noSha&&p.flags.shaUsed<1){
+    const sha=p.hand.find(c=>c.sub==='sha');
+    if(sha){
+      const ts=[];
+      for(let i=0;i<G.players.length;i++){
+        if(i===idx||!G.players[i].alive)continue;
+        if(inRange(idx,i)&&isEnemy(p,G.players[i]))ts.push(i);
+      }
+      if(ts.length>0){discardCard(p,sha);Sound.play('play');await useSha(idx,ts[0]);await sleep(300)}
+    }
+  }
+  if(p.alive){
+    const tr=p.hand.find(c=>['guohe','shunshou','juedou','nanman','wanjian','taoyuan','lebu'].includes(c.sub));
+    if(tr){
+      let tgt=null;
+      if(['guohe','shunshou','juedou','lebu'].includes(tr.sub)){
+        const ts=[];
+        for(let i=0;i<G.players.length;i++){
+          if(i===idx||!G.players[i].alive)continue;
+          if(tr.sub==='shunshou'&&distBetween(idx,i)>1)continue;
+          if(hasSkill(G.players[i],'fenshu'))continue;
+          if(isEnemy(p,G.players[i]))ts.push(i);
+        }
+        if(ts.length>0)tgt=ts[0];
+      }
+      if(tgt!=null||!['guohe','shunshou','juedou','lebu'].includes(tr.sub)){
+        discardCard(p,tr);Sound.play('play');await useTrick(idx,tr,tgt);await sleep(300);
+      }
+    }
+  }
+  render();
+}
+function isEnemy(a,b){
+  if(a.role==='lord'||a.role==='loyal')return b.role==='rebel'||b.role==='spy';
+  if(a.role==='rebel')return b.role==='lord'||b.role==='loyal';
+  if(a.role==='spy'){const rebelsAlive=G.players.filter(p=>p.alive&&p.role==='rebel').length;if(rebelsAlive>0)return b.role==='rebel';return b.role==='lord'||b.role==='loyal'}
+  return false;
+}
+
+/* ============================================================
+   十六、主循环
+   ============================================================ */
+async function gameLoop(){
+  while(!G.gameOver){
+    const p=G.players[G.current];
+    if(p.alive)await runTurn(G.current);
+    if(G.gameOver)break;
+    let next=G.current;
+    for(let k=1;k<=G.players.length;k++){
+      const idx=(G.current+k)%G.players.length;
+      if(G.players[idx].alive){next=idx;break}
+    }
+    G.current=next;await sleep(200);
+  }
+  render();
+}
+
+/* ============================================================
+   十七、启动
+   ============================================================ */
+function startGame(){
+  Sound.init();
+  const me=SELECTED_CHAR;
+  G.players=[];G.deck=buildDeck();G.discard=[];G.log=[];G.gameOver=false;G.current=0;
+  G.grade=SELECTED_GRADE;G.started=true;G.winnerText='';
+  const aiRoles=['loyal','rebel','spy'];shuffle(aiRoles);
+  const aiChars=CHARACTERS.filter(c=>c.id!==me.id);shuffle(aiChars);
+  G.players.push({
+    id:0,name:me.name,avatar:me.avatar,subject:me.subject,
+    role:'lord',roleRevealed:true,hp:me.hp+1,maxHp:me.hp+1,
+    hand:[],equip:{weapon:null,armor:null,horsePlus:null,horseMinus:null},judge:[],
+    knowledge:0,alive:true,isAI:false,skills:me.skills,
+    flags:{shaUsed:0,skillUsed:false,extraDamage:0,skipPlay:false,noSha:false},
+  });
+  for(let i=0;i<3;i++){
+    const ch=aiChars[i];
+    G.players.push({
+      id:i+1,name:ch.name,avatar:ch.avatar,subject:ch.subject,
+      role:aiRoles[i],roleRevealed:false,hp:ch.hp,maxHp:ch.hp,
+      hand:[],equip:{weapon:null,armor:null,horsePlus:null,horseMinus:null},judge:[],
+      knowledge:0,alive:true,isAI:true,skills:ch.skills,
+      flags:{shaUsed:0,skillUsed:false,extraDamage:0,skipPlay:false,noSha:false},
+    });
+  }
+  G.current=0;G.myIndex=0;
+  G.players.forEach(p=>drawCards(p,4));
+  drawCards(G.players[0],1);
+  document.getElementById('screenLobby').classList.remove('active');
+  document.getElementById('screenGame').classList.add('active');
+  clearPlayZone();
+  addLog('游戏开始。你是主公，身份已公开。','hl');
+  render();
+  gameLoop();
+}
+
+/* ============================================================
+   十八、渲染
+   ============================================================ */
+function render(){
+  if(!G.started)return;
+  const me=G.players[G.myIndex];
+  document.getElementById('turnName').textContent=G.players[G.current]?.name||'—';
+  document.getElementById('phaseLabel').textContent=G.gameOver?'游戏结束':'出牌阶段';
+  document.getElementById('selfInfo').textContent=me?`${me.name} · ${ROLES[me.role].name} · ${G.grade}`:'';
+
+  const opp=document.getElementById('opponents');
+  opp.innerHTML=G.players.map((p,i)=>{
+    if(i===G.myIndex)return '';
+    const isTurn=i===G.current;
+    const roleColor=p.roleRevealed?ROLES[p.role].color:'#5a4a3a';
+    const gems=Array.from({length:p.maxHp},(_,k)=>`<span class="hp-gem ${k<p.hp?'':'empty'}"></span>`).join('');
+    const eq=[];
+    if(p.equip.weapon)eq.push('🗡'+p.equip.weapon.name);
+    if(p.equip.armor)eq.push('🛡'+p.equip.armor.name);
+    if(p.equip.horsePlus)eq.push('+1马');
+    if(p.equip.horseMinus)eq.push('-1马');
+    const jd=p.judge.map(j=>j.name).join(' ');
+    return `<div class="p-card ${!p.alive?'dead':''} ${isTurn?'turn':''}" data-idx="${i}">
+      <div class="ptop"><span class="pavatar">${p.avatar}</span><span class="pname">${p.name}</span></div>
+      <div class="prole" style="color:${roleColor}">${p.roleRevealed?ROLES[p.role].name:'身份未知'}</div>
+      <div class="php">${gems}</div>
+      <div class="pstats"><span>手牌 ${p.hand.length}</span><span class="pknow">学识 ${p.knowledge}</span></div>
+      <div class="pequip">${eq.join(' ')}</div>
+      <div class="pjudge">${jd?'⚑'+jd:''}</div>
+    </div>`;
+  }).join('');
+
+  const hand=document.getElementById('handRow');
+  hand.innerHTML=me.hand.map(c=>{
+    const color=(c.suit==='♥'||c.suit==='♦')?'red':'black';
+    return `<div class="card ${color}">
+      <span class="suit">${c.suit}</span><span class="num">${c.num}</span>
+      <span class="cname">${c.name}</span>
+      <span class="ctype">${c.type==='basic'?'基本':c.type==='trick'?'锦囊':'装备'}</span>
+    </div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:12px;padding:20px">无手牌</div>';
+
+  const hint=document.getElementById('actionHint');
+  const btns=document.getElementById('actionBtns');
+  if(G.gameOver){hint.innerHTML=`<span style="color:var(--gold);font-size:15px">${G.winnerText}</span>`;btns.innerHTML='';return}
+  if(G.pendingOptions){
+    hint.textContent=me.isAI?'':'请选择：';
+    btns.innerHTML=G.pendingOptions.map(o=>`<button class="btn btn-sm ${o.skill?'btn-skill':''}" onclick="resolveChoice('${o.value}')">${o.label}</button>`).join('');
+    return;
+  }
+  if(G.players[G.current].isAI){hint.textContent=`等待 ${G.players[G.current].name} 行动…`;btns.innerHTML='';}
+  else{hint.textContent='你的回合，选择手牌或技能使用，或结束出牌';btns.innerHTML='';}
+}
+
+renderCharPicker();
+</script>
+</body>
+</html>

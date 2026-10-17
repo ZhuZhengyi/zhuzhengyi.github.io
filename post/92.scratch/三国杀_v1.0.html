@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三国杀 · 单文件联机版</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
+<style>
+:root{
+  --ink:#161310; --ink2:#221c15; --ink3:#2e2519;
+  --paper:#ecdfc0; --paper2:#d8c69d; --paper3:#c9b284;
+  --verm:#b03a2a; --verm2:#8f2b1e; --gold:#c9a227; --gold2:#e6c65a;
+  --jade:#3e7a5e; --azure:#3d6c8f;
+  --wei:#4a7fb5; --shu:#b0402e; --wu:#3f8f5c; --qun:#b8892f;
+  --tx:#efe6cf; --tx2:#b7a988;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Noto Serif SC',serif;color:var(--tx);background:var(--ink);overflow:hidden;user-select:none}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+.hidden{display:none!important}
+
+/* ===== 背景层 ===== */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:
+   radial-gradient(1200px 600px at 78% -10%, #3a2c1c88, transparent 60%),
+   radial-gradient(900px 500px at 10% 110%, #24343066, transparent 60%),
+   linear-gradient(180deg,#1c1712,#14110d 55%,#0f0c09);}
+#bg .mtn{position:absolute;left:0;right:0;bottom:0;height:46%;opacity:.9;background-size:cover;background-position:bottom;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 400'%3E%3Cpath d='M0 400 L0 260 L150 140 L300 250 L430 90 L600 240 L760 120 L920 260 L1060 170 L1200 280 L1200 400 Z' fill='%23ffffff' fill-opacity='0.045'/%3E%3Cpath d='M0 400 L0 320 L220 220 L420 310 L640 190 L860 310 L1050 240 L1200 330 L1200 400 Z' fill='%23ffffff' fill-opacity='0.035'/%3E%3C/svg%3E");}
+#bg .mist{position:absolute;width:70vw;height:26vh;border-radius:50%;filter:blur(46px);opacity:.14;
+  background:radial-gradient(closest-side,#e8d9b0,transparent 70%);animation:drift 26s ease-in-out infinite alternate}
+#bg .m1{top:8%;left:-12%}
+#bg .m2{top:38%;right:-18%;animation-duration:34s;animation-delay:-8s}
+#bg .m3{bottom:-6%;left:18%;opacity:.09;animation-duration:42s}
+@keyframes drift{from{transform:translateX(-6vw) scale(1)}to{transform:translateX(9vw) scale(1.15)}}
+#bg .grain{position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 3px),repeating-linear-gradient(90deg,#000 0 1px,transparent 1px 4px)}
+#bg .vig{position:absolute;inset:0;box-shadow:inset 0 0 26vmin #000c}
+
+/* ===== 通用 ===== */
+.screen{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column}
+.btn{background:linear-gradient(180deg,#c2452f,#8f2b1e);color:#ffe9c9;border:1px solid #e2b25a99;border-radius:8px;
+  padding:.55em 1.4em;font-size:15px;letter-spacing:.18em;font-weight:600;box-shadow:0 3px 0 #5c1a10,0 8px 18px #0007;transition:.15s}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #5c1a10}
+.btn.ghost{background:linear-gradient(180deg,#3a3125,#241d14);border-color:#8a744d66;color:var(--tx2);box-shadow:0 3px 0 #0008}
+.btn.gold{background:linear-gradient(180deg,#caa23a,#8f6f1a);color:#241a05;border-color:#ffe08a99;box-shadow:0 3px 0 #5c4a10,0 8px 18px #0007}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.tag{display:inline-block;padding:1px 8px;border-radius:4px;font-size:12px;letter-spacing:.1em}
+.k-蜀{color:#ff9d84}.k-魏{color:#9cc4ee}.k-吴{color:#8fd6a8}.k-群{color:#eecb7a}
+
+/* ===== 大厅 ===== */
+#scr-lobby{align-items:center;justify-content:center}
+.lobby{display:grid;grid-template-columns:minmax(230px,330px) minmax(340px,560px);gap:6vw;align-items:center;max-width:1150px;width:94%}
+.ltitle{writing-mode:vertical-rl;font-family:'Ma Shan Zheng';font-size:clamp(84px,13vh,150px);line-height:1;letter-spacing:.12em;
+  color:var(--paper);text-shadow:0 0 30px #c9a22733,0 4px 0 #0008;position:relative;padding-right:14px}
+.ltitle small{font-family:'ZCOOL XiaoWei';font-size:17px;color:var(--tx2);letter-spacing:.5em;margin-top:26px}
+.seal{position:absolute;bottom:-8px;left:-34px;width:64px;height:64px;background:var(--verm);color:#ffe9c9;border-radius:10px;
+  display:grid;place-items:center;font-family:'Ma Shan Zheng';font-size:26px;line-height:1.05;text-align:center;writing-mode:horizontal-tb;
+  box-shadow:0 4px 14px #0009,inset 0 0 0 3px #ffe9c933;transform:rotate(-7deg);animation:sealIn .8s cubic-bezier(.2,1.6,.4,1) both .3s}
+@keyframes sealIn{from{transform:rotate(-30deg) scale(2.4);opacity:0}}
+.lpanel{background:linear-gradient(165deg,#2a221688,#1a150e99);border:1px solid #8a744d44;border-radius:14px;padding:34px 38px;backdrop-filter:blur(3px);box-shadow:0 30px 60px #0008}
+.lpanel h2{font-family:'ZCOOL XiaoWei';font-weight:400;color:var(--gold2);letter-spacing:.3em;font-size:15px;margin-bottom:18px}
+.lpanel .nick{display:flex;gap:10px;margin-bottom:22px}
+.lpanel input{flex:1;background:#12100c;border:1px solid #8a744d55;color:var(--paper);border-radius:8px;padding:10px 14px;font-size:15px;outline:none}
+.lpanel input:focus{border-color:var(--gold)}
+.modes{display:grid;gap:14px}
+.mode{display:flex;gap:16px;align-items:center;text-align:left;background:linear-gradient(120deg,#3b2f1ecc,#241c12);
+  border:1px solid #8a744d55;border-left:5px solid var(--verm);border-radius:10px;padding:16px 18px;color:var(--tx);transition:.18s}
+.mode:hover{transform:translateX(6px);border-left-color:var(--gold);box-shadow:0 10px 26px #0008}
+.mode .glyph{font-family:'Ma Shan Zheng';font-size:42px;color:var(--gold2);width:56px;height:56px;border-radius:50%;background:#14110d;display:grid;place-items:center;box-shadow:inset 0 0 0 2px #c9a22744}
+.mode b{font-size:18px;letter-spacing:.2em}
+.mode span{display:block;color:var(--tx2);font-size:13px;margin-top:4px;line-height:1.5}
+.mode.off{opacity:.45;pointer-events:none}
+.jrow{display:flex;gap:10px;margin-top:20px}
+.jrow input{flex:1;text-transform:uppercase;letter-spacing:.3em}
+.lfoot{margin-top:22px;font-size:12.5px;color:#8d8168;line-height:1.9}
+.linkish{color:var(--gold2);cursor:pointer;border-bottom:1px dotted #c9a22766}
+
+/* ===== 房间 ===== */
+#scr-room{align-items:center;justify-content:center}
+.room{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;max-width:1000px;width:94%}
+.rcard,.chatcard{background:linear-gradient(165deg,#2a221688,#18130d99);border:1px solid #8a744d44;border-radius:14px;padding:26px 30px;box-shadow:0 24px 50px #0008}
+.rcard h3,.chatcard h3{font-family:'ZCOOL XiaoWei';font-weight:400;color:var(--gold2);letter-spacing:.35em;font-size:14px;margin-bottom:14px}
+.code{font-family:'ZCOOL XiaoWei';font-size:52px;letter-spacing:.42em;color:var(--paper);text-align:center;background:#12100c;border:1px dashed #c9a22755;border-radius:10px;padding:14px 0;cursor:pointer;text-shadow:0 0 24px #c9a22744;transition:.2s}
+.code:hover{color:var(--gold2)}
+.codehint{text-align:center;color:var(--tx2);font-size:12.5px;margin:10px 0 18px}
+.plist{display:grid;gap:8px;margin-bottom:18px}
+.prow{display:flex;align-items:center;gap:10px;background:#14110d;border:1px solid #8a744d33;border-radius:8px;padding:9px 12px;font-size:14px;animation:rowIn .3s both}
+@keyframes rowIn{from{opacity:0;transform:translateX(-10px)}}
+.prow .dot{width:9px;height:9px;border-radius:50%;background:var(--jade);box-shadow:0 0 8px var(--jade)}
+.prow .dot.ai{background:#8d8168;box-shadow:none}
+.prow .nm{flex:1;letter-spacing:.08em}
+.prow .sub{color:var(--tx2);font-size:12px}
+.rbtns{display:flex;gap:10px;flex-wrap:wrap}
+#connDot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#888;margin-right:6px}
+.chatcard{display:flex;flex-direction:column;min-height:380px}
+#waitChat{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px;padding:4px 2px;min-height:180px;max-height:300px}
+.cmsg{font-size:13.5px;line-height:1.5;animation:rowIn .25s both}
+.cmsg .who{color:var(--gold2);margin-right:6px}
+.cmsg.sys{color:#8d8168;font-style:italic}
+.qbar{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.qbar button{background:#14110d;border:1px solid #8a744d44;color:var(--tx2);border-radius:14px;padding:3px 10px;font-size:12px;transition:.15s}
+.qbar button:hover{color:var(--gold2);border-color:var(--gold)}
+.crow{display:flex;gap:8px}
+.crow input{flex:1;background:#12100c;border:1px solid #8a744d55;color:var(--paper);border-radius:8px;padding:8px 12px;outline:none;font-size:13.5px}
+
+/* ===== 对局 ===== */
+#scr-game{padding:10px 14px 12px}
+header#ghead{display:flex;align-items:center;gap:16px;padding:2px 6px 10px;z-index:5}
+.logo{font-family:'Ma Shan Zheng';font-size:30px;color:var(--paper);letter-spacing:.1em;text-shadow:0 2px 0 #000}
+.logo i{font-style:normal;color:var(--verm);font-size:14px;background:#ecdfc0;border-radius:4px;padding:1px 5px;margin-left:8px;letter-spacing:.2em;transform:translateY(-4px);display:inline-block}
+#ginfo{display:flex;gap:14px;color:var(--tx2);font-size:13px;letter-spacing:.1em}
+#ginfo b{color:var(--gold2)}
+.hspace{flex:1}
+main#gmain{flex:1;display:grid;grid-template-columns:1fr 318px;gap:12px;min-height:0}
+#table{position:relative;border-radius:20px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 42%,#4a3820 0%,#37291700 62%),
+   radial-gradient(ellipse at center,#2d2213 0%,#211809 74%,#171006 100%);
+  border:1px solid #8a744d3d;box-shadow:inset 0 0 90px #000b,0 18px 40px #0007}
+#table::before{content:"";position:absolute;inset:7%;border-radius:50%;border:2px solid #c9a22722;box-shadow:inset 0 0 60px #0006}
+#table::after{content:"忠 孝 節 義";position:absolute;inset:0;display:grid;place-items:center;font-family:'Ma Shan Zheng';
+  font-size:110px;letter-spacing:.4em;color:#c9a22709;pointer-events:none;white-space:nowrap}
+#playArea{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:6;pointer-events:none}
+#paCaption{font-size:14px;letter-spacing:.15em;color:var(--paper);background:#00000088;padding:4px 14px;border-radius:14px;text-shadow:0 1px 2px #000}
+#paCards{display:flex;gap:10px}
+#paCards .card{animation:popIn .35s cubic-bezier(.2,1.5,.4,1) both;box-shadow:0 12px 26px #000a}
+@keyframes popIn{from{transform:scale(.3) rotate(-14deg);opacity:0}}
+.seat{position:absolute;width:158px;transform:translate(-50%,-50%);text-align:center;transition:filter .4s;z-index:4}
+.seat.dead{filter:grayscale(1) brightness(.55)}
+.seat .box{background:linear-gradient(180deg,#2a2115cc,#191309dd);border:1px solid #8a744d55;border-radius:12px;padding:8px 6px 7px;box-shadow:0 10px 24px #0009;position:relative;transition:.25s}
+.seat.turn .box{border-color:var(--gold);box-shadow:0 0 0 2px #c9a22755,0 0 34px #c9a22733,0 10px 24px #0009}
+.seat.tgtOK .box{cursor:pointer;border-color:#7ec98f}
+.seat.tgtOK:hover .box{transform:translateY(-4px);box-shadow:0 0 0 2px #7ec98f,0 14px 28px #000b}
+.seat.tgtSel .box{box-shadow:0 0 0 3px var(--gold2),0 14px 28px #000b;transform:translateY(-4px)}
+.ava{width:56px;height:56px;margin:0 auto;border-radius:50%;display:grid;place-items:center;font-family:'Ma Shan Zheng';font-size:30px;color:#fff;
+  background:radial-gradient(circle at 32% 28%,#00000000,#0007) ,#333;box-shadow:inset 0 0 0 3px var(--kc,#888),0 4px 10px #000a;text-shadow:0 2px 3px #000c}
+.sname{margin-top:5px;font-size:13.5px;letter-spacing:.06em;white-space:nowrap}
+.sname .rn{font-size:11px;color:var(--gold2);border:1px solid #c9a22755;border-radius:4px;padding:0 4px;margin-left:4px}
+.sname .rn.hidden-r{color:#8d8168;border-color:#8d816855}
+.hpbar{display:flex;justify-content:center;gap:3px;margin-top:4px;min-height:12px}
+.hpbar i{width:11px;height:11px;background:linear-gradient(135deg,#ff8f6a,#b03a2a);transform:rotate(45deg);border-radius:2px;box-shadow:0 0 5px #b03a2a88}
+.hpbar i.lost{background:#3a3125;box-shadow:none}
+.hpn{font-size:12px;color:#ff9d84}
+.subrow{display:flex;justify-content:center;gap:6px;margin-top:4px;font-size:11px;color:var(--tx2);align-items:center}
+.backs{display:inline-flex}
+.backs b{width:11px;height:15px;border-radius:2px;background:linear-gradient(160deg,#7a3b2c,#4a2118);border:1px solid #d8c69d55;margin-left:-5px;box-shadow:0 1px 2px #000}
+.eqs{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:4px;max-width:150px;margin-inline:auto}
+.eqs span{font-size:10px;padding:0 5px;border-radius:4px;background:#12100c;border:1px solid #8a744d44;color:var(--tx2)}
+.eqs span.w{color:#ffd88a;border-color:#c9a22755}.eqs span.a{color:#9cc4ee}.eqs span.h{color:#c9a58a}
+.think{position:absolute;top:-9px;right:-6px;background:var(--gold);color:#241a05;font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.1em;animation:blink 1s infinite alternate}
+@keyframes blink{from{opacity:.55}to{opacity:1;transform:translateY(-2px)}}
+.dmgfx{position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);font-family:'Ma Shan Zheng';font-size:40px;color:#ff5f3c;text-shadow:0 0 14px #b03a2a,0 2px 0 #000;animation:dmgUp 1s both;pointer-events:none;z-index:9}
+@keyframes dmgUp{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}25%{opacity:1;transform:translate(-50%,-6px) scale(1.25)}100%{opacity:0;transform:translate(-50%,-46px) scale(1)}}
+.healfx{color:#7ee0a2!important;text-shadow:0 0 14px var(--jade),0 2px 0 #000!important}
+.seat.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(calc(-50% - 6px),-50%)}75%{transform:translate(calc(-50% + 6px),-50%)}}
+#banner{position:absolute;left:50%;top:13%;transform:translateX(-50%);z-index:8;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0}
+#banner.show{animation:bannerIn 1.8s both}
+#banner .bt{font-family:'Ma Shan Zheng';font-size:46px;color:var(--paper);letter-spacing:.3em;text-shadow:0 0 24px #c9a22766,0 3px 0 #000;background:linear-gradient(90deg,transparent,#000000a0 18%,#000000a0 82%,transparent);padding:2px 60px}
+#banner .bs{font-size:13px;letter-spacing:.5em;color:var(--gold2)}
+@keyframes bannerIn{0%{opacity:0;transform:translateX(-50%) translateY(-24px)}12%{opacity:1;transform:translateX(-50%)}80%{opacity:1}100%{opacity:0}}
+
+aside#side{display:flex;flex-direction:column;background:linear-gradient(180deg,#241c12ee,#17110aee);border:1px solid #8a744d3d;border-radius:14px;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid #8a744d3d}
+.tabs button{flex:1;background:none;border:none;color:var(--tx2);padding:10px 0;letter-spacing:.3em;font-size:13px;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--gold2);border-bottom-color:var(--gold)}
+.tabpane{flex:1;overflow:auto;padding:10px 12px;display:none;flex-direction:column;gap:5px}
+.tabpane.on{display:flex}
+#logBox div{font-size:12.5px;line-height:1.55;color:var(--tx2);border-bottom:1px dashed #8a744d22;padding:3px 0;animation:rowIn .25s both}
+#logBox .l-turn{color:var(--gold2);font-weight:600}
+#logBox .l-dmg{color:#ff9d84}
+#logBox .l-sys{color:#8d8168;font-style:italic}
+#logBox .l-skill{color:#9cc4ee}
+#logBox .l-death{color:#ff6a4d;font-weight:700}
+#chatBox{gap:7px}
+
+footer#gfoot{display:grid;grid-template-columns:216px 1fr 318px;gap:12px;padding-top:10px;align-items:stretch}
+#myPanel{background:linear-gradient(180deg,#2a2115ee,#191309ee);border:1px solid #8a744d55;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+#myPanel .ava{width:52px;height:52px;font-size:27px;margin:0}
+#mpName{font-size:14px}
+#mpHero{font-size:12px;color:var(--tx2)}
+#mpEq{font-size:11px;color:var(--gold2);margin-top:2px}
+#handWrap{position:relative;display:flex;align-items:flex-end;justify-content:center;min-height:132px;overflow:visible}
+#hand{display:flex;align-items:flex-end;padding:0 30px 4px}
+#hand .card{margin-left:-32px;transition:transform .16s,box-shadow .16s;cursor:pointer}
+#hand .card:first-child{margin-left:0}
+#hand .card:hover{transform:translateY(-16px);z-index:20}
+#hand .card.sel{transform:translateY(-20px);box-shadow:0 0 0 3px var(--gold2),0 14px 26px #000c;z-index:21}
+#hand .card.dim{opacity:.45}
+#promptBox{background:linear-gradient(180deg,#2a2115ee,#191309ee);border:1px solid #8a744d55;border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:8px;justify-content:center;min-height:118px}
+#pmsg{font-size:14px;letter-spacing:.06em;line-height:1.5}
+#pmsg .cd{color:var(--gold2);font-size:12px;margin-left:8px}
+#pbtns{display:flex;gap:8px;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--tx2)}
+
+/* ===== 卡牌 ===== */
+.card{width:72px;height:102px;border-radius:8px;position:relative;flex:none;
+  background:linear-gradient(165deg,#f6edcf,#e3d0a2 70%,#d4bd8a);border:1px solid #8a744d;box-shadow:0 5px 12px #0008;color:#2b2013}
+.card .cn{position:absolute;top:5px;left:7px;font-size:13px;font-weight:900;line-height:1.05;text-align:center}
+.card .nm{position:absolute;inset:0;display:grid;place-items:center;font-family:'Ma Shan Zheng';font-size:31px;padding-top:8px}
+.card .nm.two{font-size:17px;letter-spacing:1px}
+.card .tp{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:.2em;color:#6d5a37}
+.card.t-basic .nm{color:#7c2418}
+.card.t-trick .nm{color:#1f4d38}
+.card.t-equip .nm{color:#7a5a10}
+.card.red .cn{color:#a5271c}.card.black .cn{color:#211a12}
+.card.mini{width:52px;height:74px}.card.mini .nm{font-size:22px}.card.mini .cn{font-size:11px}
+.card.mini .tp{display:none}
+
+/* ===== 浮层 ===== */
+.ov{position:fixed;inset:0;z-index:40;background:#0d0a07d9;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.ovcard{background:linear-gradient(170deg,#2e2415,#1a140c);border:1px solid #c9a22755;border-radius:16px;padding:30px 36px;max-width:860px;width:92%;box-shadow:0 40px 80px #000c;animation:popIn .3s both}
+.ovcard h2{font-family:'Ma Shan Zheng';font-weight:400;font-size:34px;color:var(--gold2);letter-spacing:.2em;text-align:center;margin-bottom:6px}
+.ovsub{text-align:center;color:var(--tx2);font-size:13px;letter-spacing:.2em;margin-bottom:20px}
+#heroGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.hpick{background:#171208;border:1px solid #8a744d55;border-radius:12px;padding:16px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.hpick:hover{transform:translateY(-5px);border-color:var(--gold);box-shadow:0 14px 30px #000a}
+.hpick .big{font-family:'Ma Shan Zheng';font-size:52px;line-height:1;color:var(--kc,#ccc);text-shadow:0 3px 0 #0008}
+.hpick .hn{font-size:17px;letter-spacing:.15em;margin-top:8px}
+.hpick .hk{font-size:12px;color:var(--tx2);margin:3px 0 8px}
+.hpick .sk{font-size:12px;line-height:1.6;color:#cfc19e;border-top:1px dashed #8a744d44;padding-top:8px}
+.hpick .sk b{color:var(--gold2)}
+#endRoles{display:grid;gap:6px;margin:16px 0}
+#endRoles .prow{animation:none}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:60;background:#000000d0;border:1px solid var(--gold);color:var(--paper);
+  padding:8px 22px;border-radius:20px;font-size:13.5px;letter-spacing:.1em;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1}
+#ruleList{font-size:13.5px;line-height:2;color:#d8cba9}
+#ruleList b{color:var(--gold2)}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#8a744d55;border-radius:4px}
+@media(max-width:1080px){main#gmain{grid-template-columns:1fr 250px}footer#gfoot{grid-template-columns:190px 1fr 250px}.lobby{grid-template-columns:1fr;gap:30px}.ltitle{writing-mode:horizontal-tb;font-size:70px}.room{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="bg"><div class="mtn"></div><div class="mist m1"></div><div class="mist m2"></div><div class="mist m3"></div><div class="grain"></div><div class="vig"></div></div>
+
+<!-- ============ 大厅 ============ -->
+<div id="scr-lobby" class="screen">
+  <div class="lobby">
+    <div class="ltitle">三国杀<small>纵横捭阖 · 一牌定乾坤</small><span class="seal">逐鹿</span></div>
+    <div class="lpanel">
+      <h2>—— 请 入 局 ——</h2>
+      <div class="nick"><input id="nickInp" maxlength="8" placeholder="报上名来（昵称）" value=""><button class="btn ghost" id="nickOk">立 名</button></div>
+      <div class="modes">
+        <button class="mode" id="btnLocal"><span class="glyph">阵</span><span><b>单机演武</b><span>你为主公，四名 AI 群雄逐鹿，即刻开战</span></span></button>
+        <button class="mode" id="btnCreate"><span class="glyph">局</span><span><b>创建联机房间</b><span>生成房间码邀友加入，空位由 AI 补齐</span></span></button>
+      </div>
+      <div class="jrow"><input id="codeInp" maxlength="5" placeholder="输入房间码加入好友战局"><button class="btn gold" id="btnJoin">入 局</button></div>
+      <div class="lfoot">联机经公共 MQTT 中继转发（无需服务器），建议与好友使用稳定网络。<br>
+      <span class="linkish" id="ruleOpen">规则速览</span> · <span id="mqttStat">联机组件检测中…</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 房间 ============ -->
+<div id="scr-room" class="screen hidden">
+  <div class="room">
+    <div class="rcard">
+      <h3><span id="connDot"></span>联机房间 · 等候点将</h3>
+      <div class="code" id="roomCode" title="点击复制">----</div>
+      <div class="codehint">将房间码发给好友即可加入（点击复制）</div>
+      <div class="plist" id="roomPlayers"></div>
+      <div class="rbtns">
+        <button class="btn gold hidden" id="btnAddAI">＋ 添加 AI</button>
+        <button class="btn hidden" id="btnStart">开 战</button>
+        <button class="btn ghost" id="btnLeave">离开房间</button>
+      </div>
+      <div class="lfoot" id="roomTip"></div>
+    </div>
+    <div class="chatcard">
+      <h3>阵前喊话</h3>
+      <div id="waitChat"></div>
+      <div class="qbar" id="waitQuick"></div>
+      <div class="crow"><input id="waitInp" maxlength="60" placeholder="说点什么…"><button class="btn" id="waitSend">发送</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 对局 ============ -->
+<div id="scr-game" class="screen hidden">
+  <header id="ghead">
+    <div class="logo">三国杀<i>身份局</i></div>
+    <div id="ginfo"><span>牌堆 <b id="giDeck">0</b></span><span>阶段 <b id="giPhase">—</b></span><span id="giRoom" class="hidden">房间 <b id="giRoomCode"></b></span></div>
+    <div class="hspace"></div>
+    <button class="btn ghost" id="btnSound">♪ 音效开</button>
+    <button class="btn ghost" id="btnRule2">规则</button>
+    <button class="btn ghost" id="btnExit" title="返回大厅">✕ 离席</button>
+  </header>
+  <main id="gmain">
+    <div id="table">
+      <div id="banner"><div class="bt"></div><div class="bs"></div></div>
+      <div id="playArea"><div id="paCaption"></div><div id="paCards"></div></div>
+    </div>
+    <aside id="side">
+      <div class="tabs">
+        <button data-tab="logBox" class="on">战 报</button>
+        <button data-tab="chatBox">聊 天</button>
+        <button data-tab="plBox">玩 家</button>
+      </div>
+      <div class="tabpane on" id="logBox"></div>
+      <div class="tabpane" id="chatBox">
+        <div id="chatMsgs" style="display:flex;flex-direction:column;gap:7px"></div>
+        <div class="qbar" id="gameQuick"></div>
+        <div class="crow"><input id="chatInp" maxlength="60" placeholder="全场喊话…"><button class="btn" id="chatSend" style="padding:6px 14px;font-size:13px">发</button></div>
+      </div>
+      <div class="tabpane" id="plBox"><div id="plList" style="display:flex;flex-direction:column;gap:6px"></div></div>
+    </aside>
+  </main>
+  <footer id="gfoot">
+    <div id="myPanel"><div class="ava" id="mpAva">?</div><div><div id="mpName">—</div><div id="mpHero">—</div><div id="mpEq"></div></div></div>
+    <div id="handWrap"><div id="hand"></div></div>
+    <div id="promptBox"><div id="pmsg">等待开局…</div><div id="pbtns"></div></div>
+  </footer>
+</div>
+
+<!-- ============ 浮层 ============ -->
+<div class="ov hidden" id="ovHero"><div class="ovcard"><h2>点 将 台</h2><div class="ovsub" id="heroSub">择一良将，共赴沙场</div><div id="heroGrid"></div></div></div>
+<div class="ov hidden" id="ovEnd"><div class="ovcard"><h2 id="endTitle">—</h2><div class="ovsub" id="endSub"></div><div id="endRoles"></div><div style="display:flex;gap:10px;justify-content:center"><button class="btn gold hidden" id="btnAgain">再 来 一 局</button><button class="btn ghost" onclick="location.reload()">返回大厅</button></div></div></div>
+<div class="ov hidden" id="ovRule"><div class="ovcard"><h2>规则速览</h2><div id="ruleList"></div><div style="text-align:center;margin-top:18px"><button class="btn" onclick="$('#ovRule').classList.add('hidden')">知道了</button></div></div></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= 工具 ================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rnd=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const uid=()=>Math.random().toString(36).slice(2,10);
+const numTxt=n=>({1:'A',11:'J',12:'Q',13:'K'}[n]||String(n));
+const isRed=c=>c.suit==='♥'||c.suit==='♦';
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+/* ================= 音效 ================= */
+let AC=null, soundOn=true;
+function sfx(kind){ if(!soundOn)return; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+ const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+ const P={card:[520,.07,'triangle',.14],hit:[120,.2,'sawtooth',.22],turn:[660,.16,'sine',.12],die:[88,.5,'sawtooth',.2],win:[880,.4,'sine',.16],msg:[740,.05,'sine',.07]}[kind]; if(!P)return;
+ o.type=P[2];o.frequency.setValueAtTime(P[0],t); if(kind==='die')o.frequency.exponentialRampToValueAtTime(40,t+.4); if(kind==='win')o.frequency.setValueAtTime(660,t),o.frequency.setValueAtTime(880,t+.15);
+ g.gain.setValueAtTime(P[3],t);g.gain.exponentialRampToValueAtTime(.001,t+P[1]);o.start(t);o.stop(t+P[1]+.02);}catch(e){} }
+
+/* ================= 数据：武将 ================= */
+const HEROES={
+ liubei :{id:'liubei', n:'刘备', k:'蜀',hp:4, sk:[{id:'rende',n:'仁德',d:'出牌阶段，你可将一张手牌交给一名其他角色；本阶段给出≥2张时回复1点体力。'}]},
+ guanyu :{id:'guanyu', n:'关羽', k:'蜀',hp:4, sk:[{id:'wusheng',n:'武圣',d:'你的红色手牌可当【杀】使用或打出。'}]},
+ zhangfei:{id:'zhangfei',n:'张飞', k:'蜀',hp:4, sk:[{id:'paoxiao',n:'咆哮',d:'锁定技，你使用【杀】无次数限制。'}]},
+ zhaoyun:{id:'zhaoyun',n:'赵云', k:'蜀',hp:4, sk:[{id:'longdan',n:'龙胆',d:'你可以将【杀】当【闪】、【闪】当【杀】使用或打出。'}]},
+ huangyueying:{id:'huangyueying',n:'黄月英',k:'蜀',hp:3, sk:[{id:'jizhi',n:'集智',d:'每当你使用一张非无懈的锦囊时，摸一张牌。'}]},
+ caocao :{id:'caocao', n:'曹操', k:'魏',hp:4, sk:[{id:'jianxiong',n:'奸雄',d:'当你受到伤害后，你可获得造成此伤害的牌。'}]},
+ simayi :{id:'simayi', n:'司马懿',k:'魏',hp:3, sk:[{id:'fankui',n:'反馈',d:'当你受到伤害后，你可获得伤害来源的一张牌。'}]},
+ xiahoudun:{id:'xiahoudun',n:'夏侯惇',k:'魏',hp:4, sk:[{id:'ganglie',n:'刚烈',d:'当你受到伤害后判定：若非♥，来源弃两张牌或失去1点体力。'}]},
+ sunquan:{id:'sunquan',n:'孙权', k:'吴',hp:4, sk:[{id:'zhiheng',n:'制衡',d:'出牌阶段限一次，弃任意张牌并摸等量牌。'}]},
+ ganning:{id:'ganning',n:'甘宁', k:'吴',hp:4, sk:[{id:'qixi',n:'奇袭',d:'你的黑色手牌可当【过河拆桥】使用。'}]},
+ zhouyu :{id:'zhouyu', n:'周瑜', k:'吴',hp:3, sk:[{id:'yingzi',n:'英姿',d:'摸牌阶段，你多摸一张牌。'}]},
+ huatuo :{id:'huatuo', n:'华佗', k:'群',hp:3, sk:[{id:'qingnang',n:'青囊',d:'出牌阶段限一次，弃一张牌并回复1点体力。'}]},
+ lvbu  :{id:'lvbu',  n:'吕布', k:'群',hp:4, sk:[{id:'wushuang',n:'无双',d:'锁定技，你的【杀】需两张【闪】抵消；你发起的决斗，对方每次需打出两张【杀】。'}]},
+};
+const LORDS=['liubei','caocao','sunquan'];
+const KCOLOR={蜀:'#b0402e',魏:'#4a7fb5',吴:'#3f8f5c',群:'#b8892f'};
+const hasSk=(p,id)=>p.hero&&p.hero.sk.some(s=>s.id===id);
+
+/* ================= 数据：牌堆 ================= */
+const EQUIP_INFO={'诸葛连弩':{slot:'weapon',range:1},'青釭剑':{slot:'weapon',range:2},'青龙偃月刀':{slot:'weapon',range:3},'丈八蛇矛':{slot:'weapon',range:3},'贯石斧':{slot:'weapon',range:3},'八卦阵':{slot:'armor'},'仁王盾':{slot:'armor'},'绝影':{slot:'plusHorse'},'的卢':{slot:'plusHorse'},'爪黄飞电':{slot:'plusHorse'},'赤兔':{slot:'minusHorse'},'紫骍':{slot:'minusHorse'},'大宛':{slot:'minusHorse'}};
+function buildDeck(){ const D=[]; let id=0;
+ const P=(name,sub,type,suit,nums)=>nums.forEach(num=>D.push({id:'c'+(id++),name,sub,type,suit,num}));
+ P('杀','sha','basic','♠',[3,4,7,8,8,9,9,10]); P('杀','sha','basic','♣',[2,3,4,5,6,7,8,9,10,10]); P('杀','sha','basic','♥',[7,10]);
+ P('闪','shan','basic','♦',[2,3,4,5,6,7,8,9,10,11,12,13]); P('闪','shan','basic','♥',[2,12]);
+ P('桃','tao','basic','♥',[3,4,5,6,7,8,9]); P('桃','tao','basic','♦',[12]);
+ P('决斗','juedou','trick','♠',[1]);P('决斗','juedou','trick','♣',[1]);P('决斗','juedou','trick','♦',[1]);
+ P('南蛮入侵','nanman','trick','♠',[7,13]);P('南蛮入侵','nanman','trick','♣',[7]);
+ P('万箭齐发','wanjian','trick','♠',[1]); P('桃园结义','taoyuan','trick','♥',[1]);
+ P('无中生有','wuzhong','trick','♥',[7,8,9,11]);
+ P('顺手牵羊','shun','trick','♠',[3,4,11]);P('顺手牵羊','shun','trick','♦',[3,4]);
+ P('过河拆桥','chai','trick','♠',[12]);P('过河拆桥','chai','trick','♥',[12]);P('过河拆桥','chai','trick','♣',[3,4,12]);
+ P('无懈可击','wuxie','trick','♠',[11]);P('无懈可击','wuxie','trick','♣',[12,13]);P('无懈可击','wuxie','trick','♦',[12]);
+ P('诸葛连弩','诸葛连弩','equip','♦',[1]);P('诸葛连弩','诸葛连弩','equip','♣',[1]);
+ P('青釭剑','青釭剑','equip','♠',[6]);P('青龙偃月刀','青龙偃月刀','equip','♠',[5]);P('丈八蛇矛','丈八蛇矛','equip','♠',[2]);P('贯石斧','贯石斧','equip','♦',[5]);
+ P('八卦阵','八卦阵','equip','♠',[2]);P('八卦阵','八卦阵','equip','♦',[2]);P('仁王盾','仁王盾','equip','♣',[2]);
+ P('绝影','绝影','equip','♠',[5]);P('的卢','的卢','equip','♣',[5]);P('爪黄飞电','爪黄飞电','equip','♥',[13]);
+ P('赤兔','赤兔','equip','♥',[5]);P('紫骍','紫骍','equip','♦',[13]);P('大宛','大宛','equip','♠',[13]);
+ return D; }
+
+/* ================= 全局状态 ================= */
+let mode='idle';            // idle | local | host | client
+let NET={client:null,topic:'',id:uid(),ok:false};
+let ROOM={code:'',players:[],started:false};   // players:{id,name,seat,isAI,host}
+let G=null;                 // 引擎状态（仅本地/房主）
+let VIEW=null;              // 渲染用公共状态
+let ME={seat:-1,name:'无名',hand:[],prompt:null};
+let PENDING=null;           // 当前等待响应 {seat,done}
+let selCards=new Set(), selTargets=[], useAsSha=false;
+const isEngine=()=>mode!=='client';
+const myLocalSeat=()=>isEngine()?0:ME.seat;
+
+/* ================= 网络 ================= */
+const BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'];
+function netPublish(obj){ if(NET.client&&NET.ok) NET.client.publish(NET.topic,JSON.stringify({from:NET.id,...obj})); }
+function netSend(o){ if(isEngine()) onNet(o,'self'); else netPublish(o); }
+function connectMqtt(){
+ return new Promise((res,rej)=>{ if(!window.mqtt) return rej('组件未加载');
+  let bi=0; const tryNext=()=>{ if(bi>=BROKERS.length) return rej('无法连接中继');
+   const c=mqtt.connect(BROKERS[bi],{clientId:'sgs_'+uid(),connectTimeout:7000,reconnectPeriod:6000,clean:true});
+   const t=setTimeout(()=>{c.end(true);bi++;tryNext()},8000);
+   c.on('connect',()=>{clearTimeout(t);NET.client=c;NET.ok=true;res()});
+   c.on('error',()=>{}); c.on('close',()=>{NET.ok=false;setConn(false)}); c.on('reconnect',()=>{}); c.on('offline',()=>{NET.ok=false;setConn(false)});
+   const onConn=()=>{setConn(true);c.off('connect',onConn)}; c.on('connect',onConn);
+  }; tryNext(); });
+}
+function setConn(ok){ const d=$('#connDot'); if(d) d.style.background=ok?'#3e7a5e':'#b03a2a'; }
+function netTopicSubscribe(code){ NET.topic='sgs3k_'+code; NET.client.subscribe(NET.topic); NET.client.on('message',(t,p)=>{ try{ const m=JSON.parse(p.toString()); if(m.from===NET.id) return; onNet(m,'net'); }catch(e){} }); }
+function onNet(m){ /* 见下方路由 */ routeNet(m); }
+
+/* ================= 路由 ================= */
+function routeNet(m){
+ if(m.t==='chat'){ chatAppend(m.name,m.msg); if($('#scr-room').classList.contains('hidden')===false){} sfx('msg'); return; }
+ if(mode==='client'){
+  if(m.t==='joined'&&m.you===NET.id){ ME.seat=m.seat; renderRoom(m.room); }
+  else if(m.t==='room'){ renderRoom(m.room); }
+  else if(m.t==='kicked'&&m.you===NET.id){ toast('房主已关闭房间'); setTimeout(()=>location.reload(),1200); }
+  else if(m.t==='state'){ VIEW=m.S; renderGame(); }
+  else if(m.t==='hand'&&m.to===ME.seat){ ME.hand=m.cards; renderHand(); }
+  else if(m.t==='prompt'&&m.to===ME.seat){ ME.prompt=m.p; if(m.p.expireAt) ME.prompt.expireAt=m.p.expireAt; renderPrompt(); if(m.p.kind==='hero') openHeroPick(m.p.options,m.p.lord); else $('#ovHero').classList.add('hidden'); }
+  else if(m.t==='toast'&&m.to===ME.seat) toast(m.msg);
+ }
+ if(mode==='host'){
+  if(m.t==='join'){ hostJoin(m); }
+  else if(m.t==='leave'){ const i=ROOM.players.findIndex(p=>p.id===m.from); if(i>=0&&!G){ ROOM.players.splice(i,1); sysChat((m.name||'玩家')+' 离开了房间'); broadcastRoom(); } }
+  else if(m.t==='act'){ onAction(m.fromSeat!=null?m.fromSeat:seatById(m.from), m.act); }
+ }
+}
+const seatById=id=>{const p=(G?G.players.map((q,i)=>({id:q.id,seat:i})):ROOM.players); const f=p.find(q=>q.id===id); return f?f.seat:-1;};
+
+/* ================= 大厅交互 ================= */
+const QUICK=['杀！','闪！','桃！','主公救我！','反贼在此，谁敢一战？','容我三思…','哈哈哈哈','这波稳了','将军好手笔'];
+function fillQuick(el,onPick){ el.innerHTML=''; QUICK.forEach(q=>{const b=document.createElement('button');b.textContent=q;b.onclick=()=>onPick(q);el.appendChild(b)}); }
+function chatAppend(who,msg,sys){ const box=$('#scr-game').classList.contains('hidden')?$('#waitChat'):$('#chatMsgs');
+ const d=document.createElement('div'); d.className='cmsg'+(sys?' sys':''); d.innerHTML=sys?esc(msg):`<span class="who">${esc(who)}：</span>${esc(msg)}`;
+ box.appendChild(d); box.scrollTop=box.scrollHeight; if(!sys)sfx('msg'); }
+function sysChat(msg){ chatAppend('',msg,true); }
+function sendChat(msg){ msg=msg.trim(); if(!msg)return; const name=ME.name; if(isEngine()){ chatAppend(name,msg); if(mode==='host')netPublish({t:'chat',name,msg}); } else netPublish({t:'chat',name,msg}); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1900); }
+function banner(t,s){ const b=$('#banner'); b.querySelector('.bt').textContent=t; b.querySelector('.bs').textContent=s||''; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
+
+$('#nickOk').onclick=()=>{ ME.name=($('#nickInp').value.trim()||'无名').slice(0,8); toast('已立名：'+ME.name); };
+$('#nickInp').oninput=e=>{ME.name=(e.target.value.trim()||'无名').slice(0,8)};
+$('#btnSound').onclick=e=>{soundOn=!soundOn;e.target.textContent=soundOn?'♪ 音效开':'♪ 音效关'};
+$('#btnExit').onclick=()=>{ if(confirm('确定离席？')) location.reload(); };
+$('#ruleOpen').onclick=$('#btnRule2').onclick=()=>$('#ovRule').classList.remove('hidden');
+$('#ruleList').innerHTML=`<b>身份</b>：主公（公开）/ 忠臣 / 反贼 / 内奸。主忠灭尽反贼与内奸获胜；反贼阵斩主公；内奸须成为最后生还者。<br>
+<b>回合</b>：摸牌（2张）→ 出牌 → 弃牌（手牌≤体力值）。【杀】每回合限用一次（武器/技能除外）。<br>
+<b>距离</b>：按存活座位环形计算，±1马修正；攻击需距离≤武器攻击范围（徒手为1）。<br>
+<b>锦囊</b>：决斗拼【杀】；南蛮需【杀】、万箭需【闪】抵销；无懈可击（简化：仅目标可用）；顺手限距离1。<br>
+<b>濒死</b>：体力归零起按序求【桃】，无人救则阵亡。杀反贼摸三张；主公误杀忠臣弃光所有牌。<br>
+<b>武将技</b>均为标准版简化实现，详见点将台描述。联机经公共MQTT中继，无断线重连，掉线者将超时托管。`;
+
+$('#btnLocal').onclick=()=>{ ME.name=$('#nickInp').value.trim()||'无名'; startLocal(); };
+$('#btnCreate').onclick=async()=>{ if(!window.mqtt){toast('联机组件未加载，请检查网络后刷新');return;}
+ ME.name=$('#nickInp').value.trim()||'无名'; try{ await connectMqtt(); }catch(e){ toast('连接中继失败：'+e); return; }
+ mode='host'; const CS='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; ROOM.code=Array.from({length:5},()=>CS[rnd(CS.length)]).join('');
+ netTopicSubscribe(ROOM.code); ROOM.players=[{id:NET.id,name:ME.name,isAI:false,host:true}];
+ enterRoomScreen(); sysChat('房间已创建，等待英雄入席…'); };
+$('#btnJoin').onclick=async()=>{ const code=$('#codeInp').value.trim().toUpperCase(); if(code.length<4){toast('请输入房间码');return;}
+ if(!window.mqtt){toast('联机组件未加载');return;} ME.name=$('#nickInp').value.trim()||'无名';
+ try{ await connectMqtt(); }catch(e){ toast('连接中继失败：'+e); return; }
+ mode='client'; netTopicSubscribe(code); ROOM.code=code; netPublish({t:'join',name:ME.name});
+ enterRoomScreen(); sysChat('正在加入房间 '+code+' …');
+ setTimeout(()=>{ if(!ROOM.players.length){ toast('未收到房间应答，请确认房间码'); } },6000); };
+$('#btnLeave').onclick=()=>{ netPublish({t:'leave',name:ME.name}); location.reload(); };
+$('#roomCode').onclick=()=>{ navigator.clipboard&&navigator.clipboard.writeText(ROOM.code); toast('已复制房间码'); };
+fillQuick($('#waitQuick'),q=>sendChat(q)); fillQuick($('#gameQuick'),q=>sendChat(q));
+$('#waitSend').onclick=()=>{sendChat($('#waitInp').value);$('#waitInp').value=''};
+$('#waitInp').onkeydown=e=>{if(e.key==='Enter')$('#waitSend').click()};
+$('#chatSend').onclick=()=>{sendChat($('#chatInp').value);$('#chatInp').value=''};
+$('#chatInp').onkeydown=e=>{if(e.key==='Enter')$('#chatSend').click()};
+$$('.tabs button').forEach(b=>b.onclick=()=>{ $$('.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); $$('.tabpane').forEach(p=>p.classList.remove('on')); $('#'+b.dataset.tab).classList.add('on'); });
+$('#btnAddAI').onclick=()=>{ if(ROOM.players.length>=5)return; ROOM.players.push({id:'ai_'+uid(),name:aiName(),isAI:true}); broadcastRoom(); };
+$('#btnStart').onclick=()=>{ const humans=ROOM.players.filter(p=>!p.isAI); if(humans.length<2){toast('至少需要 2 名真人玩家（否则请用单机演武）');return;}
+ while(ROOM.players.length<5) ROOM.players.push({id:'ai_'+uid(),name:aiName(),isAI:true});
+ broadcastRoom(); startGame(ROOM.players); };
+$('#btnAgain').onclick=()=>{ if(mode!=='host'&&mode!=='local')return; $('#ovEnd').classList.add('hidden'); startGame(ROSTER||ROOM.players); };
+const AI_NAMES=['虎卫许褚','江东小霸王','西凉锦马超','鬼才郭嘉','白马公孙','燕人张翼德','锦帆贼','老黄忠'];
+let aiNameI=0; const aiName=()=>AI_NAMES[aiNameI++%AI_NAMES.length];
+
+function showScreen(id){ ['scr-lobby','scr-room','scr-game'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id)); }
+function enterRoomScreen(){ showScreen('scr-room'); renderRoom({code:ROOM.code,players:ROOM.players,started:false,hostId:mode==='host'?NET.id:null}); }
+function broadcastRoom(){ netPublish({t:'room',room:{code:ROOM.code,players:ROOM.players,started:ROOM.started,hostId:NET.id}}); renderRoom({code:ROOM.code,players:ROOM.players,started:ROOM.started,hostId:NET.id}); }
+function hostJoin(m){ if(G||ROOM.started){ netPublish({t:'toast',to:m.from,msg:'对局已开始'}); return; }
+ if(ROOM.players.length>=5){ netPublish({t:'toast',to:m.from,msg:'房间已满'}); return; }
+ if(ROOM.players.some(p=>p.id===m.from)) return;
+ ROOM.players=ROOM.players.filter(p=>!p.isAI||ROOM.players.filter(q=>!q.isAI).length<1?true:true); // 保持
+ ROOM.players.push({id:m.from,name:(m.name||'玩家').slice(0,8),isAI:false});
+ netPublish({t:'joined',you:m.from,seat:ROOM.players.length-1,room:{code:ROOM.code,players:ROOM.players,started:false,hostId:NET.id}});
+ broadcastRoom(); sysChat((m.name||'玩家')+' 加入了房间'); }
+function renderRoom(r){ if(r.players&&r.players.length) ROOM.players=r.players; if(r.code)ROOM.code=r.code;
+ $('#roomCode').textContent=ROOM.code;
+ const isHost=mode==='host'||mode==='local';
+ $('#btnAddAI').classList.toggle('hidden',!isHost); $('#btnStart').classList.toggle('hidden',!isHost);
+ $('#roomTip').innerHTML=isHost?'你是房主：添满席位后点「开战」，空位可加 AI。':'等待房主开战…（可随时在此喊话）';
+ const box=$('#roomPlayers'); box.innerHTML='';
+ ROOM.players.forEach(p=>{ const d=document.createElement('div'); d.className='prow';
+  d.innerHTML=`<span class="dot ${p.isAI?'ai':''}"></span><span class="nm">${esc(p.name)}</span><span class="sub">${p.host?'房主':p.isAI?'AI':'就绪'}</span>`; box.appendChild(d); });
+ $('#connDot').style.background=NET.ok?'#3e7a5e':'#b03a2a'; }
+
+/* ================= 引擎：开局 ================= */
+let ROSTER=null;
+function startLocal(){ mode='local'; showScreen('scr-game');
+ const roster=[{id:NET.id,name:ME.name,isAI:false,host:true}];
+ for(let i=0;i<4;i++) roster.push({id:'ai_'+uid(),name:aiName(),isAI:true});
+ startGame(roster); }
+function startGame(roster){ ROSTER=roster; showScreen('scr-game'); $('#ovEnd').classList.add('hidden'); $('#logBox').innerHTML=''; $('#chatMsgs').innerHTML='';
+ const pool=shuffle(Object.keys(HEROES)); let pi=0;
+ G={ players:roster.map((r,i)=>({ seat:i,id:r.id,name:r.name,isAI:!!r.isAI,dead:false,hp:0,maxhp:0,hero:null,role:null,hand:[],equip:{weapon:null,armor:null,plusHorse:null,minusHorse:null},shaUsed:0,flags:{},revealed:r.isAI?false:false })),
+  deck:shuffle(buildDeck()), discard:[], turnSeat:0, over:false, winner:null, log:[], openSeat:-1, playResolvers:{}, phaseName:'点将' };
+ G.players[0].isAI=false;
+ if(mode==='host') netPublish({t:'state',S:buildState()});
+ sysChat('—— 对局开始，点将选帅 ——');
+ runFlow().catch(e=>{console.error(e);sysChat('引擎错误：'+e.message)});
+}
+async function runFlow(){
+ // 1) 随机主公位
+ const lordSeat=rnd(G.players.length);
+ log(`【${G.players[lordSeat].name}】被推举为 主公`,'l-sys');
+ // 2) 点将（依次）
+ for(const p of G.players){
+  const lord=p.seat===lordSeat;
+  const opts=lord?[...LORDS]:poolTake(3);
+  const a=await ask(p.seat,{kind:'hero',options:opts,lord},20000);
+  let pick=(a&&a.id&&opts.includes(a.id))?a.id:opts[rnd(opts.length)];
+  p.hero=HEROES[pick]; p.maxhp=p.hero.hp+(lord?1:0); p.hp=p.maxhp; p.isLord=lord;
+  log(`${p.name} 选定武将【${p.hero.n}】`,'l-sys'); sync();
+ }
+ // 3) 身份
+ const rolesByN={5:['忠臣','反贼','反贼','内奸'],4:['忠臣','反贼','内奸'],3:['反贼','内奸'],2:['反贼']};
+ const roles=shuffle(rolesByN[G.players.length]||['反贼']);
+ let ri=0; G.players.forEach(p=>{ p.role=p.isLord?'主公':roles[ri++]; if(p.isLord)p.revealed=true; });
+ // 4) 起手
+ G.players.forEach(p=>drawCards(p,4)); G.turnSeat=lordSeat;
+ log('═══ 乱世开启，各怀其志 ═══','l-turn'); sync(); banner('乱世开启','身分已定 · 各怀其志'); sfx('turn');
+ await sleep(1400);
+ // 5) 主循环
+ while(!G.over){ const p=G.players[G.turnSeat]; await playTurn(p); if(G.over)break; G.turnSeat=nextAlive(G.turnSeat); }
+}
+function poolTake(n){ const keys=Object.keys(HEROES); const out=[]; while(out.length<n){const k=keys[rnd(keys.length)]; if(!out.includes(k))out.push(k);} return out; }
+const nextAlive=f=>{let i=f;do{i=(i+1)%G.players.length}while(G.players[i].dead&&i!==f);return i};
+
+/* ================= 引擎：回合 ================= */
+async function playTurn(p){
+ if(G.over||p.dead)return;
+ p.shaUsed=0; p.flags={}; G.phaseName='摸牌'; G.openSeat=-1; sync();
+ banner(p.seat===myLocalSeat()&&!p.isAI?'你的回合':p.hero.n+' 的回合', p.name);
+ sfx('turn'); await sleep(700); if(G.over)return;
+ drawCards(p, hasSk(p,'yingzi')?3:2); log(`${p.name} 摸 ${hasSk(p,'yingzi')?3:2} 张牌`); sync(); await sleep(420); if(G.over)return;
+ G.phaseName='出牌'; sync();
+ if(p.isAI){ await aiPlayPhase(p); }
+ else{
+  G.openSeat=p.seat; deliverPrompt(p.seat,{kind:'play'}); armPlayTimer(p.seat); sync();
+  await new Promise(res=>{ G.playResolvers[p.seat]=res; });
+  G.openSeat=-1;
+ }
+ if(G.over)return;
+ G.phaseName='弃牌'; sync();
+ const over=p.hand.length-p.hp;
+ if(over>0){ const a=await ask(p.seat,{kind:'discard',n:over},15000);
+  let ids=(a&&a.ids)||[]; ids=ids.filter(id=>p.hand.some(c=>c.id===id)).slice(0,over);
+  while(ids.length<over){ const c=p.hand.find(c=>!ids.includes(c.id)); if(!c)break; ids.push(c.id); }
+  ids.forEach(id=>{const i=p.hand.findIndex(c=>c.id===id); if(i>=0){G.discard.push(p.hand[i]);p.hand.splice(i,1);}});
+  log(`${p.name} 弃 ${ids.length} 张牌`); }
+ sendHand(p.seat); sync(); await sleep(250);
+}
+let playTimer=null;
+function armPlayTimer(seat){ clearTimeout(playTimer); playTimer=setTimeout(()=>{ if(G&&G.openSeat===seat){ log(`${G.players[seat].name} 超时，自动结束出牌`,'l-sys'); onAction(seat,{kind:'end'}); } },70000); }
+
+/* ================= 引擎：通用 ================= */
+function drawCards(p,n){ for(let i=0;i<n;i++){ if(!G.deck.length){ if(!G.discard.length)return; G.deck=shuffle(G.discard.splice(0)); G.discard=[]; } p.hand.push(G.deck.pop()); } sendHand(p.seat); }
+function sendHand(seat){ if(!G)return; const p=G.players[seat]; if(p.isAI)return;
+ if(mode==='local'&&seat===0){ ME.hand=p.hand; renderHand(); }
+ else if(mode==='host'&&seat===0){ ME.hand=p.hand; renderHand(); }
+ else if(mode==='host') netPublish({t:'hand',to:seat,cards:p.hand}); }
+function toDiscard(c){ G.discard.push(c); }
+function removeHand(p,id){ const i=p.hand.findIndex(c=>c.id===id); if(i<0)return null; return p.hand.splice(i,1)[0]; }
+function log(msg,cls){ if(!G)return; G.log.push({m:msg,c:cls||''}); if(G.log.length>120)G.log.shift(); }
+function sync(){ if(!G)return; const S=buildState(); if(mode==='host')netPublish({t:'state',S}); VIEW=S; renderGame(); }
+function buildState(){ return { seats:G.players.map(p=>({seat:p.seat,name:p.name,isAI:p.isAI,dead:p.dead,heroId:p.hero?p.hero.id:null,heroName:p.hero?p.hero.n:null,kingdom:p.hero?p.hero.k:null,hp:p.hp,maxhp:p.maxhp,handN:p.hand.length,equip:{weapon:p.equip.weapon?p.equip.weapon.name:0,armor:p.equip.armor?p.equip.armor.name:0,plusHorse:!!p.equip.plusHorse,minusHorse:!!p.equip.minusHorse},role:p.revealed?p.role:null,isLord:!!p.isLord,cur:G.turnSeat===p.seat&&!G.over,think:(PENDING&&PENDING.seat===p.seat)||(G.openSeat===p.seat)})),
+ turnSeat:G.turnSeat, phase:G.phaseName, over:G.over, winner:G.winner, deckN:G.deck.length, log:G.log.slice(-60), openSeat:G.openSeat }; }
+
+/* ---- 距离（引擎与客户端共用形状） ---- */
+function engineInfos(){ return G.players.filter(p=>!p.dead).map(p=>({seat:p.seat,plus:!!p.equip.plusHorse,minus:!!p.equip.minusHorse,weapon:p.equip.weapon?p.equip.weapon.name:0})); }
+function viewInfos(){ return VIEW.seats.filter(s=>!s.dead).map(s=>({seat:s.seat,plus:s.equip.plusHorse,minus:s.equip.minusHorse,weapon:s.equip.weapon})); }
+function distCalc(from,to,infos){ const i=infos.findIndex(x=>x.seat===from), j=infos.findIndex(x=>x.seat===to); if(i<0||j<0)return 99;
+ const n=infos.length; let d=Math.min(Math.abs(i-j),n-Math.abs(i-j)); const f=infos[i],t=infos[j];
+ if(f.minus)d--; if(t.plus)d++; return Math.max(1,d); }
+function rangeOf(info){ return info.weapon?(EQUIP_INFO[info.weapon]&&EQUIP_INFO[info.weapon].range||1):1; }
+function gDist(a,b){ return distCalc(a.seat,b.seat,engineInfos()); }
+function gRange(p){ return p.equip.weapon?EQUIP_INFO[p.equip.weapon.name].range:1; }
+
+/* ================= 引擎：询问 ================= */
+function autoResp(p){ switch(p.kind){ case 'respond':return{id:null}; case 'save':return{id:null}; case 'wuxie':return{use:false};
+ case 'hero':return{id:p.options[rnd(p.options.length)]}; case 'axe':return{ids:null};
+ case 'discard':return{ids:'@auto'}; default:return{}; } }
+function ask(seat,prompt,ms=18000){ return new Promise(res=>{ if(!G||G.over)return res(autoResp(prompt));
+ const p=G.players[seat]; let done=false;
+ const fin=a=>{ if(done)return; done=true; clearTimeout(tm); if(PENDING&&PENDING.seat===seat)PENDING=null; sync(); res(a); };
+ PENDING={seat,done:fin};
+ const tm=setTimeout(()=>{ log(`${p.name} 未响应，自动处理`,'l-sys'); fin(autoResp(prompt)); },ms);
+ prompt.expireAt=Date.now()+ms;
+ if(p.isAI){ setTimeout(()=>fin(aiDecide(p,prompt)),420+rnd(520)); }
+ else if(mode!=='client'&&seat===0){ ME.prompt=prompt; renderPrompt(); }
+ else if(mode==='host'){ netPublish({t:'prompt',to:seat,p:prompt}); }
+ else { ME.prompt=prompt; renderPrompt(); }
+ sync(); }); }
+function resolveLocalPrompt(act){ if(PENDING&&PENDING.seat===myLocalSeat()){ ME.prompt=null; PENDING.done(act); renderPrompt(); } else if(G&&G.openSeat===myLocalSeat()){ onAction(myLocalSeat(),act); } }
+
+/* ================= 引擎：行动入口 ================= */
+function onAction(seat,act){ if(!G||G.over||seat<0||!act)return;
+ if(PENDING&&PENDING.seat===seat){ PENDING.done(act); return; }
+ if(G.openSeat===seat){ handlePlay(G.players[seat],act); } }
+function emitToast(seat,msg){ if(mode==='host'&&seat!==0)netPublish({t:'toast',to:seat,msg}); else if(seat===myLocalSeat())toast(msg); }
+
+function effSub(p,card){ if(hasSk(p,'qixi')&&card.type!=='equip'&&isBlackCard(card))return 'chai'; return card.sub; }
+const isBlackCard=c=>c.suit==='♠'||c.suit==='♣';
+function canPlayCard(p,card,asSha){
+ const sub=asSha?'sha':effSub(p,card);
+ switch(sub){
+  case 'sha':{ const lim=hasSk(p,'paoxiao')||p.equip.weapon&&p.equip.weapon.name==='诸葛连弩'?99:1;
+   if(p.shaUsed>=lim)return false; return G.players.some(t=>!t.dead&&t!==p&&gDist(p,t)<=gRange(p)); }
+  case 'chai': return G.players.some(t=>!t.dead&&t!==p&&(t.hand.length||t.equip.weapon||t.equip.armor||t.equip.plusHorse||t.equip.minusHorse));
+  case 'shun': return G.players.some(t=>!t.dead&&t!==p&&gDist(p,t)<=1&&(t.hand.length||Object.values(t.equip).some(v=>v)));
+  case 'juedou': return G.players.some(t=>!t.dead&&t!==p);
+  case 'tao': return p.hp<p.maxhp;
+  case 'taoyuan': return G.players.some(q=>!q.dead&&q.hp<q.maxhp);
+  case 'wuxie': case 'shan': return false;
+  default: return true; } }
+
+function handlePlay(p,act){
+ clearTimeout(playTimer);
+ const fail=m=>emitToast(p.seat,m);
+ if(act.kind==='end'){ finishPlay(p); return; }
+ if(act.kind==='card'){
+  const card=p.hand.find(c=>c.id===act.id); if(!card)return fail('无此手牌');
+  if(!canPlayCard(p,card,!!act.asSha))return fail('现在不能使用这张牌');
+  const sub=act.asSha?'sha':effSub(p,card);
+  const needTgt=['sha','chai','shun','juedou'].includes(sub);
+  const tgts=(act.targets||[]).filter(s=>G.players[s]&&!G.players[s].dead&&s!==p.seat);
+  if(needTgt&&tgts.length!==1)return fail('请选择一个目标');
+  if(!needTgt&&tgts.length)return fail('此牌无需指定目标');
+  const t=tgts.length?G.players[tgts[0]]:null;
+  if(sub==='sha'&&gDist(p,t)>gRange(p))return fail('距离太远');
+  if(sub==='shun'&&gDist(p,t)>1)return fail('顺手牵羊需距离1以内');
+  if(sub==='chai'&&!(t.hand.length||Object.values(t.equip).some(v=>v)))return fail('目标无牌可拆');
+  removeHand(p,card.id); armPlayTimer(p.seat);
+  useCard(p,card,sub,t).then(()=>{ sendHand(p.seat); sync(); });
+  return; }
+ if(act.kind==='skill'){ doSkill(p,act,fail); return; }
+}
+function finishPlay(p){ const r=G.playResolvers[p.seat]; G.playResolvers[p.seat]=null; clearTimeout(playTimer); if(r)r(); }
+function useCardAsSha2(p,cards,target){ // 丈八蛇矛 / 红牌当杀等“视为使用杀”
+ if(p.shaUsed>=1&&!hasSk(p,'paoxiao')&&!(p.equip.weapon&&p.equip.weapon.name==='诸葛连弩'))return false;
+ p.shaUsed++; log(`${p.hero.n}之技 —— ${p.name} 视为对 ${target.name} 使用【杀】`,'l-skill');
+ showPlayed(p,'杀',[target]); return resolveSha(p,target,{name:'杀（视为）',id:null,_virt:1},1); }
+
+async function useCard(p,card,sub,t){
+ toDiscard(card);
+ if(sub==='sha'){ p.shaUsed++; showPlayed(p,'杀',[t]); await resolveSha(p,t,card,1); return; }
+ if(sub==='tao'){ recover(p,1); log(`${p.name} 使用【桃】，回复1点体力`); return; }
+ if(sub==='wuzhong'){ log(`${p.name} 使用【无中生有】`); showPlayed(p,'无中生有',[]); if(hasSk(p,'jizhi')){drawCards(p,1);log('〖集智〗摸一张牌','l-skill');} drawCards(p,2); return; }
+ if(['juedou','shun','chai'].includes(sub)){
+  showPlayed(p,card.name,[t]);
+  if(hasSk(p,'jizhi')){drawCards(p,1);log('〖集智〗摸一张牌','l-skill');}
+  if(await tryWuxie(p,t,card)){ log(`${t.name} 使用【无懈可击】，锦囊被抵消`); return; }
+  if(sub==='juedou') return resolveJuedou(p,t,card);
+  if(sub==='shun') return resolveSteal(p,t,'shun');
+  return resolveSteal(p,t,'chai'); }
+ if(sub==='nanman'||sub==='wanjian'){
+  showPlayed(p,card.name,[]); if(hasSk(p,'jizhi')){drawCards(p,1);log('〖集智〗摸一张牌','l-skill');}
+  for(const q of orderFrom(p)) { if(G.over)break; if(q===p||q.dead)continue;
+   const need=sub==='nanman'?'sha':'shan';
+   const ok=await needResp(q,need,1,p,card);
+   if(!ok){ log(`${q.name} 未打出【${need==='sha'?'杀':'闪'}】`); await damage(p,q,1,card); } }
+  return; }
+ if(sub==='taoyuan'){ showPlayed(p,'桃园结义',[]); if(hasSk(p,'jizhi')){drawCards(p,1)} 
+  for(const q of G.players){ if(q.dead)continue; if(q.hp<q.maxhp){ recover(q,1); log(`${q.name} 回复1点体力`); } } return; }
+ if(card.type==='equip'){ equipTo(p,card); log(`${p.name} 装备【${card.name}】`); return; }
+}
+function equipTo(p,card){ const slot=EQUIP_INFO[card.name].slot; const old=p.equip[slot]; if(old)G.discard.push(old); p.equip[slot]=card; }
+function orderFrom(p){ const out=[]; let i=p.seat; do{ out.push(G.players[i]); i=(i+1)%G.players.length; }while(i!==p.seat); return out; }
+
+/* ================= 引擎：杀 / 响应 ================= */
+async function resolveSha(p,t,card,mult){
+ // 仁王盾
+ if(!isQinggang(p)&&t.equip.armor&&t.equip.armor.name==='仁王盾'&&card&&!card._virt&&isBlackCard(card)){ log(`${t.name} 的【仁王盾】挡下黑色【杀】`,'l-skill'); return; }
+ // 八卦阵
+ if(!isQinggang(p)&&t.equip.armor&&t.equip.armor.name==='八卦阵'){
+  const j=drawJudge(); log(`${t.name} 发动【八卦阵】判定 → ${j.suit}${numTxt(j.num)}`,'l-skill');
+  if(isRed(j)){ log('判定为红，视为打出【闪】'); return; } }
+ const ok=await needResp(t,'shan',mult,p,card);
+ if(ok){
+  if(p.equip.weapon&&p.equip.weapon.name==='青龙偃月刀'&&!G.over){
+   const a=await ask(p.seat,{kind:'respond',need:'sha',n:1,why:'青龙偃月刀追击',from:t.name},9000);
+   if(a&&a.id){ const c=p.hand.find(x=>x.id===a.id&&shaLike(p,x)); if(c){ removeHand(p,c.id); toDiscard(c); log(`${p.name} 挥刀再击！`,'l-skill'); return resolveSha(p,t,c,1); } } }
+  if(p.equip.weapon&&p.equip.weapon.name==='贯石斧'&&!G.over&&p.hand.length+(Object.values(p.equip).filter(v=>v).length)>=2){
+   const a=await ask(p.seat,{kind:'axe',from:t.name},9000);
+   if(a&&a.ids&&a.ids.length>=2){ let n=0; for(const id of a.ids){ if(n>=2)break; if(p.equip.weapon.id===id)continue;
+     const c=removeHand(p,id)||takeEquipById(p,id); if(c){toDiscard(c);n++;} }
+    if(n>=2){ log('【贯石斧】强命命中！','l-skill'); return damage(p,t,1,card); } } }
+  return; }
+ await damage(p,t,1,card);
+}
+const isQinggang=p=>p.equip.weapon&&p.equip.weapon.name==='青釭剑';
+function shaLike(p,c){ if(c.sub==='sha')return true; if(hasSk(p,'longdan')&&c.sub==='shan')return true; if(hasSk(p,'wusheng')&&isRed(c)&&c.type!=='equip')return true; return false; }
+function shanLike(p,c){ if(c.sub==='shan')return true; if(hasSk(p,'longdan')&&c.sub==='sha')return true; return false; }
+function takeEquipById(p,id){ for(const k of ['weapon','armor','plusHorse','minusHorse']){ if(p.equip[k]&&p.equip[k].id===id){ const c=p.equip[k]; p.equip[k]=null; return c; } } return null; }
+function drawJudge(){ if(!G.deck.length){ G.deck=shuffle(G.discard.splice(0)); } const c=G.deck.pop(); G.discard.push(c); return c; }
+
+async function needResp(p,need,n,src,card){
+ if(G.over)return false;
+ if(need==='shan'){
+  if(src&&!isQinggang(src)){ /* handled in resolveSha for armor */ }
+  const a=await ask(p.seat,{kind:'respond',need,n,from:src?src.name:null,card:card?card.name:null},12000);
+  if(!a||!a.id)return false;
+  const c=p.hand.find(x=>x.id===a.id&&shanLike(p,x)); if(!c)return false;
+  removeHand(p,c.id); toDiscard(c); log(`${p.name} 打出【闪】`); return true; }
+ if(need==='sha'){
+  const a=await ask(p.seat,{kind:'respond',need,n,from:src?src.name:null,why:card?card.name:''},12000);
+  if(!a||!a.ids&&!a.id)return false;
+  const ids=a.ids||[a.id]; let cnt=0;
+  for(const id of ids){ if(cnt>=n)break; const c=p.hand.find(x=>x.id===id&&shaLike(p,x)); if(c){removeHand(p,c.id);toDiscard(c);cnt++;} }
+  if(cnt>=n){ log(`${p.name} 打出【杀】×${n}`); return true; } return false; }
+ return false; }
+
+async function resolveJuedou(p,t,card){
+ log(`${p.name} 与 ${t.name} 决斗！`);
+ let cur=t, other=p;
+ while(!G.over){
+  const req=(hasSk(other,'wushuang')&&!hasSk(cur,'wushuang'))?2:1;
+  const ok=await needResp(cur,'sha',req,other,card);
+  if(!ok){ log(`${cur.name} 在决斗中落败`); await damage(other,cur,1,card); return; }
+  [cur,other]=[other,cur]; } }
+function hasCardStuff(p){ return p.hand.length>0||Object.values(p.equip).some(v=>v); }
+async function resolveSteal(p,t,kind){
+ const eqs=Object.entries(t.equip).filter(([k,v])=>v);
+ const grabEq=eqs.length&&(Math.random()<.5||!t.hand.length);
+ if(grabEq){ const [k,c]=eqs[rnd(eqs.length)]; t.equip[k]=null;
+  if(kind==='shun'){ p.hand.push(c); log(`${p.name} 顺手牵走了 ${t.name} 的【${c.name}】`); }
+  else { G.discard.push(c); log(`${p.name} 拆掉了 ${t.name} 的【${c.name}】`); } }
+ else if(t.hand.length){ const i=rnd(t.hand.length); const c=t.hand.splice(i,1)[0];
+  if(kind==='shun'){ p.hand.push(c); log(`${p.name} 从 ${t.name} 手中牵走一张牌`); }
+  else { G.discard.push(c); log(`${p.name} 拆掉了 ${t.name} 一张手牌`); } } }
+async function tryWuxie(p,t,card){
+ if(!t.hand.some(c=>c.sub==='wuxie'))return false;
+ const a=await ask(t.seat,{kind:'wuxie',trick:card.name,from:p.name},9000);
+ if(a&&a.use){ const i=t.hand.findIndex(c=>c.sub==='wuxie'); if(i>=0){ toDiscard(t.hand.splice(i,1)[0]); return true; } }
+ return false; }
+
+/* ================= 引擎：伤害 / 濒死 / 阵亡 ================= */
+function recover(p,n){ p.hp=Math.min(p.maxhp,p.hp+n); fxHeal(p.seat,n); }
+async function damage(src,tgt,n,card){
+ if(!tgt||tgt.dead)return;
+ tgt.hp-=n; log(`${tgt.name} 受到 ${n} 点伤害（剩 ${Math.max(0,tgt.hp)}）`,'l-dmg'); fxDamage(tgt.seat,n); sfx('hit'); sync();
+ if(!tgt.dead&&hasSk(tgt,'jianxiong')&&card&&card.id){ const i=G.discard.findIndex(c=>c.id===card.id);
+  if(i>=0){ tgt.hand.push(G.discard.splice(i,1)[0]); log('〖奸雄〗获得造成伤害的牌','l-skill'); } }
+ if(!tgt.dead&&hasSk(tgt,'fankui')&&src&&!src.dead&&hasCardStuff(src)){
+  const grabEq=Object.values(src.equip).some(v=>v)&&(Math.random()<.35||!src.hand.length);
+  if(grabEq){ const ks=Object.keys(src.equip).filter(k=>src.equip[k]); const k=ks[rnd(ks.length)]; const c=src.equip[k]; src.equip[k]=null; tgt.hand.push(c); log(`〖反馈〗${tgt.name} 获得 ${src.name} 的【${c.name}】`,'l-skill'); }
+  else { const i=rnd(src.hand.length); const c=src.hand.splice(i,1)[0]; tgt.hand.push(c); log(`〖反馈〗${tgt.name} 获得 ${src.name} 一张手牌`,'l-skill'); } }
+ if(!tgt.dead&&hasSk(tgt,'ganglie')&&src&&!src.dead&&src!==tgt){
+  const j=drawJudge(); log(`〖刚烈〗判定 → ${j.suit}${numTxt(j.num)}`,'l-skill');
+  if(j.suit!=='♥'){ if(src.hand.length>=2){ for(let i=0;i<2;i++){const c=src.hand.splice(rnd(src.hand.length),1)[0];G.discard.push(c);} log(`${src.name} 弃两张牌`); }
+   else { src.hp-=1; log(`${src.name} 失去1点体力`,'l-dmg'); fxDamage(src.seat,1); if(src.hp<=0)await dying(src,null); } } }
+ sendHand(tgt.seat); if(src)sendHand(src.seat); sync();
+ while(tgt.hp<=0&&!tgt.dead&&!G.over){ const saved=await dyingRound(tgt); if(!saved){ await death(tgt,src); return; } }
+}
+async function dyingRound(tgt){
+ for(const q of orderFrom(tgt)){ if(tgt.hp>0)break; if(q.dead)continue;
+  if(!q.hand.some(c=>c.sub==='tao'))continue;
+  let use=false;
+  if(q.isAI){ use=aiWantsSave(q,tgt); }
+  else { const a=await ask(q.seat,{kind:'save',who:tgt.name,hp:tgt.hp},8000); use=!!(a&&a.id); }
+  if(use){ const i=q.hand.findIndex(c=>c.sub==='tao'); toDiscard(q.hand.splice(i,1)[0]); tgt.hp++; log(`${q.name} 使用【桃】救起 ${tgt.name}`); recoverFx(tgt); sync(); if(tgt.hp>0)return true; } }
+ return tgt.hp>0; }
+function recoverFx(p){ fxHeal(p.seat,1); }
+async function death(t,killer){
+ t.dead=true; t.revealed=true; sfx('die');
+ log(`☠ ${t.name}（${t.role}）阵亡`,'l-death'); banner(t.hero.n+' 阵亡','身分揭晓 · '+t.role); sync();
+ if(t.isLord){ // 主公阵亡立即结算
+  if(killer&&killer.role==='反贼'){/* 反贼胜 */} endGameByLordDeath(); return; }
+ if(t.role==='反贼'&&killer&&!killer.dead){ drawCards(killer,3); log(`${killer.name} 击杀反贼，摸三张牌`,'l-skill'); }
+ if(t.role==='忠臣'&&killer&&killer.role==='主公'){ killer.hand.forEach(c=>G.discard.push(c)); killer.hand=[]; Object.keys(killer.equip).forEach(k=>{if(killer.equip[k]){G.discard.push(killer.equip[k]);killer.equip[k]=null}}); log('主公痛失忠臣，弃置所有牌','l-sys'); }
+ checkEnd(); }
+function endGameByLordDeath(){
+ const alive=G.players.filter(p=>!p.dead);
+ const win=(alive.length===1&&alive[0].role==='内奸')?'内奸':'反贼';
+ finish(win); }
+function checkEnd(){
+ const alive=G.players.filter(p=>!p.dead);
+ if(!alive.some(p=>p.role==='反贼'||p.role==='内奸')) finish('主忠'); }
+function finish(faction){
+ G.over=true; G.winner=faction; G.players.forEach(p=>p.revealed=true); clearTimeout(playTimer);
+ if(PENDING){PENDING.done(autoResp({kind:'x'}));PENDING=null;}
+ Object.keys(G.playResolvers).forEach(k=>{const r=G.playResolvers[k];G.playResolvers[k]=null;if(r)r();});
+ log(`═══ ${faction==='主忠'?'主公与忠臣':faction} 获胜 ═══`,'l-turn'); sync(); showEnd(); }
+function showEnd(){
+ const S=buildState(); const me=S.seats.find(s=>s.seat===myLocalSeat()); const myRole=me&&me.role;
+ let iWin=false;
+ if(G.winner==='主忠')iWin=(myRole==='主公'||myRole==='忠臣');
+ else if(G.winner==='反贼')iWin=(myRole==='反贼');
+ else iWin=(myRole==='内奸');
+ $('#endTitle').textContent=iWin?'胜  利':'败  北';
+ $('#endTitle').style.color=iWin?'#e6c65a':'#c96a5a';
+ $('#endSub').textContent=`${G.winner==='主忠'?'主公与忠臣':G.winner}阵营获胜 · ${G.winner==='主忠'?'叛乱已平':'山河易主'}`;
+ const box=$('#endRoles'); box.innerHTML='';
+ G.players.forEach(p=>{ const d=document.createElement('div'); d.className='prow';
+  d.innerHTML=`<span class="dot ${p.dead?'ai':''}"></span><span class="nm">${esc(p.name)}</span><span class="sub">${p.hero.n} · ${p.role}${p.dead?' · 阵亡':' · 存活'}</span>`; box.appendChild(d); });
+ $('#btnAgain').classList.toggle('hidden',mode==='client');
+ $('#ovEnd').classList.remove('hidden'); sfx(iWin?'win':'die'); }
+
+/* ================= 引擎：技能（主动） ================= */
+function doSkill(p,act,fail){
+ const arm=()=>armPlayTimer(p.seat);
+ if(act.skill==='zhiheng'){ if(p.flags.zhiheng)return fail('制衡本回合已发动');
+  const ids=(act.ids||[]).filter(id=>p.hand.some(c=>c.id===id)); if(!ids.length)return fail('请选择要弃置的牌');
+  ids.forEach(id=>{const c=removeHand(p,id);if(c)toDiscard(c);}); p.flags.zhiheng=1; drawCards(p,ids.length);
+  log(`〖制衡〗${p.name} 弃 ${ids.length} 张，摸 ${ids.length} 张`,'l-skill'); arm(); sendHand(p.seat); sync(); return; }
+ if(act.skill==='qingnang'){ if(p.flags.qingnang)return fail('青囊本回合已发动'); if(p.hp>=p.maxhp)return fail('体力已满');
+  const c=removeHand(p,act.id); if(!c)return fail('请选择一张牌'); toDiscard(c); p.flags.qingnang=1; recover(p,1);
+  log(`〖青囊〗${p.name} 弃牌回复1点体力`,'l-skill'); arm(); sendHand(p.seat); sync(); return; }
+ if(act.skill==='rende'){ const t=G.players[act.target]; const c=removeHand(p,act.id);
+  if(!t||t.dead||t===p||!c)return fail('仁德目标无效'); t.hand.push(c); p.rendeN=(p.rendeN||0)+1;
+  log(`〖仁德〗${p.name} 赠予 ${t.name} 一张牌`,'l-skill');
+  if(p.rendeN>=2&&!p.flags.rendeHeal&&p.hp<p.maxhp){ p.flags.rendeHeal=1; recover(p,1); log(`${p.name} 回复1点体力`); }
+  arm(); sendHand(p.seat); sendHand(t.seat); sync(); return; }
+ if(act.skill==='zhangba'){ const ids=(act.ids||[]).slice(0,2); if(ids.length!==2)return fail('需选择两张手牌');
+  const t=G.players[act.target]; if(!t||t.dead||t===p)return fail('请选择目标'); if(gDist(p,t)>gRange(p))return fail('距离太远');
+  const cards=ids.map(id=>removeHand(p,id)).filter(Boolean); if(cards.length!==2)return fail('选牌无效');
+  cards.forEach(c=>toDiscard(c)); const ok=useCardAsSha2(p,cards,t); if(!ok)return fail('本回合杀已用完');
+  arm(); sendHand(p.seat); sync(); return; } }
+
+/* ================= AI ================= */
+function aiDecide(p,pr){
+ switch(pr.kind){
+  case 'hero':{ if(pr.lord)return{id:LORDS[rnd(3)]};
+   const pref=['lvbu','zhaoyun','guanyu','zhangfei','caocao','sunquan','ganning','simayi','zhouyu','huangyueying','huatuo','xiahoudun','liubei','zhangfei'];
+   for(const id of pref)if(pr.options.includes(id))return{id}; return{id:pr.options[0]}; }
+  case 'respond':{
+   if(pr.need==='shan'){ const n=pr.n||1; const cs=p.hand.filter(c=>shanLike(p,c)); if(cs.length>=n)return{id:cs[0].id}; return{id:null}; }
+   if(pr.need==='sha'){ const n=pr.n||1; const cs=p.hand.filter(c=>shaLike(p,c));
+    if(cs.length>=n)return pr.n&&pr.n>1?{ids:cs.slice(0,n).map(c=>c.id)}:{id:cs[0].id};
+    if(pr.why==='青龙偃月刀追击')return{id:null}; return{id:null}; }
+   return {}; }
+  case 'axe':{ const t=G.players.find(q=>q.name===pr.from); if(t&&t.hp===1&&p.hand.length>=3){ return{ids:p.hand.slice(0,2).map(c=>c.id)}; } return{ids:null}; }
+  case 'save':{ const t=G.players.find(q=>q.name===pr.who); if(t&&aiWantsSave(p,t)&&p.hand.some(c=>c.sub==='tao'))return{id:p.hand.find(c=>c.sub==='tao').id}; return{id:null}; }
+  case 'wuxie':{ const harmful=true; return{use:Math.random()<.85}; }
+  case 'discard':{ const n=pr.n; const val=c=>({'tao':10,'wuzhong':9,'shan':8,'sha':7,'juedou':6,'shun':6,'chai':6,'nanman':4,'wanjian':4,'taoyuan':3,'wuxie':5}[c.sub]||2)+(c.type==='equip'?1:0);
+   return{ids:[...p.hand].sort((a,b)=>val(a)-val(b)).slice(0,n).map(c=>c.id)}; }
+ } return {}; }
+function aiWantsSave(q,t){ if(t===q)return true; const same=(q.role==='主公'&&t.role==='忠臣')||(q.role==='忠臣'&&(t.role==='主公'||t.role==='忠臣'));
+ if(same)return true; if(q.role==='反贼'&&t.role==='反贼')return true; return false; }
+function enemiesOf(p){ const alive=G.players.filter(q=>!q.dead&&q!==p);
+ const f=arr=>arr.filter(Boolean);
+ if(p.role==='主公'||p.role==='忠臣'){ let e=alive.filter(q=>q.role==='反贼'); if(!e.length)e=alive.filter(q=>q.role==='内奸'); return e; }
+ if(p.role==='反贼'){ const lord=G.players.find(q=>q.isLord&&!q.dead); return f([lord,...alive.filter(q=>q.role==='忠臣'||q.role==='内奸')]); }
+ const loyal=alive.filter(q=>q.role==='主公'||q.role==='忠臣'), reb=alive.filter(q=>q.role==='反贼');
+ return loyal.length>=reb.length?loyal:reb; }
+function alliesOf(p){ const en=new Set(enemiesOf(p).map(q=>q.seat)); return G.players.filter(q=>!q.dead&&q!==p&&!en.has(q.seat)); }
+function aiPlayPhase(p){ return (async()=>{ let guard=0;
+ while(!G.over&&guard++<26){ await sleep(430+rnd(320)); const step=aiStep(p); if(!step)break; await step(); if(G.over)return; } 
+ if(G.openSeat===p.seat)finishPlay(p); })(); }
+function aiStep(p){
+ const foes=enemiesOf(p).filter(q=>!q.dead), pals=alliesOf(p);
+ const canSha=t=>gDist(p,t)<=gRange(p);
+ // 桃
+ if(p.hp<=Math.max(1,p.maxhp-2)&&p.hand.some(c=>c.sub==='tao')&&(p.hp<=2||p.hand.length>4))
+  return async()=>{const c=p.hand.find(c=>c.sub==='tao');removeHand(p,c.id);await useCard(p,c,'tao');};
+ // 装备
+ const eq=p.hand.find(c=>c.type==='equip'); if(eq)return async()=>{removeHand(p,eq.id);await useCard(p,eq,EQUIP_INFO[eq.name].slot==='weapon'?'weapon':eq.sub);};
+ // 青囊/制衡/仁德
+ if(hasSk(p,'qingnang')&&!p.flags.qingnang&&p.hp<p.maxhp&&p.hand.length>=2)
+  return async()=>doSkill(p,{skill:'qingnang',id:sortedHand(p)[0].id},()=>{});
+ if(hasSk(p,'zhiheng')&&!p.flags.zhiheng&&p.hand.length>=4)
+  return async()=>doSkill(p,{skill:'zhiheng',ids:sortedHand(p).slice(0,2).map(c=>c.id)},()=>{});
+ if(hasSk(p,'rende')&&p.hand.length>=4){ const t=pals.sort((a,b)=>a.hp-b.hp)[0]; if(t)return async()=>doSkill(p,{skill:'rende',id:sortedHand(p)[0].id,target:t.seat},()=>{}); }
+ // 无中
+ const wz=p.hand.find(c=>c.sub==='wuzhong'); if(wz)return async()=>{removeHand(p,wz.id);await useCard(p,wz,'wuzhong');};
+ // 拆顺
+ for(const sub of ['chai','shun']){ const c=p.hand.find(x=>effSub(p,x)===sub&&x.sub!=='sha'||(hasSk(p,'qixi')&&isBlackCard(x)&&sub==='chai')); 
+  if(c&&effSub(p,c)===sub){ const t=foes.filter(q=>hasCardStuff(q)&&(sub==='chai'||gDist(p,q)<=1)).sort((a,b)=>a.hp-b.hp)[0];
+   if(t)return async()=>{removeHand(p,c.id);await useCard(p,c,sub,t);}; } }
+ // 决斗
+ const jd=p.hand.find(c=>c.sub==='juedou'); if(jd&&foes.length&&p.hand.filter(c=>shaLike(p,c)).length>=1)
+  { const t=foes.sort((a,b)=>a.hp-b.hp)[0]; return async()=>{removeHand(p,jd.id);await useCard(p,jd,'juedou',t);}; }
+ // AOE
+ const nm=p.hand.find(c=>c.sub==='nanman'), wj=p.hand.find(c=>c.sub==='wanjian');
+ if(nm&&foes.length>=2)return async()=>{removeHand(p,nm.id);await useCard(p,nm,'nanman');};
+ if(wj&&foes.length>=2)return async()=>{removeHand(p,wj.id);await useCard(p,wj,'wanjian');};
+ // 桃园
+ const ty=p.hand.find(c=>c.sub==='taoyuan');
+ if(ty&&pals.filter(q=>q.hp<q.maxhp).length>=foes.filter(q=>q.hp<q.maxhp).length&&pals.some(q=>q.hp<q.maxhp))
+  return async()=>{removeHand(p,ty.id);await useCard(p,ty,'taoyuan');};
+ // 杀
+ const limitOK=p.shaUsed<1||hasSk(p,'paoxiao')||(p.equip.weapon&&p.equip.weapon.name==='诸葛连弩');
+ if(limitOK){
+  const sha=p.hand.find(c=>c.sub==='sha')||(hasSk(p,'wusheng')?p.hand.find(c=>isRed(c)&&c.type!=='equip'&&c.sub!=='tao'):null)||(hasSk(p,'longdan')&&p.hand.length>2?p.hand.find(c=>c.sub==='shan'):null);
+  if(sha){ const t=foes.filter(canSha).sort((a,b)=>a.hp-b.hp)[0];
+   if(t)return async()=>{removeHand(p,sha.id);await useCard(p,sha,'sha',t);}; } }
+ // 丈八
+ if(p.equip.weapon&&p.equip.weapon.name==='丈八蛇矛'&&limitOK&&p.hand.length>=3){
+  const t=foes.filter(canSha)[0]; if(t)return async()=>doSkill(p,{skill:'zhangba',ids:p.hand.slice(0,2).map(c=>c.id),target:t.seat},()=>{}); }
+ return null; }
+function sortedHand(p){ const val=c=>({'tao':10,'wuzhong':9,'shan':8,'sha':7,'juedou':6,'shun':6,'chai':6,'wuxie':5,'nanman':4,'wanjian':4,'taoyuan':3}[c.sub]||2);
+ return [...p.hand].sort((a,b)=>val(a)-val(b)); }
+
+/* ================= 客户端动作发送 ================= */
+function sendAct(act){ if(isEngine())onAction(myLocalSeat(),act); else netPublish({t:'act',from:NET.id,fromSeat:ME.seat,act}); }
+
+/* ================= 渲染 ================= */
+function buildCardEl(c,mini){ const d=document.createElement('div');
+ d.className=`card t-${c.type} ${isRed(c)?'red':'black'}${mini?' mini':''}`;
+ d.innerHTML=`<div class="cn">${numTxt(c.num)}<br>${c.suit}</div><div class="nm ${c.name.length>2?'two':''}">${c.name}</div><div class="tp">${c.type==='basic'?'基本牌':c.type==='trick'?'锦囊牌':'装备牌'}</div>`;
+ return d; }
+let lastLogN=0;
+function renderGame(){ if(!VIEW)return;
+ $('#giDeck').textContent=VIEW.deckN; $('#giPhase').textContent=VIEW.phase;
+ if(mode!=='local')$('#giRoom').classList.remove('hidden'),$('#giRoomCode').textContent=ROOM.code||'';
+ renderSeats(); renderLog(); renderMyPanel(); renderHand(); renderPrompt(); renderPlayers();
+ if(VIEW.over&&G)showEnd(); }
+function renderSeats(){
+ const table=$('#table'); table.querySelectorAll('.seat').forEach(e=>e.remove());
+ const n=VIEW.seats.length; if(!n)return;
+ const myIdx=Math.max(0,VIEW.seats.findIndex(s=>s.seat===myLocalSeat()));
+ const selSub=selectedEffSub();
+ VIEW.seats.forEach((s,i)=>{
+  const rel=(i-myIdx+n)%n; const ang=Math.PI/2+rel*(2*Math.PI/n);
+  const el=document.createElement('div'); el.className='seat'+(s.dead?' dead':'')+(s.cur?' turn':''); el.dataset.seat=s.seat;
+  const kc=s.kingdom?KCOLOR[s.kingdom]:'#888';
+  const hpPips=s.maxhp>0?Array.from({length:Math.max(s.maxhp,1)},(_,k)=>`<i class="${k<s.hp?'':'lost'}"></i>`).join(''):'';
+  const eqch=[]; if(s.equip.weapon)eqch.push(`<span class="w">⚔${s.equip.weapon}</span>`); if(s.equip.armor)eqch.push(`<span class="a">🛡${s.equip.armor}</span>`); if(s.equip.plusHorse)eqch.push(`<span class="h">+1马</span>`); if(s.equip.minusHorse)eqch.push(`<span class="h">-1马</span>`);
+  const backs=Math.min(s.handN,5); 
+  const roleTag=s.isLord?`<span class="rn">主公</span>`:(s.role?`<span class="rn">${s.role}</span>`:`<span class="rn hidden-r">？</span>`);
+  el.innerHTML=`<div class="box">${s.think&&!s.dead?'<div class="think">思考中</div>':''}
+   <div class="ava" style="--kc:${kc};background-color:${kc}55">${s.heroName?s.heroName[0]:'？'}</div>
+   <div class="sname">${esc(s.name)}${roleTag}</div>
+   <div class="hpbar">${s.maxhp>5?`<span class="hpn">♥ ${s.hp}/${s.maxhp}</span>`:hpPips}</div>
+   <div class="subrow"><span class="backs">${'<b></b>'.repeat(Math.min(backs,5))}</span><span>${s.handN} 牌</span></div>
+   <div class="eqs">${eqch.join('')}</div></div>`;
+  el.style.left=(50+41*Math.cos(ang)*1.02)+'%'; el.style.top=(46+38*Math.sin(ang)*.94)+'%';
+  if(selSub&&canTargetView(s))el.classList.add('tgtOK');
+  if(selTargets.includes(s.seat))el.classList.add('tgtSel');
+  el.onclick=()=>onSeatClick(s.seat);
+  table.appendChild(el); }); }
+function renderMyPanel(){
+ const me=VIEW.seats.find(s=>s.seat===myLocalSeat()); if(!me)return;
+ const kc=me.kingdom?KCOLOR[me.kingdom]:'#888';
+ $('#mpAva').textContent=me.heroName?me.heroName[0]:'？'; $('#mpAva').style.setProperty('--kc',kc); $('#mpAva').style.backgroundColor=kc+'55';
+ $('#mpName').innerHTML=`${esc(me.name)} ${me.isLord?'<span class="tag" style="background:#8f2b1e">主公</span>':''}`;
+ $('#mpHero').textContent=me.heroName?`${me.heroName} · ${me.kingdom} · ${me.hp}/${me.maxhp}`:'—';
+ $('#mpEq').textContent=''; }
+function renderHand(){
+ const h=$('#hand'); h.innerHTML='';
+ const pr=ME.prompt;
+ const respNeed=pr&&pr.kind==='respond'?pr.need:null;
+ ME.hand.forEach(c=>{
+  const el=buildCardEl(c); el.dataset.id=c.id;
+  if(selCards.has(c.id))el.classList.add('sel');
+  if(respNeed){ const me=VIEW.seats.find(s=>s.seat===myLocalSeat());
+   const ok=respNeed==='shan'?shanLike({hero:HEROES[meHeroId()]},c):shaLike({hero:HEROES[meHeroId()]},c);
+   if(!ok)el.classList.add('dim'); }
+  el.onclick=()=>onHandClick(c); h.appendChild(el); }); }
+function meHeroId(){ const me=VIEW&&VIEW.seats.find(s=>s.seat===myLocalSeat()); return me?me.heroId:null; }
+function renderLog(){ if(!VIEW)return; const box=$('#logBox');
+ VIEW.log.slice(lastLogN).forEach(l=>{ const d=document.createElement('div'); d.className=l.c; d.innerHTML=l.m; box.appendChild(d); });
+ lastLogN=VIEW.log.length; box.scrollTop=box.scrollHeight; }
+function renderPlayers(){ const box=$('#plList'); if(!VIEW){box.innerHTML='';return;} box.innerHTML='';
+ VIEW.seats.forEach(s=>{ const d=document.createElement('div'); d.className='prow';
+  d.innerHTML=`<span class="dot ${s.dead?'ai':''}"></span><span class="nm">${esc(s.name)}</span><span class="sub">${s.heroName||''} ${s.isAI?'· AI':''} ${s.dead?'· 阵亡':''}</span>`;
+  if(mode==='host'&&!s.isAI&&s.seat!==0&&!VIEW.over){ const b=document.createElement('button'); b.className='btn ghost'; b.style.cssText='padding:2px 8px;font-size:11px'; b.textContent='托管';
+   b.onclick=()=>{ if(G){G.players[s.seat].isAI=true;G.players[s.seat].name+='·托管';log(`${G.players[s.seat].name} 转为托管`,'l-sys');sync();} }; d.appendChild(b); }
+  box.appendChild(d); }); }
+
+/* ---- 提示区 ---- */
+function renderPrompt(){
+ const box=$('#pmsg'), btns=$('#pbtns'); btns.innerHTML='';
+ const pr=ME.prompt; const me=VIEW&&VIEW.seats.find(s=>s.seat===myLocalSeat());
+ const playing=VIEW&&!VIEW.over&&me&&VIEW.openSeat===me.seat&&VIEW.phase==='出牌';
+ const cdSpan='<span class="cd" id="cdSp"></span>';
+ if(!VIEW||VIEW.over){ box.innerHTML='— 局终 —'; return; }
+ if(pr&&pr.kind==='hero'){ box.innerHTML='正在点将…'+cdSpan; return; }
+ if(pr&&pr.kind==='respond'){
+  box.innerHTML=`${pr.from?`<b style="color:#e6c65a">${esc(pr.from)}</b> 对你使用【${esc(pr.card||pr.why||'')}${pr.why&&pr.why.includes('追击')?'】· '+pr.why:''}】，请打出 <b style="color:#ff9d84">【${pr.need==='sha'?'杀':'闪'}】×${pr.n||1}</b>`:'请响应'}${cdSpan}`;
+  addBtn('打出',()=>{ const me2=ME.hand.filter(c=>pr.need==='shan'?shanLike({hero:HEROES[meHeroId()]},c):shaLike({hero:HEROES[meHeroId()]},c));
+   let ids=[...selCards].filter(id=>me2.some(c=>c.id===id)); if(!ids.length&&me2.length)ids=[me2[0].id];
+   const act=pr.n>1?{ids:ids.slice(0,pr.n)}:{id:ids[0]||null}; ME.prompt=null; selCards.clear(); sendAct(act); renderHand(); },{disabled:!me2Exists(pr)});
+  addBtn('不出',()=>{ME.prompt=null;selCards.clear();sendAct(pr.n>1?{ids:null}:{id:null});renderHand();},'ghost'); return; }
+ if(pr&&pr.kind==='save'){ box.innerHTML=`你已濒死（体力 ${pr.hp}），是否使用【桃】自救？${cdSpan}`;
+  addBtn('使用桃',()=>{const c=ME.hand.find(c=>c.sub==='tao');ME.prompt=null;sendAct({id:c?c.id:null})},); addBtn('放弃',()=>{ME.prompt=null;sendAct({id:null})},'ghost'); return; }
+ if(pr&&pr.kind==='discard'){ box.innerHTML=`弃牌阶段：请弃置 <b style="color:#e6c65a">${pr.n}</b> 张牌（已选 ${selCards.size}）${cdSpan}`;
+  addBtn('确认弃牌',()=>{ if(selCards.size<pr.n)return toast(`还需选择 ${pr.n-selCards.size} 张`); ME.prompt=null; const ids=[...selCards]; selCards.clear(); sendAct({kind:'discard',ids}); renderHand(); },'gold');
+  return; }
+ if(pr&&pr.kind==='wuxie'){ box.innerHTML=`${esc(pr.from)} 对 你 使用【${esc(pr.trick)}】，是否【无懈可击】？${cdSpan}`;
+  addBtn('无懈',()=>{ME.prompt=null;sendAct({use:true})}); addBtn('过',()=>{ME.prompt=null;sendAct({use:false})},'ghost'); return; }
+ if(pr&&pr.kind==='axe'){ box.innerHTML=`【贯石斧】被闪避：弃两张牌可强制命中？${cdSpan}`;
+  addBtn('弃两张强攻',()=>{ if(selCards.size<2)return toast('请选择两张牌'); ME.prompt=null; const ids=[...selCards].slice(0,2); selCards.clear(); sendAct({ids}); },'gold');
+  addBtn('罢了',()=>{ME.prompt=null;sendAct({ids:null})},'ghost'); return; }
+ if(playing){
+  box.innerHTML=`你的出牌阶段${cdSpan}<br><span style="font-size:12px;color:#8d8168">点击手牌→点击目标→出牌；装备/延时锦囊点击即用</span>`;
+  const hero=HEROES[meHeroId()]||{sk:[]};
+  if(selCards.size>0){
+   const sub=selectedEffSub();
+   if(['sha','juedou','chai','shun'].includes(sub)) addBtn('出 牌','gold',()=>confirmPlay());
+   addBtn('取消',()=>{selCards.clear();selTargets=[];useAsSha=false;renderHand();renderSeats();renderPrompt();},'ghost'); }
+  else { addBtn('结束回合',()=>sendAct({kind:'end'}),'ghost'); }
+  // 技能按钮
+  if(hero.sk.some(s=>s.id==='zhiheng'))addBtn('制衡',()=>{ if(!selCards.size)return toast('先选择要弃的牌'); sendAct({kind:'skill',skill:'zhiheng',ids:[...selCards]}); selCards.clear(); renderHand(); });
+  if(hero.sk.some(s=>s.id==='qingnang'))addBtn('青囊',()=>{ if(selCards.size!==1)return toast('选择一张牌弃置'); sendAct({kind:'skill',skill:'qingnang',id:[...selCards][0]}); selCards.clear(); renderHand(); });
+  if(hero.sk.some(s=>s.id==='rende')&&selTargets.length===1&&selCards.size===1)addBtn('仁德·赠牌',()=>{ sendAct({kind:'skill',skill:'rende',id:[...selCards][0],target:selTargets[0]}); selCards.clear();selTargets=[]; renderHand();renderSeats(); });
+  const me2=me; const hasSpear=me2.equip.weapon==='丈八蛇矛';
+  if(hasSpear&&selCards.size===2&&selTargets.length===1)addBtn('蛇矛·当杀',()=>{ sendAct({kind:'skill',skill:'zhangba',ids:[...selCards],target:selTargets[0]}); selCards.clear();selTargets=[]; renderHand();renderSeats(); });
+  if(meHeroId()==='guanyu'&&[...selCards].length===1){ const c=ME.hand.find(x=>x.id===[...selCards][0]);
+   if(c&&isRed(c)&&c.type!=='equip'&&c.sub!=='tao'){ const lb=document.createElement('label'); lb.className='chk'; lb.innerHTML=`<input type="checkbox" ${useAsSha?'checked':''}> 红牌当【杀】`; lb.querySelector('input').onchange=e=>{useAsSha=e.target.checked;renderSeats();renderPrompt();}; btns.appendChild(lb); } }
+  return; }
+ box.innerHTML=VIEW.turnSeat===myLocalSeat()?'…':'<span style="color:#8d8168">等待 '+esc(VIEW.seats[VIEW.turnSeat]?VIEW.seats[VIEW.turnSeat].name:'')+' 行动…</span>'+cdSpan;
+ function addBtn(t,fn,style){ if(typeof fn==='string'){[fn,style]=[style,fn]} const b=document.createElement('button'); b.className='btn '+(style||''); b.textContent=t; if(typeof fn==='function')b.onclick=fn; btns.appendChild(b); return b; }
+ function me2Exists(pr){ const hid=meHeroId(); return ME.hand.some(c=>pr.need==='shan'?shanLike({hero:HEROES[hid]},c):shaLike({hero:HEROES[hid]},c)); }
+}
+setInterval(()=>{ const el=$('#cdSp'); if(!el)return; const pr=ME.prompt; if(pr&&pr.expireAt){ const s=Math.max(0,Math.ceil((pr.expireAt-Date.now())/1000)); el.textContent='⏳'+s; } },300);
+
+/* ---- 手牌/目标交互（客户端视角） ---- */
+function myViewSeat(){ return VIEW&&VIEW.seats.find(s=>s.seat===myLocalSeat()); }
+function selectedCards(){ return ME.hand.filter(c=>selCards.has(c.id)); }
+function selectedEffSub(){ const cs=selectedCards(); if(cs.length!==1)return null; const c=cs[0]; const hid=meHeroId();
+ if(hid==='guanyu'&&useAsSha&&isRed(c)&&c.type!=='equip')return 'sha';
+ if(hid==='ganning'&&isBlackCard(c)&&c.type!=='equip')return 'chai'; return c.sub; }
+function canTargetView(s){ const sub=selectedEffSub(); if(!sub)return false; const me=myViewSeat(); if(s.dead||s.seat===me.seat)return false;
+ if(!['sha','juedou','chai','shun'].includes(sub))return false;
+ if(sub==='chai'||sub==='juedou')return true;
+ const infos=viewInfos(); const d=distCalc(me.seat,s.seat,infos); const my=infos.find(x=>x.seat===me.seat);
+ if(sub==='sha')return d<=rangeOf(my); if(sub==='shun')return d<=1; return true; }
+function onHandClick(c){
+ const pr=ME.prompt;
+ if(pr&&(pr.kind==='respond'||pr.kind==='axe'||pr.kind==='discard')){ selCards.has(c.id)?selCards.delete(c.id):selCards.add(c.id); renderHand(); if(pr.kind==='discard')renderPrompt(); return; }
+ const playing=VIEW&&VIEW.openSeat===myLocalSeat()&&VIEW.phase==='出牌'; if(!playing){toast('现在不是你的出牌阶段');return;}
+ if(selCards.has(c.id)){ selCards.delete(c.id); renderHand(); renderPrompt(); renderSeats(); return; }
+ const sub=(meHeroId()==='guanyu'&&useAsSha&&isRed(c)&&c.type!=='equip')?'sha':(meHeroId()==='ganning'&&isBlackCard(c)&&c.type!=='equip')?'chai':c.sub;
+ const selfOnly=['wuzhong','tao','taoyuan','nanman','wanjian'].includes(sub)||c.type==='equip';
+ if(selfOnly){ selCards.clear(); selTargets=[]; sendAct({kind:'card',id:c.id,targets:[],asSha:false}); return; }
+ if(sub==='shan'||sub==='wuxie'){ toast('此牌不能主动使用'); return; }
+ selCards.clear(); selCards.add(c.id); selTargets=[]; renderHand(); renderSeats(); renderPrompt(); }
+function onSeatClick(seat){
+ const me=myViewSeat(); if(!me)return;
+ if(!canTargetView(VIEW.seats.find(s=>s.seat===seat)))return;
+ selTargets=[seat]; renderSeats(); renderPrompt(); }
+function confirmPlay(){ const cs=selectedCards(); if(cs.length!==1)return;
+ sendAct({kind:'card',id:cs[0].id,targets:selTargets,asSha:useAsSha}); selCards.clear(); selTargets=[]; useAsSha=false; renderHand(); renderSeats(); }
+function deliverPrompt(seat,p){ if(mode!=='client'&&seat===0){ ME.prompt=p; renderPrompt(); } }
+
+/* ================= FX ================= */
+function seatEl(seat){ return document.querySelector(`.seat[data-seat="${seat}"]`); }
+function fxDamage(seat,n){ const el=seatEl(seat); if(!el)return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+ const d=document.createElement('div'); d.className='dmgfx'; d.textContent='−'+n; el.appendChild(d); setTimeout(()=>d.remove(),1000); }
+function fxHeal(seat,n){ const el=seatEl(seat); if(!el)return; const d=document.createElement('div'); d.className='dmgfx healfx'; d.textContent='＋'+n; el.appendChild(d); setTimeout(()=>d.remove(),1000); }
+let paTimer=null;
+function showPlayed(p,name,targets){ const cap=$('#paCaption'), box=$('#paCards');
+ cap.textContent=`${p.name} ▸ ${name}${targets.length?' ▸ '+targets.map(t=>t.name).join('、'):''}`;
+ box.innerHTML=''; const c={name,type:name==='杀'?'basic':'trick',suit:'◈',num:0};
+ if(name.length<=4)box.appendChild(buildCardEl({name,type:/杀|闪|桃/.test(name)?'basic':/弩|剑|刀|矛|斧|盾|阵|马|影|兔|骍|宛/.test(name)?'equip':'trick',suit:'❖',num:13}));
+ clearTimeout(paTimer); paTimer=setTimeout(()=>{box.innerHTML='';cap.textContent='';},2200); sfx('card'); }
+
+/* ================= 启动 ================= */
+$('#mqttStat').textContent=window.mqtt?'联机组件就绪 ✓':'联机组件加载失败（无法联机，单机可用）';
+$('#nickInp').value=''; ME.name='无名';
+window.addEventListener('beforeunload',()=>{ try{ if(NET.ok)netPublish({t:'leave',name:ME.name}); }catch(e){} });
+</script>
+</body>
+</html>

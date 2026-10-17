@@ -7,10 +7,8 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗝️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 字体改为非阻塞加载:加载失败(离线/墙)时不影响游戏 -->
 <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style id="fb">
-  /* 字体兜底:未加载网络字体时改用系统字体 */
   h1,.brand,.panel h2,.float-txt.combo{font-family:'Ma Shan Zheng','Kaiti SC','STKaiti','KaiTi',serif}
   .kicker,.btn,.room-chip,.targets-title,.ov-kicker{font-family:'ZCOOL XiaoWei','Kaiti SC','STKaiti','KaiTi',serif}
   body{font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif}
@@ -37,7 +35,6 @@ body{
 }
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:3;
   background:radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.55) 100%)}
-/* ---------- 环境光与尘埃 ---------- */
 .glow{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(10px)}
 .glow-a{width:520px;height:520px;left:-140px;top:-120px;
   background:radial-gradient(circle,rgba(255,170,80,.20),transparent 65%);animation:flick 3.4s ease-in-out infinite}
@@ -50,7 +47,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:3;
 @keyframes dustUp{0%{transform:translateY(0) translateX(0);opacity:0}
   12%{opacity:.65}80%{opacity:.35}100%{transform:translateY(-112vh) translateX(34px);opacity:0}}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:80}
-/* ---------- 屏幕切换 ---------- */
+/* 全屏魔法闪光层 */
+#flash{position:fixed;inset:0;z-index:40;pointer-events:none;opacity:0;mix-blend-mode:screen}
 .screen{display:none;position:relative;z-index:2}
 .screen.active{display:block}
 /* ---------- 序章 ---------- */
@@ -86,7 +84,6 @@ h1 em{font-style:normal;color:var(--brass-hi)}
 .btn.primary{font-size:19px;padding:16px 40px}
 .journey{margin-top:20px;font-size:13px;color:var(--dim);letter-spacing:.12em}
 .journey b{color:#d8c79a;font-weight:500}
-/* 序章大门 */
 .intro-right{position:relative;display:flex;justify-content:center;align-items:center;min-height:420px}
 .door-glow{position:absolute;width:420px;height:420px;border-radius:50%;
   background:radial-gradient(circle,rgba(255,180,90,.18),transparent 65%);animation:flick 3s ease-in-out infinite}
@@ -140,7 +137,6 @@ h1 em{font-style:normal;color:var(--brass-hi)}
   transition:.2s;display:grid;place-items:center}
 .icon-btn:hover{border-color:var(--brass-hi);transform:translateY(-2px);box-shadow:0 6px 16px rgba(224,166,63,.22)}
 .game-grid{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr);gap:26px;align-items:start}
-/* 侧栏 */
 .side{display:flex;flex-direction:column;gap:16px}
 .door.small{width:200px;aspect-ratio:190/280;border-radius:95px 95px 8px 8px;margin:0 auto;border-width:8px}
 .door.small .b1{top:26%}.door.small .b2{top:74%}
@@ -163,7 +159,6 @@ h1 em{font-style:normal;color:var(--brass-hi)}
 .chip.done .cnt{color:var(--jade)}
 .chip.bump{animation:chipB .32s}
 @keyframes chipB{35%{transform:scale(1.05)}}
-/* 棋盘 —— 已改为确定性宽度,避免父容器循环依赖 */
 .stage{display:flex;justify-content:center;min-width:0}
 .stage.shake{animation:shakeS .35s}
 @keyframes shakeS{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-2px)}}
@@ -189,6 +184,11 @@ h1 em{font-style:normal;color:var(--brass-hi)}
 .tile.sel{z-index:4}
 .tile.sel .face{border-color:var(--brass-hi);box-shadow:0 0 0 2px var(--brass),0 0 18px rgba(224,166,63,.6);animation:selP 1s ease-in-out infinite}
 @keyframes selP{50%{transform:scale(1.07)}}
+/* 选中棋子上的小星光 */
+.tile.sel::after{content:'✦';position:absolute;top:6%;right:10%;z-index:6;
+  font-size:calc(var(--cell,60px)*.2);color:#fff3c4;text-shadow:0 0 8px #ffd98a;
+  animation:twk 1.1s ease-in-out infinite;pointer-events:none}
+@keyframes twk{0%,100%{opacity:.15;transform:scale(.6) rotate(0deg)}50%{opacity:1;transform:scale(1.2) rotate(45deg)}}
 .tile.hint .face{animation:hintP 1s ease-in-out infinite}
 @keyframes hintP{50%{transform:scale(1.08);box-shadow:0 0 0 2px rgba(88,230,168,.7),0 0 20px rgba(88,230,168,.45)}}
 .tile.bomb .face{border-color:rgba(255,122,82,.85);animation:bombP 1s infinite}
@@ -201,9 +201,17 @@ h1 em{font-style:normal;color:var(--brass-hi)}
 @keyframes hueR{to{filter:hue-rotate(360deg)}}
 .tile.spawnFlash .face{animation:spF .5s}
 @keyframes spF{30%{transform:scale(1.25);filter:brightness(1.8)}}
+/* ===== 升级版消除动画:白炽闪光 → 膨胀 → 旋转收缩湮灭 ===== */
 .tile.pop{z-index:5}
-.tile.pop .face{animation:popA .24s ease-out forwards}
-@keyframes popA{40%{transform:scale(1.2);filter:brightness(1.6)}100%{transform:scale(.15);opacity:0}}
+.tile.pop::after{content:'';position:absolute;inset:-28%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,240,200,.4) 36%,transparent 68%);
+  animation:popFlash .34s ease-out forwards}
+@keyframes popFlash{0%{transform:scale(.35);opacity:0}22%{opacity:1}100%{transform:scale(2);opacity:0}}
+.tile.pop .face{animation:popA .34s cubic-bezier(.3,.55,.4,1) forwards}
+@keyframes popA{
+  0%{filter:brightness(1)}
+  22%{filter:brightness(2.6) saturate(1.8);transform:scale(1.22)}
+  100%{transform:scale(.05) rotate(170deg);opacity:0;filter:brightness(2.4)}}
 .tile.wiggle .face{animation:wigA .32s}
 @keyframes wigA{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 /* ---------- 浮层 ---------- */
@@ -236,7 +244,6 @@ h1 em{font-style:normal;color:var(--brass-hi)}
 .gate i:last-child{border-left:5px solid #191008;box-shadow:inset 30px 0 40px rgba(0,0,0,.5)}
 #ovWin.open .gate i:first-child{transform:translateX(-101%)}
 #ovWin.open .gate i:last-child{transform:translateX(101%)}
-/* 提示条 / 浮字 */
 #toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);z-index:90;
   background:#14242e;border:1px solid var(--brass-dim);border-radius:999px;padding:10px 26px;
   font-size:14px;color:var(--brass-hi);letter-spacing:.1em;opacity:0;pointer-events:none;transition:.35s}
@@ -245,8 +252,16 @@ h1 em{font-style:normal;color:var(--brass-hi)}
   animation:floatUp .95s ease-out forwards;font-weight:900}
 @keyframes floatUp{to{transform:translate(-50%,-50%) translateY(-52px);opacity:0}}
 .float-txt.pts{color:var(--brass-hi);font-size:18px;text-shadow:0 2px 8px #000}
-.float-txt.combo{font-family:var(--f-disp);font-size:38px;font-weight:400;color:#ffb84d;
-  text-shadow:0 0 20px rgba(255,160,60,.7),0 3px 8px #000}
+/* 连锁大字:弹入 → 驻留发光 → 上浮消散 */
+.float-txt.combo{font-family:var(--f-disp);font-size:42px;font-weight:400;color:#ffb84d;
+  text-shadow:0 0 24px rgba(255,160,60,.85),0 0 60px rgba(255,120,40,.4),0 3px 8px #000;
+  animation:comboPop 1.15s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes comboPop{
+  0%{transform:translate(-50%,-50%) scale(.2) rotate(-6deg);opacity:0}
+  18%{transform:translate(-50%,-50%) scale(1.28) rotate(2deg);opacity:1}
+  32%{transform:translate(-50%,-50%) scale(1) rotate(0deg)}
+  72%{opacity:1}
+  100%{transform:translate(-50%,-64%) scale(1.06);opacity:0}}
 @media (max-width:980px){
   .intro-wrap{grid-template-columns:1fr;text-align:left;gap:34px;padding-top:44px}
   .intro-right{min-height:340px;order:-1}
@@ -261,6 +276,7 @@ h1 em{font-style:normal;color:var(--brass-hi)}
 </head>
 <body>
 <canvas id="fx"></canvas>
+<div id="flash"></div>
 <div class="glow glow-a"></div><div class="glow glow-b"></div>
 <div id="dust" aria-hidden="true"></div>
 
@@ -401,15 +417,15 @@ const LOCK_NAMES=['一','二','三'];
 let board=[], cellPx=60, busy=true, sel=null, drag=null;
 let levelIdx=0, moves=0, score=0, totalMoves=0, startTime=0, levelStartScore=0;
 let progress=[], chipEls=[], lockEls=[], overlayOpen=false, muted=false;
-let hintTimer=null, hintEls=[];
+let hintTimer=null, hintEls=[], lastTrail=0;
 const $=s=>document.querySelector(s);
 const boardEl=$('#board'), stageEl=$('#stage');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const pk=k=>k.split(',').map(Number);
 const key=(r,c)=>r+','+c;
 const randT=()=>Math.floor(Math.random()*TYPES.length);
+const rnd=(a,b)=>a+Math.random()*(b-a);
 const adjacent=(a,b)=>Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
-/* 兜底:任何异常都不允许把棋盘锁死 */
 window.addEventListener('error',()=>{ if($('#screen-game').classList.contains('active')&&!overlayOpen){busy=false;} });
 /* ============ 音效 ============ */
 let AC=null;
@@ -423,51 +439,167 @@ function tone(f,dur=.15,type='sine',g=.11,delay=0,slide=0){
 const sfx={
   swap(){tone(340,.07,'triangle',.05)},
   bad(){tone(150,.2,'sawtooth',.07,0,-70)},
-  match(c){const b=392*(1+(c-1)*.22);tone(b,.13,'triangle',.09);tone(b*1.5,.13,'sine',.05,.06)},
+  match(c){const b=392*(1+(c-1)*.22);tone(b,.13,'triangle',.09);tone(b*1.5,.13,'sine',.05,.06);
+    if(c>=3)tone(b*2,.18,'sine',.05,.12)},
   bomb(){tone(95,.4,'sawtooth',.16,0,-55);tone(60,.3,'square',.1,.02)},
-  rainbow(){[660,830,990,1320].forEach((f,i)=>tone(f,.14,'sine',.08,i*.06))},
-  spawn(){tone(1180,.1,'sine',.06)},
+  rainbow(){[660,830,990,1320,1660].forEach((f,i)=>tone(f,.15,'sine',.08,i*.06))},
+  spawn(){tone(1180,.1,'sine',.06);tone(1560,.14,'sine',.04,.06)},
   unlock(){tone(660,.16,'sine',.1);tone(990,.28,'sine',.09,.13)},
   fail(){tone(220,.3,'sine',.1);tone(165,.45,'sine',.1,.22)},
-  win(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,.22,'triangle',.1,i*.13))},
+  win(){[523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,.22,'triangle',.1,i*.13))},
   shuffle(){tone(500,.08,'triangle',.06);tone(430,.08,'triangle',.06,.07)},
 };
 document.addEventListener('pointerdown',()=>{try{ac()}catch(e){}},{once:true});
-/* ============ 粒子特效 ============ */
+/* ============ 魔法特效引擎(加法混合发光粒子) ============ */
 const fx=$('#fx'), fctx=fx.getContext('2d'); let parts=[];
+const SIGILS=['✦','✧','✵','★','✺','❋','✹','☆'];
 function sizeFx(){fx.width=innerWidth;fx.height=innerHeight}
 sizeFx();
-function burst(x,y,color,n=10,sp=3.4){
-  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=sp*(.4+Math.random());
-    parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.1,g:.09,life:32+Math.random()*24,age:0,color,size:1.6+Math.random()*2.6});}
-  if(parts.length>520)parts.splice(0,parts.length-520);
+function addP(p){ parts.push(p); if(parts.length>780)parts.splice(0,parts.length-780); }
+/* 火花:白炽拖尾 */
+function sparks(x,y,color,n=8,sp=4){
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, v=sp*rnd(.35,1.15);
+    addP({kind:'spark',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.2,g:.07,fr:.985,
+      life:rnd(26,46),age:0,color,size:rnd(1.6,3.2)}); }
+}
+/* 星芒:旋转闪烁的四角星 */
+function stars(x,y,n=5,color='#fff7d6',spread=26){
+  for(let i=0;i<n;i++){
+    addP({kind:'star',x:x+rnd(-spread,spread),y:y+rnd(-spread,spread),
+      vx:rnd(-.5,.5),vy:rnd(-1.1,-.3),g:-.004,seed:rnd(0,6),
+      life:rnd(34,62),age:0,color,size:rnd(4,9),rot:rnd(0,6),vr:rnd(-.12,.12),tw:rnd(.15,.3)}); }
+}
+/* 光珠:冉冉上升的柔光魂火 */
+function orbs(x,y,color,n=2){
+  for(let i=0;i<n;i++){
+    addP({kind:'orb',x:x+rnd(-12,12),y:y+rnd(-8,8),vx:0,vy:rnd(-1.4,-.7),g:-.006,seed:rnd(0,6),
+      life:rnd(50,85),age:0,color,size:rnd(7,15)}); }
+}
+/* 冲击波光环 */
+function ring(x,y,color='#ffd98a',speed=5.2,max=90){
+  addP({kind:'ring',x,y,life:Math.max(10,max/speed),age:0,color,r:6,vr:speed});
+}
+/* 星辰符号升腾 */
+function sigils(x,y,color='#ffd98a',n=2){
+  for(let i=0;i<n;i++){
+    addP({kind:'sigil',x:x+rnd(-34,34),y:y+rnd(-10,10),vx:0,vy:rnd(-1.2,-.6),seed:rnd(0,6),
+      life:rnd(55,85),age:0,color,ch:SIGILS[Math.floor(Math.random()*SIGILS.length)],size:rnd(13,24)}); }
+}
+/* 彩色光尘碎片 */
+function shardBurst(x,y,colors,n=10,sp=4){
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,v=sp*rnd(.4,1.1);
+    addP({kind:'shard',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.6,g:.11,
+      life:rnd(40,70),age:0,color:colors[Math.floor(Math.random()*colors.length)],
+      size:rnd(2.5,5),rot:rnd(0,6),vr:rnd(-.3,.3)}); }
 }
 function confettiRain(n=70){
   const cols=['#f2c14e','#ff9d5c','#58e6a8','#5bc9ff','#c09bff','#ffd98a'];
-  for(let i=0;i<n;i++)parts.push({x:Math.random()*innerWidth,y:-20-Math.random()*80,
-    vx:(Math.random()-.5)*1.4,vy:1.6+Math.random()*2.4,g:.02,life:180+Math.random()*90,age:0,
-    color:cols[Math.floor(Math.random()*cols.length)],size:3+Math.random()*4,rect:true,rot:Math.random()*6,vr:(Math.random()-.5)*.25});
+  for(let i=0;i<n;i++){ const x=Math.random()*innerWidth;
+    if(Math.random()<.28){ addP({kind:'star',x,y:-20,vx:rnd(-.4,.4),vy:rnd(1,2.2),g:.012,seed:rnd(0,6),
+      life:rnd(130,170),age:0,color:cols[i%6],size:rnd(5,9),rot:rnd(0,6),vr:rnd(-.1,.1),tw:.2}); }
+    else addP({kind:'shard',x,y:-20,vx:rnd(-.8,.8),vy:rnd(1.5,3),g:.03,
+      life:rnd(150,190),age:0,color:cols[i%6],size:rnd(3,6),rot:rnd(0,6),vr:rnd(-.2,.2)}); }
+}
+function drawStar(x,y,r,rot){
+  fctx.save();fctx.translate(x,y);fctx.rotate(rot);
+  fctx.beginPath();
+  fctx.moveTo(0,-r);
+  fctx.quadraticCurveTo(r*.22,-r*.22,r,0);
+  fctx.quadraticCurveTo(r*.22,r*.22,0,r);
+  fctx.quadraticCurveTo(-r*.22,r*.22,-r,0);
+  fctx.quadraticCurveTo(-r*.22,-r*.22,0,-r);
+  fctx.fill();fctx.restore();
 }
 (function loop(){
   fctx.clearRect(0,0,fx.width,fx.height);
   parts=parts.filter(p=>{
     p.age++; if(p.age>p.life)return false;
-    p.vy+=p.g; p.x+=p.vx; p.y+=p.vy;
     const al=Math.max(0,1-p.age/p.life);
-    fctx.globalAlpha=al; fctx.fillStyle=p.color;
-    if(p.rect){p.rot+=p.vr;fctx.save();fctx.translate(p.x,p.y);fctx.rotate(p.rot);fctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*1.6);fctx.restore();}
-    else{fctx.beginPath();fctx.arc(p.x,p.y,p.size,0,7);fctx.fill();}
+    if(p.kind==='spark'){
+      p.vx*=p.fr; p.vy=p.vy*p.fr+p.g; p.x+=p.vx; p.y+=p.vy;
+      fctx.globalCompositeOperation='lighter'; fctx.globalAlpha=al;
+      fctx.strokeStyle=p.color; fctx.lineWidth=p.size*al+.4; fctx.lineCap='round';
+      fctx.beginPath(); fctx.moveTo(p.x-p.vx*2.6,p.y-p.vy*2.6); fctx.lineTo(p.x,p.y); fctx.stroke();
+    }else if(p.kind==='star'){
+      p.vy+=p.g; p.x+=p.vx+Math.sin((p.age+p.seed)*.2)*.2; p.y+=p.vy; p.rot+=p.vr;
+      const twk=.7+.3*Math.sin(p.age*p.tw);
+      fctx.globalCompositeOperation='lighter'; fctx.globalAlpha=al*twk; fctx.fillStyle=p.color;
+      drawStar(p.x,p.y,p.size*(.5+al*.5),p.rot);
+    }else if(p.kind==='orb'){
+      p.vy+=p.g; p.x+=p.vx+Math.sin(p.age*.12+p.seed)*.45; p.y+=p.vy;
+      fctx.globalCompositeOperation='lighter'; fctx.globalAlpha=al*.5;
+      const g=fctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size);
+      g.addColorStop(0,p.color); g.addColorStop(1,'rgba(0,0,0,0)');
+      fctx.fillStyle=g; fctx.beginPath(); fctx.arc(p.x,p.y,p.size,0,7); fctx.fill();
+    }else if(p.kind==='ring'){
+      p.r+=p.vr; p.vr*=.97;
+      fctx.globalCompositeOperation='lighter'; fctx.globalAlpha=al*.9;
+      fctx.strokeStyle=p.color; fctx.lineWidth=Math.max(1,4*al);
+      fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,7); fctx.stroke();
+    }else if(p.kind==='sigil'){
+      p.x+=Math.sin(p.age*.1+p.seed)*.5; p.y+=p.vy;
+      fctx.globalCompositeOperation='lighter'; fctx.globalAlpha=al*.85;
+      fctx.fillStyle=p.color; fctx.font=p.size+'px serif'; fctx.textAlign='center'; fctx.textBaseline='middle';
+      fctx.shadowColor=p.color; fctx.shadowBlur=12;
+      fctx.fillText(p.ch,p.x,p.y); fctx.shadowBlur=0;
+    }else{ /* shard */
+      p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      fctx.globalCompositeOperation='source-over'; fctx.globalAlpha=al; fctx.fillStyle=p.color;
+      fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.rot);
+      fctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*1.6); fctx.restore();
+    }
     return true;
   });
-  fctx.globalAlpha=1; requestAnimationFrame(loop);
+  fctx.globalAlpha=1; fctx.globalCompositeOperation='source-over';
+  requestAnimationFrame(loop);
 })();
-function burstTile(cell){ if(!cell.el)return; const rc=cell.el.getBoundingClientRect();
-  burst(rc.left+rc.width/2,rc.top+rc.height/2,TYPES[cell.t].color,9,3.2); }
-function goldBurstEl(el,n=18){ const rc=el.getBoundingClientRect();
-  burst(rc.left+rc.width/2,rc.top+rc.height/2,'#ffd98a',n,4.6); }
-function floatText(x,y,txt,cls){ const d=document.createElement('div');
+/* ---- 组合特效 ---- */
+function screenFlash(color){
+  const f=$('#flash'); if(!f||!f.animate)return;
+  f.style.background='radial-gradient(circle at 50% 45%, '+color+', transparent 72%)';
+  f.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-out'});
+}
+function fxTile(cell){
+  if(!cell.el)return;
+  const rc=cell.el.getBoundingClientRect(), x=rc.left+rc.width/2, y=rc.top+rc.height/2;
+  const col=TYPES[cell.t].color;
+  sparks(x,y,col,7,3.6);
+  stars(x,y,2,'#fff7d6',10);
+  if(Math.random()<.5)orbs(x,y,col,1);
+}
+function fxBomb(x,y){
+  ring(x,y,'#ff9d5c',7,130); ring(x,y,'#ffd98a',4.5,90);
+  sparks(x,y,'#ffb066',26,6.5); sparks(x,y,'#fff3c4',12,8.5);
+  shardBurst(x,y,['#ffb066','#ff7a52','#ffd98a'],14,5);
+  sigils(x,y,'#ffd98a',2);
+  screenFlash('rgba(255,160,70,.5)');
+  shakeStage();
+}
+function fxRainbow(x,y){
+  const cols=['#ff9d5c','#f2c14e','#58e6a8','#5bc9ff','#c09bff'];
+  cols.forEach((c,i)=>setTimeout(()=>{ring(x,y,c,6+i*1.3,120); sparks(x,y,c,10,6);},i*70));
+  stars(x,y,16,'#ffffff',44); sigils(x,y,'#fff7d6',3);
+  screenFlash('rgba(255,240,200,.45)');
+}
+function fxSpawn(x,y,isRainbow){
+  if(isRainbow){ ['#ff9d5c','#58e6a8','#5bc9ff'].forEach((c,i)=>setTimeout(()=>ring(x,y,c,3.5,54),i*60));
+    stars(x,y,6,'#ffffff',14); }
+  else{ ring(x,y,'#ffd98a',3.2,50); stars(x,y,4,'#ffd98a',12); }
+}
+function fxUnlock(el){
+  const rc=el.getBoundingClientRect(), x=rc.left+rc.width/2, y=rc.top+rc.height/2;
+  ring(x,y,'#ffd98a',4.5,80); stars(x,y,8,'#fff7d6',22); sparks(x,y,'#ffd98a',14,4.5);
+  screenFlash('rgba(255,225,160,.28)');
+}
+function fxLevelClear(){
+  const rc=boardEl.getBoundingClientRect(), x=rc.left+rc.width/2, y=rc.top+rc.height/2;
+  ring(x,y,'#ffd98a',8,200); ring(x,y,'#ffffff',5,140);
+  stars(x,y,22,'#fff7d6',110); sparks(x,y,'#ffd98a',32,7.5); sigils(x,y,'#ffd98a',4);
+  screenFlash('rgba(255,230,170,.55)');
+}
+function floatText(x,y,txt,cls,dur=980){ const d=document.createElement('div');
   d.className='float-txt '+cls; d.textContent=txt; d.style.left=x+'px'; d.style.top=y+'px';
-  document.body.appendChild(d); setTimeout(()=>d.remove(),980); }
+  document.body.appendChild(d); setTimeout(()=>d.remove(),dur+80); }
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show');
   clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2300); }
 function shakeStage(){ stageEl.classList.add('shake'); setTimeout(()=>stageEl.classList.remove('shake'),380); }
@@ -556,21 +688,38 @@ function addProgress(t){
 }
 async function clearCells(clear,combo,spawn){
   if(!clear.size&&!spawn.size)return;
-  const ptsBase=10*combo; let pts=0,bombs=0,cx=0,cy=0,n=0;
+  const ptsBase=10*combo; let pts=0,cx=0,cy=0,n=0;
+  const bombPos=[]; let firstColor='#ffd98a';
   clear.forEach(k=>{ const [r,c]=pk(k); const cell=board[r][c]; if(!cell)return;
-    if(cell.el){const rc=cell.el.getBoundingClientRect();cx+=rc.left+rc.width/2;cy+=rc.top+rc.height/2;n++;}
-    if(cell.t>=0){ pts+=ptsBase; addProgress(cell.t); burstTile(cell); }
-    if(cell.special==='bomb')bombs++;
+    if(cell.el){const rc=cell.el.getBoundingClientRect();
+      const mx=rc.left+rc.width/2, my=rc.top+rc.height/2;
+      cx+=mx;cy+=my;n++;
+      if(cell.special==='bomb')bombPos.push([mx,my]);}
+    if(cell.t>=0){ pts+=ptsBase; addProgress(cell.t);
+      if(n===1)firstColor=TYPES[cell.t].color;
+      fxTile(cell); }
     if(cell.special)pts+=20; });
   spawn.forEach((v,k)=>{ const [r,c]=pk(k); const cell=board[r][c]; if(!cell)return;
     cell.special=v.special; if(v.special==='rainbow')cell.t=-1;
     setCellVisual(cell); sfx.spawn();
-    if(cell.el){cell.el.classList.add('spawnFlash');setTimeout(()=>cell.el.classList.remove('spawnFlash'),520);} });
+    if(cell.el){cell.el.classList.add('spawnFlash');setTimeout(()=>cell.el.classList.remove('spawnFlash'),520);
+      const rc=cell.el.getBoundingClientRect();
+      fxSpawn(rc.left+rc.width/2,rc.top+rc.height/2,v.special==='rainbow');} });
   score+=pts; updateHUD();
-  if(bombs){shakeStage();sfx.bomb();} else sfx.match(combo);
-  if(n)floatText(cx/n,cy/n,'+'+pts,'pts');
+  /* —— 消除的绚烂时刻 —— */
+  if(bombPos.length){ bombPos.forEach(p=>fxBomb(p[0],p[1])); sfx.bomb(); }
+  else sfx.match(combo);
+  if(n){
+    const gx=cx/n, gy=cy/n;
+    ring(gx,gy,firstColor,4.2,64);
+    stars(gx,gy,Math.min(4+clear.size,11),'#fff7d6',36);
+    if(combo>=2)sigils(gx,gy,'#ffd98a',Math.min(combo,3));
+    if(combo>=3)screenFlash('rgba(255,220,150,.4)');
+    else if(clear.size>=6)screenFlash('rgba(255,220,150,.2)');
+    floatText(gx,gy,'+'+pts,'pts');
+  }
   clear.forEach(k=>{ const cell=board[pk(k)[0]][pk(k)[1]]; if(cell&&cell.el)cell.el.classList.add('pop'); });
-  await wait(240);
+  await wait(250);
   clear.forEach(k=>{ const [r,c]=pk(k); const cell=board[r][c];
     if(cell){ if(cell.el)cell.el.remove(); board[r][c]=null; } });
   collapseAndRefill();
@@ -594,7 +743,8 @@ async function resolveBoard(bias){
     const groups=findGroups(); if(!groups.length)break;
     combo++;
     if(combo>1){ const rc=boardEl.getBoundingClientRect();
-      floatText(rc.left+rc.width/2,rc.top+rc.height*.42,'连锁 ×'+combo,'combo'); }
+      floatText(rc.left+rc.width/2,rc.top+rc.height*.42,'连锁 ×'+combo,'combo',1150);
+      stars(rc.left+rc.width/2,rc.top+rc.height*.42,6,'#ffb84d',50); }
     const clear=new Set(), spawn=new Map(), count={};
     groups.forEach(g=>g.forEach(([r,c])=>{const k=key(r,c);clear.add(k);count[k]=(count[k]||0)+1;}));
     for(const k in count)if(count[k]>=2&&!spawn.has(k))spawn.set(k,{special:'bomb'});
@@ -690,7 +840,7 @@ function buildLocks(){
 function unlockLock(i){
   const el=lockEls[i]; if(!el||el.classList.contains('open'))return;
   el.classList.add('open'); el.firstChild.textContent='🔓';
-  sfx.unlock(); goldBurstEl(el);
+  sfx.unlock(); fxUnlock(el);
 }
 /* ============ 交互 ============ */
 function cellFromEvent(e){
@@ -710,29 +860,27 @@ async function attemptSwap(a,b){
   try{
     const A=board[a.r][a.c], B=board[b.r][b.c];
     if(!A||!B)return;
-    /* 星盘(万能) */
     if(A.special==='rainbow'||B.special==='rainbow'){
       useMove(); sfx.rainbow();
+      const rp=A.special==='rainbow'?a:b, op=A.special==='rainbow'?b:a;
+      const re=board[rp.r][rp.c].el;
+      if(re){const rc0=re.getBoundingClientRect();
+        fxRainbow(rc0.left+rc0.width/2,rc0.top+rc0.height/2);}
       const set=new Set();
       if(A.special==='rainbow'&&B.special==='rainbow'){
         for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)set.add(key(r,c));
       }else{
-        const rp=A.special==='rainbow'?a:b, op=A.special==='rainbow'?b:a;
         set.add(key(rp.r,rp.c));
         const ot=board[op.r][op.c].t;
         if(ot>=0){ for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)
           if(board[r][c]&&board[r][c].t===ot)set.add(key(r,c)); }
         else set.add(key(op.r,op.c));
-        const re=board[rp.r][rp.c].el;
-        if(re){const rc0=re.getBoundingClientRect();
-          burst(rc0.left+rc0.width/2,rc0.top+rc0.height/2,'#ffd98a',22,5);}
       }
       expandClear(set);
       await clearCells(set,1,new Map());
       await resolveBoard(null);
       return afterMove();
     }
-    /* 炸弹 */
     if(A.special==='bomb'||B.special==='bomb'){
       useMove();
       const set=new Set();
@@ -743,7 +891,6 @@ async function attemptSwap(a,b){
       await resolveBoard(null);
       return afterMove();
     }
-    /* 普通交换 */
     swapCells(a,b); layoutAll(); sfx.swap();
     await wait(290);
     if(findGroups().length){
@@ -757,7 +904,6 @@ async function attemptSwap(a,b){
       busy=false; resetHint();
     }
   }finally{
-    /* 无论流程中发生什么,都保证棋盘回到可操作状态(levelClear/levelFail 会接管覆盖) */
     if(!overlayOpen&&!checkWin()&&moves>0){ busy=false; }
   }
 }
@@ -779,6 +925,10 @@ boardEl.addEventListener('pointerdown',e=>{
 });
 window.addEventListener('pointermove',e=>{
   if(!drag||drag.done||busy||overlayOpen)return;
+  /* 拖动时的星尘尾迹 */
+  const now=performance.now();
+  if(now-lastTrail>42){ lastTrail=now;
+    stars(e.clientX,e.clientY,1,'#ffe9b0',4); sparks(e.clientX,e.clientY,'#ffd98a',1,1.2); }
   const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
   if(Math.max(Math.abs(dx),Math.abs(dy))<Math.min(24,cellPx*.4))return;
   let trr=drag.r, tcc=drag.c;
@@ -809,7 +959,6 @@ function loadLevel(i){
 function measure(){
   let w=boardEl.clientWidth;
   if(w>0)applyCell(w);
-  /* 布局尚未就绪时重试,绝不允许 --cell 为 0 */
   setTimeout(()=>{ w=boardEl.clientWidth;
     if(w>0&&(cellPx<=0||Math.abs(w-cellPx*COLS)>1))applyCell(w); },80);
   function applyCell(wd){
@@ -820,6 +969,7 @@ function measure(){
 }
 async function levelClear(){
   overlayOpen=true; busy=true; clearHint();
+  fxLevelClear();
   const bonus=moves*30; score+=bonus; updateHUD();
   await wait(560);
   if(levelIdx===LEVELS.length-1){
@@ -829,12 +979,12 @@ async function levelClear(){
     $('#stTime').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
     const ov=$('#ovWin'); ov.classList.add('show'); sfx.win();
     setTimeout(()=>ov.classList.add('open'),200);
-    let n=0; const it=setInterval(()=>{confettiRain(60);if(++n>5)clearInterval(it);},480);
+    let n=0; const it=setInterval(()=>{confettiRain(60);if(++n>6)clearInterval(it);},420);
   }else{
     $('#unlockTitle').textContent='第'+LOCK_NAMES[levelIdx]+'道锁 · 开启';
     $('#unlockText').textContent=LEVELS[levelIdx].clearLine+' 剩余步数化作符力:+'+bonus+' 分。';
     $('#ovUnlock').classList.add('show'); sfx.unlock();
-    confettiRain(50);
+    confettiRain(60);
   }
 }
 function levelFail(){
@@ -845,6 +995,16 @@ function startGame(){
   score=0; totalMoves=0; startTime=Date.now();
   showScreen('screen-game'); loadLevel(0);
 }
+/* 棋盘上随机闪现的微光,让场面一直"活着" */
+setInterval(()=>{
+  if(!$('#screen-game').classList.contains('active')||overlayOpen||busy||document.hidden)return;
+  if(Math.random()<.85){
+    const r=Math.floor(Math.random()*ROWS), c=Math.floor(Math.random()*COLS);
+    const cell=board[r]&&board[r][c];
+    if(cell&&cell.el){ const rc=cell.el.getBoundingClientRect();
+      stars(rc.left+rc.width/2,rc.top+rc.height/2,1,'#ffe9b0',6); }
+  }
+},1400);
 /* ============ 按钮 ============ */
 $('#btnStart').onclick=()=>{startGame();};
 $('#btnNext').onclick=()=>{overlayOpen=false;loadLevel(levelIdx+1);};
