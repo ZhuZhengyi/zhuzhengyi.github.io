@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 房屋 - 统一地板与楼梯绝对精准版</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #555; font-family: sans-serif; }
+        
+        #ui-container {
+            position: absolute; top: 15px; left: 15px; z-index: 100; display: flex; gap: 10px;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.9); color: #333; border: none; padding: 10px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: all 0.2s; font-size: 14px;
+        }
+        .btn:hover { background: #fff; transform: translateY(-2px); }
+        .btn.active { background: #2980b9; color: white; }
+        .btn-measure { background: #ea4335; color: white; }
+        .btn-measure:hover { background: #d33b2c; color: white; }
+
+        #info {
+            position: absolute; bottom: 15px; width: 100%; text-align: center;
+            color: #fff; pointer-events: none; font-size: 15px; font-weight: bold;
+            text-shadow: 1px 1px 3px #000; letter-spacing: 1px;
+        }
+
+        #floorplan-canvas {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #f4f6f8; display: none; z-index: 50;
+            cursor: default;
+        }
+        
+        #measure-tip {
+            position: absolute; top: 60px; left: 15px; color: #ea4335; font-weight: bold;
+            display: none; z-index: 100; text-shadow: 1px 1px 0 #fff;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="ui-container">
+        <button id="btn-3d" class="btn active">3D 鸟瞰骨架</button>
+        <button id="btn-2d" class="btn">2D 平面尺寸图</button>
+        <button id="btn-add-dim" class="btn btn-measure" style="display:none;">+ 添加标注</button>
+    </div>
+    <div id="measure-tip">请在画布上点击两个点进行测量...</div>
+    <div id="info">左键旋转 | 右键平移 | 滚轮缩放 | 2D下可拖动标注</div>
+    
+    <canvas id="floorplan-canvas"></canvas>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+        // 1. 场景与渲染器
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x444444); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(12, 14, 15); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.NoToneMapping; 
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1, 0);
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        controls.update();
+
+        // 2. 光照系统
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); 
+        scene.add(ambientLight);
+
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); 
+        dirLight.position.set(10, 20, 15); 
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -15;
+        dirLight.shadow.camera.right = 15;
+        dirLight.shadow.camera.top = 15;
+        dirLight.shadow.camera.bottom = -15;
+        dirLight.shadow.bias = -0.0005; 
+        dirLight.shadow.normalBias = 0.02; 
+        scene.add(dirLight);
+
+        // 3. 材质 (统一地板颜色)
+        const matWall = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.9 }); 
+        const matStair = new THREE.MeshStandardMaterial({ color: 0x5da0e8, roughness: 0.6 }); 
+        const matDoor = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 }); 
+        const matCol = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8 }); 
+        
+        const matWindowFrame = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 });
+        const matGlass = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.4, metalness: 0.5, roughness: 0.1 });
+
+        // 【修改点】统一的地板材质
+        const matFloorUnified = new THREE.MeshStandardMaterial({ color: 0xe6d5bc, roughness: 0.8 }); 
+
+        // 4. 全局尺寸
+        const W = 9.24, D = 10.24, H = 3.5;
+        const tExt = 0.24, tInt = 0.24; 
+
+        function box(w, h, d, x, y, z, mat, cast = true, rec = true) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+            mesh.position.set(x, y, z); 
+            mesh.castShadow = cast; mesh.receiveShadow = rec;
+            scene.add(mesh); return mesh;
+        }
+
+        function createWindow(w, h, x, y, z, rotY = 0) {
+            const group = new THREE.Group();
+            const frameT = 0.08;
+            group.add(new THREE.Mesh(new THREE.BoxGeometry(w, frameT, 0.1), matWindowFrame)).position.y = h/2 - frameT/2;
+            group.add(new THREE.Mesh(new THREE.BoxGeometry(w, frameT, 0.1), matWindowFrame)).position.y = -h/2 + frameT/2;
+            group.add(new THREE.Mesh(new THREE.BoxGeometry(frameT, h, 0.1), matWindowFrame)).position.x = -w/2 + frameT/2;
+            group.add(new THREE.Mesh(new THREE.BoxGeometry(frameT, h, 0.1), matWindowFrame)).position.x = w/2 - frameT/2;
+            group.add(new THREE.Mesh(new THREE.BoxGeometry(0.05, h - frameT*2, 0.08), matWindowFrame));
+            group.add(new THREE.Mesh(new THREE.BoxGeometry(w - frameT*2, 0.05, 0.08), matWindowFrame));
+            const glass = new THREE.Mesh(new THREE.BoxGeometry(w - frameT*2, h - frameT*2, 0.02), matGlass);
+            glass.position.z = -0.02;
+            group.add(glass);
+            group.position.set(x, y, z);
+            group.rotation.y = rotY;
+            scene.add(group);
+        }
+
+        // ==========================================
+        // 5. 铺设地板 (统一颜色)
+        // ==========================================
+        box(2.30, 0.05, 9.80, -3.25, 0.02, 0, matFloorUnified); 
+        box(2.80, 0.05, 2.04, -0.5, 0.02, -3.88, matFloorUnified); 
+        box(3.30, 0.05, 3.30, 2.75, 0.02, -3.25, matFloorUnified); 
+        box(1.30, 0.05, 1.80, 1.75, 0.02, -0.5, matFloorUnified); 
+        box(1.80, 0.05, 1.80, 3.50, 0.02, -0.5, matFloorUnified); 
+        box(2.80, 0.05, 3.30, -0.5, 0.02, -1.01, matFloorUnified); 
+        box(5.30, 0.05, 4.54, -1.75, 0.02, 2.63, matFloorUnified); 
+        box(3.30, 0.05, 4.30, 2.75, 0.02, 2.75, matFloorUnified); 
+
+        // ==========================================
+        // 6. 构建外墙 (包含后门与后墙窗户)
+        // ==========================================
+        box(tExt, H, D, -4.5, H/2, 0, matWall); 
+        box(tExt, H, D, 4.5, H/2, 0, matWall);  
+        
+        // 后外墙
+        box(1.02, H, tExt, -4.11, H/2, -5.0, matWall); 
+        box(1.2, H - 2.0, tExt, -3.0, 2.0 + (H-2.0)/2, -5.0, matWall); 
+        box(1.2, 2.0, 0.1, -3.0, 1.0, -5.0, matDoor); 
+        box(1.0, H, tExt, -1.9, H/2, -5.0, matWall);
+        box(1.8, 0.9, tExt, -0.5, 0.45, -5.0, matWall); 
+        box(1.8, H - 2.7, tExt, -0.5, 2.7 + (H-2.7)/2, -5.0, matWall); 
+        createWindow(1.8, 1.8, -0.5, 1.8, -5.0, Math.PI); 
+        box(1.45, H, tExt, 1.125, H/2, -5.0, matWall);
+        box(1.8, 0.9, tExt, 2.75, 0.45, -5.0, matWall); 
+        box(1.8, H - 2.7, tExt, 2.75, 2.7 + (H-2.7)/2, -5.0, matWall); 
+        createWindow(1.8, 1.8, 2.75, 1.8, -5.0, Math.PI); 
+        box(0.97, H, tExt, 4.135, H/2, -5.0, matWall);
+
+        // 前外墙
+        box(0.73, H, tExt, -4.015, H/2, 5.0, matWall); 
+        box(1.8, 0.9, tExt, -2.75, 0.45, 5.0, matWall); 
+        box(1.8, H - 2.7, tExt, -2.75, 2.7 + (H-2.7)/2, 5.0, matWall); 
+        createWindow(1.8, 1.8, -2.75, 1.8, 5.0, 0); 
+        box(0.45, H, tExt, -1.625, H/2, 5.0, matWall); 
+        box(2.4, H - 2.6, tExt, -0.2, 2.6 + (H-2.6)/2, 5.0, matWall); 
+        box(2.4, 2.6, 0.1, -0.2, 1.3, 5.0, matDoor); 
+        box(0.85, H, tExt, 1.425, H/2, 5.0, matWall); 
+        box(1.8, 0.9, tExt, 2.75, 0.45, 5.0, matWall); 
+        box(1.8, H - 2.7, tExt, 2.75, 2.7 + (H-2.7)/2, 5.0, matWall); 
+        createWindow(1.8, 1.8, 2.75, 1.8, 5.0, 0); 
+        box(0.73, H, tExt, 4.015, H/2, 5.0, matWall);
+
+        // ==========================================
+        // 7. 内墙
+        // ==========================================
+        box(tInt, H, 1.18, -2.00, H/2, -4.29, matWall); 
+        box(tInt, H-2.1, 0.8, -2.00, 2.1 + (H-2.1)/2, -3.3, matWall); 
+        box(tInt, H, 0.94, -2.00, H/2, -2.17, matWall); 
+
+        box(tInt, H, 3.26, 1.00, H/2, -3.25, matWall); 
+        box(tInt, H, 0.37, 1.00, H/2, 0.565, matWall); 
+        box(tInt, H, 3.23, 1.00, H/2, 3.265, matWall); 
+        box(tInt, H-2.1, 0.9, 1.00, 2.1 + (H-2.1)/2, 1.2, matWall); 
+
+        box(tInt, H, 1.07, 2.50, H/2, -1.085, matWall); 
+        box(tInt, H, 0.23, 2.50, H/2, 0.265, matWall); 
+        box(tInt, H-2.1, 0.7, 2.50, 2.1 + (H-2.1)/2, -0.2, matWall); 
+
+        box(3.24, H, tInt, -0.5, H/2, -2.76, matWall); 
+        box(0.32, H, tInt, 1.04, H/2, -1.50, matWall); 
+        box(2.38, H, tInt, 3.19, H/2, -1.50, matWall); 
+        box(0.8, H-2.1, tInt, 1.6, 2.1 + (H-2.1)/2, -1.50, matWall); 
+        box(3.50, H, tInt, 2.63, H/2, 0.50, matWall); 
+
+        // ==========================================
+        // 8. 承重柱与楼梯 (长度包含休息台)
+        // ==========================================
+        box(0.4, H, 0.4, -2.00, H/2, 0.50, matCol);
+        box(0.4, H, 0.4, -2.00, H/2, -1.50, matCol);
+
+        const platformH = 2.2; 
+        const platformDepth = 1.2; // 休息台进深
+        const backWallInner = -D/2 + tExt; // -4.88
+        const platformFrontZ = backWallInner + platformDepth; // -3.68
+        
+        // --- 第一跑：总长 5.6m，扣除 1.2m 平台，净长 4.4m，14级 ---
+        const stepH1 = platformH / 14;
+        const stepD1 = 4.4 / 14; 
+        const run1StartZ = platformFrontZ + 4.4; // 起点 -3.68 + 4.4 = 0.72
+        
+        for(let i=1; i<=14; i++) {
+            const zCenter = run1StartZ - (i - 0.5) * stepD1; 
+            box(1.1, 0.15, stepD1, -3.83, stepH1*i - 0.075, zCenter, matStair);
+        }
+        
+        // 休息平台
+        box(2.26, 0.15, platformDepth, -3.25, platformH - 0.075, -4.28, matStair);
+
+        // --- 第二跑：总长 3.6m，扣除 1.2m 平台，净长 2.4m，9级 ---
+        const stepH2 = (H - platformH) / 9;
+        const stepD2 = 2.4 / 9; 
+        
+        for(let i=1; i<=9; i++) {
+            const zCenter = platformFrontZ + (i - 0.5) * stepD2;
+            box(1.1, 0.15, stepD2, -2.67, platformH + stepH2*i - 0.075, zCenter, matStair);
+        }
+
+        // ==========================================
+        // 9. 2D 交互式平面图
+        // ==========================================
+        const canvas2D = document.getElementById('floorplan-canvas');
+        const ctx = canvas2D.getContext('2d');
+        let scale = 50; 
+        let offsetX = 0;
+        let offsetY = 0;
+
+        let dimensions = [
+            { id: 1, x1: -4.62, z1: -5.12, x2: 4.62, z2: -5.12, offset: -1.2, text: '9.24m' },
+            { id: 2, x1: -4.62, z1: -5.12, x2: -4.62, z2: 5.12, offset: 1.2, text: '10.24m' },
+            { id: 3, x1: -4.38, z1: -4.88, x2: -2.12, z2: -4.88, offset: -0.6, text: '2.26m' },
+            { id: 4, x1: -1.88, z1: -4.88, x2: 0.88, z2: -4.88, offset: -0.6, text: '2.76m' },
+            { id: 5, x1: 1.12, z1: -4.88, x2: 4.38, z2: -4.88, offset: -0.6, text: '3.26m' },
+            { id: 6, x1: 4.38, z1: -4.88, x2: 4.38, z2: -1.62, offset: 0.6, text: '3.26m' },
+            { id: 7, x1: 4.38, z1: -1.62, x2: 4.38, z2: 0.14, offset: 0.6, text: '1.76m' },
+            { id: 8, x1: 2.62, z1: -1.38, x2: 4.38, z2: -1.38, offset: -0.6, text: '1.76m' },
+            { id: 9, x1: 1.12, z1: -1.38, x2: 2.38, z2: -1.38, offset: -0.6, text: '1.26m' },
+            { id: 10, x1: -1.88, z1: -4.88, x2: -1.88, z2: -2.88, offset: -0.6, text: '2.00m' },
+            { id: 11, x1: 4.38, z1: 0.62, x2: 4.38, z2: 4.88, offset: 0.6, text: '4.26m' },
+            { id: 12, x1: -4.38, z1: 4.88, x2: 0.88, z2: 4.88, offset: 0.8, text: '5.26m' },
+            { id: 13, x1: 1.12, z1: 4.88, x2: 4.38, z2: 4.88, offset: 0.8, text: '3.26m' },
+            { id: 14, x1: -2.2, z1: -1.50, x2: -2.2, z2: 0.50, offset: -0.6, text: '2.00m' }, 
+            { id: 15, x1: 5.12, z1: 0.50, x2: 5.12, z2: 4.88, offset: 1.2, text: '4.38m' }, 
+            { id: 16, x1: -3.65, z1: 5.12, x2: -1.85, z2: 5.12, offset: 0.6, text: '1.8m' },
+            { id: 17, x1: 1.85, z1: 5.12, x2: 3.65, z2: 5.12, offset: 0.6, text: '1.8m' },
+            { id: 18, x1: -3.6, z1: -5.12, x2: -2.4, z2: -5.12, offset: -0.6, text: '1.2m' },
+            { id: 19, x1: -1.4, z1: -5.12, x2: 0.4, z2: -5.12, offset: -0.6, text: '1.8m' }, // 厨房后窗
+            { id: 20, x1: 1.85, z1: -5.12, x2: 3.65, z2: -5.12, offset: -0.6, text: '1.8m' }, // 杂物间后窗
+            { id: 21, x1: -4.38, z1: run1StartZ, x2: -4.38, z2: platformFrontZ, offset: -0.8, text: '4.4m' }, // 一跑净长
+            { id: 22, x1: -2.12, z1: platformFrontZ, x2: -2.12, z2: (platformFrontZ + 2.4), offset: 0.8, text: '2.4m' }, // 二跑净长
+            { id: 23, x1: -2.12, z1: backWallInner, x2: -2.12, z2: platformFrontZ, offset: 0.8, text: '1.2m 平台' } // 平台深度
+        ];
+
+        let is2DMode = false;
+        let isMeasuring = false;
+        let measureStart = null;
+        let draggingDim = null;
+        let lastMouse = { x: 0, y: 0 };
+
+        const getX = (x) => offsetX + x * scale;
+        const getY = (z) => offsetY + z * scale;
+        const screenToWorld = (sx, sy) => {
+            return { x: (sx - offsetX) / scale, z: (sy - offsetY) / scale };
+        };
+
+        function draw2DPlan() {
+            canvas2D.width = window.innerWidth;
+            canvas2D.height = window.innerHeight;
+            
+            scale = Math.min(window.innerWidth / 15, window.innerHeight / 13); 
+            offsetX = canvas2D.width / 2;
+            offsetY = canvas2D.height / 2;
+
+            ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
+
+            // 2D图为了清楚区分区域，仍保留多色底板
+            const drawRect = (w, d, x, z, color) => {
+                ctx.fillStyle = color;
+                ctx.fillRect(getX(x - w/2), getY(z - d/2), w * scale, d * scale);
+            };
+            drawRect(2.26, 9.76, -3.25, 0, '#e8f0fe'); 
+            drawRect(2.76, 2.00, -0.5, -3.88, '#e6f4ea'); 
+            drawRect(3.26, 3.26, 2.75, -3.25, '#fef7e0'); 
+            drawRect(1.26, 1.76, 1.75, -0.5, '#f1f3f4'); 
+            drawRect(1.76, 1.76, 3.50, -0.5, '#fce8e6'); 
+            drawRect(2.76, 3.26, -0.5, -1.01, '#f1f3f4'); 
+            drawRect(5.26, 4.50, -1.75, 2.63, '#ffffff'); 
+            drawRect(3.26, 4.26, 2.75, 2.75, '#fdf6e3'); 
+
+            const drawWallBox = (w, d, x, z, color='#333') => {
+                ctx.fillStyle = color;
+                ctx.fillRect(getX(x - w/2), getY(z - d/2), w * scale, d * scale);
+            };
+
+            // 外墙
+            drawWallBox(tExt, D, -4.5, 0); 
+            drawWallBox(tExt, D, 4.5, 0);  
+
+            // 后外墙分段
+            drawWallBox(1.02, tExt, -4.11, -5.0); 
+            drawWallBox(1.2, tExt, -3.0, -5.0, '#222'); 
+            drawWallBox(1.0, tExt, -1.9, -5.0); 
+            drawWallBox(1.8, tExt, -0.5, -5.0, '#88ccff'); 
+            drawWallBox(1.45, tExt, 1.125, -5.0); 
+            drawWallBox(1.8, tExt, 2.75, -5.0, '#88ccff'); 
+            drawWallBox(0.97, tExt, 4.135, -5.0); 
+
+            // 前外墙分段
+            drawWallBox(0.73, tExt, -4.015, 5.0); 
+            drawWallBox(1.8, tExt, -2.75, 5.0, '#88ccff'); 
+            drawWallBox(0.45, tExt, -1.625, 5.0); 
+            drawWallBox(2.4, tExt, -0.2, 5.0, '#555'); 
+            
+            ctx.strokeStyle = '#555';
+            ctx.beginPath();
+            ctx.arc(getX(-0.2 - 1.2), getY(5.0), 1.2 * scale, 0, Math.PI/2);
+            ctx.stroke();
+
+            drawWallBox(0.85, tExt, 1.425, 5.0); 
+            drawWallBox(1.8, tExt, 2.75, 5.0, '#88ccff'); 
+            drawWallBox(0.73, tExt, 4.015, 5.0); 
+
+            // 内墙
+            drawWallBox(tInt, 1.18, -2.00, -4.29); 
+            drawWallBox(tInt, 0.94, -2.00, -2.17); 
+
+            drawWallBox(tInt, 3.26, 1.00, -3.25); 
+            drawWallBox(tInt, 0.37, 1.00, 0.565); 
+            drawWallBox(tInt, 3.23, 1.00, 3.265); 
+
+            drawWallBox(tInt, 1.07, 2.50, -1.085); 
+            drawWallBox(tInt, 0.23, 2.50, 0.265); 
+
+            drawWallBox(3.24, tInt, -0.5, -2.76); 
+            drawWallBox(0.32, tInt, 1.04, -1.50); 
+            drawWallBox(2.38, tInt, 3.19, -1.50); 
+            drawWallBox(3.50, tInt, 2.63, 0.50); 
+
+            // 承重柱
+            drawWallBox(0.4, 0.4, -2.00, 0.50, '#666'); 
+            drawWallBox(0.4, 0.4, -2.00, -1.50, '#666'); 
+
+            // 楼梯 (重新计算绘制)
+            ctx.fillStyle = '#8ab4f8';
+            for(let i=1; i<=14; i++) {
+                const zCenter = run1StartZ - (i - 0.5) * stepD1; 
+                ctx.fillRect(getX(-3.83 - 0.55), getY(zCenter - stepD1/2), 1.1*scale, stepD1*scale);
+            }
+            ctx.fillRect(getX(-3.25 - 1.13), getY(-4.28 - 0.6), 2.26*scale, 1.2*scale); // 平台
+            for(let i=1; i<=9; i++) {
+                const zCenter = platformFrontZ + (i - 0.5) * stepD2;
+                ctx.fillRect(getX(-2.67 - 0.55), getY(zCenter - stepD2/2), 1.1*scale, stepD2*scale);
+            }
+
+            ctx.fillStyle = '#1a73e8';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('楼梯间', getX(-3.25), getY(-1.0));
+            ctx.fillText('厨房', getX(-0.5), getY(-3.88));
+            ctx.fillText('杂物间', getX(2.75), getY(-3.25));
+            ctx.fillText('洗漱过道', getX(1.75), getY(-0.5));
+            ctx.fillText('卫生间', getX(3.50), getY(-0.5));
+            ctx.fillText('餐厅', getX(-0.5), getY(-1.01));
+            ctx.fillText('客厅', getX(-1.75), getY(2.63));
+            ctx.fillText('卧室1', getX(2.75), getY(2.75));
+
+            // 绘制标注
+            dimensions.forEach(dim => {
+                const dx = dim.x2 - dim.x1, dz = dim.z2 - dim.z1;
+                const len = Math.sqrt(dx*dx + dz*dz);
+                if(len === 0) return;
+                
+                const nx = -dz / len, nz = dx / len;
+                const px1 = dim.x1 + nx * dim.offset, pz1 = dim.z1 + nz * dim.offset;
+                const px2 = dim.x2 + nx * dim.offset, pz2 = dim.z2 + nz * dim.offset;
+
+                ctx.strokeStyle = '#ea4335';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                const ext = 0.15;
+                ctx.moveTo(getX(dim.x1 + nx*ext), getY(dim.z1 + nz*ext));
+                ctx.lineTo(getX(px1 - nx*ext), getY(pz1 - nz*ext));
+                ctx.moveTo(getX(dim.x2 + nx*ext), getY(dim.z2 + nz*ext));
+                ctx.lineTo(getX(px2 - nx*ext), getY(pz2 - nz*ext));
+                ctx.stroke();
+
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(getX(px1), getY(pz1));
+                ctx.lineTo(getX(px2), getY(pz2));
+                ctx.stroke();
+
+                const tick = 0.15;
+                ctx.beginPath();
+                ctx.moveTo(getX(px1 - nx*tick - dx/len*tick), getY(pz1 - nz*tick - dz/len*tick));
+                ctx.lineTo(getX(px1 + nx*tick + dx/len*tick), getY(pz1 + nz*tick + dz/len*tick));
+                ctx.moveTo(getX(px2 - nx*tick - dx/len*tick), getY(pz2 - nz*tick - dz/len*tick));
+                ctx.lineTo(getX(px2 + nx*tick + dx/len*tick), getY(pz2 + nz*tick + dz/len*tick));
+                ctx.stroke();
+
+                ctx.fillStyle = '#ea4335';
+                ctx.font = 'bold 12px sans-serif';
+                const midX = (px1 + px2) / 2;
+                const midZ = (pz1 + pz2) / 2;
+                const textWidth = ctx.measureText(dim.text).width;
+                ctx.fillStyle = 'rgba(244, 246, 248, 0.9)';
+                ctx.fillRect(getX(midX) - textWidth/2 - 4, getY(midZ) - 8, textWidth + 8, 16);
+                ctx.fillStyle = '#ea4335';
+                ctx.fillText(dim.text, getX(midX), getY(midZ));
+            });
+
+            if (isMeasuring && measureStart) {
+                ctx.strokeStyle = '#2980b9';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(getX(measureStart.x), getY(measureStart.z));
+                ctx.lineTo(lastMouse.x, lastMouse.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // 10. 交互事件监听
+        canvas2D.addEventListener('mousedown', (e) => {
+            if (!is2DMode) return;
+            const rect = canvas2D.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            const world = screenToWorld(sx, sy);
+
+            if (isMeasuring) {
+                if (!measureStart) {
+                    measureStart = world;
+                } else {
+                    const dx = world.x - measureStart.x;
+                    const dz = world.z - measureStart.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    
+                    if (dist > 0.1) { 
+                        const newDim = {
+                            id: Date.now(),
+                            x1: measureStart.x, z1: measureStart.z,
+                            x2: world.x, z2: world.z,
+                            offset: 0.5, 
+                            text: dist.toFixed(2) + 'm'
+                        };
+                        dimensions.push(newDim);
+                    }
+                    measureStart = null;
+                    isMeasuring = false;
+                    btnAddDim.textContent = '+ 添加标注';
+                    btnAddDim.classList.remove('active');
+                    document.getElementById('measure-tip').style.display = 'none';
+                    canvas2D.style.cursor = 'default';
+                    draw2DPlan();
+                }
+            } else {
+                for (let i = dimensions.length - 1; i >= 0; i--) {
+                    const dim = dimensions[i];
+                    const dx = dim.x2 - dim.x1, dz = dim.z2 - dim.z1;
+                    const len = Math.sqrt(dx*dx + dz*dz);
+                    const nx = -dz / len, nz = dx / len;
+                    const px1 = dim.x1 + nx * dim.offset, pz1 = dim.z1 + nz * dim.offset;
+                    const px2 = dim.x2 + nx * dim.offset, pz2 = dim.z2 + nz * dim.offset;
+
+                    const lineScreenX1 = getX(px1), lineScreenY1 = getY(pz1);
+                    const lineScreenX2 = getX(px2), lineScreenY2 = getY(pz2);
+                    
+                    const d = Math.abs((lineScreenY2 - lineScreenY1) * sx - (lineScreenX2 - lineScreenX1) * sy + lineScreenX2 * lineScreenY1 - lineScreenY2 * lineScreenX1) / Math.sqrt(Math.pow(lineScreenY2 - lineScreenY1, 2) + Math.pow(lineScreenX2 - lineScreenX1, 2));
+                    
+                    if (d < 10) { 
+                        draggingDim = dim;
+                        break;
+                    }
+                }
+            }
+        });
+
+        canvas2D.addEventListener('mousemove', (e) => {
+            if (!is2DMode) return;
+            const rect = canvas2D.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            lastMouse = { x: sx, y: sy };
+
+            if (draggingDim) {
+                const world = screenToWorld(sx, sy);
+                const dx = draggingDim.x2 - draggingDim.x1, dz = draggingDim.z2 - draggingDim.z1;
+                const len = Math.sqrt(dx*dx + dz*dz);
+                const nx = -dz / len, nz = dx / len;
+                const midX = (draggingDim.x1 + draggingDim.x2) / 2;
+                const midZ = (draggingDim.z1 + draggingDim.z2) / 2;
+                draggingDim.offset = (world.x - midX) * nx + (world.z - midZ) * nz;
+                draw2DPlan();
+            } else if (isMeasuring) {
+                draw2DPlan();
+                if (measureStart) {
+                    ctx.strokeStyle = '#2980b9';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(getX(measureStart.x), getY(measureStart.z));
+                    ctx.lineTo(lastMouse.x, lastMouse.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            } else {
+                let hovering = false;
+                for (let i = 0; i < dimensions.length; i++) {
+                    const dim = dimensions[i];
+                    const dx = dim.x2 - dim.x1, dz = dim.z2 - dim.z1;
+                    const len = Math.sqrt(dx*dx + dz*dz);
+                    const nx = -dz / len, nz = dx / len;
+                    const px1 = dim.x1 + nx * dim.offset, pz1 = dim.z1 + nz * dim.offset;
+                    const px2 = dim.x2 + nx * dim.offset, pz2 = dim.z2 + nz * dim.offset;
+
+                    const lineScreenX1 = getX(px1), lineScreenY1 = getY(pz1);
+                    const lineScreenX2 = getX(px2), lineScreenY2 = getY(pz2);
+                    
+                    const d = Math.abs((lineScreenY2 - lineScreenY1) * sx - (lineScreenX2 - lineScreenX1) * sy + lineScreenX2 * lineScreenY1 - lineScreenY2 * lineScreenX1) / Math.sqrt(Math.pow(lineScreenY2 - lineScreenY1, 2) + Math.pow(lineScreenX2 - lineScreenX1, 2));
+                    
+                    if (d < 10) {
+                        hovering = true;
+                        break;
+                    }
+                }
+                canvas2D.style.cursor = hovering ? 'pointer' : 'default';
+            }
+        });
+
+        canvas2D.addEventListener('mouseup', () => {
+            draggingDim = null;
+        });
+
+        // 11. UI 逻辑
+        const btn3D = document.getElementById('btn-3d');
+        const btn2D = document.getElementById('btn-2d');
+        const btnAddDim = document.getElementById('btn-add-dim');
+
+        btn3D.addEventListener('click', () => {
+            if(!is2DMode) return;
+            is2DMode = false;
+            isMeasuring = false;
+            measureStart = null;
+            btn3D.classList.add('active');
+            btn2D.classList.remove('active');
+            btnAddDim.style.display = 'none';
+            document.getElementById('measure-tip').style.display = 'none';
+            canvas2D.style.display = 'none';
+            renderer.domElement.style.display = 'block';
+            canvas2D.style.cursor = 'default';
+        });
+
+        btn2D.addEventListener('click', () => {
+            if(is2DMode) return;
+            is2DMode = true;
+            btn2D.classList.add('active');
+            btn3D.classList.remove('active');
+            btnAddDim.style.display = 'block';
+            canvas2D.style.display = 'block';
+            renderer.domElement.style.display = 'none';
+            draw2DPlan(); 
+        });
+
+        btnAddDim.addEventListener('click', () => {
+            isMeasuring = !isMeasuring;
+            measureStart = null;
+            if (isMeasuring) {
+                btnAddDim.classList.add('active');
+                document.getElementById('measure-tip').style.display = 'block';
+                canvas2D.style.cursor = 'crosshair';
+            } else {
+                btnAddDim.classList.remove('active');
+                document.getElementById('measure-tip').style.display = 'none';
+                canvas2D.style.cursor = 'default';
+            }
+            draw2DPlan();
+        });
+
+        // 12. 渲染循环
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!is2DMode) {
+                controls.update();
+                renderer.render(scene, camera);
+            }
+        }
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (is2DMode) draw2DPlan(); 
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
